@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StatusBar, StyleSheet, SafeAreaView } from 'react-native';
 import { Colors } from './src/theme/theme';
 import TabBar, { TabName } from './src/navigation/TabBar';
+import { ScrollVisibilityProvider } from './src/navigation/ScrollVisibilityContext';
 import DashboardScreen from './src/screens/DashboardScreen';
 import HealthScreen from './src/screens/HealthScreen';
 import FitnessScreen from './src/screens/FitnessScreen';
@@ -9,14 +10,14 @@ import CalorieScreen from './src/screens/CalorieScreen';
 import AIAdvisorScreen from './src/screens/AIAdvisorScreen';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<TabName>('Dashboard');
+  const [activeTab, setActiveTab] = useState<TabName>('Home');
 
   const renderScreen = () => {
     switch (activeTab) {
-      case 'Dashboard': return <DashboardScreen />;
+      case 'Home': return <DashboardScreen />;
       case 'Health':     return <HealthScreen />;
       case 'Activity':   return <FitnessScreen />;
-      case 'Nutrition': return <CalorieScreen />;
+      case 'Diet': return <CalorieScreen />;
       case 'AI':        return <AIAdvisorScreen />;
       default:          return <DashboardScreen />;
     }
@@ -30,10 +31,12 @@ export default function App() {
         translucent={false}
       />
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.screenContainer}>
-          {renderScreen()}
-        </View>
-        <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
+        <ScrollVisibilityProvider>
+          <View style={styles.screenContainer}>
+            {renderScreen()}
+          </View>
+          <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
+        </ScrollVisibilityProvider>
       </SafeAreaView>
     </View>
   );

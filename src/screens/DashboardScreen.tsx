@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../theme/theme';
 import { GlassCardView, SectionHeader, CircularRing, StatPill, ProgressBar } from '../components/SharedComponents';
+import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 
 
 
@@ -50,7 +51,7 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={useScrollVisibility().onScroll} scrollEventThrottle={16}>
         {/* Header */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <View style={styles.header}>

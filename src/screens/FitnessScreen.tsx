@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, Shadows } from '../theme/theme';
 import { GlassCardView, SectionHeader, Chip, ProgressBar } from '../components/SharedComponents';
+import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 
 const WORKOUTS = [
   {
@@ -61,7 +62,7 @@ export default function FitnessScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={useScrollVisibility().onScroll} scrollEventThrottle={16}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Gym Tracker</Text>

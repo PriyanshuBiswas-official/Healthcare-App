@@ -1,8 +1,10 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Animated } from 'react-native';
 import { Colors, Typography, Spacing } from '../theme/theme';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useScrollVisibility } from './ScrollVisibilityContext';
 
-export type TabName = 'Dashboard' | 'Health' | 'Nutrition' | 'Activity' | 'AI';
+export type TabName = 'Home' | 'Health' | 'Diet' | 'Activity' | 'AI';
 
 interface TabBarProps {
   activeTab: TabName;
@@ -10,16 +12,27 @@ interface TabBarProps {
 }
 
 const TABS: { name: TabName; icon: string; activeColor: string }[] = [
-  { name: 'Dashboard', icon: '⬡', activeColor: Colors.teal },
-  { name: 'Health', icon: '◎', activeColor: Colors.pink },
-  { name: 'Nutrition', icon: '◈', activeColor: Colors.amber },
-  { name: 'Activity', icon: '⚡', activeColor: Colors.teal },
-  { name: 'AI', icon: '✦', activeColor: Colors.purple },
+  { name: 'Home', icon: 'home', activeColor: Colors.teal },
+  { name: 'Health', icon: 'stethoscope', activeColor: Colors.pink },
+  { name: 'Nutrition', icon: 'silverware-fork-knife', activeColor: Colors.amber },
+  { name: 'Activity', icon: 'run-fast', activeColor: Colors.teal },
+  { name: 'AI', icon: 'robot', activeColor: Colors.purple },
 ];
 
 export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
+  const { visible } = useScrollVisibility();
+  const anim = React.useRef(new Animated.Value(0)).current; // 0 = visible, 1 = hidden
+
+  useEffect(() => {
+    Animated.timing(anim, { toValue: visible ? 0 : 1, duration: 220, useNativeDriver: true }).start();
+  }, [visible]);
+
+  const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 80] });
+  const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.0] });
+  const ICON_SIZE = 28;
+
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, styles.floating, { transform: [{ translateY }], opacity }]}> 
       <View style={styles.bar}>
         {TABS.map(tab => {
           const isActive = activeTab === tab.name;
@@ -28,18 +41,16 @@ export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
               key={tab.name}
               style={styles.tab}
               onPress={() => onTabChange(tab.name)}
-              activeOpacity={0.7}>
+              activeOpacity={0.8}>
               <View style={[styles.iconWrap, isActive && { backgroundColor: tab.activeColor + '22' }]}>
                 {isActive && (
                   <View style={[styles.activePill, { backgroundColor: tab.activeColor + '30', borderColor: tab.activeColor }]} />
                 )}
-                <Text style={[styles.icon, isActive && { color: tab.activeColor }]}>
-                  {tab.icon}
-                </Text>
+                
+                  <MaterialCommunityIcons name={tab.icon} size={ICON_SIZE} color={isActive ? tab.activeColor : Colors.text} style={[styles.icon, isActive && { color: tab.activeColor }]} />
+              
               </View>
-              <Text style={[styles.label, isActive && { color: tab.activeColor }]}>
-                {tab.name}
-              </Text>
+              <Text style={[styles.label, isActive && { color: tab.activeColor }]} numberOfLines={1} ellipsizeMode="tail">{tab.name}</Text>
               {isActive && (
                 <View style={[styles.activeIndicator, { backgroundColor: tab.activeColor, shadowColor: tab.activeColor }]} />
               )}
@@ -47,37 +58,50 @@ export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
           );
         })}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingBottom: Platform.OS === 'android' ? Spacing.lg : Spacing.xxl,
+    bottom: 12,
+    alignItems: 'center',
     paddingHorizontal: Spacing.base,
     paddingTop: Spacing.sm,
-    backgroundColor: 'rgba(10,11,20,0.98)',
-    borderTopWidth: 1,
-    borderTopColor: Colors.bgCardBorder,
+    backgroundColor: 'transparent',
+  },
+  floating: {
+    alignSelf: 'center',
+    width: '94%',
+    borderRadius: 18,
+    paddingVertical: Spacing.xs,
+    backgroundColor: 'rgba(10,11,20,0.96)',
+    borderWidth: 1,
+    borderColor: Colors.bgCardBorder,
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 12,
+    zIndex: 50,
   },
   bar: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: Spacing.sm,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
     position: 'relative',
   },
   iconWrap: {
-    width: 44,
-    height: 40,
+    width: 52,
+    height: 48,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -86,27 +110,28 @@ const styles = StyleSheet.create({
   },
   activePill: {
     position: 'absolute',
-    width: 44,
-    height: 40,
+    width: 52,
+    height: 48,
     borderRadius: 14,
     borderWidth: 1.5,
   },
   icon: {
-    fontSize: 22,
     color: Colors.text,
     zIndex: 1,
   },
   label: {
-    fontSize: 11,
+    fontSize: 9,
+    maxWidth: 48,
     color: Colors.textMuted,
     fontWeight: Typography.semiBold,
-    letterSpacing: 0.4,
+    letterSpacing: 0.15,
     textTransform: 'uppercase',
     marginTop: 2,
+    textAlign: 'center',
   },
   activeIndicator: {
     position: 'absolute',
-    bottom: -Spacing.sm,
+    bottom: -Spacing.xs,
     width: 28,
     height: 4,
     borderRadius: 3,
@@ -115,4 +140,5 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
+
 });

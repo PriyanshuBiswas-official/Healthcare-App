@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../theme/theme';
 import { GlassCardView, SectionHeader } from '../components/SharedComponents';
+import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 
 type Message = {
   id: string;
@@ -124,7 +125,9 @@ export default function AIAdvisorScreen() {
             ref={scrollRef}
             style={styles.chatScroll}
             contentContainerStyle={styles.chatContent}
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+            onScroll={useScrollVisibility().onScroll}
+            scrollEventThrottle={16}>
             {messages.map(msg => (
               <View
                 key={msg.id}

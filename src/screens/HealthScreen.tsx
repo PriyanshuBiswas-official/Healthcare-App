@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../theme/theme';
 import { GlassCardView, SectionHeader, Chip, StatPill } from '../components/SharedComponents';
+import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 
 const { width } = Dimensions.get('window');
 
@@ -61,7 +62,7 @@ export default function CycleScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={useScrollVisibility().onScroll} scrollEventThrottle={16}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Cycle Tracker</Text>

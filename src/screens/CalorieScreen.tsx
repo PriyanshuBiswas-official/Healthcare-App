@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../theme/theme';
+import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 import { GlassCardView, SectionHeader, ProgressBar } from '../components/SharedComponents';
 
 const MEALS = [
@@ -60,10 +61,10 @@ export default function CalorieScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={useScrollVisibility().onScroll} scrollEventThrottle={16}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Nutrition</Text>
+          <Text style={styles.title}>Diet</Text>
           <Text style={styles.sub}>Tuesday, June 10</Text>
         </View>
 
