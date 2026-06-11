@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Colors, Typography, Spacing } from '../theme/theme';
 
-export type TabName = 'Dashboard' | 'Cycle' | 'Fitness' | 'Nutrition' | 'AI';
+export type TabName = 'Dashboard' | 'Health' | 'Nutrition' | 'Activity' | 'AI';
 
 interface TabBarProps {
   activeTab: TabName;
@@ -11,9 +11,9 @@ interface TabBarProps {
 
 const TABS: { name: TabName; icon: string; activeColor: string }[] = [
   { name: 'Dashboard', icon: '⬡', activeColor: Colors.teal },
-  { name: 'Cycle', icon: '◎', activeColor: Colors.pink },
-  { name: 'Fitness', icon: '⚡', activeColor: Colors.teal },
+  { name: 'Health', icon: '◎', activeColor: Colors.pink },
   { name: 'Nutrition', icon: '◈', activeColor: Colors.amber },
+  { name: 'Activity', icon: '⚡', activeColor: Colors.teal },
   { name: 'AI', icon: '✦', activeColor: Colors.purple },
 ];
 
@@ -57,10 +57,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingBottom: Platform.OS === 'android' ? Spacing.base : Spacing.xxl,
+    paddingBottom: Platform.OS === 'android' ? Spacing.lg : Spacing.xxl,
     paddingHorizontal: Spacing.base,
     paddingTop: Spacing.sm,
-    backgroundColor: 'rgba(10,11,20,0.96)',
+    backgroundColor: 'rgba(10,11,20,0.98)',
     borderTopWidth: 1,
     borderTopColor: Colors.bgCardBorder,
   },
@@ -72,43 +72,44 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: Spacing.xs,
+    paddingVertical: Spacing.sm,
     position: 'relative',
   },
   iconWrap: {
-    width: 40,
-    height: 34,
-    borderRadius: 12,
+    width: 44,
+    height: 40,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   activePill: {
     position: 'absolute',
-    width: 40,
-    height: 34,
-    borderRadius: 12,
-    borderWidth: 1,
+    width: 44,
+    height: 40,
+    borderRadius: 14,
+    borderWidth: 1.5,
   },
   icon: {
-    fontSize: 18,
-    color: Colors.textMuted,
+    fontSize: 22,
+    color: Colors.text,
     zIndex: 1,
   },
   label: {
-    fontSize: 9,
+    fontSize: 11,
     color: Colors.textMuted,
     fontWeight: Typography.semiBold,
-    letterSpacing: 0.3,
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
+    marginTop: 2,
   },
   activeIndicator: {
     position: 'absolute',
-    bottom: -Spacing.xs,
-    width: 24,
-    height: 3,
-    borderRadius: 2,
+    bottom: -Spacing.sm,
+    width: 28,
+    height: 4,
+    borderRadius: 3,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.9,
     shadowRadius: 6,

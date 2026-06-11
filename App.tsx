@@ -3,7 +3,7 @@ import { View, StatusBar, StyleSheet, SafeAreaView } from 'react-native';
 import { Colors } from './src/theme/theme';
 import TabBar, { TabName } from './src/navigation/TabBar';
 import DashboardScreen from './src/screens/DashboardScreen';
-import CycleScreen from './src/screens/CycleScreen';
+import HealthScreen from './src/screens/HealthScreen';
 import FitnessScreen from './src/screens/FitnessScreen';
 import CalorieScreen from './src/screens/CalorieScreen';
 import AIAdvisorScreen from './src/screens/AIAdvisorScreen';
@@ -14,8 +14,8 @@ export default function App() {
   const renderScreen = () => {
     switch (activeTab) {
       case 'Dashboard': return <DashboardScreen />;
-      case 'Cycle':     return <CycleScreen />;
-      case 'Fitness':   return <FitnessScreen />;
+      case 'Health':     return <HealthScreen />;
+      case 'Activity':   return <FitnessScreen />;
       case 'Nutrition': return <CalorieScreen />;
       case 'AI':        return <AIAdvisorScreen />;
       default:          return <DashboardScreen />;

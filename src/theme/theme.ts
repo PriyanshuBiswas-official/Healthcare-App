@@ -18,6 +18,7 @@ export const Colors = {
   purpleDim: 'rgba(167,139,250,0.15)',
 
   // Text
+  text: '#F0F4FF',
   textPrimary: '#F0F4FF',
   textSecondary: '#8B92B4',
   textMuted: '#4A5070',
