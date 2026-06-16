@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, Shadows } from '../theme/theme';
-import { GlassCardView, SectionHeader, Chip, ProgressBar } from '../components/SharedComponents';
+import { GlassCardView, SectionHeader, Chip, ProgressBar, ProfileAvatarButton } from '../components/SharedComponents';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 
 const WORKOUTS = [
@@ -29,7 +29,8 @@ const WORKOUTS = [
 
 const MUSCLE_GROUPS = ['All', 'Chest', 'Back', 'Legs', 'Arms', 'Core', 'Shoulders'];
 
-export default function FitnessScreen() {
+export default function FitnessScreen({ onProfilePress }: { onProfilePress?: () => void }) {
+  const { onScroll } = useScrollVisibility();
   const [activeFilter, setActiveFilter] = useState('All');
   const [timerRunning, setTimerRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
@@ -62,11 +63,14 @@ export default function FitnessScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={useScrollVisibility().onScroll} scrollEventThrottle={16}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Gym Tracker</Text>
-          <Text style={styles.sub}>Week 3 · Push Day</Text>
+          <View>
+            <Text style={styles.title}>Gym Tracker</Text>
+            <Text style={styles.sub}>Week 3 · Push Day</Text>
+          </View>
+          <ProfileAvatarButton onPress={onProfilePress} />
         </View>
 
         {/* Weekly Streak */}
@@ -190,7 +194,12 @@ export default function FitnessScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
   scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl },
-  header: { marginBottom: Spacing.lg },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
+  },
   title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary, letterSpacing: -0.5 },
   sub: { fontSize: Typography.sm, color: Colors.teal, marginTop: 4, fontWeight: Typography.medium },
   streakCard: { padding: Spacing.base, marginBottom: Spacing.base },

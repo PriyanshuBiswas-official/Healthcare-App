@@ -11,7 +11,7 @@ import {
   Animated,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../theme/theme';
-import { GlassCardView, SectionHeader } from '../components/SharedComponents';
+import { GlassCardView, SectionHeader, ProfileAvatarButton } from '../components/SharedComponents';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 
 type Message = {
@@ -55,14 +55,14 @@ const AI_RESPONSES: Record<string, string> = {
   'Supplement advice': "Based on your cycle phase and activity level, I recommend:\n• Iron: 18mg/day (especially during menstrual phase)\n• Magnesium: 300mg (for sleep & muscle recovery)\n• Vitamin D: 2000 IU (your levels are slightly low)\n• Omega-3: 1g EPA+DHA daily for inflammation 💊",
 };
 
-export default function AIAdvisorScreen() {
+export default function AIAdvisorScreen({ onProfilePress }: { onProfilePress?: () => void }) {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
   const [bookedSlot, setBookedSlot] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'chat'>('overview');
   const [isBookingExpanded, setIsBookingExpanded] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-  const { setForceHidden } = useScrollVisibility();
+  const { setForceHidden, onScroll } = useScrollVisibility();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
@@ -119,19 +119,11 @@ export default function AIAdvisorScreen() {
           </View>
         )}
         
-        {activeTab === 'overview' ? (
-          <TouchableOpacity style={styles.avatar}>
-            <Text style={styles.avatarText}>A</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.aiAvatarSmall}>
-            <Text style={{ fontSize: 16 }}>✦</Text>
-          </View>
-        )}
+        <ProfileAvatarButton onPress={onProfilePress} />
       </View>
 
       {activeTab === 'overview' ? (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={useScrollVisibility().onScroll} scrollEventThrottle={16}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}>
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
             
             {/* Health Summary Card */}
@@ -444,20 +436,6 @@ const styles = StyleSheet.create({
   },
   greeting: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.textPrimary },
   subGreeting: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2 },
-  avatar: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: Colors.teal + '30',
-    borderWidth: 2, borderColor: Colors.teal,
-    alignItems: 'center', justifyContent: 'center',
-    ...Shadows.teal,
-  },
-  avatarText: { fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.teal },
-  aiAvatarSmall: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: Colors.purple + '30',
-    borderWidth: 2, borderColor: Colors.purple,
-    alignItems: 'center', justifyContent: 'center',
-  },
   onlineRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.success, marginRight: 5, shadowColor: Colors.success, shadowRadius: 4, shadowOpacity: 1 },
   onlineText: { fontSize: Typography.xs, color: Colors.textSecondary },

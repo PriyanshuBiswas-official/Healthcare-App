@@ -8,7 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../theme/theme';
-import { GlassCardView, SectionHeader, Chip, StatPill } from '../components/SharedComponents';
+import { GlassCardView, SectionHeader, Chip, StatPill, ProfileAvatarButton } from '../components/SharedComponents';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 
 const { width } = Dimensions.get('window');
@@ -50,7 +50,8 @@ const SYMPTOMS = [
 
 const FLOW_LEVELS = ['None', 'Light', 'Medium', 'Heavy'];
 
-export default function CycleScreen() {
+export default function CycleScreen({ onProfilePress }: { onProfilePress?: () => void }) {
+  const { onScroll } = useScrollVisibility();
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>(['Cramps', 'Fatigue']);
   const [selectedFlow, setSelectedFlow] = useState('Medium');
   const [selectedDay, setSelectedDay] = useState(14);
@@ -62,11 +63,14 @@ export default function CycleScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={useScrollVisibility().onScroll} scrollEventThrottle={16}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Cycle Tracker</Text>
-          <Text style={styles.sub}>Cycle Day 14 · Ovulation Phase</Text>
+          <View>
+            <Text style={styles.title}>Cycle Tracker</Text>
+            <Text style={styles.sub}>Cycle Day 14 · Ovulation Phase</Text>
+          </View>
+          <ProfileAvatarButton onPress={onProfilePress} />
         </View>
 
         {/* Phase Status Banner */}
@@ -203,7 +207,12 @@ export default function CycleScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
   scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl },
-  header: { marginBottom: Spacing.lg },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
+  },
   title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary, letterSpacing: -0.5 },
   sub: { fontSize: Typography.sm, color: Colors.pink, marginTop: 4, fontWeight: Typography.medium },
   phaseBanner: { marginBottom: Spacing.xl },

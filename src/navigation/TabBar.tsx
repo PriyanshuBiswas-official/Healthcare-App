@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Animated } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Colors, Typography, Spacing } from '../theme/theme';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useScrollVisibility } from './ScrollVisibilityContext';
 
-export type TabName = 'Home' | 'Health' | 'Diet' | 'Activity' | 'AI';
+export type TabName = 'Home' | 'Health' | 'Diet' | 'Activity' | 'AI' | 'Profile';
 
 interface TabBarProps {
   activeTab: TabName;
@@ -21,15 +21,14 @@ const TABS: { name: TabName; icon: string; activeColor: string }[] = [
 
 export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
   const { visible } = useScrollVisibility();
-  const anim = React.useRef(new Animated.Value(0)).current; // 0 = visible, 1 = hidden
+  const anim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(anim, { toValue: visible ? 0 : 1, duration: 220, useNativeDriver: true }).start();
-  }, [visible]);
+  }, [visible, anim]);
 
   const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 80] });
   const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.0] });
-  const ICON_SIZE = 28;
   const activeHighlight = Colors.teal;
 
   return (
@@ -137,5 +136,4 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-
 });

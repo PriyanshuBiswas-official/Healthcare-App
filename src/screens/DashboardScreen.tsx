@@ -8,7 +8,7 @@ import {
   Animated,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../theme/theme';
-import { GlassCardView, SectionHeader, CircularRing, StatPill, ProgressBar } from '../components/SharedComponents';
+import { GlassCardView, SectionHeader, CircularRing, StatPill, ProgressBar, ProfileAvatarButton } from '../components/SharedComponents';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 
 
@@ -30,7 +30,8 @@ const UPCOMING = [
   { time: '06:30 PM', title: 'Upper Body Strength', subtitle: 'Chest · Shoulders · Triceps', color: Colors.teal, icon: '💪' },
 ];
 
-export default function DashboardScreen() {
+export default function DashboardScreen({ onProfilePress }: { onProfilePress?: () => void }) {
+  const { onScroll } = useScrollVisibility();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -51,7 +52,7 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={useScrollVisibility().onScroll} scrollEventThrottle={16}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}>
         {/* Header */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <View style={styles.header}>
@@ -59,9 +60,7 @@ export default function DashboardScreen() {
               <Text style={styles.greeting}>Good Morning 👋</Text>
               <Text style={styles.subGreeting}>Here's your health summary</Text>
             </View>
-            <TouchableOpacity style={styles.avatar}>
-              <Text style={styles.avatarText}>A</Text>
-            </TouchableOpacity>
+            <ProfileAvatarButton onPress={onProfilePress} />
           </View>
         </Animated.View>
 
@@ -176,18 +175,6 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 3,
   },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.teal + '30',
-    borderWidth: 2,
-    borderColor: Colors.teal,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.teal,
-  },
-  avatarText: { fontSize: Typography.md, fontWeight: Typography.bold, color: Colors.teal },
   ringsCard: { padding: Spacing.lg, marginBottom: Spacing.base },
   ringsRow: { flexDirection: 'row', justifyContent: 'space-around' },
   aiCard: {

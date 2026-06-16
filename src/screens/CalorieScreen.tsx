@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../theme/theme';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
-import { GlassCardView, SectionHeader, ProgressBar } from '../components/SharedComponents';
+import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton } from '../components/SharedComponents';
 
 const INITIAL_MEALS = [
   {
@@ -68,7 +68,8 @@ const WEEKLY_TREND = [
   { day: 'S', val: 1600, today: true },
 ];
 
-export default function CalorieScreen() {
+export default function CalorieScreen({ onProfilePress }: { onProfilePress?: () => void }) {
+  const { onScroll } = useScrollVisibility();
   const [mealsState, setMealsState] = useState(INITIAL_MEALS);
   const [calorieGoal, setCalorieGoal] = useState(2500);
   const [isEditingGoal, setIsEditingGoal] = useState(false);
@@ -93,11 +94,14 @@ export default function CalorieScreen() {
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={useScrollVisibility().onScroll} scrollEventThrottle={16}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Diet</Text>
-          <Text style={styles.sub}>Tuesday, June 10</Text>
+          <View>
+            <Text style={styles.title}>Diet</Text>
+            <Text style={styles.sub}>Tuesday, June 10</Text>
+          </View>
+          <ProfileAvatarButton onPress={onProfilePress} />
         </View>
 
         {/* AI Nutrition Insight */}
@@ -343,7 +347,12 @@ export default function CalorieScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
   scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl },
-  header: { marginBottom: Spacing.lg },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
+  },
   title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary, letterSpacing: -0.5 },
   sub: { fontSize: Typography.sm, color: Colors.amber, marginTop: 4, fontWeight: Typography.medium },
   

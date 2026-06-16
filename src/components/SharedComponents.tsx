@@ -30,6 +30,13 @@ export const GlassCardView: React.FC<GlassCardProps> = ({
   </View>
 );
 
+// ─── Profile Avatar Button ───────────────────────────────────────────────────
+export const ProfileAvatarButton: React.FC<{ onPress?: () => void }> = ({ onPress }) => (
+  <TouchableOpacity style={profileAvatarStyles.avatar} onPress={onPress} activeOpacity={0.8}>
+    <Text style={profileAvatarStyles.avatarText}>A</Text>
+  </TouchableOpacity>
+);
+
 // ─── Section Header ──────────────────────────────────────────────────────────
 interface SectionHeaderProps {
   title: string;
@@ -323,6 +330,25 @@ const chipStyles = StyleSheet.create({
   icon: {
     fontSize: 13,
     marginRight: 4,
+  },
+});
+
+const profileAvatarStyles = StyleSheet.create({
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.teal + '30',
+    borderWidth: 2,
+    borderColor: Colors.teal,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.teal,
+  },
+  avatarText: {
+    fontSize: Typography.md,
+    fontWeight: Typography.bold,
+    color: Colors.teal,
   },
 });
 
