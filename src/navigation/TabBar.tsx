@@ -30,6 +30,7 @@ export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
   const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 80] });
   const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.0] });
   const ICON_SIZE = 28;
+  const activeHighlight = Colors.teal;
 
   return (
     <Animated.View style={[styles.container, styles.floating, { transform: [{ translateY }], opacity }]}> 
@@ -41,18 +42,19 @@ export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
               key={tab.name}
               style={styles.tab}
               onPress={() => onTabChange(tab.name)}
-              activeOpacity={0.8}>
-              <View style={[styles.iconWrap, isActive && { backgroundColor: tab.activeColor + '22' }]}>
-                {isActive && (
-                  <View style={[styles.activePill, { backgroundColor: tab.activeColor + '30', borderColor: tab.activeColor }]} />
-                )}
-                
-                  <MaterialCommunityIcons name={tab.icon} size={ICON_SIZE} color={isActive ? tab.activeColor : Colors.text} style={[styles.icon, isActive && { color: tab.activeColor }]} />
-              
+              activeOpacity={0.8}
+              accessibilityLabel={tab.name}
+              accessibilityState={{ selected: isActive }}>
+              <View style={styles.iconWrap}>
+                <MaterialCommunityIcons
+                  name={tab.icon}
+                  size={34}
+                  color={isActive ? activeHighlight : Colors.text}
+                  style={styles.icon}
+                />
               </View>
-              <Text style={[styles.label, isActive && { color: tab.activeColor }]} numberOfLines={1} ellipsizeMode="tail">{tab.name}</Text>
               {isActive && (
-                <View style={[styles.activeIndicator, { backgroundColor: tab.activeColor, shadowColor: tab.activeColor }]} />
+                <View style={[styles.activeIndicator, { backgroundColor: activeHighlight, shadowColor: activeHighlight }]} />
               )}
             </TouchableOpacity>
           );
@@ -73,10 +75,10 @@ const styles = StyleSheet.create({
   },
   floating: {
     alignSelf: 'center',
-    width: '94%',
-    borderRadius: 18,
+    width: '96%',
+    borderRadius: 28,
     paddingVertical: Spacing.xs,
-    backgroundColor: 'rgba(10,11,20,0.96)',
+    backgroundColor: 'rgba(12, 16, 30, 0.92)',
     borderWidth: 1,
     borderColor: Colors.bgCardBorder,
     shadowColor: '#000',
@@ -102,21 +104,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   iconWrap: {
-    width: 52,
-    height: 48,
-    borderRadius: 15,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    marginBottom: 4,
-  },
-  activePill: {
-    position: 'absolute',
-    width: 52,
-    height: 48,
-    borderRadius: 15,
-    borderWidth: 1.5,
+    marginBottom: 2,
   },
   icon: {
     color: Colors.text,
@@ -133,15 +128,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   activeIndicator: {
-    position: 'absolute',
-    bottom: -Spacing.xs,
-    width: 28,
-    height: 4,
-    borderRadius: 3,
+    width: 24,
+    height: 2,
+    borderRadius: 1,
+    marginTop: 2,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.9,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
 });
