@@ -33,7 +33,7 @@ export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
   const activeHighlight = Colors.teal;
 
   return (
-    <Animated.View style={[styles.container, styles.floating, { transform: [{ translateY }], opacity }]}> 
+    <Animated.View style={[styles.container, styles.floating, { transform: [{ translateY }], opacity }]}>
       <View style={styles.bar}>
         {TABS.map(tab => {
           const isActive = activeTab === tab.name;
