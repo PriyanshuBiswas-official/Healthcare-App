@@ -16,10 +16,10 @@ export default function App() {
     switch (activeTab) {
       case 'Home': return <DashboardScreen />;
       case 'Health':     return <HealthScreen />;
+      case 'AI':         return <AIAdvisorScreen />;
       case 'Activity':   return <FitnessScreen />;
-      case 'Diet': return <CalorieScreen />;
-      case 'AI':        return <AIAdvisorScreen />;
-      default:          return <DashboardScreen />;
+      case 'Diet':       return <CalorieScreen />;
+      default:           return <DashboardScreen />;
     }
   };
 

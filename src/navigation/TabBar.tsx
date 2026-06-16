@@ -14,9 +14,9 @@ interface TabBarProps {
 const TABS: { name: TabName; icon: string; activeColor: string }[] = [
   { name: 'Home', icon: 'home', activeColor: Colors.teal },
   { name: 'Health', icon: 'stethoscope', activeColor: Colors.pink },
-  { name: 'Nutrition', icon: 'silverware-fork-knife', activeColor: Colors.amber },
-  { name: 'Activity', icon: 'run-fast', activeColor: Colors.teal },
   { name: 'AI', icon: 'robot', activeColor: Colors.purple },
+  { name: 'Diet', icon: 'silverware-fork-knife', activeColor: Colors.amber },
+  { name: 'Activity', icon: 'run-fast', activeColor: Colors.teal },
 ];
 
 export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
@@ -98,11 +98,14 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
     paddingHorizontal: Spacing.sm,
     position: 'relative',
+    borderRadius: 14,
+    overflow: 'hidden',
   },
   iconWrap: {
     width: 52,
     height: 48,
-    borderRadius: 14,
+    borderRadius: 15,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -112,7 +115,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 52,
     height: 48,
-    borderRadius: 14,
+    borderRadius: 15,
     borderWidth: 1.5,
   },
   icon: {
