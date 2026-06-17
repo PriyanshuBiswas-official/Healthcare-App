@@ -11,6 +11,7 @@ import {
 import { Colors, Typography, Spacing, Radius, Shadows } from '../theme/theme';
 import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton } from '../components/SharedComponents';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
+import { TabName } from '../navigation/TabBar';
 
 const { width } = Dimensions.get('window');
 
@@ -233,42 +234,19 @@ function TodaysWorkout({
   );
 }
 
-function AITrainerCard() {
-  const [query, setQuery] = useState('');
+function AITrainerCard({ onOpenAI }: { onOpenAI?: () => void }) {
   return (
     <GlassCardView style={styles.card} accentColor={Colors.purple}>
-      <SectionLabel title="AI TRAINER" />
-      <View style={styles.coachRow}>
-        <View style={styles.coachAvatar}>
-          <Text style={{ fontSize: 20 }}>✦</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.coachName}>Coach Aria</Text>
-          <Text style={styles.coachSub}>Your AI personal trainer</Text>
-        </View>
-      </View>
-      {AI_MESSAGES.map((msg, i) => (
-        <View key={i} style={[styles.aiBubble, { backgroundColor: msg.color + '18', borderColor: msg.color + '35' }]}>
-          <Text style={styles.aiBubbleText}>{msg.text}</Text>
-        </View>
-      ))}
-      <View style={styles.aiActionsRow}>
-        {['Log rest time', 'Swap exercise', 'Adjust weight'].map(action => (
-          <TouchableOpacity key={action} style={styles.aiActionPill} activeOpacity={0.8}>
-            <Text style={styles.aiActionText}>{action}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <View style={styles.aiInputRow}>
-        <TextInput
-          style={styles.aiInput}
-          placeholder="Ask Coach Aria..."
-          placeholderTextColor={Colors.textMuted}
-          value={query}
-          onChangeText={setQuery}
-        />
-        <TouchableOpacity style={styles.aiSendBtn} activeOpacity={0.8}>
-          <Text style={styles.aiSendIcon}>↑</Text>
+      <SectionLabel title="Ask AI about your workout" />
+      <View style={{ paddingVertical: Spacing.sm }}>
+        <Text style={{ color: Colors.textSecondary, marginBottom: Spacing.sm }}>
+          Get quick tips, workout swaps, or recovery advice from AI.
+        </Text>
+        <TouchableOpacity
+          style={{ backgroundColor: Colors.purple, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, borderRadius: Radius.md, alignSelf: 'stretch', width: '100%', alignItems: 'center', justifyContent: 'center' }}
+          onPress={() => onOpenAI && onOpenAI('Activity')}
+          activeOpacity={0.9}>
+          <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Ask AI</Text>
         </TouchableOpacity>
       </View>
     </GlassCardView>
@@ -379,7 +357,7 @@ function RecoveryCard() {
   );
 }
 
-export default function FitnessScreen({ onProfilePress }: { onProfilePress?: () => void }) {
+export default function FitnessScreen({ onProfilePress, onOpenAI }: { onProfilePress?: () => void; onOpenAI?: (from?: TabName) => void }) {
   const { onScroll } = useScrollVisibility();
   const [activeSegment, setActiveSegment] = useState<Segment>('Today');
   const [activeFilter, setActiveFilter] = useState('All');
@@ -421,7 +399,7 @@ export default function FitnessScreen({ onProfilePress }: { onProfilePress?: () 
 
         {showToday && (
           <View style={styles.section}>
-            <AITrainerCard />
+            <AITrainerCard onOpenAI={() => onOpenAI && onOpenAI('Activity')} />
           </View>
         )}
 

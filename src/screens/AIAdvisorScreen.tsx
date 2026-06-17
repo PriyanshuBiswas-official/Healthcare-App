@@ -8,11 +8,13 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  BackHandler,
   Animated,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../theme/theme';
 import { GlassCardView, SectionHeader, ProfileAvatarButton } from '../components/SharedComponents';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
+import { TabName } from '../navigation/TabBar';
 
 type Message = {
   id: string;
@@ -55,7 +57,7 @@ const AI_RESPONSES: Record<string, string> = {
   'Supplement advice': "Based on your cycle phase and activity level, I recommend:\n• Iron: 18mg/day (especially during menstrual phase)\n• Magnesium: 300mg (for sleep & muscle recovery)\n• Vitamin D: 2000 IU (your levels are slightly low)\n• Omega-3: 1g EPA+DHA daily for inflammation 💊",
 };
 
-export default function AIAdvisorScreen({ onProfilePress }: { onProfilePress?: () => void }) {
+export default function AIAdvisorScreen({ onProfilePress, startInChat, originTab, navigateToTab }: { onProfilePress?: () => void; startInChat?: boolean; originTab?: TabName; navigateToTab?: (tab: TabName) => void }) {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
   const [bookedSlot, setBookedSlot] = useState<string | null>(null);
@@ -79,6 +81,26 @@ export default function AIAdvisorScreen({ onProfilePress }: { onProfilePress?: (
     return () => setForceHidden(false);
   }, [activeTab, setForceHidden, fadeAnim, slideAnim]);
 
+  useEffect(() => {
+    if (startInChat) setActiveTab('chat');
+  }, [startInChat]);
+
+  useEffect(() => {
+    const onBack = () => {
+      if (activeTab === 'chat') {
+        if (navigateToTab && originTab) {
+          navigateToTab(originTab);
+        } else {
+          setActiveTab('overview');
+        }
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
+    return () => sub.remove();
+  }, [activeTab, navigateToTab, originTab]);
+
   const sendMessage = (text: string) => {
     if (!text.trim()) return;
     const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -99,7 +121,12 @@ export default function AIAdvisorScreen({ onProfilePress }: { onProfilePress?: (
       {/* Header */}
       <View style={styles.header}>
         {activeTab === 'chat' && (
-          <TouchableOpacity onPress={() => setActiveTab('overview')} style={styles.backBtn}>
+          <TouchableOpacity
+            onPress={() => {
+              if (navigateToTab && originTab) navigateToTab(originTab);
+              else setActiveTab('overview');
+            }}
+            style={styles.backBtn}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
         )}
