@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, StatusBar, StyleSheet, SafeAreaView, BackHandler } from 'react-native';
 import { Colors } from './src/theme/theme';
 import TabBar, { TabName } from './src/navigation/TabBar';
@@ -10,22 +10,26 @@ import CalorieScreen from './src/screens/CalorieScreen';
 import AIAdvisorScreen from './src/screens/AIAdvisorScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 
+const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
+
 function AppShell() {
   const [activeTab, setActiveTab] = useState<TabName>('Home');
   const [previousTab, setPreviousTab] = useState<TabName>('Home');
   const { setForceHidden } = useScrollVisibility();
   const [aiStartInChat, setAiStartInChat] = useState(false);
   const [aiOrigin, setAiOrigin] = useState<TabName | null>(null);
+  const mountedTabs = useRef<Set<TabName>>(new Set(['Home']));
 
   const openAI = (fromTab?: TabName, startInChat = true) => {
     if (activeTab !== 'AI') setPreviousTab(activeTab);
     setAiOrigin(fromTab ?? activeTab);
     setAiStartInChat(startInChat);
+    mountedTabs.current.add('AI');
     setActiveTab('AI');
   };
 
   const handleTabChange = (tab: TabName) => {
-    // If user taps the AI tab directly, ensure it opens in overview mode
+    mountedTabs.current.add(tab);
     if (tab === 'AI') {
       setAiStartInChat(false);
       setAiOrigin(null);
@@ -58,22 +62,35 @@ function AppShell() {
     setActiveTab('Profile');
   };
 
-  const renderScreen = () => {
-    switch (activeTab) {
-      case 'Home': return <DashboardScreen onProfilePress={openProfile} />;
-      case 'Health': return <HealthScreen onProfilePress={openProfile} />;
-      case 'AI': return <AIAdvisorScreen onProfilePress={openProfile} startInChat={aiStartInChat} originTab={aiOrigin ?? undefined} navigateToTab={(t: TabName) => setActiveTab(t)} />;
-      case 'Activity': return <FitnessScreen onProfilePress={openProfile} onOpenAI={(from?: TabName) => openAI(from)} />;
-      case 'Diet': return <CalorieScreen onProfilePress={openProfile} />;
-      case 'Profile': return <ProfileScreen onBackPress={() => setActiveTab(previousTab)} />;
-      default: return <DashboardScreen onProfilePress={openProfile} />;
-    }
-  };
-
   return (
     <>
       <View style={styles.screenContainer}>
-        {renderScreen()}
+        {MAIN_TABS.map(tab => (
+          mountedTabs.current.has(tab) && (
+            <View
+              key={tab}
+              style={[styles.screenWrapper, activeTab !== tab && styles.screenHidden]}>
+              {tab === 'Home' && <DashboardScreen onProfilePress={openProfile} />}
+              {tab === 'Health' && <HealthScreen onProfilePress={openProfile} />}
+              {tab === 'AI' && (
+                <AIAdvisorScreen
+                  onProfilePress={openProfile}
+                  startInChat={aiStartInChat}
+                  originTab={aiOrigin ?? undefined}
+                  navigateToTab={(t: TabName) => setActiveTab(t)}
+                  isTabActive={activeTab === 'AI'}
+                />
+              )}
+              {tab === 'Activity' && <FitnessScreen onProfilePress={openProfile} onOpenAI={(from?: TabName) => openAI(from)} />}
+              {tab === 'Diet' && <CalorieScreen onProfilePress={openProfile} />}
+            </View>
+          )
+        ))}
+        {activeTab === 'Profile' && (
+          <View style={styles.screenWrapper}>
+            <ProfileScreen onBackPress={() => setActiveTab(previousTab)} />
+          </View>
+        )}
       </View>
       <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
     </>
@@ -108,5 +125,11 @@ const styles = StyleSheet.create({
   },
   screenContainer: {
     flex: 1,
+  },
+  screenWrapper: {
+    flex: 1,
+  },
+  screenHidden: {
+    display: 'none',
   },
 });

@@ -23,7 +23,7 @@ const APPOINTMENT_SLOTS = [
   { time: '4:00 PM', date: 'Fri, Jun 13', doctor: 'Dr. Arun Pillai', spec: 'Nutritionist', available: true },
 ];
 
-export default function AIAdvisorScreen({ onProfilePress, startInChat, originTab, navigateToTab }: { onProfilePress?: () => void; startInChat?: boolean; originTab?: TabName; navigateToTab?: (tab: TabName) => void }) {
+export default function AIAdvisorScreen({ onProfilePress, startInChat, originTab, navigateToTab, isTabActive }: { onProfilePress?: () => void; startInChat?: boolean; originTab?: TabName; navigateToTab?: (tab: TabName) => void; isTabActive?: boolean }) {
   const { messages, input, setInput, sendMessage, scrollRef } = useChatState();
   const [bookedSlot, setBookedSlot] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'chat'>('overview');
@@ -48,6 +48,12 @@ export default function AIAdvisorScreen({ onProfilePress, startInChat, originTab
   useEffect(() => {
     if (startInChat) setActiveTab('chat');
   }, [startInChat]);
+
+  useEffect(() => {
+    if (!isTabActive) {
+      setForceHidden(false);
+    }
+  }, [isTabActive, setForceHidden]);
 
   useEffect(() => {
     const onBack = () => {
