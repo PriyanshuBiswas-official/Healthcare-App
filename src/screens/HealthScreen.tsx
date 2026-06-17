@@ -8,7 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../theme/theme';
-import { GlassCardView, SectionHeader, Chip, StatPill, ProfileAvatarButton } from '../components/SharedComponents';
+import { GlassCardView, SectionHeader, Chip, StatPill, ProfileAvatarButton, NotificationIconButton } from '../components/SharedComponents';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 
 const { width } = Dimensions.get('window');
@@ -50,7 +50,7 @@ const SYMPTOMS = [
 
 const FLOW_LEVELS = ['None', 'Light', 'Medium', 'Heavy'];
 
-export default function CycleScreen({ onProfilePress }: { onProfilePress?: () => void }) {
+export default function CycleScreen({ onProfilePress, onNotificationsPress }: { onProfilePress?: () => void; onNotificationsPress?: () => void }) {
   const { onScroll } = useScrollVisibility();
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>(['Cramps', 'Fatigue']);
   const [selectedFlow, setSelectedFlow] = useState('Medium');
@@ -70,7 +70,10 @@ export default function CycleScreen({ onProfilePress }: { onProfilePress?: () =>
             <Text style={styles.title}>Cycle Tracker</Text>
             <Text style={styles.sub}>Cycle Day 14 · Ovulation Phase</Text>
           </View>
-          <ProfileAvatarButton onPress={onProfilePress} />
+          <View style={styles.headerActions}>
+            <NotificationIconButton onPress={onNotificationsPress} />
+            <ProfileAvatarButton onPress={onProfilePress} />
+          </View>
         </View>
 
         {/* Phase Status Banner */}
@@ -215,6 +218,11 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary, letterSpacing: -0.5 },
   sub: { fontSize: Typography.sm, color: Colors.pink, marginTop: 4, fontWeight: Typography.medium },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
   phaseBanner: { marginBottom: Spacing.xl },
   phaseIndicator: {
     flexDirection: 'row',

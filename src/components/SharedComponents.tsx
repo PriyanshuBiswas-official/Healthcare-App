@@ -37,6 +37,21 @@ export const ProfileAvatarButton: React.FC<{ onPress?: () => void }> = ({ onPres
   </TouchableOpacity>
 );
 
+// ─── Notification Icon Button ────────────────────────────────────────────────
+export const NotificationIconButton: React.FC<{ onPress?: () => void; unreadCount?: number }> = ({
+  onPress,
+  unreadCount = 0,
+}) => (
+  <TouchableOpacity style={notifIconStyles.btn} onPress={onPress} activeOpacity={0.8}>
+    <Text style={notifIconStyles.bell}>🔔</Text>
+    {unreadCount > 0 && (
+      <View style={notifIconStyles.badge}>
+        <Text style={notifIconStyles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+      </View>
+    )}
+  </TouchableOpacity>
+);
+
 // ─── Section Header ──────────────────────────────────────────────────────────
 interface SectionHeaderProps {
   title: string;
@@ -349,6 +364,41 @@ const profileAvatarStyles = StyleSheet.create({
     fontSize: Typography.md,
     fontWeight: Typography.bold,
     color: Colors.teal,
+  },
+});
+
+const notifIconStyles = StyleSheet.create({
+  btn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.purple + '20',
+    borderWidth: 1,
+    borderColor: Colors.purple + '50',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bell: {
+    fontSize: 18,
+  },
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: Colors.pink,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: Colors.bg,
+  },
+  badgeText: {
+    fontSize: 9,
+    fontWeight: Typography.bold,
+    color: Colors.bg,
   },
 });
 

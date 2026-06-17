@@ -8,7 +8,7 @@ import {
   Animated,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../theme/theme';
-import { GlassCardView, SectionHeader, CircularRing, StatPill, ProgressBar, ProfileAvatarButton } from '../components/SharedComponents';
+import { GlassCardView, SectionHeader, CircularRing, StatPill, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../components/SharedComponents';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 
 
@@ -30,7 +30,7 @@ const UPCOMING = [
   { time: '06:30 PM', title: 'Upper Body Strength', subtitle: 'Chest · Shoulders · Triceps', color: Colors.teal, icon: '💪' },
 ];
 
-export default function DashboardScreen({ onProfilePress }: { onProfilePress?: () => void }) {
+export default function DashboardScreen({ onProfilePress, onNotificationsPress }: { onProfilePress?: () => void; onNotificationsPress?: () => void }) {
   const { onScroll } = useScrollVisibility();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -55,12 +55,15 @@ export default function DashboardScreen({ onProfilePress }: { onProfilePress?: (
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}>
         {/* Header */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <View style={styles.header}>
+            <View style={styles.header}>
             <View>
               <Text style={styles.greeting}>Good Morning 👋</Text>
               <Text style={styles.subGreeting}>Here's your health summary</Text>
             </View>
-            <ProfileAvatarButton onPress={onProfilePress} />
+            <View style={styles.headerActions}>
+              <NotificationIconButton onPress={onNotificationsPress} />
+              <ProfileAvatarButton onPress={onProfilePress} />
+            </View>
           </View>
         </Animated.View>
 
@@ -174,6 +177,11 @@ const styles = StyleSheet.create({
     fontSize: Typography.sm,
     color: Colors.textSecondary,
     marginTop: 3,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
   ringsCard: { padding: Spacing.lg, marginBottom: Spacing.base },
   ringsRow: { flexDirection: 'row', justifyContent: 'space-around' },

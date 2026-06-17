@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../theme/theme';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
-import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton } from '../components/SharedComponents';
+import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../components/SharedComponents';
 
 const INITIAL_MEALS = [
   {
@@ -68,7 +68,7 @@ const WEEKLY_TREND = [
   { day: 'S', val: 1600, today: true },
 ];
 
-export default function CalorieScreen({ onProfilePress }: { onProfilePress?: () => void }) {
+export default function CalorieScreen({ onProfilePress, onNotificationsPress }: { onProfilePress?: () => void; onNotificationsPress?: () => void }) {
   const { onScroll } = useScrollVisibility();
   const [mealsState, setMealsState] = useState(INITIAL_MEALS);
   const [calorieGoal, setCalorieGoal] = useState(2500);
@@ -101,7 +101,10 @@ export default function CalorieScreen({ onProfilePress }: { onProfilePress?: () 
             <Text style={styles.title}>Diet</Text>
             <Text style={styles.sub}>Tuesday, June 10</Text>
           </View>
-          <ProfileAvatarButton onPress={onProfilePress} />
+          <View style={styles.headerActions}>
+            <NotificationIconButton onPress={onNotificationsPress} />
+            <ProfileAvatarButton onPress={onProfilePress} />
+          </View>
         </View>
 
         {/* AI Nutrition Insight */}
@@ -355,6 +358,11 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary, letterSpacing: -0.5 },
   sub: { fontSize: Typography.sm, color: Colors.amber, marginTop: 4, fontWeight: Typography.medium },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
   
   aiCard: { padding: Spacing.base, marginBottom: Spacing.lg },
   iconWrapSm: { alignItems: 'center', justifyContent: 'center' },

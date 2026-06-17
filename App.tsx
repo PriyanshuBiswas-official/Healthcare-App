@@ -9,6 +9,7 @@ import FitnessScreen from './src/screens/FitnessScreen';
 import CalorieScreen from './src/screens/CalorieScreen';
 import AIAdvisorScreen from './src/screens/AIAdvisorScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import NotificationsScreen from './src/screens/NotificationsScreen';
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
 
@@ -40,14 +41,14 @@ function AppShell() {
   };
 
   useEffect(() => {
-    if (activeTab !== 'Profile') return;
+    if (activeTab !== 'Profile' && activeTab !== 'Notifications') return;
     setForceHidden(true);
     return () => setForceHidden(false);
   }, [activeTab, setForceHidden]);
 
   useEffect(() => {
     const onBack = () => {
-      if (activeTab === 'Profile') {
+      if (activeTab === 'Profile' || activeTab === 'Notifications') {
         setActiveTab(previousTab);
         return true;
       }
@@ -62,6 +63,11 @@ function AppShell() {
     setActiveTab('Profile');
   };
 
+  const openNotifications = () => {
+    if (activeTab !== 'Notifications') setPreviousTab(activeTab);
+    setActiveTab('Notifications');
+  };
+
   return (
     <>
       <View style={styles.screenContainer}>
@@ -70,25 +76,31 @@ function AppShell() {
             <View
               key={tab}
               style={[styles.screenWrapper, activeTab !== tab && styles.screenHidden]}>
-              {tab === 'Home' && <DashboardScreen onProfilePress={openProfile} />}
-              {tab === 'Health' && <HealthScreen onProfilePress={openProfile} />}
+              {tab === 'Home' && <DashboardScreen onProfilePress={openProfile} onNotificationsPress={openNotifications} />}
+              {tab === 'Health' && <HealthScreen onProfilePress={openProfile} onNotificationsPress={openNotifications} />}
               {tab === 'AI' && (
                 <AIAdvisorScreen
                   onProfilePress={openProfile}
+                  onNotificationsPress={openNotifications}
                   startInChat={aiStartInChat}
                   originTab={aiOrigin ?? undefined}
                   navigateToTab={(t: TabName) => setActiveTab(t)}
                   isTabActive={activeTab === 'AI'}
                 />
               )}
-              {tab === 'Activity' && <FitnessScreen onProfilePress={openProfile} onOpenAI={(from?: TabName) => openAI(from)} />}
-              {tab === 'Diet' && <CalorieScreen onProfilePress={openProfile} />}
+              {tab === 'Activity' && <FitnessScreen onProfilePress={openProfile} onNotificationsPress={openNotifications} onOpenAI={(from?: TabName) => openAI(from)} />}
+              {tab === 'Diet' && <CalorieScreen onProfilePress={openProfile} onNotificationsPress={openNotifications} />}
             </View>
           )
         ))}
         {activeTab === 'Profile' && (
           <View style={styles.screenWrapper}>
             <ProfileScreen onBackPress={() => setActiveTab(previousTab)} />
+          </View>
+        )}
+        {activeTab === 'Notifications' && (
+          <View style={styles.screenWrapper}>
+            <NotificationsScreen onBackPress={() => setActiveTab(previousTab)} />
           </View>
         )}
       </View>

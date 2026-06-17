@@ -11,7 +11,7 @@ import {
   Animated,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../theme/theme';
-import { GlassCardView, SectionHeader, ProfileAvatarButton } from '../components/SharedComponents';
+import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton } from '../components/SharedComponents';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 import { TabName } from '../navigation/TabBar';
 import AIChatView, { useChatState } from './AIChatView';
@@ -23,7 +23,7 @@ const APPOINTMENT_SLOTS = [
   { time: '4:00 PM', date: 'Fri, Jun 13', doctor: 'Dr. Arun Pillai', spec: 'Nutritionist', available: true },
 ];
 
-export default function AIAdvisorScreen({ onProfilePress, startInChat, originTab, navigateToTab, isTabActive }: { onProfilePress?: () => void; startInChat?: boolean; originTab?: TabName; navigateToTab?: (tab: TabName) => void; isTabActive?: boolean }) {
+export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, startInChat, originTab, navigateToTab, isTabActive }: { onProfilePress?: () => void; onNotificationsPress?: () => void; startInChat?: boolean; originTab?: TabName; navigateToTab?: (tab: TabName) => void; isTabActive?: boolean }) {
   const { messages, input, setInput, sendMessage, scrollRef } = useChatState();
   const [bookedSlot, setBookedSlot] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'chat'>('overview');
@@ -105,7 +105,10 @@ export default function AIAdvisorScreen({ onProfilePress, startInChat, originTab
           </View>
         )}
         
-        <ProfileAvatarButton onPress={onProfilePress} />
+        <View style={styles.headerActions}>
+          <NotificationIconButton onPress={onNotificationsPress} />
+          <ProfileAvatarButton onPress={onProfilePress} />
+        </View>
       </View>
 
       {activeTab === 'overview' ? (
@@ -370,6 +373,11 @@ const styles = StyleSheet.create({
   onlineRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.success, marginRight: 5, shadowColor: Colors.success, shadowRadius: 4, shadowOpacity: 1 },
   onlineText: { fontSize: Typography.xs, color: Colors.textSecondary },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
   
   scroll: { padding: Spacing.base },
   

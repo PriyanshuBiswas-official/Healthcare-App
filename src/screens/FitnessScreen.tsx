@@ -9,7 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, Shadows } from '../theme/theme';
-import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton } from '../components/SharedComponents';
+import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../components/SharedComponents';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 import { TabName } from '../navigation/TabBar';
 
@@ -357,7 +357,7 @@ function RecoveryCard() {
   );
 }
 
-export default function FitnessScreen({ onProfilePress, onOpenAI }: { onProfilePress?: () => void; onOpenAI?: (from?: TabName) => void }) {
+export default function FitnessScreen({ onProfilePress, onNotificationsPress, onOpenAI }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void }) {
   const { onScroll } = useScrollVisibility();
   const [activeSegment, setActiveSegment] = useState<Segment>('Today');
   const [activeFilter, setActiveFilter] = useState('All');
@@ -380,9 +380,7 @@ export default function FitnessScreen({ onProfilePress, onOpenAI }: { onProfileP
             <Text style={styles.title}>Activity & Gym</Text>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.bellBtn} activeOpacity={0.8}>
-              <Text style={styles.bellIcon}>🔔</Text>
-            </TouchableOpacity>
+            <NotificationIconButton onPress={onNotificationsPress} />
             <ProfileAvatarButton onPress={onProfilePress} />
           </View>
         </View>
@@ -455,17 +453,6 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     letterSpacing: -0.5,
   },
-  bellBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bellIcon: { fontSize: 16 },
   segmented: {
     flexDirection: 'row',
     backgroundColor: Colors.bgCard,
