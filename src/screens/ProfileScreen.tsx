@@ -10,6 +10,8 @@ import {
 import { Colors, Typography, Spacing, Radius, Shadows } from '../theme/theme';
 import { GlassCardView, SectionHeader, StatPill } from '../components/SharedComponents';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../providers/AuthProvider';
 
 type MenuItem = {
   icon: string;
@@ -109,12 +111,17 @@ function ToggleRow({
 
 export default function ProfileScreen({ onBackPress }: { onBackPress?: () => void }) {
   const { onScroll } = useScrollVisibility();
+  const { user } = useAuth();
   const [toggles, setToggles] = useState(
     Object.fromEntries(PREFERENCES.map(p => [p.key, p.default])) as Record<string, boolean>,
   );
 
   const setToggle = (key: string, value: boolean) =>
     setToggles(prev => ({ ...prev, [key]: value }));
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
   return (
     <View style={styles.root}>
@@ -146,8 +153,8 @@ export default function ProfileScreen({ onBackPress }: { onBackPress?: () => voi
               </View>
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.name}>Ananya Sharma</Text>
-              <Text style={styles.email}>ananya.sharma@email.com</Text>
+              <Text style={styles.name}>{user?.email ? user.email.split('@')[0] : 'User'}</Text>
+              <Text style={styles.email}>{user?.email ?? 'user@email.com'}</Text>
               <View style={styles.memberBadge}>
                 <Text style={styles.memberBadgeText}>Premium Member</Text>
               </View>
@@ -212,7 +219,7 @@ export default function ProfileScreen({ onBackPress }: { onBackPress?: () => voi
           ))}
         </GlassCardView>
 
-        <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8} onPress={handleLogout}>
           <Text style={styles.logoutIcon}>⏻</Text>
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>

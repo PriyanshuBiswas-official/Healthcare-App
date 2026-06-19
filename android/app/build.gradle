@@ -79,7 +79,7 @@ android {
 
     namespace "com.healthapp"
     defaultConfig {
-        applicationId "com.healthapp"
+        applicationId "com.healthapp.ai"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -119,4 +119,6 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    implementation("com.google.android.gms:play-services-auth:21.3.0")
 }

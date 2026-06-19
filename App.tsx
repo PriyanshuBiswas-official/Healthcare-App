@@ -109,20 +109,51 @@ function AppShell() {
   );
 }
 
+import { AuthProvider, useAuth } from './src/providers/AuthProvider';
+import { NavigationContainer } from '@react-navigation/native';
+import { AuthStack } from './src/navigation/AuthStack';
+import { ActivityIndicator } from 'react-native';
+
+const RootComponent = () => {
+  const { session, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
+  if (!session?.user) {
+    return (
+      <NavigationContainer>
+        <AuthStack />
+      </NavigationContainer>
+    );
+  }
+
+  return (
+    <ScrollVisibilityProvider>
+      <AppShell />
+    </ScrollVisibilityProvider>
+  );
+};
+
 export default function App() {
   return (
-    <View style={styles.root}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={Colors.bg}
-        translucent={false}
-      />
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollVisibilityProvider>
-          <AppShell />
-        </ScrollVisibilityProvider>
-      </SafeAreaView>
-    </View>
+    <AuthProvider>
+      <View style={styles.root}>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={Colors.bg}
+          translucent={false}
+        />
+        <SafeAreaView style={styles.safeArea}>
+          <RootComponent />
+        </SafeAreaView>
+      </View>
+    </AuthProvider>
   );
 }
 
