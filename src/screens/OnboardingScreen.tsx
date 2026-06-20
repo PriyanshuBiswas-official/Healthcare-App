@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, SafeAreaView, ActivityIndicator, StatusBar, TouchableOpacity } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+import WelcomeStep from './onboarding/WelcomeStep';
+import FeaturesStep from './onboarding/FeaturesStep';
+import PersonalizationStep from './onboarding/PersonalizationStep';
+import BasicProfileStep from './onboarding/BasicProfileStep';
+import MeetAssistantStep from './onboarding/MeetAssistantStep';
+import PermissionsStep from './onboarding/PermissionsStep';
+import GoalSetupStep from './onboarding/GoalSetupStep';
 
 type AuthStackParamList = {
   Onboarding: undefined;
@@ -12,57 +21,117 @@ type AuthStackParamList = {
 
 type OnboardingScreenProp = NativeStackNavigationProp<AuthStackParamList, 'Onboarding'>;
 
+const TOTAL_STEPS = 8; // 0 to 7
+
 const OnboardingScreen = () => {
   const navigation = useNavigation<OnboardingScreenProp>();
-  const [isChecking, setIsChecking] = useState(true);
+  const [currentStep, setCurrentStep] = useState(0);
+  
+  // Data collection state
+  const [onboardingData, setOnboardingData] = useState({
+    goals: [] as string[],
+    age: '',
+    gender: '',
+    height: '',
+    weight: '',
+    primaryGoal: '',
+  });
 
-  useEffect(() => {
-    const checkOnboarding = async () => {
-      try {
-        const value = await AsyncStorage.getItem('@has_seen_onboarding');
-        if (value !== null) {
-          // User has already seen onboarding, skip to login
-          navigation.replace('Login');
-        } else {
-          setIsChecking(false);
-        }
-      } catch (e) {
-        setIsChecking(false);
-      }
-    };
-    checkOnboarding();
-  }, []);
+  // We no longer check @has_seen_onboarding. 
+  // The WelcomeStep serves as the default landing page for unauthenticated users.
+  // Users who already have an account can simply tap "Sign In" on the WelcomeStep.
 
-  const handleCompleteOnboarding = async () => {
-    try {
-      await AsyncStorage.setItem('@has_seen_onboarding', 'true');
-      navigation.replace('Login');
-    } catch (e) {
-      console.error('Failed to save onboarding state', e);
+  const handleSkipToAuth = () => {
+    // If they sign in, we can skip and let Auth handle the rest
+    navigation.replace('Login');
+  };
+
+  const handleBack = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
     }
   };
 
-  if (isChecking) {
+  const renderProgress = () => {
+    // Show progress bar only on certain steps (Steps 2 to 6 i.e., Personalization to Goal Setup)
+    if (currentStep < 2 || currentStep > 6) return null;
+    
+    const progress = ((currentStep - 1) / 5) * 100;
+
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
+      <View style={styles.progressContainer}>
+        <View style={styles.progressBarBg}>
+          <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
+        </View>
       </View>
     );
-  }
+  };
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 0:
+        return <WelcomeStep onNext={() => setCurrentStep(1)} onSkip={handleSkipToAuth} />;
+      case 1:
+        return <FeaturesStep onNext={() => setCurrentStep(2)} />;
+      case 2:
+        return (
+          <PersonalizationStep 
+            onNext={(data) => {
+              setOnboardingData((prev) => ({ ...prev, ...data }));
+              setCurrentStep(3);
+            }} 
+            initialData={onboardingData.goals}
+          />
+        );
+      case 3:
+        return (
+          <BasicProfileStep 
+            onNext={(data) => {
+              setOnboardingData((prev) => ({ ...prev, ...data }));
+              setCurrentStep(4);
+            }} 
+          />
+        );
+      case 4:
+        return <MeetAssistantStep onNext={() => setCurrentStep(5)} />;
+      case 5:
+        return <PermissionsStep onNext={() => setCurrentStep(6)} />;
+      case 6:
+        return (
+          <GoalSetupStep 
+            onNext={async (data) => {
+              const finalData = { ...onboardingData, ...data };
+              setOnboardingData(finalData);
+              try {
+                await AsyncStorage.setItem('@onboarding_data', JSON.stringify(finalData));
+                navigation.replace('Signup');
+              } catch (e) {
+                console.error('Failed to save onboarding state', e);
+              }
+            }} 
+          />
+        );
+      default:
+        return <WelcomeStep onNext={() => setCurrentStep(1)} onSkip={handleSkipToAuth} />;
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome to HealthApp</Text>
-        <Text style={styles.description}>
-          Track your medicine, stay hydrated, and manage your appointments easily.
-        </Text>
+      <StatusBar barStyle="light-content" backgroundColor="#09090B" />
+      <View style={styles.topContainer}>
+        <View style={styles.headerRow}>
+          {currentStep > 0 && currentStep <= 6 ? (
+            <TouchableOpacity onPress={handleBack} style={styles.backBtn} activeOpacity={0.7}>
+              <Icon name="chevron-back" size={28} color="#FFFFFF" />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.backBtnPlaceholder} />
+          )}
+          {renderProgress()}
+        </View>
       </View>
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.button} onPress={handleCompleteOnboarding}>
-          <Text style={styles.buttonText}>Get Started</Text>
-        </TouchableOpacity>
-      </View>
+      {renderStep()}
     </SafeAreaView>
   );
 };
@@ -72,43 +141,47 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#09090B',
   },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#09090B',
   },
-  content: {
+  progressContainer: {
     flex: 1,
+    paddingTop: 8,
+    paddingBottom: 8,
+    marginRight: 40, // offset back button to keep it centered if needed
+  },
+  progressBarBg: {
+    height: 4,
+    backgroundColor: '#27272A',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#3B82F6',
+    borderRadius: 2,
+  },
+  topContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 40,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  description: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: '#666',
-    lineHeight: 24,
-  },
-  footer: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+  backBtnPlaceholder: {
+    width: 40,
+    height: 40,
   },
 });
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StatusBar, StyleSheet, SafeAreaView, BackHandler } from 'react-native';
+import { View, StatusBar, StyleSheet, SafeAreaView, BackHandler, ActivityIndicator } from 'react-native';
 import { Colors } from './src/theme/theme';
 import TabBar, { TabName } from './src/navigation/TabBar';
 import { ScrollVisibilityProvider, useScrollVisibility } from './src/navigation/ScrollVisibilityContext';
@@ -10,6 +10,10 @@ import CalorieScreen from './src/screens/CalorieScreen';
 import AIAdvisorScreen from './src/screens/AIAdvisorScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
+import { AuthProvider, useAuth } from './src/providers/AuthProvider';
+import { NavigationContainer } from '@react-navigation/native';
+import { AuthStack } from './src/navigation/AuthStack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
 
@@ -109,15 +113,56 @@ function AppShell() {
   );
 }
 
-import { AuthProvider, useAuth } from './src/providers/AuthProvider';
-import { NavigationContainer } from '@react-navigation/native';
-import { AuthStack } from './src/navigation/AuthStack';
-import { ActivityIndicator } from 'react-native';
-
 const RootComponent = () => {
   const { session, isLoading } = useAuth();
+  const [syncing, setSyncing] = useState(false);
 
-  if (isLoading) {
+  useEffect(() => {
+    const syncOnboarding = async () => {
+      if (!session?.user || !session?.access_token) return;
+
+      const onboardingJson = await AsyncStorage.getItem('@onboarding_data');
+      if (!onboardingJson) return;
+
+      setSyncing(true);
+      try {
+        const data = JSON.parse(onboardingJson);
+        const response = await fetch('http://192.168.0.159:5000/api/profile/setup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            email: session.user.email || '',
+            age: parseInt(data.age, 10) || 0,
+            gender: data.gender?.toLowerCase() || 'other',
+            heightCm: parseFloat(data.height) || 0,
+            weightKg: parseFloat(data.weight) || 0,
+            units: 'metric',
+            goals: data.goals || [],
+            primaryGoal: data.primaryGoal || '',
+            displayName: session.user.email ? session.user.email.split('@')[0] : 'User',
+          }),
+        });
+
+        if (response.ok) {
+          await AsyncStorage.removeItem('@onboarding_data');
+          await AsyncStorage.removeItem('@is_new_signup');
+        } else {
+          console.warn('[App] Profile sync failed:', response.status, await response.text());
+        }
+      } catch (err) {
+        console.error('[App] Profile sync error:', err);
+      } finally {
+        setSyncing(false);
+      }
+    };
+
+    syncOnboarding();
+  }, [session]);
+
+  if (isLoading || syncing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color="#007AFF" />

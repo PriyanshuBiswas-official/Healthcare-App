@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { GoogleSignin } from '../lib/googleSignin';
 
@@ -25,14 +26,17 @@ const SignupScreen = () => {
       return;
     }
     setLoading(true);
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
     });
+
     setLoading(false);
     if (error) {
       Alert.alert('Signup Failed', error.message);
     } else {
+      await AsyncStorage.setItem('@is_new_signup', 'true');
       Alert.alert('Success', 'Check your email to verify your account!');
     }
   };
@@ -59,6 +63,8 @@ const SignupScreen = () => {
 
       if (error) {
         Alert.alert('Signup Failed', error.message);
+      } else {
+        await AsyncStorage.setItem('@is_new_signup', 'true');
       }
     } catch (error: any) {
       setLoading(false);
@@ -79,7 +85,7 @@ const SignupScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Enter your email"
-            placeholderTextColor="#999"
+            placeholderTextColor="#52525B"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -92,7 +98,7 @@ const SignupScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Enter your password"
-            placeholderTextColor="#999"
+            placeholderTextColor="#52525B"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -131,43 +137,49 @@ const SignupScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { flex: 1, padding: 20, justifyContent: 'center' },
-  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 30, textAlign: 'center', color: '#000' },
-  inputContainer: { marginBottom: 15 },
-  inputLabel: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 5, marginLeft: 2 },
+  container: { flex: 1, backgroundColor: '#09090B' },
+  content: { flex: 1, padding: 24, justifyContent: 'center' },
+  title: { fontSize: 28, fontWeight: '700', marginBottom: 32, textAlign: 'center', color: '#FFFFFF', letterSpacing: -0.5 },
+  inputContainer: { marginBottom: 20 },
+  inputLabel: { fontSize: 14, fontWeight: '500', color: '#E4E4E7', marginBottom: 8, marginLeft: 2 },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 15,
-    borderRadius: 8,
+    borderColor: '#27272A',
+    padding: 16,
+    borderRadius: 12,
     fontSize: 16,
-    color: '#000',
-    backgroundColor: '#f9f9f9',
+    color: '#FFFFFF',
+    backgroundColor: '#18181B',
   },
-  hintText: { fontSize: 12, color: '#666', marginTop: 5, marginLeft: 2 },
+  hintText: { fontSize: 13, color: '#A1A1AA', marginTop: 6, marginLeft: 2 },
   button: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: '#3B82F6',
+    paddingVertical: 18,
+    borderRadius: 16,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 16,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  linkButton: { marginTop: 15, alignItems: 'center' },
-  linkText: { color: '#007AFF', fontSize: 14 },
-  dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 30 },
-  divider: { flex: 1, height: 1, backgroundColor: '#ddd' },
-  dividerText: { marginHorizontal: 10, color: '#888' },
-  socialContainer: { gap: 10 },
+  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  linkButton: { marginTop: 24, alignItems: 'center' },
+  linkText: { color: '#A1A1AA', fontSize: 15, fontWeight: '500' },
+  dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 32 },
+  divider: { flex: 1, height: 1, backgroundColor: '#27272A' },
+  dividerText: { marginHorizontal: 16, color: '#52525B', fontSize: 14, fontWeight: '500' },
+  socialContainer: { gap: 12 },
   socialButton: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 15,
-    borderRadius: 8,
+    borderColor: '#27272A',
+    backgroundColor: '#18181B',
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: 'center',
   },
-  socialButtonText: { fontSize: 16, color: '#333' },
+  socialButtonText: { fontSize: 16, color: '#E4E4E7', fontWeight: '500' },
 });
 
 export default SignupScreen;

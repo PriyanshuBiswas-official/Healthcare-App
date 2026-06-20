@@ -12,6 +12,7 @@ import { GlassCardView, SectionHeader, StatPill } from '../components/SharedComp
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../providers/AuthProvider';
+import { GoogleSignin } from '../lib/googleSignin';
 
 type MenuItem = {
   icon: string;
@@ -120,6 +121,11 @@ export default function ProfileScreen({ onBackPress }: { onBackPress?: () => voi
     setToggles(prev => ({ ...prev, [key]: value }));
 
   const handleLogout = async () => {
+    try {
+      await GoogleSignin.signOut();
+    } catch (e) {
+      // Ignore if not signed in via Google
+    }
     await supabase.auth.signOut();
   };
 
