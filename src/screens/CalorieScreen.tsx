@@ -12,6 +12,7 @@ import {
 import { Colors, Typography, Spacing, Radius } from '../theme/theme';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../components/SharedComponents';
+import { useAuth } from '../providers/AuthProvider';
 
 const INITIAL_MEALS = [
   {
@@ -70,6 +71,7 @@ const WEEKLY_TREND = [
 
 export default function CalorieScreen({ onProfilePress, onNotificationsPress }: { onProfilePress?: () => void; onNotificationsPress?: () => void }) {
   const { onScroll } = useScrollVisibility();
+  const { user } = useAuth();
   const [mealsState, setMealsState] = useState(INITIAL_MEALS);
   const [calorieGoal, setCalorieGoal] = useState(2500);
   const [isEditingGoal, setIsEditingGoal] = useState(false);
@@ -103,7 +105,11 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
           </View>
           <View style={styles.headerActions}>
             <NotificationIconButton onPress={onNotificationsPress} />
-            <ProfileAvatarButton onPress={onProfilePress} />
+            <ProfileAvatarButton
+              onPress={onProfilePress}
+              userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+              avatarUrl={user?.user_metadata?.avatar_url}
+            />
           </View>
         </View>
 

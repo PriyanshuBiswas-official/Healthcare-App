@@ -12,6 +12,7 @@ import { GlassCardView, SectionHeader, CircularRing, StatPill, ProgressBar, Prof
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 import ProfileCompletionBanner from '../components/ProfileCompletionBanner';
 import { getProfileCompletion, calculatePercentage, ProfileCompletion } from '../services/profileCompletionService';
+import { useAuth } from '../providers/AuthProvider';
 
 
 
@@ -34,6 +35,7 @@ const UPCOMING = [
 
 export default function DashboardScreen({ onProfilePress, onNotificationsPress, onOpenProfileSetup }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenProfileSetup?: () => void }) {
   const { onScroll } = useScrollVisibility();
+  const { user } = useAuth();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -71,7 +73,11 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             </View>
             <View style={styles.headerActions}>
               <NotificationIconButton onPress={onNotificationsPress} />
-              <ProfileAvatarButton onPress={onProfilePress} />
+              <ProfileAvatarButton
+                onPress={onProfilePress}
+                userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+                avatarUrl={user?.user_metadata?.avatar_url}
+              />
             </View>
           </View>
         </Animated.View>
@@ -80,7 +86,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           <ProfileCompletionBanner
             percentage={percentage}
             onSkip={() => setBannerDismissed(true)}
-            onComplete={onOpenProfileSetup}
+            onComplete={() => onOpenProfileSetup?.()}
           />
         )}
 

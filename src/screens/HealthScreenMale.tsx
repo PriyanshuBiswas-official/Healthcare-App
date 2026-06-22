@@ -25,6 +25,7 @@ import {
   PreventiveCareSection,
   AIHealthInsightsSection,
 } from './HealthCommonSections';
+import { useAuth } from '../providers/AuthProvider';
 
 const { width } = Dimensions.get('window');
 
@@ -38,6 +39,7 @@ export default function HealthScreenMale({
   onNotificationsPress?: () => void;
 }) {
   const { onScroll } = useScrollVisibility();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('Overview');
 
   const TABS = ['Overview', 'Hormones', 'Vitals'];
@@ -222,7 +224,11 @@ export default function HealthScreenMale({
           <Text style={s.title}>Your Health</Text>
           <View style={s.headerActions}>
             <NotificationIconButton onPress={onNotificationsPress} />
-            <ProfileAvatarButton onPress={onProfilePress} />
+            <ProfileAvatarButton
+              onPress={onProfilePress}
+              userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+              avatarUrl={user?.user_metadata?.avatar_url}
+            />
           </View>
         </View>
 

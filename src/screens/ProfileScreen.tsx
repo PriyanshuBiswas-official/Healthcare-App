@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
+  Image,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, Shadows, GlassCard } from '../theme/theme';
 import { GlassCardView, SectionHeader, StatPill, ProgressBar } from '../components/SharedComponents';
@@ -14,6 +15,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../providers/AuthProvider';
 import { GoogleSignin } from '../lib/googleSignin';
 import { getProfileCompletion, calculatePercentage, ProfileCompletion } from '../services/profileCompletionService';
+import { API_BASE_URL } from '../config/api';
 
 type MenuItem = {
   icon: string;
@@ -23,12 +25,18 @@ type MenuItem = {
   badge?: string;
 };
 
-const HEALTH_STATS = [
-  { label: 'Age', value: '28', color: Colors.teal },
-  { label: 'Weight', value: '62 kg', color: Colors.pink },
-  { label: 'Height', value: '165 cm', color: Colors.amber },
-  { label: 'Blood', value: 'B+', color: Colors.purple },
-];
+interface ProfileData {
+  name?: string;
+  email?: string;
+  age?: number;
+  gender?: string;
+  height?: number;
+  weight?: number;
+  bmi?: number;
+  date_of_birth?: string;
+  blood_group?: string;
+  goals?: string[];
+}
 
 const HEALTH_PROFILE: MenuItem[] = [
   { icon: '👤', label: 'Personal Information', sub: 'Name, DOB, gender', color: Colors.teal },
@@ -56,6 +64,16 @@ const SUPPORT: MenuItem[] = [
   { icon: '📄', label: 'Terms & Policies', sub: 'Legal documents' },
   { icon: 'ℹ️', label: 'About HealthApp', sub: 'Version 0.0.1' },
 ];
+
+function computeAge(dob: string): number | undefined {
+  if (!dob || !/^\d{2}\/\d{2}\/\d{4}$/.test(dob)) return undefined;
+  const [day, month, year] = dob.split('/').map(Number);
+  const birth = new Date(year, month - 1, day);
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--;
+  return age;
+}
 
 function MenuRow({ item, onPress }: { item: MenuItem; onPress?: () => void }) {
   const accent = item.color ?? Colors.teal;
@@ -113,28 +131,79 @@ function ToggleRow({
 
 export default function ProfileScreen({ onBackPress, onOpenProfileSetup }: { onBackPress?: () => void; onOpenProfileSetup?: () => void }) {
   const { onScroll } = useScrollVisibility();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [toggles, setToggles] = useState(
     Object.fromEntries(PREFERENCES.map(p => [p.key, p.default])) as Record<string, boolean>,
   );
   const [completion, setCompletion] = useState<ProfileCompletion | null>(null);
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
 
   useEffect(() => {
     getProfileCompletion().then(setCompletion);
   }, []);
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!session?.access_token) return;
+
+      // 1. Try fetching from backend
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/profile`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+          setProfileData(json.data);
+          return;
+        }
+      } catch (e) {
+        console.warn('[ProfileScreen] Backend fetch failed, falling back to local data:', e);
+      }
+
+      // 2. Fallback: read from @profile_completion (local AsyncStorage)
+      try {
+        const completionData = await getProfileCompletion();
+        const basicInfo = completionData.basic_info?.data;
+        if (basicInfo) {
+          setProfileData({
+            name: user?.user_metadata?.full_name || '',
+            email: user?.email || '',
+            age: basicInfo.dateOfBirth ? computeAge(basicInfo.dateOfBirth) : undefined,
+            gender: basicInfo.gender || undefined,
+            height: basicInfo.height ? parseFloat(basicInfo.height) : undefined,
+            weight: basicInfo.weight ? parseFloat(basicInfo.weight) : undefined,
+            blood_group: basicInfo.bloodGroup || undefined,
+          });
+        }
+      } catch (e) {
+        console.warn('[ProfileScreen] Local fallback failed:', e);
+      }
+    };
+    fetchProfile();
+  }, [session?.access_token]);
+
   const percentage = completion ? calculatePercentage(completion) : 0;
+
+  const avatarUrl = user?.user_metadata?.avatar_url;
+  const displayName = profileData?.name || user?.email?.split('@')[0] || 'User';
+  const displayEmail = profileData?.email || user?.email || '';
+
+  const healthStats = [
+    { label: 'Age', value: profileData?.age ? `${profileData.age}` : '--', color: Colors.teal },
+    { label: 'Weight', value: profileData?.weight ? `${profileData.weight} kg` : '--', color: Colors.pink },
+    { label: 'Height', value: profileData?.height ? `${profileData.height} cm` : '--', color: Colors.amber },
+    { label: 'Blood', value: profileData?.blood_group || '--', color: Colors.purple },
+  ];
 
   const setToggle = (key: string, value: boolean) =>
     setToggles(prev => ({ ...prev, [key]: value }));
 
   const handleLogout = async () => {
     try {
-      await GoogleSignin.signOut();
+      await supabase.auth.signOut();
     } catch (e) {
-      // Ignore if not signed in via Google
+      console.warn('[ProfileScreen] Logout error:', e);
     }
-    await supabase.auth.signOut();
   };
 
   return (
@@ -161,14 +230,15 @@ export default function ProfileScreen({ onBackPress, onOpenProfileSetup }: { onB
         <GlassCardView style={styles.profileCard} accentColor={Colors.teal}>
           <View style={styles.profileRow}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>A</Text>
-              <View style={styles.avatarBadge}>
-                <Text style={styles.avatarBadgeText}>✓</Text>
-              </View>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+              ) : (
+                <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
+              )}
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.name}>{user?.email ? user.email.split('@')[0] : 'User'}</Text>
-              <Text style={styles.email}>{user?.email ?? 'user@email.com'}</Text>
+              <Text style={styles.name}>{displayName}</Text>
+              <Text style={styles.email}>{displayEmail}</Text>
               <View style={styles.memberBadge}>
                 <Text style={styles.memberBadgeText}>Premium Member</Text>
               </View>
@@ -182,7 +252,7 @@ export default function ProfileScreen({ onBackPress, onOpenProfileSetup }: { onB
         </GlassCardView>
 
         <View style={styles.statsRow}>
-          {HEALTH_STATS.map(stat => (
+          {healthStats.map(stat => (
             <StatPill key={stat.label} label={stat.label} value={stat.value} color={stat.color} />
           ))}
         </View>
@@ -192,7 +262,7 @@ export default function ProfileScreen({ onBackPress, onOpenProfileSetup }: { onB
             <SectionHeader title="Complete Your Profile" subtitle={`${percentage}% completed`} />
             <TouchableOpacity
               style={styles.completeCard}
-              onPress={onOpenProfileSetup}
+              onPress={() => onOpenProfileSetup?.()}
               activeOpacity={0.7}>
               <View style={styles.completeCardInner}>
                 <View style={styles.completeCardLeft}>
@@ -323,31 +393,20 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 36,
     backgroundColor: Colors.teal + '30',
-    borderWidth: 2,
-    borderColor: Colors.teal,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Shadows.teal,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
   },
   avatarText: {
     fontSize: Typography.xl,
     fontWeight: Typography.extraBold,
     color: Colors.teal,
   },
-  avatarBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: -2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: Colors.success,
-    borderWidth: 2,
-    borderColor: Colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarBadgeText: { fontSize: 10, color: Colors.bg, fontWeight: Typography.bold },
   profileInfo: { flex: 1, marginLeft: Spacing.base },
   name: {
     fontSize: Typography.lg,

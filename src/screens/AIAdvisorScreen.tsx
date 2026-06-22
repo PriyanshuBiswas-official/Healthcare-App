@@ -15,6 +15,7 @@ import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButt
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 import { TabName } from '../navigation/TabBar';
 import AIChatView, { useChatState } from './AIChatView';
+import { useAuth } from '../providers/AuthProvider';
 
 const APPOINTMENT_SLOTS = [
   { time: '10:00 AM', date: 'Thu, Jun 12', doctor: 'Dr. Priya Sharma', spec: 'Gynecologist', available: true },
@@ -25,6 +26,7 @@ const APPOINTMENT_SLOTS = [
 
 export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, startInChat, originTab, navigateToTab, isTabActive }: { onProfilePress?: () => void; onNotificationsPress?: () => void; startInChat?: boolean; originTab?: TabName; navigateToTab?: (tab: TabName) => void; isTabActive?: boolean }) {
   const { messages, input, setInput, sendMessage, scrollRef } = useChatState();
+  const { user } = useAuth();
   const [bookedSlot, setBookedSlot] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'chat'>('overview');
   const [isBookingExpanded, setIsBookingExpanded] = useState(false);
@@ -107,7 +109,11 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
         
         <View style={styles.headerActions}>
           <NotificationIconButton onPress={onNotificationsPress} />
-          <ProfileAvatarButton onPress={onProfilePress} />
+          <ProfileAvatarButton
+            onPress={onProfilePress}
+            userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+            avatarUrl={user?.user_metadata?.avatar_url}
+          />
         </View>
       </View>
 

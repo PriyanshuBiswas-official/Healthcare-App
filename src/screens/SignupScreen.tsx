@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../lib/supabase';
 import { GoogleSignin } from '../lib/googleSignin';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type AuthStackParamList = {
   Onboarding: undefined;

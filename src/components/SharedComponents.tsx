@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   TouchableOpacityProps,
+  Image,
 } from 'react-native';
 import { Colors, Radius, Spacing, Typography, GlassCard, Shadows } from '../theme/theme';
 
@@ -31,9 +32,19 @@ export const GlassCardView: React.FC<GlassCardProps> = ({
 );
 
 // ─── Profile Avatar Button ───────────────────────────────────────────────────
-export const ProfileAvatarButton: React.FC<{ onPress?: () => void }> = ({ onPress }) => (
+export const ProfileAvatarButton: React.FC<{
+  onPress?: () => void;
+  userName?: string;
+  avatarUrl?: string;
+}> = ({ onPress, userName, avatarUrl }) => (
   <TouchableOpacity style={profileAvatarStyles.avatar} onPress={onPress} activeOpacity={0.8}>
-    <Text style={profileAvatarStyles.avatarText}>A</Text>
+    {avatarUrl ? (
+      <Image source={{ uri: avatarUrl }} style={profileAvatarStyles.avatarImage} />
+    ) : (
+      <Text style={profileAvatarStyles.avatarText}>
+        {(userName || 'A').charAt(0).toUpperCase()}
+      </Text>
+    )}
   </TouchableOpacity>
 );
 
@@ -354,11 +365,14 @@ const profileAvatarStyles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: Colors.teal + '30',
-    borderWidth: 2,
-    borderColor: Colors.teal,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Shadows.teal,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   avatarText: {
     fontSize: Typography.md,

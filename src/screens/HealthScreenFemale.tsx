@@ -26,6 +26,7 @@ import {
   VitalsDashboardSection,
   AIHealthInsightsSection,
 } from './HealthCommonSections';
+import { useAuth } from '../providers/AuthProvider';
 
 const { width } = Dimensions.get('window');
 
@@ -39,6 +40,7 @@ export default function HealthScreenFemale({
   onNotificationsPress?: () => void;
 }) {
   const { onScroll } = useScrollVisibility();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('Cycle');
   const [selectedPhase, setSelectedPhase] = useState('Luteal');
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>(['Cramps', 'Fatigue']);
@@ -268,7 +270,11 @@ export default function HealthScreenFemale({
           <Text style={s.title}>Your Health</Text>
           <View style={s.headerActions}>
             <NotificationIconButton onPress={onNotificationsPress} />
-            <ProfileAvatarButton onPress={onProfilePress} />
+            <ProfileAvatarButton
+              onPress={onProfilePress}
+              userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+              avatarUrl={user?.user_metadata?.avatar_url}
+            />
           </View>
         </View>
 

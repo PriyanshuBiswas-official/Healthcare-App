@@ -12,6 +12,7 @@ import { Colors, Typography, Spacing, Radius, Shadows } from '../theme/theme';
 import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../components/SharedComponents';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 import { TabName } from '../navigation/TabBar';
+import { useAuth } from '../providers/AuthProvider';
 
 const { width } = Dimensions.get('window');
 
@@ -359,6 +360,7 @@ function RecoveryCard() {
 
 export default function FitnessScreen({ onProfilePress, onNotificationsPress, onOpenAI }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void }) {
   const { onScroll } = useScrollVisibility();
+  const { user } = useAuth();
   const [activeSegment, setActiveSegment] = useState<Segment>('Today');
   const [activeFilter, setActiveFilter] = useState('All');
 
@@ -381,7 +383,11 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           </View>
           <View style={styles.headerRight}>
             <NotificationIconButton onPress={onNotificationsPress} />
-            <ProfileAvatarButton onPress={onProfilePress} />
+            <ProfileAvatarButton
+              onPress={onProfilePress}
+              userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+              avatarUrl={user?.user_metadata?.avatar_url}
+            />
           </View>
         </View>
 
