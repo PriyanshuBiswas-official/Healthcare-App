@@ -10,10 +10,16 @@ import CalorieScreen from './src/screens/CalorieScreen';
 import AIAdvisorScreen from './src/screens/AIAdvisorScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
+import ProfileSetupScreen from './src/screens/ProfileSetupScreen';
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 import { NavigationContainer } from '@react-navigation/native';
+import { API_BASE_URL } from './src/config/api';
 import { AuthStack } from './src/navigation/AuthStack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { saveSection, resetAllSections } from './src/services/profileCompletionService';
+
+const PROFILE_DATA_VERSION = 2;
+const PROFILE_VERSION_KEY = '@profile_data_version';
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
 
@@ -24,6 +30,7 @@ function AppShell() {
   const [aiStartInChat, setAiStartInChat] = useState(false);
   const [aiOrigin, setAiOrigin] = useState<TabName | null>(null);
   const mountedTabs = useRef<Set<TabName>>(new Set(['Home']));
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
 
   const openAI = (fromTab?: TabName, startInChat = true) => {
     if (activeTab !== 'AI') setPreviousTab(activeTab);
@@ -80,7 +87,7 @@ function AppShell() {
             <View
               key={tab}
               style={[styles.screenWrapper, activeTab !== tab && styles.screenHidden]}>
-              {tab === 'Home' && <DashboardScreen onProfilePress={openProfile} onNotificationsPress={openNotifications} />}
+              {tab === 'Home' && <DashboardScreen onProfilePress={openProfile} onNotificationsPress={openNotifications} onOpenProfileSetup={() => setShowProfileSetup(true)} />}
               {tab === 'Health' && <HealthScreen onProfilePress={openProfile} onNotificationsPress={openNotifications} />}
               {tab === 'AI' && (
                 <AIAdvisorScreen
@@ -99,7 +106,7 @@ function AppShell() {
         ))}
         {activeTab === 'Profile' && (
           <View style={styles.screenWrapper}>
-            <ProfileScreen onBackPress={() => setActiveTab(previousTab)} />
+            <ProfileScreen onBackPress={() => setActiveTab(previousTab)} onOpenProfileSetup={() => setShowProfileSetup(true)} />
           </View>
         )}
         {activeTab === 'Notifications' && (
@@ -108,6 +115,11 @@ function AppShell() {
           </View>
         )}
       </View>
+      {showProfileSetup && (
+        <View style={[styles.screenWrapper, { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 }]}>
+          <ProfileSetupScreen onComplete={() => setShowProfileSetup(false)} />
+        </View>
+      )}
       <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
     </>
   );
@@ -116,18 +128,37 @@ function AppShell() {
 const RootComponent = () => {
   const { session, isLoading } = useAuth();
   const [syncing, setSyncing] = useState(false);
+  const [migrationDone, setMigrationDone] = useState(false);
+  const syncAttempted = useRef(false);
+
+  useEffect(() => {
+    (async () => {
+      const version = await AsyncStorage.getItem(PROFILE_VERSION_KEY);
+      if (version !== String(PROFILE_DATA_VERSION)) {
+        await resetAllSections();
+        await AsyncStorage.setItem(PROFILE_VERSION_KEY, String(PROFILE_DATA_VERSION));
+      }
+      setMigrationDone(true);
+    })();
+  }, []);
 
   useEffect(() => {
     const syncOnboarding = async () => {
       if (!session?.user || !session?.access_token) return;
+      if (syncAttempted.current) return;
 
       const onboardingJson = await AsyncStorage.getItem('@onboarding_data');
       if (!onboardingJson) return;
 
+      syncAttempted.current = true;
       setSyncing(true);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
       try {
         const data = JSON.parse(onboardingJson);
-        const response = await fetch('http://192.168.0.159:5000/api/profile/setup', {
+        const response = await fetch(`${API_BASE_URL}/api/profile/setup`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -135,7 +166,7 @@ const RootComponent = () => {
           },
           body: JSON.stringify({
             email: session.user.email || '',
-            age: parseInt(data.age, 10) || 0,
+            dateOfBirth: data.dateOfBirth || '',
             gender: data.gender?.toLowerCase() || 'other',
             heightCm: parseFloat(data.height) || 0,
             weightKg: parseFloat(data.weight) || 0,
@@ -144,16 +175,33 @@ const RootComponent = () => {
             primaryGoal: data.primaryGoal || '',
             displayName: session.user.email ? session.user.email.split('@')[0] : 'User',
           }),
+          signal: controller.signal,
         });
 
+        clearTimeout(timeout);
+
         if (response.ok) {
+          await saveSection('basic_info', {
+            dateOfBirth: data.dateOfBirth ?? '',
+            gender: data.gender ?? '',
+            height: data.height ?? '',
+            weight: data.weight ?? '',
+            goals: data.goals ?? [],
+            primaryGoal: data.primaryGoal ?? '',
+          });
           await AsyncStorage.removeItem('@onboarding_data');
-          await AsyncStorage.removeItem('@is_new_signup');
         } else {
           console.warn('[App] Profile sync failed:', response.status, await response.text());
+          syncAttempted.current = false;
         }
-      } catch (err) {
-        console.error('[App] Profile sync error:', err);
+      } catch (err: any) {
+        clearTimeout(timeout);
+        if (err?.name === 'AbortError' || err?.message?.includes('Network request failed')) {
+          console.warn('[App] Profile sync: server unreachable, will retry next launch');
+        } else {
+          console.warn('[App] Profile sync error:', err);
+        }
+        syncAttempted.current = false;
       } finally {
         setSyncing(false);
       }
@@ -162,7 +210,7 @@ const RootComponent = () => {
     syncOnboarding();
   }, [session]);
 
-  if (isLoading || syncing) {
+  if (isLoading || syncing || !migrationDone) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color="#007AFF" />

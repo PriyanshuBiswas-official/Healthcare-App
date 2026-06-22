@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { GoogleSignin } from '../lib/googleSignin';
 
@@ -36,8 +35,9 @@ const SignupScreen = () => {
     if (error) {
       Alert.alert('Signup Failed', error.message);
     } else {
-      await AsyncStorage.setItem('@is_new_signup', 'true');
-      Alert.alert('Success', 'Check your email to verify your account!');
+      Alert.alert('Success', 'Check your email to verify your account!', [
+        { text: 'OK', onPress: () => navigation.navigate('Login') },
+      ]);
     }
   };
 
@@ -63,8 +63,6 @@ const SignupScreen = () => {
 
       if (error) {
         Alert.alert('Signup Failed', error.message);
-      } else {
-        await AsyncStorage.setItem('@is_new_signup', 'true');
       }
     } catch (error: any) {
       setLoading(false);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,13 @@ import {
   TouchableOpacity,
   Switch,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, Shadows } from '../theme/theme';
-import { GlassCardView, SectionHeader, StatPill } from '../components/SharedComponents';
+import { Colors, Typography, Spacing, Radius, Shadows, GlassCard } from '../theme/theme';
+import { GlassCardView, SectionHeader, StatPill, ProgressBar } from '../components/SharedComponents';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../providers/AuthProvider';
 import { GoogleSignin } from '../lib/googleSignin';
+import { getProfileCompletion, calculatePercentage, ProfileCompletion } from '../services/profileCompletionService';
 
 type MenuItem = {
   icon: string;
@@ -110,12 +111,19 @@ function ToggleRow({
   );
 }
 
-export default function ProfileScreen({ onBackPress }: { onBackPress?: () => void }) {
+export default function ProfileScreen({ onBackPress, onOpenProfileSetup }: { onBackPress?: () => void; onOpenProfileSetup?: () => void }) {
   const { onScroll } = useScrollVisibility();
   const { user } = useAuth();
   const [toggles, setToggles] = useState(
     Object.fromEntries(PREFERENCES.map(p => [p.key, p.default])) as Record<string, boolean>,
   );
+  const [completion, setCompletion] = useState<ProfileCompletion | null>(null);
+
+  useEffect(() => {
+    getProfileCompletion().then(setCompletion);
+  }, []);
+
+  const percentage = completion ? calculatePercentage(completion) : 0;
 
   const setToggle = (key: string, value: boolean) =>
     setToggles(prev => ({ ...prev, [key]: value }));
@@ -178,6 +186,35 @@ export default function ProfileScreen({ onBackPress }: { onBackPress?: () => voi
             <StatPill key={stat.label} label={stat.label} value={stat.value} color={stat.color} />
           ))}
         </View>
+
+        {percentage < 100 && (
+          <>
+            <SectionHeader title="Complete Your Profile" subtitle={`${percentage}% completed`} />
+            <TouchableOpacity
+              style={styles.completeCard}
+              onPress={onOpenProfileSetup}
+              activeOpacity={0.7}>
+              <View style={styles.completeCardInner}>
+                <View style={styles.completeCardLeft}>
+                  <Text style={styles.completeCardIcon}>📝</Text>
+                  <View style={styles.completeCardTextWrap}>
+                    <Text style={styles.completeCardTitle}>Set Up Your Profile</Text>
+                    <Text style={styles.completeCardSub}>
+                      {percentage === 0
+                        ? 'Fill in your health details for a better experience'
+                        : `${6 - Math.round(percentage / 100 * 6)} sections remaining`}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.chevron}>›</Text>
+              </View>
+              <View style={styles.completeCardProgress}>
+                <ProgressBar progress={percentage / 100} color={Colors.teal} height={4} />
+                <Text style={styles.completeCardPercent}>{percentage}%</Text>
+              </View>
+            </TouchableOpacity>
+          </>
+        )}
 
         <SectionHeader title="Health Profile" subtitle="Manage your medical information" />
         <GlassCardView style={styles.menuCard}>
@@ -354,6 +391,50 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.sm,
     marginBottom: Spacing.xl,
+  },
+  completeCard: {
+    ...GlassCard,
+    padding: Spacing.lg,
+    marginBottom: Spacing.xl,
+    borderColor: Colors.teal + '40',
+  },
+  completeCardInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  completeCardLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  completeCardIcon: {
+    fontSize: 22,
+    marginRight: Spacing.md,
+  },
+  completeCardTextWrap: {
+    flex: 1,
+  },
+  completeCardTitle: {
+    fontSize: Typography.base,
+    fontWeight: Typography.bold,
+    color: Colors.textPrimary,
+  },
+  completeCardSub: {
+    fontSize: Typography.xs,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  completeCardProgress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  completeCardPercent: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.bold,
+    color: Colors.teal,
+    marginLeft: Spacing.sm,
+    minWidth: 30,
   },
   menuCard: { paddingVertical: Spacing.xs, marginBottom: Spacing.xl },
   menuRow: {

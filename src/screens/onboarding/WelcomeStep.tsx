@@ -41,7 +41,7 @@ const WelcomeStep: React.FC<Props> = ({ onNext, onSkip }) => {
       <View style={styles.content}>
         <View style={styles.imageContainer}>
           <Animated.View style={[styles.glowCircle, { transform: [{ translateY: floatAnim }] }]}>
-             <Icon name="sparkles" size={60} color="#3B82F6" />
+            <Icon name="sparkles" size={60} color="#3B82F6" />
           </Animated.View>
           {/* Floating Icons */}
           <Animated.View style={[styles.floatingIcon, styles.iconLeft, { transform: [{ translateY: floatAnim }] }]}>
@@ -66,7 +66,7 @@ const WelcomeStep: React.FC<Props> = ({ onNext, onSkip }) => {
           <Text style={styles.primaryButtonText}>Get Started</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.secondaryButton} onPress={onSkip}>
-          <Text style={styles.secondaryButtonText}>Sign In</Text>
+          <Text style={styles.secondaryButtonText}>Already have an account? Log In</Text>
         </TouchableOpacity>
       </View>
     </Animated.View>

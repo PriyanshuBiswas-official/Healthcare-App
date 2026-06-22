@@ -21,8 +21,6 @@ type AuthStackParamList = {
 
 type OnboardingScreenProp = NativeStackNavigationProp<AuthStackParamList, 'Onboarding'>;
 
-const TOTAL_STEPS = 8; // 0 to 7
-
 const OnboardingScreen = () => {
   const navigation = useNavigation<OnboardingScreenProp>();
   const [currentStep, setCurrentStep] = useState(0);
@@ -30,7 +28,7 @@ const OnboardingScreen = () => {
   // Data collection state
   const [onboardingData, setOnboardingData] = useState({
     goals: [] as string[],
-    age: '',
+    dateOfBirth: '',
     gender: '',
     height: '',
     weight: '',
@@ -85,11 +83,12 @@ const OnboardingScreen = () => {
         );
       case 3:
         return (
-          <BasicProfileStep 
+          <BasicProfileStep
             onNext={(data) => {
               setOnboardingData((prev) => ({ ...prev, ...data }));
               setCurrentStep(4);
-            }} 
+            }}
+            initialData={onboardingData}
           />
         );
       case 4:

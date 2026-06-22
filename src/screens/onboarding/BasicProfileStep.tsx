@@ -2,15 +2,29 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, TextInput, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 
 interface Props {
-  onNext: (data: { age: string; gender: string; height: string; weight: string }) => void;
+  onNext: (data: { dateOfBirth: string; gender: string; height: string; weight: string }) => void;
+  initialData?: { dateOfBirth?: string; gender?: string; height?: string; weight?: string };
 }
 
-const BasicProfileStep: React.FC<Props> = ({ onNext }) => {
-  const [age, setAge] = useState('');
-  const [gender, setGender] = useState('');
-  const [height, setHeight] = useState('');
-  const [weight, setWeight] = useState('');
-  
+function isValidDate(d: string): boolean {
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return false;
+  const [day, month, year] = d.split('/').map(Number);
+  const date = new Date(year, month - 1, day);
+  if (date.getDate() !== day || date.getMonth() !== month - 1 || date.getFullYear() !== year) return false;
+  const now = new Date();
+  if (date > now) return false;
+  const age = now.getFullYear() - year - (now.getMonth() < month - 1 || (now.getMonth() === month - 1 && now.getDate() < day) ? 1 : 0);
+  return age >= 10 && age <= 120;
+}
+
+const BasicProfileStep: React.FC<Props> = ({ onNext, initialData }) => {
+  const [dobDay, setDobDay] = useState(initialData?.dateOfBirth?.split('/')[0] ?? '');
+  const [dobMonth, setDobMonth] = useState(initialData?.dateOfBirth?.split('/')[1] ?? '');
+  const [dobYear, setDobYear] = useState(initialData?.dateOfBirth?.split('/')[2] ?? '');
+  const [gender, setGender] = useState(initialData?.gender ?? '');
+  const [height, setHeight] = useState(initialData?.height ?? '');
+  const [weight, setWeight] = useState(initialData?.weight ?? '');
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -21,16 +35,23 @@ const BasicProfileStep: React.FC<Props> = ({ onNext }) => {
     }).start();
   }, []);
 
+  const dob = `${dobDay}/${dobMonth}/${dobYear}`;
+  const dobValid = isValidDate(dob);
+  const heightNum = parseFloat(height);
+  const weightNum = parseFloat(weight);
+  const heightValid = height.length > 0 && !isNaN(heightNum) && heightNum >= 50 && heightNum <= 300;
+  const weightValid = weight.length > 0 && !isNaN(weightNum) && weightNum >= 20 && weightNum <= 500;
+
   const handleNext = () => {
-    onNext({ age, gender, height, weight });
+    onNext({ dateOfBirth: dob, gender, height, weight });
   };
 
-  const isComplete = age.trim() !== '' && gender !== '' && height.trim() !== '' && weight.trim() !== '';
+  const isComplete = dobValid && gender !== '' && heightValid && weightValid;
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -41,15 +62,41 @@ const BasicProfileStep: React.FC<Props> = ({ onNext }) => {
 
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Age</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. 28"
-                placeholderTextColor="#52525B"
-                keyboardType="numeric"
-                value={age}
-                onChangeText={setAge}
-              />
+              <Text style={styles.label}>Date of Birth</Text>
+              <View style={styles.dobRow}>
+                <TextInput
+                  style={[styles.input, styles.dobInput]}
+                  placeholder="DD"
+                  placeholderTextColor="#52525B"
+                  keyboardType="numeric"
+                  maxLength={2}
+                  value={dobDay}
+                  onChangeText={(t) => setDobDay(t.replace(/[^0-9]/g, ''))}
+                />
+                <Text style={styles.dobSeparator}>/</Text>
+                <TextInput
+                  style={[styles.input, styles.dobInput]}
+                  placeholder="MM"
+                  placeholderTextColor="#52525B"
+                  keyboardType="numeric"
+                  maxLength={2}
+                  value={dobMonth}
+                  onChangeText={(t) => setDobMonth(t.replace(/[^0-9]/g, ''))}
+                />
+                <Text style={styles.dobSeparator}>/</Text>
+                <TextInput
+                  style={[styles.input, styles.dobInput, { flex: 2 }]}
+                  placeholder="YYYY"
+                  placeholderTextColor="#52525B"
+                  keyboardType="numeric"
+                  maxLength={4}
+                  value={dobYear}
+                  onChangeText={(t) => setDobYear(t.replace(/[^0-9]/g, ''))}
+                />
+              </View>
+              {dobDay.length + dobMonth.length + dobYear.length > 0 && !dobValid && (
+                <Text style={styles.errorText}>Enter a valid date (DD/MM/YYYY)</Text>
+              )}
             </View>
 
             <View style={styles.inputGroup}>
@@ -75,9 +122,13 @@ const BasicProfileStep: React.FC<Props> = ({ onNext }) => {
                   placeholder="e.g. 175"
                   placeholderTextColor="#52525B"
                   keyboardType="numeric"
+                  maxLength={5}
                   value={height}
-                  onChangeText={setHeight}
+                  onChangeText={(t) => setHeight(t.replace(/[^0-9.]/g, ''))}
                 />
+                {height.length > 0 && !heightValid && (
+                  <Text style={styles.errorText}>50–300 cm</Text>
+                )}
               </View>
               <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
                 <Text style={styles.label}>Weight (kg)</Text>
@@ -86,17 +137,21 @@ const BasicProfileStep: React.FC<Props> = ({ onNext }) => {
                   placeholder="e.g. 70"
                   placeholderTextColor="#52525B"
                   keyboardType="numeric"
+                  maxLength={5}
                   value={weight}
-                  onChangeText={setWeight}
+                  onChangeText={(t) => setWeight(t.replace(/[^0-9.]/g, ''))}
                 />
+                {weight.length > 0 && !weightValid && (
+                  <Text style={styles.errorText}>20–500 kg</Text>
+                )}
               </View>
             </View>
           </View>
         </ScrollView>
 
         <View style={styles.footer}>
-          <TouchableOpacity 
-            style={[styles.primaryButton, !isComplete && styles.buttonDisabled]} 
+          <TouchableOpacity
+            style={[styles.primaryButton, !isComplete && styles.buttonDisabled]}
             onPress={handleNext}
             disabled={!isComplete}
           >
@@ -152,6 +207,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
+  },
+  dobRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dobInput: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  dobSeparator: {
+    color: '#52525B',
+    fontSize: 20,
+    fontWeight: '600',
+    marginHorizontal: 6,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#FF5E5E',
+    marginTop: 4,
   },
   row: {
     flexDirection: 'row',
