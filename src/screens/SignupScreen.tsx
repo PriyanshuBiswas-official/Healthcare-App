@@ -1,24 +1,74 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../lib/supabase';
 import { GoogleSignin } from '../lib/googleSignin';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from '../config/api';
+import { useAuth } from '../providers/AuthProvider';
 
 type AuthStackParamList = {
+  Welcome: undefined;
   Onboarding: undefined;
   Login: undefined;
-  Signup: undefined;
+  Signup: { onboardingData?: any };
 };
 
 type SignupScreenProp = NativeStackNavigationProp<AuthStackParamList, 'Signup'>;
+type SignupRouteProp = RouteProp<AuthStackParamList, 'Signup'>;
 
 const SignupScreen = () => {
   const navigation = useNavigation<SignupScreenProp>();
+  const route = useRoute<SignupRouteProp>();
+  const { checkProfile } = useAuth();
+  const onboardingData = route.params?.onboardingData;
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const saveProfileData = async (accessToken: string) => {
+    if (!onboardingData) return true;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/profile/setup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(onboardingData),
+      });
+
+      const json = await response.json();
+      if (!json.success) {
+        throw new Error(json.error || 'Failed to save profile');
+      }
+      return true;
+    } catch (err: any) {
+      console.error('Error saving profile:', err);
+      return new Promise<boolean>((resolve) => {
+        Alert.alert(
+          'Save Failed',
+          err.message || 'Failed to save profile data. Please try again.',
+          [
+            {
+              text: 'Retry',
+              onPress: async () => {
+                const success = await saveProfileData(accessToken);
+                resolve(success);
+              },
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => resolve(false),
+            },
+          ]
+        );
+      });
+    }
+  };
 
   const handleSignup = async () => {
     if (!email || !password) {
@@ -27,16 +77,29 @@ const SignupScreen = () => {
     }
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
 
-    setLoading(false);
     if (error) {
+      setLoading(false);
       Alert.alert('Signup Failed', error.message);
+      return;
+    }
+
+    // If session exists (i.e. email confirmation disabled / auto-confirm on), save profile data
+    if (data?.session) {
+      const saved = await saveProfileData(data.session.access_token);
+      if (saved) {
+        // Re-check the profile — this sets hasProfile=true in AuthProvider,
+        // which causes RootComponent to swap from Onboarding → AppShell.
+        await checkProfile(data.session);
+      }
+      setLoading(false);
     } else {
-      Alert.alert('Success', 'Check your email to verify your account!', [
+      setLoading(false);
+      Alert.alert('Verify your email', 'Check your inbox to confirm your account, then log in.', [
         { text: 'OK', onPress: () => navigation.navigate('Login') },
       ]);
     }
@@ -55,15 +118,26 @@ const SignupScreen = () => {
         return;
       }
 
-      const { error } = await supabase.auth.signInWithIdToken({
+      const { data: authData, error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
         token: idToken,
       });
 
-      setLoading(false);
-
       if (error) {
+        setLoading(false);
         Alert.alert('Signup Failed', error.message);
+        return;
+      }
+
+      if (authData?.session) {
+        const saved = await saveProfileData(authData.session.access_token);
+        if (saved) {
+          // Re-check profile to set hasProfile=true and navigate to Dashboard.
+          await checkProfile(authData.session);
+        }
+        setLoading(false);
+      } else {
+        setLoading(false);
       }
     } catch (error: any) {
       setLoading(false);

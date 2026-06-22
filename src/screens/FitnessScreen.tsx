@@ -235,7 +235,7 @@ function TodaysWorkout({
   );
 }
 
-function AITrainerCard({ onOpenAI }: { onOpenAI?: () => void }) {
+function AITrainerCard({ onOpenAI }: { onOpenAI?: (from?: string) => void }) {
   return (
     <GlassCardView style={styles.card} accentColor={Colors.purple}>
       <SectionLabel title="Ask AI about your workout" />

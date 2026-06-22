@@ -12,10 +12,14 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import OnboardingScreen from './src/screens/OnboardingScreen';
 import { API_BASE_URL } from './src/config/api';
 import { AuthStack } from './src/navigation/AuthStack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { resetAllSections } from './src/services/profileCompletionService';
+
+const Stack = createNativeStackNavigator();
 
 const PROFILE_DATA_VERSION = 2;
 const PROFILE_VERSION_KEY = '@profile_data_version';
@@ -132,7 +136,7 @@ const formatDateToISO = (dateStr?: string): string => {
 };
 
 const RootComponent = () => {
-  const { session, isLoading } = useAuth();
+  const { session, isLoading, hasProfile } = useAuth();
   const [migrationDone, setMigrationDone] = useState(false);
 
   useEffect(() => {
@@ -146,7 +150,7 @@ const RootComponent = () => {
     })();
   }, []);
 
-  if (isLoading || !migrationDone) {
+  if (isLoading || !migrationDone || (session?.user && hasProfile === null)) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color="#007AFF" />
@@ -158,6 +162,16 @@ const RootComponent = () => {
     return (
       <NavigationContainer>
         <AuthStack />
+      </NavigationContainer>
+    );
+  }
+
+  if (hasProfile === false) {
+    return (
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        </Stack.Navigator>
       </NavigationContainer>
     );
   }
