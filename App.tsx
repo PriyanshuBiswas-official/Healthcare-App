@@ -10,19 +10,13 @@ import CalorieScreen from './src/screens/CalorieScreen';
 import AIAdvisorScreen from './src/screens/AIAdvisorScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
+import ProfileSetupScreen from './src/screens/ProfileSetupScreen';
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import OnboardingScreen from './src/screens/OnboardingScreen';
-import { API_BASE_URL } from './src/config/api';
 import { AuthStack } from './src/navigation/AuthStack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { resetAllSections } from './src/services/profileCompletionService';
-
 const Stack = createNativeStackNavigator();
-
-const PROFILE_DATA_VERSION = 2;
-const PROFILE_VERSION_KEY = '@profile_data_version';
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
 
@@ -32,8 +26,8 @@ function AppShell() {
   const { setForceHidden } = useScrollVisibility();
   const [aiStartInChat, setAiStartInChat] = useState(false);
   const [aiOrigin, setAiOrigin] = useState<TabName | null>(null);
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
   const mountedTabs = useRef<Set<TabName>>(new Set(['Home']));
-  
 
   const openAI = (fromTab?: TabName, startInChat = true) => {
     if (activeTab !== 'AI') setPreviousTab(activeTab);
@@ -82,6 +76,16 @@ function AppShell() {
     setActiveTab('Notifications');
   };
 
+  const openProfileSetup = () => {
+    if (activeTab !== 'Profile') setPreviousTab(activeTab);
+    setActiveTab('Profile');
+    setShowProfileSetup(true);
+  };
+
+  const closeProfileSetup = () => {
+    setShowProfileSetup(false);
+  };
+
   return (
     <>
       <View style={styles.screenContainer}>
@@ -90,7 +94,7 @@ function AppShell() {
             <View
               key={tab}
               style={[styles.screenWrapper, activeTab !== tab && styles.screenHidden]}>
-              {tab === 'Home' && <DashboardScreen onProfilePress={openProfile} onNotificationsPress={openNotifications} /> }
+              {tab === 'Home' && <DashboardScreen onProfilePress={openProfile} onNotificationsPress={openNotifications} onCompleteProfile={openProfileSetup} /> }
               {tab === 'Health' && <HealthScreen onProfilePress={openProfile} onNotificationsPress={openNotifications} />}
               {tab === 'AI' && (
                 <AIAdvisorScreen
@@ -109,7 +113,11 @@ function AppShell() {
         ))}
         {activeTab === 'Profile' && (
           <View style={styles.screenWrapper}>
-            <ProfileScreen onBackPress={() => setActiveTab(previousTab)} />
+            {showProfileSetup ? (
+              <ProfileSetupScreen onBack={closeProfileSetup} />
+            ) : (
+              <ProfileScreen onBackPress={() => setActiveTab(previousTab)} onCompleteProfile={openProfileSetup} />
+            )}
           </View>
         )}
         {activeTab === 'Notifications' && (
@@ -124,33 +132,10 @@ function AppShell() {
   );
 }
 
-const formatDateToISO = (dateStr?: string): string => {
-  if (!dateStr) return '';
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-  const parts = dateStr.split('/');
-  if (parts.length === 3) {
-    const [day, month, year] = parts;
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-  }
-  return dateStr;
-};
-
 const RootComponent = () => {
   const { session, isLoading, hasProfile } = useAuth();
-  const [migrationDone, setMigrationDone] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      const version = await AsyncStorage.getItem(PROFILE_VERSION_KEY);
-      if (version !== String(PROFILE_DATA_VERSION)) {
-        await resetAllSections();
-        await AsyncStorage.setItem(PROFILE_VERSION_KEY, String(PROFILE_DATA_VERSION));
-      }
-      setMigrationDone(true);
-    })();
-  }, []);
-
-  if (isLoading || !migrationDone || (session?.user && hasProfile === null)) {
+  if (isLoading || (session?.user && hasProfile === null)) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color="#007AFF" />

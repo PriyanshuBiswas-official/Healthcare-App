@@ -11,7 +11,6 @@ import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../them
 import { GlassCardView, SectionHeader, CircularRing, StatPill, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../components/SharedComponents';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 import ProfileCompletionBanner from '../components/ProfileCompletionBanner';
-import { getProfileCompletion, calculatePercentage, ProfileCompletion } from '../services/profileCompletionService';
 import { useAuth } from '../providers/AuthProvider';
 
 
@@ -33,13 +32,12 @@ const UPCOMING = [
   { time: '06:30 PM', title: 'Upper Body Strength', subtitle: 'Chest · Shoulders · Triceps', color: Colors.teal, icon: '💪' },
 ];
 
-export default function DashboardScreen({ onProfilePress, onNotificationsPress, onOpenProfileSetup }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenProfileSetup?: () => void }) {
+export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void }) {
   const { onScroll } = useScrollVisibility();
-  const { user } = useAuth();
+  const { user, profileCompletion } = useAuth();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const [completion, setCompletion] = useState<ProfileCompletion | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
   useEffect(() => {
@@ -54,12 +52,11 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         Animated.timing(pulseAnim, { toValue: 1, duration: 1800, useNativeDriver: true }),
       ])
     ).start();
-
-    getProfileCompletion().then(setCompletion);
   }, [fadeAnim, pulseAnim, slideAnim]);
 
-  const percentage = completion ? calculatePercentage(completion) : 0;
-  const showBanner = completion && percentage < 100 && !bannerDismissed;
+  const percentage = profileCompletion?.percentage ?? 0;
+  const isComplete = profileCompletion?.completed ?? false;
+  const showBanner = !bannerDismissed && !isComplete;
 
   return (
     <View style={styles.root}>
@@ -86,7 +83,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           <ProfileCompletionBanner
             percentage={percentage}
             onSkip={() => setBannerDismissed(true)}
-            onComplete={() => onOpenProfileSetup?.()}
+            onComplete={() => onCompleteProfile?.()}
           />
         )}
 

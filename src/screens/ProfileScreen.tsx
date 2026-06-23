@@ -13,8 +13,6 @@ import { GlassCardView, SectionHeader, StatPill, ProgressBar } from '../componen
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../providers/AuthProvider';
-import { GoogleSignin } from '../lib/googleSignin';
-import { getProfileCompletion, calculatePercentage, ProfileCompletion } from '../services/profileCompletionService';
 import { API_BASE_URL } from '../config/api';
 
 type MenuItem = {
@@ -64,16 +62,6 @@ const SUPPORT: MenuItem[] = [
   { icon: '📄', label: 'Terms & Policies', sub: 'Legal documents' },
   { icon: 'ℹ️', label: 'About HealthApp', sub: 'Version 0.0.1' },
 ];
-
-function computeAge(dob: string): number | undefined {
-  if (!dob || !/^\d{2}\/\d{2}\/\d{4}$/.test(dob)) return undefined;
-  const [day, month, year] = dob.split('/').map(Number);
-  const birth = new Date(year, month - 1, day);
-  const now = new Date();
-  let age = now.getFullYear() - birth.getFullYear();
-  if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--;
-  return age;
-}
 
 function MenuRow({ item, onPress }: { item: MenuItem; onPress?: () => void }) {
   const accent = item.color ?? Colors.teal;
@@ -129,24 +117,18 @@ function ToggleRow({
   );
 }
 
-export default function ProfileScreen({ onBackPress, onOpenProfileSetup }: { onBackPress?: () => void; onOpenProfileSetup?: () => void }) {
+export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBackPress?: () => void; onCompleteProfile?: () => void }) {
   const { onScroll } = useScrollVisibility();
-  const { user, session } = useAuth();
+  const { user, session, profileCompletion } = useAuth();
   const [toggles, setToggles] = useState(
     Object.fromEntries(PREFERENCES.map(p => [p.key, p.default])) as Record<string, boolean>,
   );
-  const [completion, setCompletion] = useState<ProfileCompletion | null>(null);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
-
-  useEffect(() => {
-    getProfileCompletion().then(setCompletion);
-  }, []);
 
   useEffect(() => {
     const fetchProfile = async () => {
       if (!session?.access_token) return;
 
-      // 1. Try fetching from backend
       try {
         const res = await fetch(`${API_BASE_URL}/api/profile`, {
           headers: { Authorization: `Bearer ${session.access_token}` },
@@ -154,35 +136,16 @@ export default function ProfileScreen({ onBackPress, onOpenProfileSetup }: { onB
         const json = await res.json();
         if (json.success && json.data) {
           setProfileData(json.data);
-          return;
         }
       } catch (e) {
-        console.warn('[ProfileScreen] Backend fetch failed, falling back to local data:', e);
-      }
-
-      // 2. Fallback: read from @profile_completion (local AsyncStorage)
-      try {
-        const completionData = await getProfileCompletion();
-        const basicInfo = completionData.basic_info?.data;
-        if (basicInfo) {
-          setProfileData({
-            name: user?.user_metadata?.full_name || '',
-            email: user?.email || '',
-            age: basicInfo.dateOfBirth ? computeAge(basicInfo.dateOfBirth) : undefined,
-            gender: basicInfo.gender || undefined,
-            height: basicInfo.height ? parseFloat(basicInfo.height) : undefined,
-            weight: basicInfo.weight ? parseFloat(basicInfo.weight) : undefined,
-            blood_group: basicInfo.bloodGroup || undefined,
-          });
-        }
-      } catch (e) {
-        console.warn('[ProfileScreen] Local fallback failed:', e);
+        console.warn('[ProfileScreen] Backend fetch failed:', e);
       }
     };
     fetchProfile();
   }, [session?.access_token]);
 
-  const percentage = completion ? calculatePercentage(completion) : 0;
+  const percentage: number = profileCompletion?.percentage ?? 0;
+  const isComplete = profileCompletion?.completed ?? false;
 
   const avatarUrl = user?.user_metadata?.avatar_url;
   const displayName = profileData?.name || user?.email?.split('@')[0] || 'User';
@@ -262,7 +225,7 @@ export default function ProfileScreen({ onBackPress, onOpenProfileSetup }: { onB
             <SectionHeader title="Complete Your Profile" subtitle={`${percentage}% completed`} />
             <TouchableOpacity
               style={styles.completeCard}
-              onPress={() => onOpenProfileSetup?.()}
+              onPress={() => onCompleteProfile?.()}
               activeOpacity={0.7}>
               <View style={styles.completeCardInner}>
                 <View style={styles.completeCardLeft}>

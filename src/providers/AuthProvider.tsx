@@ -1,13 +1,28 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { API_BASE_URL } from '../config/api';
+
+export interface ProfileCompletion {
+  percentage: number;
+  sections: {
+    basic_info: boolean;
+    medical_conditions: boolean;
+    medications: boolean;
+    allergies: boolean;
+    nutrition: boolean;
+    fitness: boolean;
+    gender_specific: boolean;
+  };
+  completed: boolean;
+}
 
 type AuthContextType = {
   session: Session | null;
   user: User | null;
   isLoading: boolean;
   hasProfile: boolean | null;
+  profileCompletion: ProfileCompletion | null;
   checkProfile: (activeSession?: Session | null) => Promise<boolean>;
 };
 
@@ -16,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
   hasProfile: null,
+  profileCompletion: null,
   checkProfile: async () => false,
 });
 
@@ -24,11 +40,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
+  const [profileCompletion, setProfileCompletion] = useState<ProfileCompletion | null>(null);
 
-  const checkProfile = async (activeSession?: Session | null): Promise<boolean> => {
+  const checkProfile = useCallback(async (activeSession?: Session | null): Promise<boolean> => {
     const targetSession = activeSession !== undefined ? activeSession : session;
     if (!targetSession?.access_token) {
       setHasProfile(null);
+      setProfileCompletion(null);
       return false;
     }
 
@@ -40,17 +58,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const json = await res.json();
         if (json.success && json.data) {
           setHasProfile(true);
+          if (json.profile_completion) {
+            setProfileCompletion(json.profile_completion);
+          }
           return true;
         }
       }
       setHasProfile(false);
+      setProfileCompletion(null);
       return false;
     } catch (e) {
       console.warn('[AuthProvider] checkProfile failed:', e);
       setHasProfile(false);
+      setProfileCompletion(null);
       return false;
     }
-  };
+  }, [session]);
 
   useEffect(() => {
     let active = true;
@@ -78,6 +101,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         checkProfile(newSession);
       } else {
         setHasProfile(null);
+        setProfileCompletion(null);
         setIsLoading(false);
       }
     });
@@ -89,7 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, user, isLoading, hasProfile, checkProfile }}>
+    <AuthContext.Provider value={{ session, user, isLoading, hasProfile, profileCompletion, checkProfile }}>
       {children}
     </AuthContext.Provider>
   );
