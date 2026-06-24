@@ -2,6 +2,7 @@ export const Colors = {
   // Backgrounds
   bg: '#0A0B14',
   bgCard: 'rgba(255,255,255,0.05)',
+  bgCardSolid: '#141522',
   bgCardBorder: 'rgba(255,255,255,0.10)',
 
   // Accents
