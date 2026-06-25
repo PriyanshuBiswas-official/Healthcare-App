@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -41,18 +41,41 @@ export default function HealthScreenMale({
   const { onScroll } = useScrollVisibility();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('Overview');
+  const scrollRef = useRef<ScrollView>(null);
 
   const TABS = ['Overview', 'Hormones', 'Vitals'];
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'Overview':
-        return (
-          <>
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [activeTab]);
+
+  return (
+    <View style={s.root}>
+      <ScrollView
+        ref={scrollRef}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={s.scroll}
+        onScroll={onScroll}
+        scrollEventThrottle={16}>
+
+        <View style={s.header}>
+          <Text style={s.title}>Your Health</Text>
+          <View style={s.headerActions}>
+            <NotificationIconButton onPress={onNotificationsPress} />
+            <ProfileAvatarButton
+              onPress={onProfilePress}
+              userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+              avatarUrl={user?.user_metadata?.avatar_url}
+            />
+          </View>
+        </View>
+
+        <InnerTabBar tabs={TABS} active={activeTab} onSelect={setActiveTab} accentColor={Colors.teal} />
+
+        {activeTab === 'Overview' && (<>
             <SectionHeader title="Health Score" />
             <GlassCardView style={s.card}>
               <View style={s.scoreTopRow}>
-                {/* Gauge placeholder */}
                 <View style={s.gaugeWrap}>
                   <View style={s.gaugeTrack} />
                   <View style={s.gaugeFill} />
@@ -73,7 +96,6 @@ export default function HealthScreenMale({
                 </View>
               </View>
 
-              {/* Quick stats row */}
               <View style={s.quickStatsRow}>
                 <View style={s.qStatBox}>
                   <Text style={s.qStatVal}>72</Text>
@@ -110,14 +132,10 @@ export default function HealthScreenMale({
 
             <MentalHealthSection />
             <SleepTrackerSection />
-
-            {/* Preventive screenings imported from common */}
             <PreventiveCareSection />
-          </>
-        );
-      case 'Hormones':
-        return (
-          <>
+        </>)}
+
+        {activeTab === 'Hormones' && (<>
             <SectionHeader title="Testosterone & Hormones" />
             <GlassCardView style={s.card}>
               <View style={s.fertHeader}>
@@ -130,7 +148,6 @@ export default function HealthScreenMale({
                 </View>
               </View>
 
-              {/* Special T Bar */}
               <View style={s.tBarContainer}>
                 <View style={s.tBarLabels}>
                   <Text style={s.tBarEdge}>300 ng/dL</Text>
@@ -161,11 +178,9 @@ export default function HealthScreenMale({
                 <Text style={s.infoText}>💡 Elevated cortisol can suppress testosterone over time. AI recommends reviewing sleep quality and stress load. Upload latest lab report for precise tracking.</Text>
               </View>
             </GlassCardView>
-          </>
-        );
-      case 'Vitals':
-        return (
-          <>
+        </>)}
+
+        {activeTab === 'Vitals' && (<>
             <SectionHeader title="Cardiovascular Risk" />
             <GlassCardView style={s.card}>
               <View style={s.fertHeader}>
@@ -206,35 +221,7 @@ export default function HealthScreenMale({
             </GlassCardView>
 
             <VitalsDashboardSection />
-          </>
-        );
-    }
-  };
-
-  return (
-    <View style={s.root}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={s.scroll}
-        onScroll={onScroll}
-        scrollEventThrottle={16}>
-
-        {/* ── Header ── */}
-        <View style={s.header}>
-          <Text style={s.title}>Your Health</Text>
-          <View style={s.headerActions}>
-            <NotificationIconButton onPress={onNotificationsPress} />
-            <ProfileAvatarButton
-              onPress={onProfilePress}
-              userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
-              avatarUrl={user?.user_metadata?.avatar_url}
-            />
-          </View>
-        </View>
-
-        <InnerTabBar tabs={TABS} active={activeTab} onSelect={setActiveTab} accentColor={Colors.teal} />
-
-        {renderTabContent()}
+        </>)}
 
         {/* Common AI Insights at bottom of all tabs */}
         <View style={{ marginTop: Spacing.xl }}>
@@ -251,7 +238,7 @@ export default function HealthScreenMale({
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl },
+  scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, flexGrow: 1 },
 
   header: {
     flexDirection: 'row',

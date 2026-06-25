@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../theme/theme';
 import {
@@ -19,16 +18,12 @@ import {
   InnerTabBar,
   HormoneRangeBar,
   QuickActionButton,
-  MiniMetricCard,
-  LogButton,
   SleepTrackerSection,
   MentalHealthSection,
   VitalsDashboardSection,
   AIHealthInsightsSection,
 } from './HealthCommonSections';
 import { useAuth } from '../providers/AuthProvider';
-
-const { width } = Dimensions.get('window');
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
@@ -41,13 +36,18 @@ export default function HealthScreenFemale({
 }) {
   const { onScroll } = useScrollVisibility();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('Cycle');
+  const [activeTab, setActiveTab] = useState('Overview');
   const [selectedPhase, setSelectedPhase] = useState('Luteal');
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>(['Cramps', 'Fatigue']);
   const [mood, setMood] = useState<number | null>(3);
   const [flow, setFlow] = useState<string>('Medium');
+  const scrollRef = useRef<ScrollView>(null);
 
   const TABS = ['Overview', 'Hormones', 'Fertility'];
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [activeTab]);
   const SYMPTOMS = [
     { label: 'Cramps', icon: '🤕' }, { label: 'Fatigue', icon: '😴' }, { label: 'Nausea', icon: '🤢' },
     { label: 'Brain fog', icon: '🧠' }, { label: 'Bloating', icon: '💧' }, { label: 'Irritability', icon: '😤' },
@@ -66,15 +66,34 @@ export default function HealthScreenFemale({
     { label: 'Medium', icon: '💧💧💧' }, { label: 'Heavy', icon: '💧💧💧💧' }
   ];
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'Cycle':
-        return (
-          <>
+  return (
+    <View style={s.root}>
+      <ScrollView
+        ref={scrollRef}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={s.scroll}
+        onScroll={onScroll}
+        scrollEventThrottle={16}>
+
+        {/* ── Header ── */}
+        <View style={s.header}>
+          <Text style={s.title}>Your Health</Text>
+          <View style={s.headerActions}>
+            <NotificationIconButton onPress={onNotificationsPress} />
+            <ProfileAvatarButton
+              onPress={onProfilePress}
+              userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+              avatarUrl={user?.user_metadata?.avatar_url}
+            />
+          </View>
+        </View>
+
+        <InnerTabBar tabs={TABS} active={activeTab} onSelect={setActiveTab} accentColor={Colors.pink} />
+
+        {activeTab === 'Overview' && (<>
             <SectionHeader title="Current Cycle" />
             <GlassCardView style={s.card}>
               <View style={s.cycleTopRow}>
-                {/* Donut Chart placeholder */}
                 <View style={s.cycleRingWrap}>
                   <View style={[s.cycleRing, { borderColor: Colors.purple }]} />
                   <View style={s.cycleRingCenter}>
@@ -101,7 +120,6 @@ export default function HealthScreenFemale({
                 </View>
               </View>
 
-              {/* Phase buttons */}
               <View style={s.phaseBtnRow}>
                 <QuickActionButton icon="🩸" label="Menstrual" color={Colors.pink} active={selectedPhase === 'Menstrual'} onPress={() => setSelectedPhase('Menstrual')} />
                 <View style={{ width: Spacing.sm }} />
@@ -120,7 +138,7 @@ export default function HealthScreenFemale({
                   const day = i + 1;
                   const isPeriod = day <= 4;
                   const isOvulation = day >= 13 && day <= 15;
-                  const isCurrent = day === 18; // Fake
+                  const isCurrent = day === 18;
                   let color = Colors.bgCardBorder;
                   let bg = 'transparent';
                   if (isPeriod) { color = Colors.pink; bg = Colors.pink; }
@@ -195,11 +213,9 @@ export default function HealthScreenFemale({
             <SleepTrackerSection />
             <MentalHealthSection />
             <VitalsDashboardSection />
-          </>
-        );
-      case 'Fertility':
-        return (
-          <>
+        </>)}
+
+        {activeTab === 'Fertility' && (<>
             <SectionHeader title="Fertility Window" />
             <GlassCardView style={s.card}>
               <View style={s.fertHeader}>
@@ -229,11 +245,9 @@ export default function HealthScreenFemale({
                 </View>
               </View>
             </GlassCardView>
-          </>
-        );
-      case 'Hormones':
-        return (
-          <>
+        </>)}
+
+        {activeTab === 'Hormones' && (<>
             <SectionHeader title="Hormone Health" />
             <GlassCardView style={s.card}>
               <View style={s.fertHeader}>
@@ -252,35 +266,7 @@ export default function HealthScreenFemale({
                 <Text style={s.infoText}>💡 These are AI estimated values based on cycle day. For clinical accuracy, use a blood test or LH dips/ovulation swabs here.</Text>
               </View>
             </GlassCardView>
-          </>
-        );
-    }
-  };
-
-  return (
-    <View style={s.root}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={s.scroll}
-        onScroll={onScroll}
-        scrollEventThrottle={16}>
-
-        {/* ── Header ── */}
-        <View style={s.header}>
-          <Text style={s.title}>Your Health</Text>
-          <View style={s.headerActions}>
-            <NotificationIconButton onPress={onNotificationsPress} />
-            <ProfileAvatarButton
-              onPress={onProfilePress}
-              userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
-              avatarUrl={user?.user_metadata?.avatar_url}
-            />
-          </View>
-        </View>
-
-        <InnerTabBar tabs={TABS} active={activeTab} onSelect={setActiveTab} accentColor={Colors.pink} />
-
-        {renderTabContent()}
+        </>)}
 
         {/* Common AI Insights at bottom of all tabs */}
         <View style={{ marginTop: Spacing.xl }}>
@@ -297,7 +283,7 @@ export default function HealthScreenFemale({
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl },
+  scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, flexGrow: 1 },
 
   header: {
     flexDirection: 'row',

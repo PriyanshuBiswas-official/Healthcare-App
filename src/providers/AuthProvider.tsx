@@ -23,6 +23,7 @@ type AuthContextType = {
   isLoading: boolean;
   hasProfile: boolean | null;
   profileCompletion: ProfileCompletion | null;
+  gender: string | null;
   checkProfile: (activeSession?: Session | null) => Promise<boolean>;
 };
 
@@ -32,6 +33,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   hasProfile: null,
   profileCompletion: null,
+  gender: null,
   checkProfile: async () => false,
 });
 
@@ -41,6 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
   const [profileCompletion, setProfileCompletion] = useState<ProfileCompletion | null>(null);
+  const [gender, setGender] = useState<string | null>(null);
 
   const checkProfile = useCallback(async (activeSession?: Session | null): Promise<boolean> => {
     const targetSession = activeSession !== undefined ? activeSession : session;
@@ -58,6 +61,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const json = await res.json();
         if (json.success && json.data) {
           setHasProfile(true);
+          setGender(json.data.gender || null);
           if (json.profile_completion) {
             setProfileCompletion(json.profile_completion);
           }
@@ -66,11 +70,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       setHasProfile(false);
       setProfileCompletion(null);
+      setGender(null);
       return false;
     } catch (e) {
       console.warn('[AuthProvider] checkProfile failed:', e);
       setHasProfile(false);
       setProfileCompletion(null);
+      setGender(null);
       return false;
     }
   }, [session]);
@@ -102,6 +108,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         setHasProfile(null);
         setProfileCompletion(null);
+        setGender(null);
         setIsLoading(false);
       }
     });
@@ -113,7 +120,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, user, isLoading, hasProfile, profileCompletion, checkProfile }}>
+    <AuthContext.Provider value={{ session, user, isLoading, hasProfile, profileCompletion, gender, checkProfile }}>
       {children}
     </AuthContext.Provider>
   );
