@@ -24,10 +24,20 @@ export interface TodayExercise {
   target_weight: number | null;
   rest_seconds: number | null;
   logged_sets: WorkoutSet[];
+  last_performance: {
+    weight: number;
+    reps: number;
+    completed: boolean;
+    sets_completed: number;
+    sets_total: number;
+  } | null;
+  completed: boolean;
 }
 
 export interface TodayWorkout {
   plan_name: string | null;
+  plan_id: number | null;
+  plan_day_id: number | null;
   day_name: string | null;
   day_no: number | null;
   exercises: TodayExercise[];
@@ -61,4 +71,13 @@ export interface PersonalRecord {
   reps: number;
   description: string | null;
   achieved_at: string;
+}
+
+export interface ActivityGoal {
+  activity_goal_id: number;
+  user_id: number;
+  calorie_burn_goal: number;
+  exercise_min_goal: number;
+  steps_goal: number;
+  created_at: string;
 }

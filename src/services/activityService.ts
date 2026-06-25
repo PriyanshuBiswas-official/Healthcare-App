@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '../config/api';
-import type { ActivitySummary, TodayWorkout, WeeklyData, PersonalRecord } from '../types/activity';
+import type { ActivitySummary, TodayWorkout, WeeklyData, PersonalRecord, ActivityGoal } from '../types/activity';
 
 export interface PlanDayInput {
   day_no: number;
@@ -73,5 +73,122 @@ export async function createWorkoutPlan(token: string, plan: PlanInput): Promise
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.error || 'Failed to create workout plan');
+  return json.data;
+}
+
+export interface AddExerciseInput {
+  plan_day_id: number;
+  exercise_name: string;
+  exercise_order?: number;
+  sets?: number;
+  reps?: number;
+  rest?: number;
+  target_weight?: number;
+}
+
+export async function addExerciseToDay(token: string, data: AddExerciseInput): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/api/activity/plan/exercise`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to add exercise');
+  return json.data;
+}
+
+export interface UpdateExerciseInput {
+  exercise_id: number;
+  exercise_name?: string;
+  exercise_order?: number;
+  sets?: number;
+  reps?: number;
+  rest?: number;
+  target_weight?: number;
+}
+
+export async function updateExercise(token: string, data: UpdateExerciseInput): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/api/activity/plan/exercise`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to update exercise');
+  return json.data;
+}
+
+export async function deleteExercise(token: string, exerciseId: number): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/activity/plan/exercise/${exerciseId}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to delete exercise');
+}
+
+// ── Activity Goals ─────────────────────────────────────────
+
+export async function getActivityGoal(token: string): Promise<ActivityGoal | null> {
+  const res = await fetch(`${API_BASE_URL}/api/activity/goal`, {
+    headers: authHeaders(token),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch activity goal');
+  return json.data || null;
+}
+
+export async function saveActivityGoal(token: string, goal: { calorie_burn_goal?: number; exercise_min_goal?: number; steps_goal?: number }): Promise<ActivityGoal> {
+  const res = await fetch(`${API_BASE_URL}/api/activity/goal`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(goal),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to save activity goal');
+  return json.data;
+}
+
+// ── Activity Log ───────────────────────────────────────────
+
+export interface ActivityLogInput {
+  distance?: number;
+  calories_burnt?: number;
+  other_activities?: string;
+  other_act_calorie_burn?: number;
+}
+
+export async function logActivity(token: string, data: ActivityLogInput): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/api/activity/log`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to log activity');
+  return json.data;
+}
+
+// ── Workout Set Log ───────────────────────────────────────
+
+export async function logWorkoutSet(token: string, data: { exercise_id: number; set_no: number; weight: number; reps: number }): Promise<{ data: any; completed: boolean }> {
+  const res = await fetch(`${API_BASE_URL}/api/activity/log-set`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || json.error || 'Failed to log set');
+  return { data: json.data, completed: json.completed || false };
+}
+
+export async function editWorkoutSet(token: string, setId: number, data: { weight?: number; reps?: number }): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/api/activity/log-set/${setId}`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to edit set');
   return json.data;
 }

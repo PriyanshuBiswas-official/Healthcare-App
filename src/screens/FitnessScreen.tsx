@@ -18,7 +18,7 @@ import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 import { TabName } from '../navigation/TabBar';
 import { useAuth } from '../providers/AuthProvider';
 import * as activityService from '../services/activityService';
-import type { ActivitySummary, TodayExercise, WeeklyDay, WeeklyStats, PersonalRecord } from '../types/activity';
+import type { ActivitySummary, TodayExercise, WeeklyDay, WeeklyStats, PersonalRecord, ActivityGoal } from '../types/activity';
 import type { PlanDayInput } from '../services/activityService';
 
 const { width } = Dimensions.get('window');
@@ -82,16 +82,18 @@ function SegmentedControl({
   );
 }
 
-function ActivityRingsCard({ summary }: { summary: ActivitySummary | null }) {
-  const burnTarget = 400;
-  const exerciseTarget = 60;
-  const stepsTarget = 10000;
+function DailyProgressCard({ summary, goal, onLogActivity }: { summary: ActivitySummary | null; goal: ActivityGoal | null; onLogActivity: () => void }) {
+  const burnTarget = goal?.calorie_burn_goal || 0;
+  const exerciseTarget = goal?.exercise_min_goal || 0;
+  const stepsTarget = goal?.steps_goal || 0;
 
-  const burnProgress = summary ? Math.min(summary.calories_burned / burnTarget, 1) : 0;
-  const exerciseProgress = summary ? Math.min(summary.exercise_minutes / exerciseTarget, 1) : 0;
-  const stepsProgress = summary ? Math.min(summary.steps / stepsTarget, 1) : 0;
+  const burnProgress = summary && burnTarget > 0 ? Math.min(summary.calories_burned / burnTarget, 1) : 0;
+  const exerciseProgress = summary && exerciseTarget > 0 ? Math.min(summary.exercise_minutes / exerciseTarget, 1) : 0;
+  const stepsProgress = summary && stepsTarget > 0 ? Math.min(summary.steps / stepsTarget, 1) : 0;
 
-  const ringScore = Math.round((burnProgress + exerciseProgress + stepsProgress) / 3 * 100);
+  const ringScore = burnTarget > 0 || exerciseTarget > 0 || stepsTarget > 0
+    ? Math.round((burnProgress + exerciseProgress + stepsProgress) / 3 * 100)
+    : 0;
 
   const rings = [
     { label: 'Burn', current: summary?.calories_burned ?? 0, target: burnTarget, unit: 'kcal', color: Colors.pink, progress: burnProgress },
@@ -101,7 +103,12 @@ function ActivityRingsCard({ summary }: { summary: ActivitySummary | null }) {
 
   return (
     <GlassCardView style={styles.card}>
-      <SectionLabel title="ACTIVITY RINGS" />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <SectionLabel title="DAILY PROGRESS" />
+        <TouchableOpacity onPress={onLogActivity} style={{ backgroundColor: Colors.teal + '20', paddingVertical: Spacing.xs, paddingHorizontal: Spacing.sm, borderRadius: Radius.sm }} activeOpacity={0.7}>
+          <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>+ Log Activity</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.ringsRow}>
         <View style={styles.ringsVisual}>
           <View style={[styles.ringOuter, { borderColor: Colors.pink + '40' }]}>
@@ -118,7 +125,7 @@ function ActivityRingsCard({ summary }: { summary: ActivitySummary | null }) {
               <View style={styles.ringMetricHeader}>
                 <Text style={[styles.ringMetricLabel, { color: ring.color }]}>{ring.label}</Text>
                 <Text style={styles.ringMetricVal}>
-                  {ring.current.toLocaleString()} / {ring.target.toLocaleString()} {ring.unit}
+                  {ring.current.toLocaleString()} / {ring.target > 0 ? ring.target.toLocaleString() : '--'} {ring.unit}
                 </Text>
               </View>
               <ProgressBar progress={ring.progress} color={ring.color} height={5} />
@@ -148,14 +155,24 @@ function TodaysWorkout({
   exercises,
   dayName,
   planName,
+  planDayId,
   activeFilter,
   setActiveFilter,
+  onSetupPlan,
+  onAddExercise,
+  onEditExercise,
+  onLogExercise,
 }: {
   exercises: TodayExercise[];
   dayName: string | null;
   planName: string | null;
+  planDayId: number | null;
   activeFilter: string;
   setActiveFilter: (f: string) => void;
+  onSetupPlan: () => void;
+  onAddExercise: () => void;
+  onEditExercise: (ex: TodayExercise) => void;
+  onLogExercise: (exercise: any) => void;
 }) {
   if (exercises.length === 0) {
     return (
@@ -167,6 +184,14 @@ function TodaysWorkout({
             <Text style={{ color: Colors.textSecondary, fontSize: Typography.sm }}>
               {planName ? `No workout planned for ${dayName || 'today'}` : 'No workout plan set up yet'}
             </Text>
+            {!planName && (
+              <TouchableOpacity
+                onPress={onSetupPlan}
+                style={{ marginTop: Spacing.md, backgroundColor: Colors.purple, paddingVertical: Spacing.sm + 2, paddingHorizontal: Spacing.xl, borderRadius: Radius.md }}
+                activeOpacity={0.8}>
+                <Text style={{ color: Colors.bg, fontWeight: Typography.bold, fontSize: Typography.sm }}>Set Up Workout Plan</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </GlassCardView>
       </>
@@ -190,12 +215,13 @@ function TodaysWorkout({
         const loggedSets = ex.logged_sets || [];
         const hasLogged = loggedSets.length > 0;
         const topWeight = loggedSets.length > 0 ? Math.max(...loggedSets.map(s => s.weight || 0)) : 0;
+        const isCompleted = ex.completed;
 
-        return (
-          <GlassCardView key={ex.exercise_id} style={styles.exerciseCard}>
+        const cardContent = (
+          <GlassCardView style={[styles.exerciseCard, isCompleted && { borderColor: Colors.teal + '40', borderWidth: 1 }]}>
             <View style={styles.exerciseHeader}>
               <View style={styles.exerciseIconWrap}>
-                <Text style={{ fontSize: 18 }}>💪</Text>
+                <Text style={{ fontSize: 18 }}>{isCompleted ? '✅' : '💪'}</Text>
               </View>
               <View style={styles.exerciseTitleWrap}>
                 <Text style={styles.exerciseName}>{ex.exercise_name}</Text>
@@ -203,22 +229,29 @@ function TodaysWorkout({
                   <View style={[styles.tag, { backgroundColor: Colors.teal + '20', borderColor: Colors.teal + '50' }]}>
                     <Text style={[styles.tagText, { color: Colors.teal }]}>{ex.target_sets}×{ex.target_reps}</Text>
                   </View>
-                  {hasLogged && (
+                  {isCompleted ? (
+                    <View style={[styles.tag, { backgroundColor: Colors.teal + '30', borderColor: Colors.teal + '60' }]}>
+                      <Text style={[styles.tagText, { color: Colors.teal, fontWeight: Typography.bold }]}>Completed</Text>
+                    </View>
+                  ) : hasLogged ? (
                     <View style={[styles.tag, { backgroundColor: Colors.purple + '20', borderColor: Colors.purple + '50' }]}>
                       <Text style={[styles.tagText, { color: Colors.purple }]}>Logged</Text>
                     </View>
-                  )}
+                  ) : null}
                 </View>
               </View>
               {topWeight > 0 && (
                 <Text style={styles.topSet}>{topWeight}kg top set</Text>
               )}
+              <TouchableOpacity onPress={() => onEditExercise(ex)} style={{ padding: Spacing.xs }} activeOpacity={0.6}>
+                <Text style={{ fontSize: 16, color: Colors.textSecondary }}>✏️</Text>
+              </TouchableOpacity>
             </View>
             {hasLogged ? (
               <View style={styles.setsRow}>
                 {loggedSets.map(set => (
-                  <View key={set.set_id} style={[styles.setChip, set.completed && { backgroundColor: Colors.teal + '20' }]}>
-                    <Text style={[styles.setChipText, set.completed && { color: Colors.teal }]}>
+                  <View key={set.set_id} style={styles.setChip}>
+                    <Text style={styles.setChipText}>
                       Set {set.set_no}: {set.weight}kg × {set.reps}
                     </Text>
                   </View>
@@ -233,9 +266,54 @@ function TodaysWorkout({
                 ))}
               </View>
             )}
+            {!hasLogged && ex.last_performance && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: Spacing.sm, backgroundColor: Colors.purple + '10', borderRadius: Radius.sm, paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs }}>
+                <Text style={{ fontSize: Typography.xs, color: Colors.purple, fontWeight: Typography.semiBold, marginRight: Spacing.xs }}>
+                  Last:
+                </Text>
+                <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary }}>
+                  {ex.last_performance.weight}kg × {ex.last_performance.reps}
+                </Text>
+                <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginHorizontal: 4 }}>·</Text>
+                <Text style={{ fontSize: Typography.xs, color: ex.last_performance.completed ? Colors.teal : Colors.amber }}>
+                  {ex.last_performance.sets_completed}/{ex.last_performance.sets_total} sets
+                </Text>
+                {ex.last_performance.completed && ex.target_weight && ex.target_weight > ex.last_performance.weight && (
+                  <>
+                    <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginHorizontal: 4 }}>→</Text>
+                    <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>
+                      Try {ex.target_weight}kg
+                    </Text>
+                  </>
+                )}
+                {ex.last_performance.completed && (!ex.target_weight || ex.target_weight <= ex.last_performance.weight) && (
+                  <>
+                    <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginHorizontal: 4 }}>→</Text>
+                    <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>
+                      Try {ex.last_performance.weight + 2.5}kg
+                    </Text>
+                  </>
+                )}
+              </View>
+            )}
           </GlassCardView>
         );
+
+        return (
+          <TouchableOpacity key={ex.exercise_id} onPress={() => onLogExercise(ex)} activeOpacity={0.7}>
+            {cardContent}
+          </TouchableOpacity>
+        );
       })}
+      {planDayId && (
+        <TouchableOpacity
+          onPress={onAddExercise}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.md, marginTop: Spacing.xs, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.purple + '50', borderStyle: 'dashed', backgroundColor: Colors.purple + '08' }}
+          activeOpacity={0.7}>
+          <Text style={{ fontSize: 18, marginRight: Spacing.xs, color: Colors.purple }}>+</Text>
+          <Text style={{ fontSize: Typography.sm, color: Colors.purple, fontWeight: Typography.semiBold }}>Add Exercise</Text>
+        </TouchableOpacity>
+      )}
     </>
   );
 }
@@ -377,7 +455,7 @@ function RecoveryCard() {
   );
 }
 
-export default function FitnessScreen({ onProfilePress, onNotificationsPress, onOpenAI }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void }) {
+export default function FitnessScreen({ onProfilePress, onNotificationsPress, onOpenAI, onOpenWorkoutLog }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void; onOpenWorkoutLog?: (exercise: any) => void }) {
   const { onScroll } = useScrollVisibility();
   const { user, session } = useAuth();
   const [activeSegment, setActiveSegment] = useState<Segment>('Today');
@@ -390,9 +468,11 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   const [exercises, setExercises] = useState<TodayExercise[]>([]);
   const [dayName, setDayName] = useState<string | null>(null);
   const [planName, setPlanName] = useState<string | null>(null);
+  const [planDayId, setPlanDayId] = useState<number | null>(null);
   const [weeklyDays, setWeeklyDays] = useState<WeeklyDay[]>([]);
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats | null>(null);
   const [prs, setPrs] = useState<PersonalRecord[]>([]);
+  const [activityGoal, setActivityGoal] = useState<ActivityGoal | null>(null);
   const [loading, setLoading] = useState(true);
 
   // ── Plan setup modal state ─────────────────────────────────
@@ -405,25 +485,61 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   const [dayExercises, setDayExercises] = useState<Record<number, { name: string; sets: string; reps: string; weight: string }[]>>({});
   const [planSaving, setPlanSaving] = useState(false);
 
+  // ── Add exercise modal state ─────────────────────────────────
+  const [addExModalVisible, setAddExModalVisible] = useState(false);
+  const [addExName, setAddExName] = useState('');
+  const [addExSets, setAddExSets] = useState('3');
+  const [addExReps, setAddExReps] = useState('10');
+  const [addExWeight, setAddExWeight] = useState('');
+  const [addExRest, setAddExRest] = useState('');
+  const [addExSaving, setAddExSaving] = useState(false);
+
+  // ── Edit exercise modal state ─────────────────────────────────
+  const [editExModalVisible, setEditExModalVisible] = useState(false);
+  const [editExId, setEditExId] = useState<number | null>(null);
+  const [editExName, setEditExName] = useState('');
+  const [editExSets, setEditExSets] = useState('3');
+  const [editExReps, setEditExReps] = useState('10');
+  const [editExWeight, setEditExWeight] = useState('');
+  const [editExRest, setEditExRest] = useState('');
+  const [editExSaving, setEditExSaving] = useState(false);
+
+  // ── Activity log modal state ─────────────────────────────────
+  const [logActivityVisible, setLogActivityVisible] = useState(false);
+  const [logDistance, setLogDistance] = useState('');
+  const [logOtherActivity, setLogOtherActivity] = useState('');
+  const [logOtherCalories, setLogOtherCalories] = useState('');
+  const [logSaving, setLogSaving] = useState(false);
+
+  // ── Goal setup modal state ─────────────────────────────────
+  const [goalSetupVisible, setGoalSetupVisible] = useState(false);
+  const [goalBurn, setGoalBurn] = useState('400');
+  const [goalExercise, setGoalExercise] = useState('60');
+  const [goalSteps, setGoalSteps] = useState('10000');
+  const [goalSaving, setGoalSaving] = useState(false);
+
   const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
   const fetchData = useCallback(async () => {
     if (!session?.access_token) return;
     setLoading(true);
     try {
-      const [summaryRes, workoutRes, weeklyRes, prsRes] = await Promise.all([
+      const [summaryRes, workoutRes, weeklyRes, prsRes, goalRes] = await Promise.all([
         activityService.getTodaySummary(session.access_token, todayStr),
         activityService.getTodayWorkout(session.access_token, todayStr),
         activityService.getWeeklyStats(session.access_token, todayStr),
         activityService.getPersonalRecords(session.access_token),
+        activityService.getActivityGoal(session.access_token),
       ]);
       setSummary(summaryRes);
       setExercises(workoutRes.exercises);
       setDayName(workoutRes.day_name);
       setPlanName(workoutRes.plan_name);
+      setPlanDayId(workoutRes.plan_day_id);
       setWeeklyDays(weeklyRes.days);
       setWeeklyStats(weeklyRes.stats);
       setPrs(prsRes);
+      setActivityGoal(goalRes);
     } catch (e) {
       console.warn('[FitnessScreen] Fetch failed:', e);
     } finally {
@@ -529,6 +645,119 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     }
   };
 
+  const handleAddExercise = async () => {
+    if (!session?.access_token || !planDayId) return;
+    if (!addExName.trim()) {
+      Alert.alert('Required', 'Please enter an exercise name.');
+      return;
+    }
+    setAddExSaving(true);
+    try {
+      await activityService.addExerciseToDay(session.access_token, {
+        plan_day_id: planDayId,
+        exercise_name: addExName.trim(),
+        sets: parseInt(addExSets, 10) || 3,
+        reps: parseInt(addExReps, 10) || 10,
+        target_weight: addExWeight ? parseInt(addExWeight, 10) : undefined,
+        rest: addExRest ? parseInt(addExRest, 10) : undefined,
+      });
+      setAddExModalVisible(false);
+      setAddExName('');
+      setAddExSets('3');
+      setAddExReps('10');
+      setAddExWeight('');
+      setAddExRest('');
+      fetchData();
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to add exercise.');
+    } finally {
+      setAddExSaving(false);
+    }
+  };
+
+  const handleUpdateExercise = async () => {
+    if (!session?.access_token || !editExId) return;
+    if (!editExName.trim()) {
+      Alert.alert('Required', 'Please enter an exercise name.');
+      return;
+    }
+    setEditExSaving(true);
+    try {
+      await activityService.updateExercise(session.access_token, {
+        exercise_id: editExId,
+        exercise_name: editExName.trim(),
+        sets: parseInt(editExSets, 10) || 3,
+        reps: parseInt(editExReps, 10) || 10,
+        target_weight: editExWeight ? parseInt(editExWeight, 10) : undefined,
+        rest: editExRest ? parseInt(editExRest, 10) : undefined,
+      });
+      setEditExModalVisible(false);
+      fetchData();
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to update exercise.');
+    } finally {
+      setEditExSaving(false);
+    }
+  };
+
+  const openEditExercise = (ex: TodayExercise) => {
+    setEditExId(ex.exercise_id);
+    setEditExName(ex.exercise_name);
+    setEditExSets(String(ex.target_sets));
+    setEditExReps(String(ex.target_reps));
+    setEditExWeight(ex.target_weight ? String(ex.target_weight) : '');
+    setEditExRest(ex.rest_seconds ? String(ex.rest_seconds) : '');
+    setEditExModalVisible(true);
+  };
+
+  const handleLogActivity = async () => {
+    if (!session?.access_token) return;
+    const dist = parseFloat(logDistance) || 0;
+    const otherCal = parseInt(logOtherCalories, 10) || 0;
+    if (dist === 0 && !logOtherActivity.trim() && otherCal === 0) {
+      Alert.alert('Required', 'Please enter distance or activity details.');
+      return;
+    }
+    setLogSaving(true);
+    try {
+      await activityService.logActivity(session.access_token, {
+        distance: dist || undefined,
+        calories_burnt: otherCal || undefined,
+        other_activities: logOtherActivity.trim() || undefined,
+        other_act_calorie_burn: otherCal || undefined,
+      });
+      setLogActivityVisible(false);
+      setLogDistance('');
+      setLogOtherActivity('');
+      setLogOtherCalories('');
+      fetchData();
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to log activity.');
+    } finally {
+      setLogSaving(false);
+    }
+  };
+
+  const handleSaveGoal = async () => {
+    if (!session?.access_token) return;
+    setGoalSaving(true);
+    try {
+      await activityService.saveActivityGoal(session.access_token, {
+        calorie_burn_goal: parseInt(goalBurn, 10) || 400,
+        exercise_min_goal: parseInt(goalExercise, 10) || 60,
+        steps_goal: parseInt(goalSteps, 10) || 10000,
+      });
+      setGoalSetupVisible(false);
+      fetchData();
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to save goal.');
+    } finally {
+      setGoalSaving(false);
+    }
+  };
+
+  const estimatedSteps = logDistance ? Math.round((parseFloat(logDistance) || 0) * 1312) : 0;
+
   return (
     <View style={styles.root}>
       <ScrollView
@@ -569,13 +798,28 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           </TouchableOpacity>
         )}
 
+        {!activityGoal && !loading && (
+          <TouchableOpacity style={styles.setupBanner} activeOpacity={0.8} onPress={() => setGoalSetupVisible(true)}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={[styles.setupBannerIcon, { backgroundColor: Colors.teal + '20' }]}>
+                <Text style={{ fontSize: 16 }}>🎯</Text>
+              </View>
+              <View style={{ flex: 1, marginLeft: Spacing.md }}>
+                <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textPrimary }}>Set your activity goals</Text>
+                <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 }}>Define daily targets for calories burned, exercise minutes, and steps</Text>
+              </View>
+              <Text style={{ fontSize: 18, color: Colors.textMuted }}>›</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
         {loading ? (
           <View style={{ paddingVertical: 60, alignItems: 'center' }}>
             <ActivityIndicator size="large" color={Colors.teal} />
           </View>
         ) : (
           <>
-            {showToday && <ActivityRingsCard summary={summary} />}
+            {showToday && <DailyProgressCard summary={summary} goal={activityGoal} onLogActivity={() => setLogActivityVisible(true)} />}
 
             {showWorkouts && (
               <View style={styles.section}>
@@ -583,8 +827,13 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                   exercises={exercises}
                   dayName={dayName}
                   planName={planName}
+                  planDayId={planDayId}
                   activeFilter={activeFilter}
                   setActiveFilter={setActiveFilter}
+                  onSetupPlan={() => setPlanModalVisible(true)}
+                  onAddExercise={() => setAddExModalVisible(true)}
+                  onEditExercise={openEditExercise}
+                  onLogExercise={(ex) => onOpenWorkoutLog && onOpenWorkoutLog(ex)}
                 />
               </View>
             )}
@@ -785,6 +1034,285 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+
+      {/* ── Add Exercise Modal ───────────────────────────────── */}
+      <Modal visible={addExModalVisible} animationType="slide" transparent>
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setAddExModalVisible(false)}
+          style={styles.modalOverlay}>
+          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Add Exercise</Text>
+
+            <Text style={styles.modalLabel}>Exercise name *</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={addExName}
+              onChangeText={setAddExName}
+              placeholder="e.g. Bench Press"
+              placeholderTextColor={Colors.textMuted}
+              autoFocus
+            />
+
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalLabel}>Sets</Text>
+                <TextInput style={styles.modalInput} value={addExSets} onChangeText={setAddExSets} keyboardType="number-pad" placeholder="3" placeholderTextColor={Colors.textMuted} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalLabel}>Reps</Text>
+                <TextInput style={styles.modalInput} value={addExReps} onChangeText={setAddExReps} keyboardType="number-pad" placeholder="10" placeholderTextColor={Colors.textMuted} />
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalLabel}>Weight (kg)</Text>
+                <TextInput style={styles.modalInput} value={addExWeight} onChangeText={setAddExWeight} keyboardType="number-pad" placeholder="optional" placeholderTextColor={Colors.textMuted} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalLabel}>Rest (sec)</Text>
+                <TextInput style={styles.modalInput} value={addExRest} onChangeText={setAddExRest} keyboardType="number-pad" placeholder="optional" placeholderTextColor={Colors.textMuted} />
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
+              <TouchableOpacity
+                onPress={() => setAddExModalVisible(false)}
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
+                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleAddExercise}
+                disabled={addExSaving}
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.purple, opacity: addExSaving ? 0.6 : 1 }}>
+                {addExSaving ? (
+                  <ActivityIndicator size="small" color={Colors.bg} />
+                ) : (
+                  <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Add Exercise</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ── Edit Exercise Modal ───────────────────────────────── */}
+      <Modal visible={editExModalVisible} animationType="slide" transparent>
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setEditExModalVisible(false)}
+          style={styles.modalOverlay}>
+          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Edit Exercise</Text>
+
+            <Text style={styles.modalLabel}>Exercise name *</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={editExName}
+              onChangeText={setEditExName}
+              placeholder="e.g. Bench Press"
+              placeholderTextColor={Colors.textMuted}
+            />
+
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalLabel}>Sets</Text>
+                <TextInput style={styles.modalInput} value={editExSets} onChangeText={setEditExSets} keyboardType="number-pad" placeholder="3" placeholderTextColor={Colors.textMuted} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalLabel}>Reps</Text>
+                <TextInput style={styles.modalInput} value={editExReps} onChangeText={setEditExReps} keyboardType="number-pad" placeholder="10" placeholderTextColor={Colors.textMuted} />
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalLabel}>Weight (kg)</Text>
+                <TextInput style={styles.modalInput} value={editExWeight} onChangeText={setEditExWeight} keyboardType="number-pad" placeholder="optional" placeholderTextColor={Colors.textMuted} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalLabel}>Rest (sec)</Text>
+                <TextInput style={styles.modalInput} value={editExRest} onChangeText={setEditExRest} keyboardType="number-pad" placeholder="optional" placeholderTextColor={Colors.textMuted} />
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
+              <TouchableOpacity
+                onPress={() => setEditExModalVisible(false)}
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
+                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleUpdateExercise}
+                disabled={editExSaving}
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.purple, opacity: editExSaving ? 0.6 : 1 }}>
+                {editExSaving ? (
+                  <ActivityIndicator size="small" color={Colors.bg} />
+                ) : (
+                  <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              onPress={() => {
+                Alert.alert('Delete Exercise', 'Are you sure you want to remove this exercise?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                      if (!session?.access_token || !editExId) return;
+                      try {
+                        await activityService.deleteExercise(session.access_token, editExId);
+                        setEditExModalVisible(false);
+                        fetchData();
+                      } catch (e: any) {
+                        Alert.alert('Error', e?.message || 'Failed to delete exercise.');
+                      }
+                    },
+                  },
+                ]);
+              }}
+              style={{ alignItems: 'center', paddingVertical: Spacing.md, borderRadius: Radius.md, backgroundColor: Colors.danger + '30', marginTop: Spacing.md }}>
+              <Text style={{ fontSize: Typography.sm, color: Colors.danger, fontWeight: Typography.semiBold }}>Delete this exercise</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ── Log Activity Modal ───────────────────────────────── */}
+      <Modal visible={logActivityVisible} animationType="slide" transparent>
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setLogActivityVisible(false)}
+          style={styles.modalOverlay}>
+          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Log Activity</Text>
+
+            <Text style={styles.modalLabel}>Distance (km)</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={logDistance}
+              onChangeText={setLogDistance}
+              keyboardType="decimal-pad"
+              placeholder="e.g. 3.5"
+              placeholderTextColor={Colors.textMuted}
+              autoFocus
+            />
+            {estimatedSteps > 0 && (
+              <Text style={{ fontSize: Typography.xs, color: Colors.teal, marginTop: 4 }}>
+                ≈ {estimatedSteps.toLocaleString()} steps estimated
+              </Text>
+            )}
+
+            <Text style={styles.modalLabel}>Other activity (optional)</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={logOtherActivity}
+              onChangeText={setLogOtherActivity}
+              placeholder="e.g. cycling, swimming"
+              placeholderTextColor={Colors.textMuted}
+            />
+
+            <Text style={styles.modalLabel}>Other activity calories (optional)</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={logOtherCalories}
+              onChangeText={setLogOtherCalories}
+              keyboardType="number-pad"
+              placeholder="e.g. 200"
+              placeholderTextColor={Colors.textMuted}
+            />
+
+            <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
+              <TouchableOpacity
+                onPress={() => setLogActivityVisible(false)}
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
+                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleLogActivity}
+                disabled={logSaving}
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.teal, opacity: logSaving ? 0.6 : 1 }}>
+                {logSaving ? (
+                  <ActivityIndicator size="small" color={Colors.bg} />
+                ) : (
+                  <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Log Activity</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ── Activity Goal Setup Modal ─────────────────────────── */}
+      <Modal visible={goalSetupVisible} animationType="slide" transparent>
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setGoalSetupVisible(false)}
+          style={styles.modalOverlay}>
+          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Set Activity Goals</Text>
+            <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, marginBottom: Spacing.base }}>
+              Define your daily targets. You can update these anytime.
+            </Text>
+
+            <Text style={styles.modalLabel}>Calorie burn goal (kcal)</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={goalBurn}
+              onChangeText={setGoalBurn}
+              keyboardType="number-pad"
+              placeholder="e.g. 400"
+              placeholderTextColor={Colors.textMuted}
+              autoFocus
+            />
+
+            <Text style={styles.modalLabel}>Exercise goal (minutes)</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={goalExercise}
+              onChangeText={setGoalExercise}
+              keyboardType="number-pad"
+              placeholder="e.g. 60"
+              placeholderTextColor={Colors.textMuted}
+            />
+
+            <Text style={styles.modalLabel}>Steps goal</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={goalSteps}
+              onChangeText={setGoalSteps}
+              keyboardType="number-pad"
+              placeholder="e.g. 10000"
+              placeholderTextColor={Colors.textMuted}
+            />
+
+            <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
+              <TouchableOpacity
+                onPress={() => setGoalSetupVisible(false)}
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
+                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSaveGoal}
+                disabled={goalSaving}
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.teal, opacity: goalSaving ? 0.6 : 1 }}>
+                {goalSaving ? (
+                  <ActivityIndicator size="small" color={Colors.bg} />
+                ) : (
+                  <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Save Goals</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -973,12 +1501,12 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: Typography.medium,
   },
-  setsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.md },
+  setsRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: Spacing.xs, marginTop: Spacing.sm },
   setChip: {
     backgroundColor: Colors.bgCardBorder,
     borderRadius: Radius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm - 2,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
   },
   setChipText: {
     fontSize: Typography.xs,
@@ -1224,6 +1752,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     paddingBottom: Platform.OS === 'ios' ? 40 : Spacing.lg,
   },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.bgCardBorder, alignSelf: 'center', marginBottom: Spacing.base },
   modalTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: Spacing.sm },
   modalLabel: { fontSize: Typography.xs, color: Colors.textSecondary, marginBottom: 4, marginTop: Spacing.sm },
   modalInput: {

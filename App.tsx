@@ -11,6 +11,7 @@ import AIAdvisorScreen from './src/screens/AIAdvisorScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 import ProfileSetupScreen from './src/screens/ProfileSetupScreen';
+import WorkoutLogScreen from './src/screens/WorkoutLogScreen';
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -27,6 +28,7 @@ function AppShell() {
   const [aiStartInChat, setAiStartInChat] = useState(false);
   const [aiOrigin, setAiOrigin] = useState<TabName | null>(null);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [workoutLogExercise, setWorkoutLogExercise] = useState<any>(null);
   const mountedTabs = useRef<Set<TabName>>(new Set(['Home']));
 
   const openAI = (fromTab?: TabName, startInChat = true) => {
@@ -49,15 +51,16 @@ function AppShell() {
   };
 
   useEffect(() => {
-    if (activeTab !== 'Profile' && activeTab !== 'Notifications') return;
+    if (activeTab !== 'Profile' && activeTab !== 'Notifications' && activeTab !== 'WorkoutLog') return;
     setForceHidden(true);
     return () => setForceHidden(false);
   }, [activeTab, setForceHidden]);
 
   useEffect(() => {
     const onBack = () => {
-      if (activeTab === 'Profile' || activeTab === 'Notifications') {
+      if (activeTab === 'Profile' || activeTab === 'Notifications' || activeTab === 'WorkoutLog') {
         setActiveTab(previousTab);
+        if (activeTab === 'WorkoutLog') setWorkoutLogExercise(null);
         return true;
       }
       return false;
@@ -86,6 +89,17 @@ function AppShell() {
     setShowProfileSetup(false);
   };
 
+  const openWorkoutLog = (exercise: any) => {
+    if (activeTab !== 'WorkoutLog') setPreviousTab(activeTab);
+    setWorkoutLogExercise(exercise);
+    setActiveTab('WorkoutLog');
+  };
+
+  const closeWorkoutLog = () => {
+    setActiveTab(previousTab);
+    setWorkoutLogExercise(null);
+  };
+
   return (
     <>
       <View style={styles.screenContainer}>
@@ -106,7 +120,7 @@ function AppShell() {
                   isTabActive={activeTab === 'AI'}
                 />
               )}
-              {tab === 'Activity' && <FitnessScreen onProfilePress={openProfile} onNotificationsPress={openNotifications} onOpenAI={(from?: TabName) => openAI(from)} />}
+              {tab === 'Activity' && <FitnessScreen onProfilePress={openProfile} onNotificationsPress={openNotifications} onOpenAI={(from?: TabName) => openAI(from)} onOpenWorkoutLog={openWorkoutLog} />}
               {tab === 'Diet' && <CalorieScreen onProfilePress={openProfile} onNotificationsPress={openNotifications} />}
             </View>
           )
@@ -123,6 +137,11 @@ function AppShell() {
         {activeTab === 'Notifications' && (
           <View style={styles.screenWrapper}>
             <NotificationsScreen onBackPress={() => setActiveTab(previousTab)} />
+          </View>
+        )}
+        {activeTab === 'WorkoutLog' && workoutLogExercise && (
+          <View style={styles.screenWrapper}>
+            <WorkoutLogScreen exercise={workoutLogExercise} onBack={closeWorkoutLog} />
           </View>
         )}
       </View>
