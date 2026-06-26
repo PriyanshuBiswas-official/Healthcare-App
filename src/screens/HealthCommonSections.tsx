@@ -363,45 +363,126 @@ const JournalModal: React.FC<{ visible: boolean; onClose: () => void }> = ({ vis
 
 export const MentalHealthSection: React.FC = () => {
   const [mood, setMood] = useState<number | null>(4);
+  const [stress, setStress] = useState<'Low' | 'Moderate' | 'High'>('Low');
   const [showJournal, setShowJournal] = useState(false);
+
+  const stressLevel = stress === 'Low' ? 1 : stress === 'Moderate' ? 3 : 5;
+  const stressColor = stress === 'Low' ? Colors.success : stress === 'Moderate' ? Colors.amber : Colors.danger ?? '#FF5E5E';
+  const selectedMood = MOODS.find(m => m.value === mood);
+
   return (
     <>
       <JournalModal visible={showJournal} onClose={() => setShowJournal(false)} />
       <SectionHeader title="Stress & Mood" subtitle="Today" />
+
+      {/* ── Mood Picker ───────────────────────────────────── */}
       <GlassCardView style={mhs.card}>
         <Text style={mhs.prompt}>How are you feeling today?</Text>
         <View style={mhs.moodRow}>
           {MOODS.map(m => {
             const sel = mood === m.value;
             return (
-              <TouchableOpacity key={m.value} onPress={() => setMood(m.value)}
-                style={[mhs.moodBtn, sel && { backgroundColor: Colors.amber + '22', borderColor: Colors.amber }]}>
-                <Text style={[mhs.emoji, sel && { fontSize: 30 }]}>{m.emoji}</Text>
-                <Text style={[mhs.moodLbl, sel && { color: Colors.amber, fontWeight: Typography.bold }]}>{m.label}</Text>
+              <TouchableOpacity
+                key={m.value}
+                onPress={() => setMood(m.value)}
+                activeOpacity={0.75}
+                style={[
+                  mhs.moodCard,
+                  sel && { borderColor: Colors.amber, backgroundColor: Colors.amber + '18' },
+                ]}>
+                <Text style={[mhs.moodEmoji, sel && mhs.moodEmojiSel]}>{m.emoji}</Text>
+                <Text style={[mhs.moodCardLabel, sel && { color: Colors.amber }]}>{m.label}</Text>
+                {sel && <View style={mhs.moodSelectedDot} />}
               </TouchableOpacity>
             );
           })}
         </View>
-        {/* Weekly trend */}
-        <View style={mhs.weekRow}>
-          {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-            <View key={`${d}-${i}`} style={mhs.weekDay}>
-              <Text style={mhs.weekEmoji}>{WEEKLY_MOODS[i] > 0 ? MOODS[WEEKLY_MOODS[i] - 1].emoji : '·'}</Text>
-              <Text style={mhs.weekDayLbl}>{d}</Text>
-            </View>
-          ))}
-        </View>
-        {/* Stress tracker */}
-        <View style={mhs.stressRow}>
-          <Text style={mhs.stressLabel}>Stress Level</Text>
-          <View style={mhs.stressBtns}>
-            {['Low', 'Moderate', 'High'].map(s => (
-              <TouchableOpacity key={s}
-                style={[mhs.stressBtn, s === 'Low' && { backgroundColor: Colors.success + '22', borderColor: Colors.success }]}>
-                <Text style={[mhs.stressBtnText, s === 'Low' && { color: Colors.success }]}>{s}</Text>
-              </TouchableOpacity>
-            ))}
+        {selectedMood && (
+          <View style={mhs.insightStrip}>
+            <Text style={mhs.insightIcon}>{selectedMood.emoji}</Text>
+            <Text style={mhs.insightText}>
+              {selectedMood.value >= 4
+                ? `Great to hear you're feeling ${selectedMood.label.toLowerCase()}! Keep up the positive energy.`
+                : selectedMood.value === 3
+                ? "Some days are just okay — that's perfectly fine. Rest if you need it."
+                : 'Tough day? Consider a short walk, some journaling, or reaching out to someone.'
+              }
+            </Text>
           </View>
+        )}
+      </GlassCardView>
+
+      {/* ── Stress Level ──────────────────────────────────── */}
+      <GlassCardView style={mhs.stressCard}>
+        <View style={mhs.stressHeaderRow}>
+          <View>
+            <Text style={mhs.stressTitle}>Stress Level</Text>
+            <Text style={[mhs.stressValue, { color: stressColor }]}>{stress}</Text>
+          </View>
+          <View style={[mhs.stressBadge, { backgroundColor: stressColor + '22', borderColor: stressColor + '55' }]}>
+            <Text style={[mhs.stressBadgeText, { color: stressColor }]}>● {stress}</Text>
+          </View>
+        </View>
+        <View style={mhs.meterRow}>
+          {[1, 2, 3, 4, 5].map(seg => {
+            const segColor = seg <= 2 ? Colors.success : seg === 3 ? Colors.amber : Colors.danger ?? '#FF5E5E';
+            const filled = seg <= stressLevel;
+            return (
+              <View
+                key={seg}
+                style={[
+                  mhs.meterSeg,
+                  { backgroundColor: filled ? segColor : segColor + '22' },
+                  seg === 1 && { borderTopLeftRadius: 6, borderBottomLeftRadius: 6 },
+                  seg === 5 && { borderTopRightRadius: 6, borderBottomRightRadius: 6 },
+                ]}
+              />
+            );
+          })}
+        </View>
+        <View style={mhs.meterLabelRow}>
+          <Text style={mhs.meterLabel}>Low</Text>
+          <Text style={mhs.meterLabel}>Moderate</Text>
+          <Text style={mhs.meterLabel}>High</Text>
+        </View>
+        <View style={mhs.stressBtnsRow}>
+          {(['Low', 'Moderate', 'High'] as const).map(s => {
+            const sc = s === 'Low' ? Colors.success : s === 'Moderate' ? Colors.amber : Colors.danger ?? '#FF5E5E';
+            const active = stress === s;
+            return (
+              <TouchableOpacity
+                key={s}
+                onPress={() => setStress(s)}
+                style={[mhs.stressBtn, active && { backgroundColor: sc + '22', borderColor: sc }]}>
+                <Text style={[mhs.stressBtnText, active && { color: sc, fontWeight: Typography.bold }]}>{s}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </GlassCardView>
+
+      {/* ── Weekly Mood Chart ──────────────────────────────── */}
+      <GlassCardView style={mhs.weekCard}>
+        <Text style={mhs.weekTitle}>Weekly Mood Trend</Text>
+        <View style={mhs.weekChartRow}>
+          {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => {
+            const val = WEEKLY_MOODS[i];
+            const isToday = i === 6;
+            const moodEntry = val > 0 ? MOODS[val - 1] : null;
+            const barColor = val >= 4 ? Colors.success : val === 3 ? Colors.amber : val > 0 ? Colors.danger ?? '#FF5E5E' : Colors.bgCardBorder;
+            const pct = val > 0 ? (val / 5) * 100 : 8;
+            return (
+              <View key={`${d}-${i}`} style={mhs.weekCol}>
+                <View style={mhs.weekBarTrack}>
+                  <View style={[mhs.weekBar, { height: `${pct}%`, backgroundColor: isToday ? barColor : barColor + 'AA' }]} />
+                </View>
+                <Text style={[mhs.weekEmoji, { opacity: val > 0 ? 1 : 0.3 }]}>
+                  {moodEntry ? moodEntry.emoji : '·'}
+                </Text>
+                <Text style={[mhs.weekDayLbl, isToday && { color: Colors.amber, fontWeight: Typography.bold }]}>{d}</Text>
+              </View>
+            );
+          })}
         </View>
         <View style={mhs.actRow}>
           <LogButton label="Journal" icon="📝" color={Colors.amber} onPress={() => setShowJournal(true)} />
@@ -412,22 +493,50 @@ export const MentalHealthSection: React.FC = () => {
   );
 };
 const mhs = StyleSheet.create({
-  card: { padding: Spacing.base, marginBottom: Spacing.xl },
-  prompt: { fontSize: Typography.base, color: Colors.textPrimary, fontWeight: Typography.semiBold, textAlign: 'center', marginBottom: Spacing.base },
-  moodRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.base },
-  moodBtn: { alignItems: 'center', paddingVertical: Spacing.sm, paddingHorizontal: Spacing.sm, borderRadius: Radius.md, borderWidth: 1, borderColor: 'transparent', minWidth: 54 },
-  emoji: { fontSize: 26, marginBottom: 4 },
-  moodLbl: { fontSize: 9, color: Colors.textMuted, fontWeight: Typography.medium },
-  weekRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider, marginBottom: Spacing.md },
-  weekDay: { alignItems: 'center' },
-  weekEmoji: { fontSize: 16, marginBottom: 2 },
-  weekDayLbl: { fontSize: 9, color: Colors.textMuted },
-  stressRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.base, gap: Spacing.md },
-  stressLabel: { fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.medium },
-  stressBtns: { flexDirection: 'row', gap: Spacing.sm, flex: 1, justifyContent: 'flex-end' },
-  stressBtn: { paddingHorizontal: Spacing.md, paddingVertical: 5, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.bgCardBorder },
+  card: { padding: Spacing.base, marginBottom: Spacing.md },
+  stressCard: { padding: Spacing.base, marginBottom: Spacing.md },
+  weekCard: { padding: Spacing.base, marginBottom: Spacing.xl },
+  prompt: { fontSize: Typography.base, color: Colors.textPrimary, fontWeight: Typography.semiBold, textAlign: 'center', marginBottom: Spacing.md },
+  moodRow: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.xs, marginBottom: Spacing.md },
+  moodCard: {
+    flex: 1, alignItems: 'center', paddingVertical: Spacing.md, paddingHorizontal: 4,
+    borderRadius: Radius.md, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  moodEmoji: { fontSize: 24, marginBottom: 5 },
+  moodEmojiSel: { fontSize: 30 },
+  moodCardLabel: { fontSize: 9, color: Colors.textMuted, fontWeight: Typography.semiBold, textAlign: 'center' },
+  moodSelectedDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: Colors.amber, marginTop: 4 },
+  insightStrip: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.amber + '12',
+    borderRadius: Radius.md, padding: Spacing.md, gap: Spacing.sm,
+    borderWidth: 1, borderColor: Colors.amber + '25',
+  },
+  insightIcon: { fontSize: 20 },
+  insightText: { flex: 1, fontSize: Typography.xs, color: Colors.textSecondary, lineHeight: 17 },
+  stressHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
+  stressTitle: { fontSize: Typography.sm, color: Colors.textMuted, fontWeight: Typography.medium },
+  stressValue: { fontSize: Typography.lg, fontWeight: Typography.extraBold },
+  stressBadge: { paddingHorizontal: Spacing.md, paddingVertical: 5, borderRadius: Radius.full, borderWidth: 1 },
+  stressBadgeText: { fontSize: Typography.xs, fontWeight: Typography.bold },
+  meterRow: { flexDirection: 'row', gap: 4, height: 10, marginBottom: 6 },
+  meterSeg: { flex: 1, height: '100%' },
+  meterLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.md },
+  meterLabel: { fontSize: 9, color: Colors.textMuted },
+  stressBtnsRow: { flexDirection: 'row', gap: Spacing.sm },
+  stressBtn: {
+    flex: 1, alignItems: 'center', paddingVertical: Spacing.sm,
+    borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.bgCardBorder,
+  },
   stressBtnText: { fontSize: Typography.xs, color: Colors.textMuted, fontWeight: Typography.medium },
-  actRow: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.md },
+  weekTitle: { fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold, marginBottom: Spacing.md },
+  weekChartRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 90, marginBottom: Spacing.md },
+  weekCol: { flex: 1, alignItems: 'center' },
+  weekBarTrack: { width: '70%', height: 60, backgroundColor: Colors.bgCardBorder, borderRadius: 5, justifyContent: 'flex-end', overflow: 'hidden', marginBottom: 4 },
+  weekBar: { width: '100%', borderRadius: 5 },
+  weekEmoji: { fontSize: 12, marginBottom: 2 },
+  weekDayLbl: { fontSize: 9, color: Colors.textMuted },
+  actRow: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.md, marginTop: Spacing.sm },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

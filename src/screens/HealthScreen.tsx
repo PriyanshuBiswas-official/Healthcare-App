@@ -1,36 +1,39 @@
 import React from 'react';
 import HealthScreenFemale from './HealthScreenFemale';
 import HealthScreenMale from './HealthScreenMale';
+import { useAuth } from '../providers/AuthProvider';
+import { HealthLogDraft } from './HealthLogScreen';
 
 // ─── Health Screen Wrapper ───────────────────────────────────────────────────
 // This wrapper selects between the Female and Male health screen variants.
-// Currently defaults to 'female' since user profiles are not yet implemented.
-// Once profile setup is built, this will read the user's gender from their
-// profile and display the appropriate screen automatically.
-
-type Gender = 'female' | 'male';
-
-// TODO: Replace with actual user profile gender when profile setup is implemented
-const USER_GENDER: Gender = 'male';
+// Reads the user's gender from the cached profile in AuthProvider (fetched once on login).
 
 export default function HealthScreen({
   onProfilePress,
   onNotificationsPress,
+  onOpenHealthLog,
+  lastHealthLog,
 }: {
   onProfilePress?: () => void;
   onNotificationsPress?: () => void;
+  onOpenHealthLog?: () => void;
+  lastHealthLog?: HealthLogDraft | null;
 }) {
-  if (USER_GENDER === 'male') {
+  const { gender } = useAuth();
+
+  if (gender === 'female') {
     return (
-      <HealthScreenMale
+      <HealthScreenFemale
         onProfilePress={onProfilePress}
         onNotificationsPress={onNotificationsPress}
+        onOpenHealthLog={onOpenHealthLog}
+        lastHealthLog={lastHealthLog}
       />
     );
   }
 
   return (
-    <HealthScreenFemale
+    <HealthScreenMale
       onProfilePress={onProfilePress}
       onNotificationsPress={onNotificationsPress}
     />
