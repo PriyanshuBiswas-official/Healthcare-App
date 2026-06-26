@@ -23,6 +23,7 @@ import {
   VitalsDashboardSection,
   AIHealthInsightsSection,
 } from './HealthCommonSections';
+import { CyclePhaseVisualizer } from '../components/CyclePhaseVisualizer';
 import { useAuth } from '../providers/AuthProvider';
 import { HealthLogDraft } from './HealthLogScreen';
 
@@ -147,97 +148,8 @@ export default function HealthScreenFemale({
               </View>
             </GlassCardView>
 
-            <SectionHeader title="Next Cycle View" subtitle="Predicted · 28-day cycle" />
-            <GlassCardView style={s.cycleViewCard}>
-              {/* Phase legend pills */}
-              <View style={s.phaseLegendRow}>
-                {[
-                  { label: 'Period', color: Colors.pink },
-                  { label: 'Follicular', color: '#7EC8E3' },
-                  { label: 'Ovulation', color: Colors.amber },
-                  { label: 'Luteal', color: Colors.purple },
-                ].map(p => (
-                  <View key={p.label} style={[s.legendPill, { backgroundColor: p.color + '22', borderColor: p.color + '55' }]}>
-                    <View style={[s.legendDot, { backgroundColor: p.color }]} />
-                    <Text style={[s.legendText, { color: p.color }]}>{p.label}</Text>
-                  </View>
-                ))}
-              </View>
-
-              {/* Day timeline strip */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.timelineScroll}>
-                <View>
-                  {/* Phase color band */}
-                  <View style={s.phaseBand}>
-                    {/* Period band: days 1-5 */}
-                    <View style={[s.bandSegment, { width: 5 * 38, backgroundColor: Colors.pink + '40', borderTopLeftRadius: 10, borderBottomLeftRadius: 10 }]} />
-                    {/* Follicular band: days 6-12 */}
-                    <View style={[s.bandSegment, { width: 7 * 38, backgroundColor: '#7EC8E3' + '33' }]} />
-                    {/* Ovulation band: days 13-15 */}
-                    <View style={[s.bandSegment, { width: 3 * 38, backgroundColor: Colors.amber + '40' }]} />
-                    {/* Luteal band: days 16-28 */}
-                    <View style={[s.bandSegment, { width: 13 * 38, backgroundColor: Colors.purple + '30', borderTopRightRadius: 10, borderBottomRightRadius: 10 }]} />
-                  </View>
-
-                  {/* Day circles row */}
-                  <View style={s.timelineDaysRow}>
-                    {Array.from({ length: 28 }).map((_, i) => {
-                      const day = i + 1;
-                      const isPeriod = day <= 5;
-                      const isFollicular = day >= 6 && day <= 12;
-                      const isOvulation = day >= 13 && day <= 15;
-                      const isLuteal = day >= 16;
-                      const isCurrent = day === 18;
-                      const isNextPeriod = day === 1; // start of next visible
-                      let circleColor = Colors.bgCardBorder;
-                      let textColor = Colors.textMuted;
-                      let bgColor = 'transparent';
-                      if (isPeriod) { circleColor = Colors.pink; bgColor = Colors.pink + 'CC'; textColor = '#fff'; }
-                      else if (isOvulation) { circleColor = Colors.amber; bgColor = Colors.amber + 'CC'; textColor = Colors.bg; }
-                      else if (isFollicular) { circleColor = '#7EC8E3'; }
-                      else if (isLuteal) { circleColor = Colors.purple; }
-                      return (
-                        <View key={i} style={[s.tlDayWrap, isCurrent && s.tlDayCurrent]}>
-                          {isCurrent && <View style={s.currentNeedle} />}
-                          <View style={[
-                            s.tlCircle,
-                            { borderColor: circleColor, backgroundColor: bgColor },
-                            isCurrent && { borderWidth: 2.5, borderColor: Colors.purple, backgroundColor: Colors.purple + 'CC' },
-                          ]}>
-                            <Text style={[s.tlDayNum, { color: isCurrent ? '#fff' : textColor }]}>
-                              {isCurrent ? '●' : day}
-                            </Text>
-                          </View>
-                          {/* Phase icon under key days */}
-                          {day === 1 && <Text style={s.phaseIcon}>🩸</Text>}
-                          {day === 13 && <Text style={s.phaseIcon}>✨</Text>}
-                          {day === 18 && <Text style={[s.phaseIcon, { color: Colors.purple }]}>Now</Text>}
-                          {day === 28 && <Text style={s.phaseIcon}>🔄</Text>}
-                        </View>
-                      );
-                    })}
-                  </View>
-                </View>
-              </ScrollView>
-
-              {/* Countdown strip */}
-              <View style={s.countdownStrip}>
-                <View style={s.countdownItem}>
-                  <Text style={[s.countdownVal, { color: Colors.pink }]}>10</Text>
-                  <Text style={s.countdownLbl}>Days to{`\n`}Next Period</Text>
-                </View>
-                <View style={s.countdownDivider} />
-                <View style={s.countdownItem}>
-                  <Text style={[s.countdownVal, { color: Colors.amber }]}>21</Text>
-                  <Text style={s.countdownLbl}>Days to{`\n`}Ovulation</Text>
-                </View>
-                <View style={s.countdownDivider} />
-                <View style={s.countdownItem}>
-                  <Text style={[s.countdownVal, { color: Colors.purple }]}>Day 18</Text>
-                  <Text style={s.countdownLbl}>Current{`\n`}Cycle Day</Text>
-                </View>
-              </View>
-            </GlassCardView>
+            <SectionHeader title="Hormone Cycle" subtitle="Tap any day · Predicted model" />
+            <CyclePhaseVisualizer cycleLength={28} currentDay={18} />
 
             <SectionHeader title="Health Trends" subtitle={lastHealthLog ? 'Updated from latest log' : 'Insights from recent logs'} />
             <GlassCardView style={s.card}>
@@ -441,27 +353,7 @@ const s = StyleSheet.create({
   cycleStatVal: { width: '50%', fontSize: 10, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: 2, textAlign: 'right' },
   phaseBtnRow: { flexDirection: 'row', gap: Spacing.sm },
   phaseGap: { width: Spacing.sm },
-  // ── Next Cycle View redesign ──────────────────────────────────────────────
-  cycleViewCard: { padding: Spacing.base, marginBottom: Spacing.xl, overflow: 'hidden' },
-  phaseLegendRow: { flexDirection: 'row', gap: Spacing.xs, flexWrap: 'wrap', marginBottom: Spacing.md },
-  legendPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.sm, paddingVertical: 4, borderRadius: Radius.full, borderWidth: 1, gap: 4 },
-  legendDot: { width: 6, height: 6, borderRadius: 3 },
-  legendText: { fontSize: 10, fontWeight: Typography.semiBold },
-  timelineScroll: { paddingBottom: Spacing.xs },
-  phaseBand: { flexDirection: 'row', height: 8, marginBottom: 6 },
-  bandSegment: { height: '100%' },
-  timelineDaysRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 2 },
-  tlDayWrap: { width: 38, alignItems: 'center', paddingVertical: Spacing.xs },
-  tlDayCurrent: {},
-  currentNeedle: { position: 'absolute', top: 0, width: 2, height: '100%', backgroundColor: Colors.purple, opacity: 0.6, borderRadius: 1 },
-  tlCircle: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  tlDayNum: { fontSize: 9, fontWeight: Typography.bold },
-  phaseIcon: { fontSize: 9, color: Colors.textMuted, marginTop: 2, textAlign: 'center' },
-  countdownStrip: { flexDirection: 'row', alignItems: 'center', marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider },
-  countdownItem: { flex: 1, alignItems: 'center' },
-  countdownVal: { fontSize: Typography.lg, fontWeight: Typography.extraBold },
-  countdownLbl: { fontSize: 9, color: Colors.textMuted, textAlign: 'center', marginTop: 2, lineHeight: 13 },
-  countdownDivider: { width: 1, height: 36, backgroundColor: Colors.divider },
+
   trendHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.md },
   trendTitle: { fontSize: Typography.base, color: Colors.textPrimary, fontWeight: Typography.bold },
   trendSub: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2 },
