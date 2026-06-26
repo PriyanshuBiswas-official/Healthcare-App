@@ -2,6 +2,7 @@ import React from 'react';
 import HealthScreenFemale from './HealthScreenFemale';
 import HealthScreenMale from './HealthScreenMale';
 import { useAuth } from '../providers/AuthProvider';
+import { HealthLogDraft } from './HealthLogScreen';
 
 // ─── Health Screen Wrapper ───────────────────────────────────────────────────
 // This wrapper selects between the Female and Male health screen variants.
@@ -10,9 +11,13 @@ import { useAuth } from '../providers/AuthProvider';
 export default function HealthScreen({
   onProfilePress,
   onNotificationsPress,
+  onOpenHealthLog,
+  lastHealthLog,
 }: {
   onProfilePress?: () => void;
   onNotificationsPress?: () => void;
+  onOpenHealthLog?: () => void;
+  lastHealthLog?: HealthLogDraft | null;
 }) {
   const { gender } = useAuth();
 
@@ -21,6 +26,8 @@ export default function HealthScreen({
       <HealthScreenFemale
         onProfilePress={onProfilePress}
         onNotificationsPress={onNotificationsPress}
+        onOpenHealthLog={onOpenHealthLog}
+        lastHealthLog={lastHealthLog}
       />
     );
   }
