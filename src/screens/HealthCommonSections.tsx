@@ -8,6 +8,7 @@ import {
   TextInput,
   ScrollView,
 } from 'react-native';
+import type { SleepLog, MoodLog } from '../types/health';
 import { Colors, Typography, Spacing, Radius, GlassCard } from '../theme/theme';
 import { GlassCardView, SectionHeader, ProgressBar } from '../components/SharedComponents';
 
@@ -230,35 +231,32 @@ const mmc = StyleSheet.create({
 // ═══════════════════════════════════════════════════════════════════════════════
 // SLEEP TRACKER SECTION
 // ═══════════════════════════════════════════════════════════════════════════════
-const SLEEP_DATA = [
-  { day: 'M', hours: 7.5 }, { day: 'T', hours: 6.2 }, { day: 'W', hours: 8.1 },
-  { day: 'T', hours: 5.8 }, { day: 'F', hours: 7.0 }, { day: 'S', hours: 8.5 }, { day: 'S', hours: 7.2 },
-];
+const QUALITY_LABELS: Record<number, string> = { 1: 'Poor', 2: 'Fair', 3: 'Good', 4: 'Great' };
+const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-const SleepLogModal: React.FC<{ visible: boolean; onClose: () => void }> = ({ visible, onClose }) => {
-  const [quality, setQuality] = useState('Good');
+const SleepLogModal: React.FC<{ visible: boolean; onClose: () => void; onSave?: (data: { sleep_hr: number; sleep_quality: number }) => void }> = ({ visible, onClose, onSave }) => {
+  const [hours, setHours] = useState('7');
+  const [quality, setQuality] = useState(3);
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={modalS.overlay}>
         <View style={modalS.sheet}>
           <View style={modalS.handle} />
           <Text style={modalS.title}>Log Sleep</Text>
-          <Text style={modalS.fieldLabel}>Bedtime</Text>
-          <TextInput style={modalS.input} defaultValue="11:00 PM" placeholderTextColor={Colors.textMuted} />
-          <Text style={modalS.fieldLabel}>Wake Time</Text>
-          <TextInput style={modalS.input} defaultValue="6:30 AM" placeholderTextColor={Colors.textMuted} />
+          <Text style={modalS.fieldLabel}>Hours slept</Text>
+          <TextInput style={modalS.input} value={hours} onChangeText={setHours} keyboardType="decimal-pad" placeholder="7" placeholderTextColor={Colors.textMuted} />
           <Text style={modalS.fieldLabel}>Quality</Text>
           <View style={modalS.chipsRow}>
-            {['Poor', 'Fair', 'Good', 'Great'].map(q => (
+            {[1, 2, 3, 4].map(q => (
               <TouchableOpacity key={q} onPress={() => setQuality(q)}
                 style={[modalS.chip, quality === q && { backgroundColor: Colors.purple + '30', borderColor: Colors.purple }]}>
-                <Text style={[modalS.chipText, quality === q && { color: Colors.purple }]}>{q}</Text>
+                <Text style={[modalS.chipText, quality === q && { color: Colors.purple }]}>{QUALITY_LABELS[q]}</Text>
               </TouchableOpacity>
             ))}
           </View>
           <View style={modalS.actions}>
             <TouchableOpacity style={modalS.cancelBtn} onPress={onClose}><Text style={modalS.cancelText}>Cancel</Text></TouchableOpacity>
-            <TouchableOpacity style={[modalS.saveBtn, { backgroundColor: Colors.purple }]} onPress={onClose}><Text style={modalS.saveText}>Save</Text></TouchableOpacity>
+            <TouchableOpacity style={[modalS.saveBtn, { backgroundColor: Colors.purple }]} onPress={() => { onSave?.({ sleep_hr: parseFloat(hours) || 7, sleep_quality: quality }); onClose(); }}><Text style={modalS.saveText}>Save</Text></TouchableOpacity>
           </View>
         </View>
       </View>
@@ -266,42 +264,66 @@ const SleepLogModal: React.FC<{ visible: boolean; onClose: () => void }> = ({ vi
   );
 };
 
-export const SleepTrackerSection: React.FC = () => {
+export const SleepTrackerSection: React.FC<{ sleepLogs?: SleepLog[] }> = ({ sleepLogs = [] }) => {
   const [showLog, setShowLog] = useState(false);
-  const avg = (SLEEP_DATA.reduce((s, d) => s + d.hours, 0) / SLEEP_DATA.length).toFixed(1);
+
+  // Build last 7 days of data from real logs
+  const weekData = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dateStr = d.toISOString().split('T')[0];
+    const log = sleepLogs.find(s => s.date === dateStr);
+    return {
+      day: DAY_LABELS[d.getDay()],
+      hours: log?.sleep_hr ?? 0,
+      quality: log?.sleep_quality ?? null,
+      isToday: i === 6,
+      hasData: !!log,
+    };
+  });
+
+  const loggedDays = weekData.filter(d => d.hasData);
+  const avg = loggedDays.length > 0
+    ? (loggedDays.reduce((s, d) => s + d.hours, 0) / loggedDays.length).toFixed(1)
+    : '—';
+  const latestQuality = loggedDays.length > 0 ? loggedDays[loggedDays.length - 1].quality : null;
+  const qualityLabel = latestQuality ? QUALITY_LABELS[latestQuality] ?? '—' : '—';
   const maxH = 9;
+
+  const handleSave = async (data: { sleep_hr: number; sleep_quality: number }) => {
+    // Parent will handle the actual save via HealthLogScreen
+    // For now this is a local save — we'll wire it up properly next
+  };
+
   return (
     <>
-      <SleepLogModal visible={showLog} onClose={() => setShowLog(false)} />
-      <SectionHeader title="Sleep" subtitle={`${avg} hrs avg this week`} />
+      <SleepLogModal visible={showLog} onClose={() => setShowLog(false)} onSave={handleSave} />
+      <SectionHeader title="Sleep" subtitle={loggedDays.length > 0 ? `${avg} hrs avg this week` : 'No sleep data yet'} />
       <GlassCardView style={slp.card}>
-        {/* Summary row */}
         <View style={slp.summaryRow}>
           <View style={slp.summaryItem}>
             <Text style={slp.summaryVal}>{avg}</Text>
             <Text style={slp.summaryLbl}>Avg hours</Text>
           </View>
           <View style={[slp.qualityBadge, { backgroundColor: Colors.purple + '22', borderColor: Colors.purple + '55' }]}>
-            <Text style={[slp.qualityText, { color: Colors.purple }]}>● Good</Text>
+            <Text style={[slp.qualityText, { color: Colors.purple }]}>● {qualityLabel}</Text>
           </View>
           <View style={slp.summaryItem}>
-            <Text style={slp.summaryVal}>32%</Text>
-            <Text style={slp.summaryLbl}>Deep sleep</Text>
+            <Text style={slp.summaryVal}>{loggedDays.length}</Text>
+            <Text style={slp.summaryLbl}>Days logged</Text>
           </View>
         </View>
-        {/* Bar chart */}
         <View style={slp.chart}>
-          {SLEEP_DATA.map((d, i) => {
-            const isToday = i === SLEEP_DATA.length - 1;
-            const pct = d.hours / maxH;
+          {weekData.map((d, i) => {
+            const pct = d.hasData ? d.hours / maxH : 0;
             const col = d.hours >= 7.5 ? Colors.purple : d.hours >= 6.5 ? Colors.purple + 'BB' : Colors.purple + '66';
             return (
               <View key={`${d.day}-${i}`} style={slp.barCol}>
                 <View style={slp.barTrack}>
-                  <View style={[slp.bar, { height: `${pct * 100}%`, backgroundColor: col, borderWidth: isToday ? 1 : 0, borderColor: Colors.purple }]} />
+                  <View style={[slp.bar, { height: `${pct * 100}%`, backgroundColor: d.hasData ? col : Colors.bgCardBorder, borderWidth: d.isToday ? 1 : 0, borderColor: Colors.purple }]} />
                 </View>
-                <Text style={[slp.barLbl, isToday && { color: Colors.purple, fontWeight: Typography.bold }]}>{d.day}</Text>
-                <Text style={slp.barHrs}>{d.hours}h</Text>
+                <Text style={[slp.barLbl, d.isToday && { color: Colors.purple, fontWeight: Typography.bold }]}>{d.day}</Text>
+                <Text style={slp.barHrs}>{d.hasData ? `${d.hours}h` : '—'}</Text>
               </View>
             );
           })}
@@ -340,7 +362,8 @@ const MOODS = [
   { emoji: '😊', label: 'Good', value: 4 },
   { emoji: '😄', label: 'Great', value: 5 },
 ];
-const WEEKLY_MOODS = [4, 3, 5, 2, 4, 4, 0];
+const ENERGY_MAP: Record<string, number> = { Low: 1, Medium: 2, High: 3 };
+const ENERGY_LABELS: Record<number, string> = { 1: 'Low', 2: 'Med', 3: 'High' };
 
 const JournalModal: React.FC<{ visible: boolean; onClose: () => void }> = ({ visible, onClose }) => (
   <Modal visible={visible} transparent animationType="slide">
@@ -361,7 +384,7 @@ const JournalModal: React.FC<{ visible: boolean; onClose: () => void }> = ({ vis
   </Modal>
 );
 
-export const MentalHealthSection: React.FC = () => {
+export const MentalHealthSection: React.FC<{ moodLogs?: MoodLog[] }> = ({ moodLogs = [] }) => {
   const [mood, setMood] = useState<number | null>(4);
   const [stress, setStress] = useState<'Low' | 'Moderate' | 'High'>('Low');
   const [showJournal, setShowJournal] = useState(false);
@@ -369,6 +392,27 @@ export const MentalHealthSection: React.FC = () => {
   const stressLevel = stress === 'Low' ? 1 : stress === 'Moderate' ? 3 : 5;
   const stressColor = stress === 'Low' ? Colors.success : stress === 'Moderate' ? Colors.amber : Colors.danger ?? '#FF5E5E';
   const selectedMood = MOODS.find(m => m.value === mood);
+
+  // Build last 7 days of energy data from real logs
+  const weekData = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dateStr = d.toISOString().split('T')[0];
+    const log = moodLogs.find(m => m.date === dateStr);
+    const energyVal = log ? (ENERGY_MAP[log.energy_level] ?? 0) : 0;
+    return {
+      day: DAY_LABELS[d.getDay()],
+      energyVal,
+      label: energyVal > 0 ? ENERGY_LABELS[energyVal] : '—',
+      isToday: i === 6,
+      hasData: !!log && energyVal > 0,
+    };
+  });
+
+  const loggedDays = weekData.filter(d => d.hasData);
+  const avgEnergy = loggedDays.length > 0
+    ? ENERGY_LABELS[Math.round(loggedDays.reduce((s, d) => s + d.energyVal, 0) / loggedDays.length)]
+    : '—';
 
   return (
     <>
@@ -461,25 +505,22 @@ export const MentalHealthSection: React.FC = () => {
         </View>
       </GlassCardView>
 
-      {/* ── Weekly Mood Chart ──────────────────────────────── */}
+      {/* ── Weekly Energy Trend Chart ─────────────────────── */}
       <GlassCardView style={mhs.weekCard}>
-        <Text style={mhs.weekTitle}>Weekly Mood Trend</Text>
+        <Text style={mhs.weekTitle}>Weekly Energy Trend{loggedDays.length > 0 ? ` · Avg: ${avgEnergy}` : ''}</Text>
         <View style={mhs.weekChartRow}>
-          {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => {
-            const val = WEEKLY_MOODS[i];
-            const isToday = i === 6;
-            const moodEntry = val > 0 ? MOODS[val - 1] : null;
-            const barColor = val >= 4 ? Colors.success : val === 3 ? Colors.amber : val > 0 ? Colors.danger ?? '#FF5E5E' : Colors.bgCardBorder;
-            const pct = val > 0 ? (val / 5) * 100 : 8;
+          {weekData.map((d, i) => {
+            const pct = d.hasData ? (d.energyVal / 3) * 100 : 8;
+            const barColor = d.energyVal === 3 ? Colors.success : d.energyVal === 2 ? Colors.amber : d.hasData ? Colors.pink : Colors.bgCardBorder;
             return (
-              <View key={`${d}-${i}`} style={mhs.weekCol}>
+              <View key={`${d.day}-${i}`} style={mhs.weekCol}>
                 <View style={mhs.weekBarTrack}>
-                  <View style={[mhs.weekBar, { height: `${pct}%`, backgroundColor: isToday ? barColor : barColor + 'AA' }]} />
+                  <View style={[mhs.weekBar, { height: `${pct}%`, backgroundColor: d.isToday ? barColor : barColor + 'AA' }]} />
                 </View>
-                <Text style={[mhs.weekEmoji, { opacity: val > 0 ? 1 : 0.3 }]}>
-                  {moodEntry ? moodEntry.emoji : '·'}
+                <Text style={[mhs.weekEmoji, { opacity: d.hasData ? 1 : 0.3, color: d.hasData ? barColor : Colors.textMuted, fontWeight: d.hasData ? Typography.bold : Typography.regular }]}>
+                  {d.hasData ? d.label : '·'}
                 </Text>
-                <Text style={[mhs.weekDayLbl, isToday && { color: Colors.amber, fontWeight: Typography.bold }]}>{d}</Text>
+                <Text style={[mhs.weekDayLbl, d.isToday && { color: Colors.amber, fontWeight: Typography.bold }]}>{d.day}</Text>
               </View>
             );
           })}

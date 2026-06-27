@@ -26,6 +26,7 @@ function AppShell() {
   const [activeTab, setActiveTab] = useState<TabName>('Home');
   const [previousTab, setPreviousTab] = useState<TabName>('Home');
   const { setForceHidden } = useScrollVisibility();
+  const { session } = useAuth();
   const [aiStartInChat, setAiStartInChat] = useState(false);
   const [aiOrigin, setAiOrigin] = useState<TabName | null>(null);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
@@ -169,7 +170,7 @@ function AppShell() {
         )}
         {activeTab === 'HealthLog' && (
           <View style={styles.screenWrapper}>
-            <HealthLogScreen onBack={closeHealthLog} onSave={saveHealthLog} />
+            <HealthLogScreen onBack={closeHealthLog} onSave={saveHealthLog} token={session?.access_token} />
           </View>
         )}
       </View>

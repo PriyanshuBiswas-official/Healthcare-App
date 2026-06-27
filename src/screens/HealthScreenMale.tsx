@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,8 @@ import {
   AIHealthInsightsSection,
 } from './HealthCommonSections';
 import { useAuth } from '../providers/AuthProvider';
+import { getSleepLogs, getMoodLogs } from '../services/healthService';
+import type { SleepLog, MoodLog } from '../types/health';
 
 const { width } = Dimensions.get('window');
 
@@ -41,9 +43,26 @@ export default function HealthScreenMale({
   const { onScroll } = useScrollVisibility();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('Overview');
+  const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
+  const [moodLogs, setMoodLogs] = useState<MoodLog[]>([]);
   const scrollRef = useRef<ScrollView>(null);
 
   const TABS = ['Overview', 'Hormones', 'Vitals'];
+
+  const { session } = useAuth();
+
+  const fetchData = useCallback(async () => {
+    const token = session?.access_token;
+    if (!token) return;
+    try {
+      const sleeps = await getSleepLogs(token).catch(() => null);
+      const moods = await getMoodLogs(token).catch(() => null);
+      if (sleeps) setSleepLogs(sleeps);
+      if (moods) setMoodLogs(moods);
+    } catch {}
+  }, [session?.access_token]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
@@ -130,8 +149,8 @@ export default function HealthScreenMale({
               </GlassCardView>
             </View>
 
-            <MentalHealthSection />
-            <SleepTrackerSection />
+            <MentalHealthSection moodLogs={moodLogs} />
+            <SleepTrackerSection sleepLogs={sleepLogs} />
             <PreventiveCareSection />
         </>)}
 

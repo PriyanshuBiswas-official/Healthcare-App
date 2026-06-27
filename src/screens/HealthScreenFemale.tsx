@@ -1,10 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  Modal,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../theme/theme';
 import {
@@ -26,6 +30,44 @@ import {
 import { CyclePhaseVisualizer } from '../components/CyclePhaseVisualizer';
 import { useAuth } from '../providers/AuthProvider';
 import { HealthLogDraft } from './HealthLogScreen';
+import {
+  getPeriodLogs,
+  getMoodLogs,
+  getDischargeLogs,
+  getSymptomsLogs,
+  getInsights,
+  getLatestCycle,
+  getSleepLogs,
+  saveCycle,
+} from '../services/healthService';
+import type { PeriodLog, MoodLog, DischargeLog, SymptomsLog, CycleInsight, CycleData, SleepLog } from '../types/health';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const SHORT_DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+const MOOD_VALUE_MAP: Record<string, number> = {
+  Awful: 1, Bad: 2, Okay: 3, Good: 4, Great: 5,
+};
+
+function daysBetween(a: string, b: string): number {
+  const dA = new Date(a);
+  const dB = new Date(b);
+  return Math.round((dB.getTime() - dA.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function formatDateShort(dateStr: string): string {
+  const d = new Date(dateStr);
+  const month = d.toLocaleString('default', { month: 'short' });
+  return `${month} ${d.getDate()}`;
+}
+
+function getMoodValue(mood: string): number {
+  return MOOD_VALUE_MAP[mood] ?? 3;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function HealthScreenFemale({
   onProfilePress,
@@ -39,42 +81,195 @@ export default function HealthScreenFemale({
   lastHealthLog?: HealthLogDraft | null;
 }) {
   const { onScroll } = useScrollVisibility();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [activeTab, setActiveTab] = useState('Overview');
   const [selectedPhase, setSelectedPhase] = useState('Luteal');
   const scrollRef = useRef<ScrollView>(null);
 
-  const TABS = ['Overview', 'Hormones', 'Fertility'];
-  const moodTrend = [
-    { day: 'M', value: 4, label: 'Good' },
-    { day: 'T', value: 3, label: 'Okay' },
-    { day: 'W', value: 3, label: 'Okay' },
-    { day: 'T', value: 5, label: 'Great' },
-    { day: 'F', value: 4, label: 'Good' },
-    { day: 'S', value: 2, label: 'Bad' },
-    {
-      day: 'Today',
-      value: lastHealthLog?.mood === 'Great' ? 5 : lastHealthLog?.mood === 'Good' ? 4 : lastHealthLog?.mood === 'Bad' ? 2 : 3,
-      label: lastHealthLog?.mood ?? 'Okay',
-    },
-  ];
-  const flowTrend = [
-    { day: 'D1', value: 4 },
-    { day: 'D2', value: 3 },
-    { day: 'D3', value: 2 },
-    { day: 'D4', value: 1 },
-    { day: 'D5', value: 0 },
-  ];
-  const topSymptoms = lastHealthLog?.symptoms?.length
-    ? lastHealthLog.symptoms.slice(0, 3)
-    : ['Fatigue', 'Cramps', 'Cravings'];
-  const latestDischarge = lastHealthLog?.discharge ?? 'Creamy';
-  const latestMood = lastHealthLog?.mood ?? moodTrend[moodTrend.length - 1].label;
-  const latestFlow = lastHealthLog?.flow ?? 'None';
+  // ── Data state ──────────────────────────────────────────────────────────
+  const [periodLogs, setPeriodLogs] = useState<PeriodLog[]>([]);
+  const [moodLogs, setMoodLogs] = useState<MoodLog[]>([]);
+  const [dischargeLogs, setDischargeLogs] = useState<DischargeLog[]>([]);
+  const [symptomsLogs, setSymptomsLogs] = useState<SymptomsLog[]>([]);
+  const [insights, setInsights] = useState<CycleInsight[]>([]);
+  const [cycleData, setCycleData] = useState<CycleData | null>(null);
+  const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // ── Cycle setup modal state ──────────────────────────────────────────────
+  const [showCycleSetup, setShowCycleSetup] = useState(false);
+  const [setupStartDate, setSetupStartDate] = useState('');
+  const [setupCycleLength, setSetupCycleLength] = useState('28');
+  const [setupPeriodLength, setSetupPeriodLength] = useState('5');
+  const [setupRegularity, setSetupRegularity] = useState<'regular' | 'irregular' | 'not_sure'>('not_sure');
+  const [savingCycle, setSavingCycle] = useState(false);
+
+  // ── Fetch data on mount ─────────────────────────────────────────────────
+  const fetchData = useCallback(async () => {
+    const token = session?.access_token;
+    if (!token) return;
+    setLoading(true);
+    try {
+      const safe = async <T,>(p: Promise<T>): Promise<T | null> => {
+        try { return await p; } catch { return null; }
+      };
+      const [periods, moods, discharges, symptoms, ins, cycle, sleeps] = await Promise.all([
+        safe(getPeriodLogs(token)),
+        safe(getMoodLogs(token)),
+        safe(getDischargeLogs(token)),
+        safe(getSymptomsLogs(token)),
+        safe(getInsights(token)),
+        safe(getLatestCycle(token)),
+        safe(getSleepLogs(token)),
+      ]);
+      setPeriodLogs(periods ?? []);
+      setMoodLogs(moods ?? []);
+      setDischargeLogs(discharges ?? []);
+      setSymptomsLogs(symptoms ?? []);
+      setInsights(ins ?? []);
+      setSleepLogs(sleeps ?? []);
+      if (cycle) setCycleData(cycle);
+    } catch (err) {
+      console.error('[HealthScreenFemale] Failed to fetch data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.access_token]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Re-fetch when returning from health log (lastHealthLog changes)
+  useEffect(() => {
+    if (lastHealthLog) fetchData();
+  }, [lastHealthLog, fetchData]);
+
+  // ── Handle cycle setup save ──────────────────────────────────────────────
+  const handleCycleSetupSave = async () => {
+    const token = session?.access_token;
+    if (!token || !setupStartDate) return;
+    setSavingCycle(true);
+    try {
+      const saved = await saveCycle(token, {
+        start_date: setupStartDate,
+        cycle_length: parseInt(setupCycleLength, 10) || 28,
+        avg_cycle_length: parseInt(setupCycleLength, 10) || 28,
+        period_length: parseInt(setupPeriodLength, 10) || 5,
+        regularity: setupRegularity,
+      });
+      setCycleData(saved);
+      setShowCycleSetup(false);
+      fetchData();
+    } catch (err: any) {
+      console.error('[HealthScreenFemale] Failed to save cycle:', err);
+      Alert.alert('Save failed', err?.message || 'Could not save cycle data. Please try again.');
+    } finally {
+      setSavingCycle(false);
+    }
+  };
+
+  // ── Cycle data from backend ──────────────────────────────────────────────
+  const today = new Date().toISOString().split('T')[0];
+  const cycleLength = cycleData?.avg_cycle_length || 28;
+  const periodLen = cycleData?.period_length || 5;
+  const cycleDay = cycleData?.current_cycle_day || 1;
+  const currentPhase = cycleData?.current_phase || 'Menstrual';
+  const phaseColor = cycleData?.phase_color || Colors.pink;
+  const daysUntilNextPeriod = cycleData?.days_until_next_period || cycleLength;
+
+  // ── Compute mood trend (last 7 days) ───────────────────────────────────
+  const moodTrend = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dateStr = d.toISOString().split('T')[0];
+    const dayLabel = SHORT_DAYS[d.getDay()];
+    const log = moodLogs.find(m => m.date === dateStr);
+    // Also check lastHealthLog for today
+    const isToday = i === 6;
+    const mood = isToday && lastHealthLog?.mood ? lastHealthLog.mood : log?.mood;
+    const value = mood ? getMoodValue(mood) : 0;
+    return { day: isToday ? 'Today' : dayLabel, value, label: mood ?? '' };
+  });
+  const latestMood = lastHealthLog?.mood ?? moodLogs[moodLogs.length - 1]?.mood ?? 'Okay';
+
+  // ── Compute flow trend from last period ─────────────────────────────────
+  const flowTrend = (() => {
+    if (periodLogs.length === 0) {
+      return [
+        { day: 'D1', value: 4 }, { day: 'D2', value: 3 }, { day: 'D3', value: 2 },
+        { day: 'D4', value: 1 }, { day: 'D5', value: 0 },
+      ];
+    }
+    const latestPeriodDate = periodLogs[0].period_start_date;
+    const logsForPeriod = periodLogs
+      .filter(p => p.period_start_date === latestPeriodDate)
+      .sort((a, b) => a.day_no - b.day_no);
+    if (logsForPeriod.length === 0) {
+      return [
+        { day: 'D1', value: 4 }, { day: 'D2', value: 3 }, { day: 'D3', value: 2 },
+        { day: 'D4', value: 1 }, { day: 'D5', value: 0 },
+      ];
+    }
+    const flowMap: Record<string, number> = { Heavy: 4, Medium: 3, Light: 2, Spotting: 1, None: 0 };
+    return logsForPeriod.map(p => ({
+      day: `D${p.day_no}`,
+      value: flowMap[p.flow_intensity ?? ''] ?? 2,
+    }));
+  })();
+
+  // ── Latest symptoms & discharge ─────────────────────────────────────────
+  const topSymptoms = (() => {
+    if (lastHealthLog?.symptoms?.length) return lastHealthLog.symptoms.slice(0, 3).map(s => s.symptom);
+    if (symptomsLogs.length > 0) {
+      return symptomsLogs.slice(0, 3).map(s => s.symptom);
+    }
+    return ['No data yet'];
+  })();
+  const latestDischarge = lastHealthLog?.discharge ?? dischargeLogs[0]?.discharge_type ?? 'Not logged';
+  const latestFlow = lastHealthLog?.flowIntensity ?? periodLogs[0]?.flow_intensity ?? 'None';
+
+  // ── Fertility data from insights (insights predict future windows) ──────
+  const latestInsight = insights.length > 0 ? insights[0] : null;
+  const fertilityData = latestInsight ? {
+    fertileStart: formatDateShort(latestInsight.predict_fertile_start),
+    fertileEnd: formatDateShort(latestInsight.predict_fertile_end),
+    ovulationDay: formatDateShort(latestInsight.predict_ovulation_start),
+    isOvulationPassed: new Date(latestInsight.predict_ovulation_end) < new Date(),
+    pregnancyChance: daysBetween(latestInsight.predict_ovulation_end, today) <= 2 ? 'High' : 'Low',
+  } : null;
+
+  // ── Hormone data from backend ──────────────────────────────────────────
+  const hormoneBars = (() => {
+    const h = cycleData?.hormone_snapshot;
+    if (!h) return [
+      { label: 'Estrogen', value: 'Low', status: 'N/A', statusColor: Colors.amber, currentPct: 0 },
+      { label: 'Progesterone', value: 'Low', status: 'N/A', statusColor: Colors.amber, currentPct: 0 },
+      { label: 'LH Surge', value: 'Low', status: 'N/A', statusColor: Colors.success, currentPct: 0 },
+      { label: 'Cortisol', value: 'Normal', status: 'N/A', statusColor: Colors.success, currentPct: 0 },
+      { label: 'FSH', value: 'Normal', status: 'N/A', statusColor: Colors.success, currentPct: 0 },
+    ];
+    return [
+      { label: 'Estrogen', value: h.estrogen.value, status: h.estrogen.status, statusColor: Colors.pink, currentPct: h.estrogen.pct },
+      { label: 'Progesterone', value: h.progesterone.value, status: h.progesterone.status, statusColor: Colors.purple, currentPct: h.progesterone.pct },
+      { label: 'LH Surge', value: h.lh_surge.value, status: h.lh_surge.status, statusColor: Colors.amber, currentPct: h.lh_surge.pct },
+      { label: 'Cortisol', value: h.cortisol.value, status: h.cortisol.status, statusColor: Colors.success, currentPct: h.cortisol.pct },
+      { label: 'FSH', value: h.fsh.value, status: h.fsh.status, statusColor: Colors.pink, currentPct: h.fsh.pct },
+    ];
+  })();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [activeTab]);
+
+  // ── Loading state ───────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <View style={[s.root, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={Colors.pink} />
+      </View>
+    );
+  }
 
   return (
     <View style={s.root}>
@@ -96,6 +291,19 @@ export default function HealthScreenFemale({
           </View>
         </View>
 
+        {!cycleData && !loading && (
+          <TouchableOpacity style={s.cycleSetupBanner} activeOpacity={0.85} onPress={() => setShowCycleSetup(true)}>
+            <View style={s.cycleSetupBannerIcon}>
+              <Text style={{ fontSize: 20 }}>🩸</Text>
+            </View>
+            <View style={s.cycleSetupBannerCopy}>
+              <Text style={s.cycleSetupBannerTitle}>Set up your cycle</Text>
+              <Text style={s.cycleSetupBannerSub}>Enter your last period start date to see accurate cycle tracking</Text>
+            </View>
+            <Text style={s.cycleSetupBannerArrow}>›</Text>
+          </TouchableOpacity>
+        )}
+
         <InnerTabBar tabs={TABS} active={activeTab} onSelect={setActiveTab} accentColor={Colors.pink} />
 
         {activeTab === 'Overview' && (
@@ -114,25 +322,25 @@ export default function HealthScreenFemale({
                 <View style={s.cycleRingWrap}>
                   <View style={[s.cycleRing, { borderColor: Colors.purple }]} />
                   <View style={s.cycleRingCenter}>
-                    <Text style={s.ringDay}>Day 18</Text>
-                    <Text style={s.ringSub}>of 28</Text>
+                    <Text style={s.ringDay}>Day {cycleDay}</Text>
+                    <Text style={s.ringSub}>of {cycleLength}</Text>
                   </View>
                 </View>
                 <View style={s.cycleInfoWrap}>
                   <Text style={s.cyclePhaseLabel}>Current phase</Text>
                   <View style={s.phaseNameRow}>
-                    <View style={[s.phaseDot, { backgroundColor: Colors.purple }]} />
-                    <Text style={[s.phaseName, { color: Colors.purple }]}>Luteal phase</Text>
+                    <View style={[s.phaseDot, { backgroundColor: phaseColor }]} />
+                    <Text style={[s.phaseName, { color: phaseColor }]}>{currentPhase} phase</Text>
                   </View>
                   <View style={s.cycleStatsGrid}>
                     <Text style={s.cycleStatLabel}>Cycle day</Text>
-                    <Text style={s.cycleStatVal}>18 / 28</Text>
+                    <Text style={s.cycleStatVal}>{cycleDay} / {cycleLength}</Text>
                     <Text style={s.cycleStatLabel}>Next period</Text>
-                    <Text style={[s.cycleStatVal, { color: Colors.pink }]}>10 days away</Text>
+                    <Text style={[s.cycleStatVal, { color: Colors.pink }]}>{daysUntilNextPeriod} days away</Text>
                     <Text style={s.cycleStatLabel}>Cycle length</Text>
-                    <Text style={s.cycleStatVal}>28 days avg</Text>
+                    <Text style={s.cycleStatVal}>{cycleLength} days</Text>
                     <Text style={s.cycleStatLabel}>Period length</Text>
-                    <Text style={s.cycleStatVal}>4 days avg</Text>
+                    <Text style={s.cycleStatVal}>{periodLen} days</Text>
                   </View>
                 </View>
               </View>
@@ -149,14 +357,14 @@ export default function HealthScreenFemale({
             </GlassCardView>
 
             <SectionHeader title="Hormone Cycle" subtitle="Tap any day · Predicted model" />
-            <CyclePhaseVisualizer cycleLength={28} currentDay={18} />
+            <CyclePhaseVisualizer cycleLength={cycleLength} currentDay={cycleDay} />
 
             <SectionHeader title="Health Trends" subtitle={lastHealthLog ? 'Updated from latest log' : 'Insights from recent logs'} />
             <GlassCardView style={s.card}>
               <View style={s.trendHeader}>
                 <View>
                   <Text style={s.trendTitle}>Mood stability</Text>
-                  <Text style={s.trendSub}>Mostly steady with one low-energy day</Text>
+                  <Text style={s.trendSub}>Based on last 7 days of logging</Text>
                 </View>
                 <Text style={s.trendScore}>{latestMood}</Text>
               </View>
@@ -168,7 +376,7 @@ export default function HealthScreenFemale({
                         style={[
                           s.moodBar,
                           {
-                            height: `${item.value * 18}%`,
+                            height: item.value > 0 ? `${item.value * 18}%` : '8%',
                             backgroundColor: i === moodTrend.length - 1 ? Colors.pink : Colors.pink + '70',
                           },
                         ]}
@@ -184,7 +392,7 @@ export default function HealthScreenFemale({
               <View style={s.trendHeader}>
                 <View>
                   <Text style={s.trendTitle}>Flow pattern</Text>
-                  <Text style={s.trendSub}>Last period tapered normally across 5 days</Text>
+                  <Text style={s.trendSub}>Last period logged</Text>
                 </View>
                 <Text style={s.trendScore}>{latestFlow}</Text>
               </View>
@@ -208,7 +416,7 @@ export default function HealthScreenFemale({
                 </View>
                 <View style={s.signalCopy}>
                   <Text style={s.signalTitle}>{latestDischarge} discharge</Text>
-                  <Text style={s.signalText}>Consistent with luteal phase. Watch for changes in color, smell, or discomfort.</Text>
+                  <Text style={s.signalText}>Consistent with {currentPhase.toLowerCase()} phase. Watch for changes in color, smell, or discomfort.</Text>
                 </View>
               </View>
               <View style={s.softDivider} />
@@ -219,7 +427,7 @@ export default function HealthScreenFemale({
                 </View>
                 <View style={s.patternItem}>
                   <Text style={s.patternLabel}>Fertility status</Text>
-                  <Text style={s.patternValue}>Post ovulation</Text>
+                  <Text style={s.patternValue}>{fertilityData?.isOvulationPassed ? 'Post ovulation' : currentPhase === 'Ovulation' ? 'Fertile window' : 'Not fertile'}</Text>
                 </View>
               </View>
             </GlassCardView>
@@ -241,8 +449,8 @@ export default function HealthScreenFemale({
               </View>
             </GlassCardView>
 
-            <SleepTrackerSection />
-            <MentalHealthSection />
+            <SleepTrackerSection sleepLogs={sleepLogs} />
+            <MentalHealthSection moodLogs={moodLogs} />
             <VitalsDashboardSection />
           </>
         )}
@@ -253,30 +461,40 @@ export default function HealthScreenFemale({
             <GlassCardView style={s.card}>
               <View style={s.fertHeader}>
                 <View>
-                  <Text style={s.fertTitle}>Ovulation passed</Text>
-                  <Text style={s.fertSub}>Next fertile window predicted: Jul 9-14</Text>
+                  <Text style={s.fertTitle}>{fertilityData?.isOvulationPassed ? 'Ovulation passed' : 'Fertile window approaching'}</Text>
+                  <Text style={s.fertSub}>{fertilityData ? `Next fertile window: ${fertilityData.fertileStart} - ${fertilityData.fertileEnd}` : 'Log your cycle to see predictions'}</Text>
                 </View>
                 <View style={[s.fertBadge, { backgroundColor: Colors.purple + '20', borderColor: Colors.purple + '55' }]}>
                   <Text style={[s.fertBadgeText, { color: Colors.purple }]}>% AI predicted</Text>
                 </View>
               </View>
-              <View style={s.fertGridRow}>
-                <View style={[s.fertBox, { backgroundColor: Colors.pink + '15', borderColor: Colors.pink + '30' }]}>
-                  <Text style={[s.fertBoxTitle, { color: Colors.pink }]}>Peak day was</Text>
-                  <Text style={[s.fertBoxVal, { color: Colors.pink }]}>Jun 14</Text>
-                  <Text style={s.fertBoxSub}>Ovulation day</Text>
+              {fertilityData ? (
+                <View style={s.fertGridRow}>
+                  <View style={[s.fertBox, { backgroundColor: Colors.pink + '15', borderColor: Colors.pink + '30' }]}>
+                    <Text style={[s.fertBoxTitle, { color: Colors.pink }]}>Ovulation day</Text>
+                    <Text style={[s.fertBoxVal, { color: Colors.pink }]}>{fertilityData.ovulationDay}</Text>
+                    <Text style={s.fertBoxSub}>Peak fertility</Text>
+                  </View>
+                  <View style={[s.fertBox, { backgroundColor: Colors.amber + '15', borderColor: Colors.amber + '30' }]}>
+                    <Text style={[s.fertBoxTitle, { color: Colors.amber }]}>Fertile window</Text>
+                    <Text style={[s.fertBoxVal, { color: Colors.amber }]}>{fertilityData.fertileStart}-{fertilityData.fertileEnd}</Text>
+                    <Text style={s.fertBoxSub}>5-day window</Text>
+                  </View>
+                  <View style={[s.fertBox, { backgroundColor: Colors.purple + '15', borderColor: Colors.purple + '30' }]}>
+                    <Text style={[s.fertBoxTitle, { color: Colors.purple }]}>Pregnancy chance</Text>
+                    <Text style={[s.fertBoxVal, { color: Colors.purple }]}>{fertilityData.pregnancyChance}</Text>
+                    <Text style={s.fertBoxSub}>{fertilityData.isOvulationPassed ? 'Post ovulation' : 'Pre ovulation'}</Text>
+                  </View>
                 </View>
-                <View style={[s.fertBox, { backgroundColor: Colors.amber + '15', borderColor: Colors.amber + '30' }]}>
-                  <Text style={[s.fertBoxTitle, { color: Colors.amber }]}>Fertile window</Text>
-                  <Text style={[s.fertBoxVal, { color: Colors.amber }]}>Jun 11-15</Text>
-                  <Text style={s.fertBoxSub}>5-day window</Text>
+              ) : (
+                <View style={s.fertGridRow}>
+                  <View style={[s.fertBox, { backgroundColor: Colors.bgCardBorder + '50', borderColor: Colors.bgCardBorder }]}>
+                    <Text style={[s.fertBoxTitle, { color: Colors.textMuted }]}>No data</Text>
+                    <Text style={[s.fertBoxVal, { color: Colors.textMuted }]}>—</Text>
+                    <Text style={s.fertBoxSub}>Log your cycle to see predictions</Text>
+                  </View>
                 </View>
-                <View style={[s.fertBox, { backgroundColor: Colors.purple + '15', borderColor: Colors.purple + '30' }]}>
-                  <Text style={[s.fertBoxTitle, { color: Colors.purple }]}>Pregnancy chance</Text>
-                  <Text style={[s.fertBoxVal, { color: Colors.purple }]}>Low</Text>
-                  <Text style={s.fertBoxSub}>Post ovulation</Text>
-                </View>
-              </View>
+              )}
             </GlassCardView>
           </>
         )}
@@ -291,14 +509,12 @@ export default function HealthScreenFemale({
                   <Text style={[s.fertBadgeText, { color: Colors.purple }]}>% AI Modeled</Text>
                 </View>
               </View>
-              <HormoneRangeBar label="Estrogen" value="High" status="Declining" statusColor={Colors.pink} currentPct={0.6} />
-              <HormoneRangeBar label="Progesterone" value="Rising" status="Elevated" statusColor={Colors.purple} currentPct={0.8} />
-              <HormoneRangeBar label="LH Surge" value="Low" status="Post-peak" statusColor={Colors.amber} currentPct={0.2} />
-              <HormoneRangeBar label="Cortisol" value="Slightly High" status="Elevated" statusColor={Colors.amber} currentPct={0.7} />
-              <HormoneRangeBar label="FSH" value="Normal" status="Normal" statusColor={Colors.success} currentPct={0.4} />
+              {hormoneBars.map(h => (
+                <HormoneRangeBar key={h.label} {...h} />
+              ))}
 
               <View style={s.infoBox}>
-                <Text style={s.infoText}>💡 These are AI estimated values based on cycle day. For clinical accuracy, use a blood test or LH dips/ovulation swabs here.</Text>
+                <Text style={s.infoText}>These are AI estimated values based on cycle day {cycleDay}. For clinical accuracy, use a blood test or LH dips/ovulation swabs here.</Text>
               </View>
             </GlassCardView>
           </>
@@ -310,9 +526,80 @@ export default function HealthScreenFemale({
 
         <View style={s.bottomSpace} />
       </ScrollView>
+
+      {/* Cycle Setup Modal */}
+      <Modal visible={showCycleSetup} transparent animationType="slide">
+        <View style={s.modalOverlay}>
+          <View style={s.modalSheet}>
+            <View style={s.modalHandle} />
+            <Text style={s.modalTitle}>Set Up Cycle Tracking</Text>
+            <Text style={s.modalSubtitle}>Enter your last period start date to get accurate predictions</Text>
+
+            <Text style={s.modalLabel}>Last period start date</Text>
+            <TextInput
+              style={s.modalInput}
+              value={setupStartDate}
+              onChangeText={setSetupStartDate}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={Colors.textMuted}
+              keyboardType="numbers-and-punctuation"
+            />
+
+            <Text style={s.modalLabel}>Average cycle length (days)</Text>
+            <TextInput
+              style={s.modalInput}
+              value={setupCycleLength}
+              onChangeText={setSetupCycleLength}
+              placeholder="28"
+              placeholderTextColor={Colors.textMuted}
+              keyboardType="numeric"
+            />
+
+            <Text style={s.modalLabel}>Average period length (days)</Text>
+            <TextInput
+              style={s.modalInput}
+              value={setupPeriodLength}
+              onChangeText={setSetupPeriodLength}
+              placeholder="5"
+              placeholderTextColor={Colors.textMuted}
+              keyboardType="numeric"
+            />
+
+            <Text style={s.modalLabel}>Cycle regularity</Text>
+            <View style={s.regularityRow}>
+              {([['regular', 'Regular'], ['irregular', 'Irregular'], ['not_sure', 'Not sure']] as const).map(([val, label]) => (
+                <TouchableOpacity
+                  key={val}
+                  onPress={() => setSetupRegularity(val)}
+                  style={[s.regularityBtn, setupRegularity === val && s.regularityBtnActive]}>
+                  <Text style={[s.regularityBtnText, setupRegularity === val && s.regularityBtnTextActive]}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={s.modalActions}>
+              <TouchableOpacity style={s.modalCancelBtn} onPress={() => setShowCycleSetup(false)}>
+                <Text style={s.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.modalSaveBtn, savingCycle && { opacity: 0.6 }]}
+                onPress={handleCycleSetupSave}
+                disabled={savingCycle || !setupStartDate}>
+                {savingCycle ? (
+                  <ActivityIndicator color={Colors.bg} size="small" />
+                ) : (
+                  <Text style={s.modalSaveText}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
+
+const TABS = ['Overview', 'Hormones', 'Fertility'];
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
@@ -402,4 +689,72 @@ const s = StyleSheet.create({
   infoText: { fontSize: Typography.xs, color: Colors.textSecondary, lineHeight: 18 },
   aiWrap: { marginTop: Spacing.xl },
   bottomSpace: { height: 100 },
+
+  // Cycle Setup Banner
+  cycleSetupBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.pink + '18',
+    borderWidth: 1,
+    borderColor: Colors.pink + '45',
+    borderRadius: Radius.lg,
+    padding: Spacing.base,
+    marginBottom: Spacing.xl,
+  },
+  cycleSetupBannerIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.pink + '22',
+    marginRight: Spacing.md,
+  },
+  cycleSetupBannerCopy: { flex: 1 },
+  cycleSetupBannerTitle: { fontSize: Typography.md, color: Colors.textPrimary, fontWeight: Typography.bold },
+  cycleSetupBannerSub: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 },
+  cycleSetupBannerArrow: { fontSize: 28, color: Colors.pink, fontWeight: Typography.bold, marginLeft: Spacing.sm },
+
+  // Cycle Setup Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', justifyContent: 'flex-end' },
+  modalSheet: {
+    backgroundColor: '#111322',
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    padding: Spacing.xl,
+    paddingBottom: 40,
+    borderWidth: 1,
+    borderColor: Colors.bgCardBorder,
+  },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.textMuted, alignSelf: 'center', marginBottom: Spacing.lg },
+  modalTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: Spacing.xs },
+  modalSubtitle: { fontSize: Typography.sm, color: Colors.textMuted, marginBottom: Spacing.lg },
+  modalLabel: { fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.medium, marginBottom: Spacing.sm, marginTop: Spacing.md },
+  modalInput: {
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.bgCardBorder,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    color: Colors.textPrimary,
+    fontSize: Typography.base,
+  },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.md, marginTop: Spacing.xl },
+  modalCancelBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.bgCardBorder },
+  modalCancelText: { color: Colors.textSecondary, fontSize: Typography.sm, fontWeight: Typography.semiBold },
+  modalSaveBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, backgroundColor: Colors.pink, alignItems: 'center', minWidth: 80 },
+  modalSaveText: { color: Colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold },
+  regularityRow: { flexDirection: 'row', gap: Spacing.sm },
+  regularityBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.bgCardBorder,
+    backgroundColor: Colors.bgCard,
+  },
+  regularityBtnActive: { borderColor: Colors.pink, backgroundColor: Colors.pink + '18' },
+  regularityBtnText: { fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.medium },
+  regularityBtnTextActive: { color: Colors.pink },
 });
