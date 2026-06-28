@@ -373,8 +373,8 @@ function WeightFluctuationChart({
   // Build area path
   const areaPath = hasData
     ? `M ${getX(0)},${getY(weightLogs[0].weight_kg)} ` +
-      weightLogs.slice(1).map((w, i) => `L ${getX(i + 1)},${getY(w.weight_kg)}`).join(' ') +
-      ` L ${getX(weightLogs.length - 1)},${svgHeight - pb} L ${getX(0)},${svgHeight - pb} Z`
+    weightLogs.slice(1).map((w, i) => `L ${getX(i + 1)},${getY(w.weight_kg)}`).join(' ') +
+    ` L ${getX(weightLogs.length - 1)},${svgHeight - pb} L ${getX(0)},${svgHeight - pb} Z`
     : '';
 
   // Phase background bands
@@ -776,16 +776,27 @@ export default function HealthScreenFemale({
 
         <InnerTabBar tabs={TABS} active={activeTab} onSelect={setActiveTab} accentColor={Colors.pink} />
 
+        {/* Health log banner — common to all tabs */}
+        {lastHealthLog ? (
+          <TouchableOpacity style={[s.logCta, { borderColor: Colors.success + '45', backgroundColor: Colors.success + '12' }]} onPress={onOpenHealthLog} activeOpacity={0.85}>
+            <View style={[s.logCtaCopy, { flex: 1 }]}>
+              <Text style={[s.logCtaTitle, { color: Colors.success }]}>Log added today</Text>
+              <Text style={s.logCtaSub}>Tap here to view or edit your entry</Text>
+            </View>
+            <Text style={[s.logCtaIcon, { backgroundColor: Colors.success + '22', color: Colors.success }]}>✓</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={s.logCta} onPress={onOpenHealthLog} activeOpacity={0.85}>
+            <View style={s.logCtaCopy}>
+              <Text style={s.logCtaTitle}>Log today&apos;s health</Text>
+              <Text style={s.logCtaSub}>Mood, flow, discharge, symptoms, sleep and vitals</Text>
+            </View>
+            <Text style={s.logCtaIcon}>+</Text>
+          </TouchableOpacity>
+        )}
+
         {activeTab === 'Overview' && (
           <>
-            <TouchableOpacity style={s.logCta} onPress={onOpenHealthLog} activeOpacity={0.85}>
-              <View style={s.logCtaCopy}>
-                <Text style={s.logCtaTitle}>Log today&apos;s health</Text>
-                <Text style={s.logCtaSub}>Mood, flow, discharge, symptoms, sleep and vitals</Text>
-              </View>
-              <Text style={s.logCtaIcon}>+</Text>
-            </TouchableOpacity>
-
             <SectionHeader title="Current Cycle" />
             <GlassCardView style={s.card}>
               <View style={s.cycleTopRow}>
@@ -793,8 +804,8 @@ export default function HealthScreenFemale({
                   <Svg width={120} height={120} viewBox="0 0 120 120">
                     <Defs>
                       <LinearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-                        <Stop offset="0%" stopColor={phaseColor} stopOpacity={0.9} />
-                        <Stop offset="100%" stopColor={phaseColor} stopOpacity={0.3} />
+                        <Stop offset="0%" stopColor={phaseColor} stopOpacity={1} />
+                        <Stop offset="100%" stopColor={phaseColor} stopOpacity={0.55} />
                       </LinearGradient>
                     </Defs>
                     {/* Outer glowing halo */}
@@ -803,9 +814,9 @@ export default function HealthScreenFemale({
                       cy={60}
                       r={50}
                       stroke={phaseColor}
-                      strokeWidth={1}
+                      strokeWidth={1.5}
                       fill="none"
-                      opacity={0.15}
+                      opacity={0.25}
                     />
                     {/* Background track */}
                     <Circle
@@ -839,7 +850,7 @@ export default function HealthScreenFemale({
                   <Text style={s.cyclePhaseLabel}>Current phase</Text>
                   <View style={s.phaseNameRow}>
                     <View style={[s.phaseDot, { backgroundColor: phaseColor }]} />
-                    <Text style={[s.phaseName, { color: phaseColor }]}>{currentPhase} phase</Text>
+                    <Text style={[s.phaseName, { color: phaseColor }]}>{currentPhase}</Text>
                   </View>
                   <View style={s.cycleStatsGrid}>
                     <Text style={s.cycleStatLabel}>Cycle day</Text>
@@ -866,7 +877,7 @@ export default function HealthScreenFemale({
             </GlassCardView>
 
             <SectionHeader title="Hormone Cycle" subtitle="Tap any day · Predicted model" />
-            <CyclePhaseVisualizer cycleLength={cycleLength} currentDay={cycleDay} />
+            <CyclePhaseVisualizer cycleLength={cycleLength} currentDay={cycleDay} startDate={cycleData?.start_date} />
 
             <SectionHeader title="Cycle Analytics" subtitle="Flow & history trends" />
             <GlassCardView style={s.card}>
@@ -1229,12 +1240,12 @@ const s = StyleSheet.create({
   cycleRing: { position: 'absolute', width: 120, height: 120, borderRadius: 60, borderWidth: 8, borderColor: Colors.bgCardBorder },
   cycleRingCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   ringDay: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.textPrimary },
-  ringSub: { fontSize: Typography.xs, color: Colors.textMuted },
+  ringSub: { fontSize: Typography.xs, color: Colors.textSecondary },
   cycleInfoWrap: { flex: 1, marginLeft: Spacing.lg },
   cyclePhaseLabel: { fontSize: 11, color: Colors.textMuted, textTransform: 'uppercase', marginBottom: 2 },
   phaseNameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm },
   phaseDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
-  phaseName: { fontSize: Typography.lg, fontWeight: Typography.bold },
+  phaseName: { fontSize: Typography.xl, fontWeight: Typography.extraBold },
   cycleStatsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   cycleStatLabel: { width: '50%', fontSize: 11, color: Colors.textMuted, marginBottom: 2 },
   cycleStatVal: { width: '50%', fontSize: 11, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: 2, textAlign: 'right' },

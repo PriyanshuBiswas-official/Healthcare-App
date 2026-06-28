@@ -101,10 +101,12 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
   const [flowColor, setFlowColor] = useState('Bright red');
   const [cramps, setCramps] = useState('None');
   const [clots, setClots] = useState('None');
+  const [logDischarge, setLogDischarge] = useState(false);
   const [discharge, setDischarge] = useState('Creamy');
   const [texture, setTexture] = useState('Thin');
   const [dischargeColor, setDischargeColor] = useState('White');
   const [dischargeAmount, setDischargeAmount] = useState(1);
+  const [logSymptoms, setLogSymptoms] = useState(false);
   const [symptoms, setSymptoms] = useState<Array<{symptom: string; severity: number}>>([
     { symptom: 'Fatigue', severity: 1 },
   ]);
@@ -206,14 +208,14 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
             cramps,
             clots,
           }) : Promise.resolve(),
-          saveDischargeLog(token, {
+          logDischarge ? saveDischargeLog(token, {
             discharge_type: discharge,
             texture,
             color: dischargeColor,
             amount: dischargeAmount,
             date: today,
-          }),
-          saveSymptomsLog(token, { symptoms, date: today }),
+          }) : Promise.resolve(),
+          logSymptoms ? saveSymptomsLog(token, { symptoms, date: today }) : Promise.resolve(),
           saveSleepLog(token, { sleep_hr: parseFloat(sleepHours) || 7, sleep_quality: SLEEP_QUALITIES.indexOf(sleepQuality) + 1, date: today }),
         ]);
       } catch (err: any) {
@@ -383,77 +385,98 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
         </GlassCardView>
 
         <GlassCardView style={s.card}>
-          <Text style={s.sectionTitle}>Discharge</Text>
-          <Text style={s.fieldLabel}>Discharge type</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.horizontalChips}>
-            {DISCHARGE_TYPES.map(item => (
-              <TouchableOpacity
-                key={item}
-                onPress={() => setDischarge(item)}
-                style={[s.pill, discharge === item && s.pillActive]}>
-                <Text style={[s.pillText, discharge === item && s.pillTextActive]}>{item}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          <Text style={s.fieldLabel}>Texture</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.horizontalChips}>
-            {DISCHARGE_TEXTURES.map(item => (
-              <TouchableOpacity
-                key={item}
-                onPress={() => setTexture(item)}
-                style={[s.pill, texture === item && { borderColor: Colors.teal, backgroundColor: Colors.teal + '18' }]}>
-                <Text style={[s.pillText, texture === item && { color: Colors.teal }]}>{item}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          <Text style={s.fieldLabel}>Color</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.horizontalChips}>
-            {DISCHARGE_COLORS.map(item => (
-              <TouchableOpacity
-                key={item}
-                onPress={() => setDischargeColor(item)}
-                style={[s.pill, dischargeColor === item && { borderColor: Colors.amber, backgroundColor: Colors.amber + '18' }]}>
-                <Text style={[s.pillText, dischargeColor === item && { color: Colors.amber }]}>{item}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          <Text style={s.fieldLabel}>Amount</Text>
-          <View style={s.segmentRow}>
-            {DISCHARGE_AMOUNTS.map((label, i) => (
-              <TouchableOpacity
-                key={label}
-                onPress={() => setDischargeAmount(i)}
-                style={[s.segment, dischargeAmount === i && s.segmentActive]}>
-                <Text style={[s.segmentText, dischargeAmount === i && s.segmentTextActive]}>{label}</Text>
-              </TouchableOpacity>
-            ))}
+          <View style={s.toggleRow}>
+            <Text style={s.sectionTitle}>Discharge</Text>
+            <TouchableOpacity
+              onPress={() => setLogDischarge(!logDischarge)}
+              style={[s.toggle, logDischarge && s.toggleActive]}>
+              <View style={[s.toggleKnob, logDischarge && s.toggleKnobActive]} />
+            </TouchableOpacity>
           </View>
+
+          {logDischarge && (
+            <>
+              <Text style={s.fieldLabel}>Discharge type</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.horizontalChips}>
+                {DISCHARGE_TYPES.map(item => (
+                  <TouchableOpacity
+                    key={item}
+                    onPress={() => setDischarge(item)}
+                    style={[s.pill, discharge === item && s.pillActive]}>
+                    <Text style={[s.pillText, discharge === item && s.pillTextActive]}>{item}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <Text style={s.fieldLabel}>Texture</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.horizontalChips}>
+                {DISCHARGE_TEXTURES.map(item => (
+                  <TouchableOpacity
+                    key={item}
+                    onPress={() => setTexture(item)}
+                    style={[s.pill, texture === item && { borderColor: Colors.teal, backgroundColor: Colors.teal + '18' }]}>
+                    <Text style={[s.pillText, texture === item && { color: Colors.teal }]}>{item}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <Text style={s.fieldLabel}>Color</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.horizontalChips}>
+                {DISCHARGE_COLORS.map(item => (
+                  <TouchableOpacity
+                    key={item}
+                    onPress={() => setDischargeColor(item)}
+                    style={[s.pill, dischargeColor === item && { borderColor: Colors.amber, backgroundColor: Colors.amber + '18' }]}>
+                    <Text style={[s.pillText, dischargeColor === item && { color: Colors.amber }]}>{item}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <Text style={s.fieldLabel}>Amount</Text>
+              <View style={s.segmentRow}>
+                {DISCHARGE_AMOUNTS.map((label, i) => (
+                  <TouchableOpacity
+                    key={label}
+                    onPress={() => setDischargeAmount(i)}
+                    style={[s.segment, dischargeAmount === i && s.segmentActive]}>
+                    <Text style={[s.segmentText, dischargeAmount === i && s.segmentTextActive]}>{label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
         </GlassCardView>
 
         <GlassCardView style={s.card}>
           <View style={s.rowBetween}>
             <Text style={s.sectionTitle}>Symptoms</Text>
-            <Text style={s.countText}>{symptoms.length} selected</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+              {logSymptoms && <Text style={s.countText}>{symptoms.length} selected</Text>}
+              <TouchableOpacity
+                onPress={() => setLogSymptoms(!logSymptoms)}
+                style={[s.toggle, logSymptoms && s.toggleActive]}>
+                <View style={[s.toggleKnob, logSymptoms && s.toggleKnobActive]} />
+              </TouchableOpacity>
+            </View>
           </View>
-          <View style={s.symptomGrid}>
-            {SYMPTOMS.map(item => {
-              const active = symptoms.some(s => s.symptom === item);
-              return (
-                <TouchableOpacity
-                  key={item}
-                  onPress={() => toggleSymptom(item)}
-                  style={[s.symptomChip, active && s.symptomChipActive]}>
-                  <Text style={[s.symptomText, active && s.symptomTextActive]}>{item}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          {symptoms.length > 0 && (
-            <View style={{ marginTop: Spacing.md }}>
-              <Text style={s.fieldLabel}>Set severity for each</Text>
+          {logSymptoms && (
+            <>
+              <View style={s.symptomGrid}>
+                {SYMPTOMS.map(item => {
+                  const active = symptoms.some(s => s.symptom === item);
+                  return (
+                    <TouchableOpacity
+                      key={item}
+                      onPress={() => toggleSymptom(item)}
+                      style={[s.symptomChip, active && s.symptomChipActive]}>
+                      <Text style={[s.symptomText, active && s.symptomTextActive]}>{item}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {symptoms.length > 0 && (
+                <View style={{ marginTop: Spacing.md }}>
+                  <Text style={s.fieldLabel}>Set severity for each</Text>
               {symptoms.map(({ symptom, severity }) => (
                 <View key={symptom} style={s.symptomSeverityRow}>
                   <Text style={s.symptomSeverityLabel}>{symptom}</Text>
@@ -479,6 +502,8 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
                 </View>
               ))}
             </View>
+          )}
+            </>
           )}
         </GlassCardView>
 
