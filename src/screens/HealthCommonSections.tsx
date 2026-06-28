@@ -140,7 +140,7 @@ const hrb = StyleSheet.create({
     paddingHorizontal: Spacing.sm, paddingVertical: 2,
     borderRadius: Radius.full, borderWidth: 1,
   },
-  badgeText: { fontSize: 10, fontWeight: Typography.bold },
+  badgeText: { fontSize: 11, fontWeight: Typography.bold },
   trackWrap: { position: 'relative', height: 22 },
   track: { flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', gap: 2, marginTop: 0 },
   zone: { height: '100%' },
@@ -148,7 +148,7 @@ const hrb = StyleSheet.create({
   markerOuter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.bg },
   markerInner: { width: 10, height: 10, borderRadius: 5 },
   zoneLabelRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  zoneLabel: { fontSize: 9, color: Colors.textMuted, flex: 1 },
+  zoneLabel: { fontSize: 10, color: Colors.textMuted, flex: 1 },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -197,7 +197,7 @@ const qab = StyleSheet.create({
     borderRadius: Radius.md, borderWidth: 1,
   },
   icon: { fontSize: 22, marginBottom: 4 },
-  label: { fontSize: 10, fontWeight: Typography.semiBold, textAlign: 'center' },
+  label: { fontSize: 11, fontWeight: Typography.semiBold, textAlign: 'center' },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -224,8 +224,8 @@ const mmc = StyleSheet.create({
   valueRow: { flexDirection: 'row', alignItems: 'baseline' },
   value: { fontSize: Typography.lg, fontWeight: Typography.extraBold },
   unit: { fontSize: Typography.xs, fontWeight: Typography.medium, marginLeft: 3 },
-  label: { fontSize: 10, color: Colors.textSecondary, fontWeight: Typography.semiBold, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.4 },
-  subtitle: { fontSize: 10, color: Colors.textMuted, marginTop: 2 },
+  label: { fontSize: 11, color: Colors.textSecondary, fontWeight: Typography.semiBold, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.4 },
+  subtitle: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -292,7 +292,6 @@ export const SleepTrackerSection: React.FC<{ sleepLogs?: SleepLog[] }> = ({ slee
 
   const handleSave = async (data: { sleep_hr: number; sleep_quality: number }) => {
     // Parent will handle the actual save via HealthLogScreen
-    // For now this is a local save — we'll wire it up properly next
   };
 
   return (
@@ -319,17 +318,14 @@ export const SleepTrackerSection: React.FC<{ sleepLogs?: SleepLog[] }> = ({ slee
             const col = d.hours >= 7.5 ? Colors.purple : d.hours >= 6.5 ? Colors.purple + 'BB' : Colors.purple + '66';
             return (
               <View key={`${d.day}-${i}`} style={slp.barCol}>
+                <Text style={slp.barHrs}>{d.hasData ? `${d.hours}h` : '—'}</Text>
                 <View style={slp.barTrack}>
                   <View style={[slp.bar, { height: `${pct * 100}%`, backgroundColor: d.hasData ? col : Colors.bgCardBorder, borderWidth: d.isToday ? 1 : 0, borderColor: Colors.purple }]} />
                 </View>
                 <Text style={[slp.barLbl, d.isToday && { color: Colors.purple, fontWeight: Typography.bold }]}>{d.day}</Text>
-                <Text style={slp.barHrs}>{d.hasData ? `${d.hours}h` : '—'}</Text>
               </View>
             );
           })}
-        </View>
-        <View style={slp.logRow}>
-          <LogButton label="Log Tonight's Sleep" icon="🌙" color={Colors.purple} onPress={() => setShowLog(true)} />
         </View>
       </GlassCardView>
     </>
@@ -337,18 +333,18 @@ export const SleepTrackerSection: React.FC<{ sleepLogs?: SleepLog[] }> = ({ slee
 };
 const slp = StyleSheet.create({
   card: { padding: Spacing.base, marginBottom: Spacing.xl },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.lg },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl },
   summaryItem: { alignItems: 'center' },
   summaryVal: { fontSize: Typography.xl, fontWeight: Typography.extraBold, color: Colors.textPrimary },
   summaryLbl: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2 },
   qualityBadge: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: Radius.full, borderWidth: 1 },
   qualityText: { fontSize: Typography.sm, fontWeight: Typography.bold },
-  chart: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 90, marginBottom: Spacing.base },
+  chart: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 110, marginTop: Spacing.lg, marginBottom: Spacing.base },
   barCol: { flex: 1, alignItems: 'center' },
-  barTrack: { width: 18, height: '100%', justifyContent: 'flex-end', borderRadius: 4, overflow: 'hidden', backgroundColor: Colors.bgCardBorder, marginBottom: 4 },
-  bar: { width: '100%', borderRadius: 4 },
-  barLbl: { fontSize: 9, color: Colors.textMuted, fontWeight: Typography.medium },
-  barHrs: { fontSize: 8, color: Colors.textMuted, marginTop: 1 },
+  barTrack: { width: 22, height: '100%', justifyContent: 'flex-end', borderRadius: 5, overflow: 'hidden', backgroundColor: Colors.bgCardBorder, marginBottom: 4 },
+  bar: { width: '100%', borderRadius: 5 },
+  barLbl: { fontSize: 11, color: Colors.textMuted, fontWeight: Typography.semiBold },
+  barHrs: { fontSize: 10, color: Colors.textSecondary, marginBottom: 2, fontWeight: Typography.medium },
   logRow: { alignItems: 'center', marginTop: Spacing.sm },
 });
 
@@ -385,13 +381,11 @@ const JournalModal: React.FC<{ visible: boolean; onClose: () => void }> = ({ vis
 );
 
 export const MentalHealthSection: React.FC<{ moodLogs?: MoodLog[] }> = ({ moodLogs = [] }) => {
-  const [mood, setMood] = useState<number | null>(4);
-  const [stress, setStress] = useState<'Low' | 'Moderate' | 'High'>('Low');
-  const [showJournal, setShowJournal] = useState(false);
-
-  const stressLevel = stress === 'Low' ? 1 : stress === 'Moderate' ? 3 : 5;
+  const latestLog = moodLogs[moodLogs.length - 1];
+  const rawStress = latestLog?.stress ?? 2; // default to 2
+  const stress = rawStress <= 2 ? 'Low' : rawStress <= 4 ? 'Moderate' : 'High';
+  const stressLevel = rawStress;
   const stressColor = stress === 'Low' ? Colors.success : stress === 'Moderate' ? Colors.amber : Colors.danger ?? '#FF5E5E';
-  const selectedMood = MOODS.find(m => m.value === mood);
 
   // Build last 7 days of energy data from real logs
   const weekData = Array.from({ length: 7 }, (_, i) => {
@@ -416,47 +410,9 @@ export const MentalHealthSection: React.FC<{ moodLogs?: MoodLog[] }> = ({ moodLo
 
   return (
     <>
-      <JournalModal visible={showJournal} onClose={() => setShowJournal(false)} />
       <SectionHeader title="Stress & Mood" subtitle="Today" />
 
-      {/* ── Mood Picker ───────────────────────────────────── */}
-      <GlassCardView style={mhs.card}>
-        <Text style={mhs.prompt}>How are you feeling today?</Text>
-        <View style={mhs.moodRow}>
-          {MOODS.map(m => {
-            const sel = mood === m.value;
-            return (
-              <TouchableOpacity
-                key={m.value}
-                onPress={() => setMood(m.value)}
-                activeOpacity={0.75}
-                style={[
-                  mhs.moodCard,
-                  sel && { borderColor: Colors.amber, backgroundColor: Colors.amber + '18' },
-                ]}>
-                <Text style={[mhs.moodEmoji, sel && mhs.moodEmojiSel]}>{m.emoji}</Text>
-                <Text style={[mhs.moodCardLabel, sel && { color: Colors.amber }]}>{m.label}</Text>
-                {sel && <View style={mhs.moodSelectedDot} />}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-        {selectedMood && (
-          <View style={mhs.insightStrip}>
-            <Text style={mhs.insightIcon}>{selectedMood.emoji}</Text>
-            <Text style={mhs.insightText}>
-              {selectedMood.value >= 4
-                ? `Great to hear you're feeling ${selectedMood.label.toLowerCase()}! Keep up the positive energy.`
-                : selectedMood.value === 3
-                ? "Some days are just okay — that's perfectly fine. Rest if you need it."
-                : 'Tough day? Consider a short walk, some journaling, or reaching out to someone.'
-              }
-            </Text>
-          </View>
-        )}
-      </GlassCardView>
-
-      {/* ── Stress Level ──────────────────────────────────── */}
+      {/* ── Stress Level (Read-Only) ──────────────────────────── */}
       <GlassCardView style={mhs.stressCard}>
         <View style={mhs.stressHeaderRow}>
           <View>
@@ -469,7 +425,7 @@ export const MentalHealthSection: React.FC<{ moodLogs?: MoodLog[] }> = ({ moodLo
         </View>
         <View style={mhs.meterRow}>
           {[1, 2, 3, 4, 5].map(seg => {
-            const segColor = seg <= 2 ? Colors.success : seg === 3 ? Colors.amber : Colors.danger ?? '#FF5E5E';
+            const segColor = seg <= 2 ? Colors.success : seg === 3 || seg === 4 ? Colors.amber : Colors.danger ?? '#FF5E5E';
             const filled = seg <= stressLevel;
             return (
               <View
@@ -488,20 +444,6 @@ export const MentalHealthSection: React.FC<{ moodLogs?: MoodLog[] }> = ({ moodLo
           <Text style={mhs.meterLabel}>Low</Text>
           <Text style={mhs.meterLabel}>Moderate</Text>
           <Text style={mhs.meterLabel}>High</Text>
-        </View>
-        <View style={mhs.stressBtnsRow}>
-          {(['Low', 'Moderate', 'High'] as const).map(s => {
-            const sc = s === 'Low' ? Colors.success : s === 'Moderate' ? Colors.amber : Colors.danger ?? '#FF5E5E';
-            const active = stress === s;
-            return (
-              <TouchableOpacity
-                key={s}
-                onPress={() => setStress(s)}
-                style={[mhs.stressBtn, active && { backgroundColor: sc + '22', borderColor: sc }]}>
-                <Text style={[mhs.stressBtnText, active && { color: sc, fontWeight: Typography.bold }]}>{s}</Text>
-              </TouchableOpacity>
-            );
-          })}
         </View>
       </GlassCardView>
 
@@ -525,10 +467,6 @@ export const MentalHealthSection: React.FC<{ moodLogs?: MoodLog[] }> = ({ moodLo
             );
           })}
         </View>
-        <View style={mhs.actRow}>
-          <LogButton label="Journal" icon="📝" color={Colors.amber} onPress={() => setShowJournal(true)} />
-          <LogButton label="Log Mood" icon="🎭" color={Colors.amber} />
-        </View>
       </GlassCardView>
     </>
   );
@@ -546,7 +484,7 @@ const mhs = StyleSheet.create({
   },
   moodEmoji: { fontSize: 24, marginBottom: 5 },
   moodEmojiSel: { fontSize: 30 },
-  moodCardLabel: { fontSize: 9, color: Colors.textMuted, fontWeight: Typography.semiBold, textAlign: 'center' },
+  moodCardLabel: { fontSize: 10, color: Colors.textMuted, fontWeight: Typography.semiBold, textAlign: 'center' },
   moodSelectedDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: Colors.amber, marginTop: 4 },
   insightStrip: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.amber + '12',
@@ -563,7 +501,7 @@ const mhs = StyleSheet.create({
   meterRow: { flexDirection: 'row', gap: 4, height: 10, marginBottom: 6 },
   meterSeg: { flex: 1, height: '100%' },
   meterLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.md },
-  meterLabel: { fontSize: 9, color: Colors.textMuted },
+  meterLabel: { fontSize: 10, color: Colors.textMuted },
   stressBtnsRow: { flexDirection: 'row', gap: Spacing.sm },
   stressBtn: {
     flex: 1, alignItems: 'center', paddingVertical: Spacing.sm,
@@ -571,12 +509,12 @@ const mhs = StyleSheet.create({
   },
   stressBtnText: { fontSize: Typography.xs, color: Colors.textMuted, fontWeight: Typography.medium },
   weekTitle: { fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold, marginBottom: Spacing.md },
-  weekChartRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 90, marginBottom: Spacing.md },
+  weekChartRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 100, marginBottom: Spacing.md },
   weekCol: { flex: 1, alignItems: 'center' },
-  weekBarTrack: { width: '70%', height: 60, backgroundColor: Colors.bgCardBorder, borderRadius: 5, justifyContent: 'flex-end', overflow: 'hidden', marginBottom: 4 },
+  weekBarTrack: { width: '70%', height: 70, backgroundColor: Colors.bgCardBorder, borderRadius: 5, justifyContent: 'flex-end', overflow: 'hidden', marginBottom: 4 },
   weekBar: { width: '100%', borderRadius: 5 },
-  weekEmoji: { fontSize: 12, marginBottom: 2 },
-  weekDayLbl: { fontSize: 9, color: Colors.textMuted },
+  weekEmoji: { fontSize: 13, marginBottom: 2 },
+  weekDayLbl: { fontSize: 10, color: Colors.textMuted },
   actRow: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.md, marginTop: Spacing.sm },
 });
 
@@ -662,7 +600,7 @@ const vit = StyleSheet.create({
   hrCard: { padding: Spacing.base, marginBottom: Spacing.md },
   hrHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
   hrIcon: { width: 42, height: 42, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
-  hrLabel: { fontSize: 10, color: Colors.textSecondary, fontWeight: Typography.bold, letterSpacing: 1 },
+  hrLabel: { fontSize: 11, color: Colors.textSecondary, fontWeight: Typography.bold, letterSpacing: 1 },
   hrValue: { fontSize: Typography.xxl, fontWeight: Typography.extraBold },
   hrUnit: { fontSize: Typography.sm, fontWeight: Typography.medium },
   statusBadge: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: Radius.full, borderWidth: 1 },
@@ -729,13 +667,13 @@ const ai = StyleSheet.create({
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.base, paddingBottom: Spacing.base, borderBottomWidth: 1, borderBottomColor: Colors.divider },
   iconWrap: { width: 34, height: 34, borderRadius: 17, backgroundColor: Colors.purple + '30', alignItems: 'center', justifyContent: 'center' },
   iconText: { fontSize: 16, color: Colors.purple },
-  label: { fontSize: 10, fontWeight: Typography.bold, color: Colors.purple, letterSpacing: 1.5 },
+  label: { fontSize: 11, fontWeight: Typography.bold, color: Colors.purple, letterSpacing: 1.5 },
   date: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 1 },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.success, shadowColor: Colors.success, shadowRadius: 6, shadowOpacity: 1, elevation: 4 },
   insightRow: { flexDirection: 'row', paddingVertical: Spacing.md, gap: Spacing.md },
   insightIcon: { fontSize: 22, marginTop: 2 },
   insightTitle: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: 4 },
-  insightBody: { fontSize: Typography.xs, color: Colors.textSecondary, lineHeight: 17 },
+  insightBody: { fontSize: Typography.sm, color: Colors.textSecondary, lineHeight: 18 },
   cta: { marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider },
   ctaText: { fontSize: Typography.sm, color: Colors.purple, fontWeight: Typography.semiBold },
 });
@@ -779,7 +717,7 @@ const prev = StyleSheet.create({
   label: { fontSize: Typography.sm, fontWeight: Typography.semiBold, color: Colors.textPrimary },
   detail: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2 },
   badge: { paddingHorizontal: Spacing.sm, paddingVertical: 4, borderRadius: Radius.full, borderWidth: 1 },
-  badgeText: { fontSize: 10, fontWeight: Typography.bold },
+  badgeText: { fontSize: 11, fontWeight: Typography.bold },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

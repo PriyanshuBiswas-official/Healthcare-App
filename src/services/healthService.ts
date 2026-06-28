@@ -6,7 +6,9 @@ import type {
   PeriodLog,
   CycleInsight,
   CycleData,
+  CycleHistoryEntry,
   SleepLog,
+  WeightEntry,
 } from '../types/health';
 
 function authHeaders(token: string) {
@@ -200,6 +202,15 @@ export async function getLatestCycle(token: string): Promise<CycleData | null> {
   return json.data;
 }
 
+export async function getCycleHistory(token: string): Promise<CycleHistoryEntry[]> {
+  const res = await fetch(`${API_BASE_URL}/api/cycle/history`, {
+    headers: authHeaders(token),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch cycle history');
+  return json.data ?? [];
+}
+
 export async function saveCycle(
   token: string,
   cycle: {
@@ -257,5 +268,43 @@ export async function saveSleepLog(
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.error || 'Failed to save sleep log');
+  return json.data;
+}
+
+// ── Weight Logs ──────────────────────────────────────
+
+export async function getWeightLogs(
+  token: string,
+  startDate?: string,
+  endDate?: string,
+): Promise<WeightEntry[]> {
+  let query = '';
+  if (startDate && endDate) {
+    query = `?startDate=${startDate}&endDate=${endDate}`;
+  } else if (startDate) {
+    query = `?date=${startDate}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/weight${query}`, {
+    headers: authHeaders(token),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch weight logs');
+  return json.data ?? [];
+}
+
+export async function saveWeightLog(
+  token: string,
+  log: {
+    date?: string;
+    weight_kg: number;
+  },
+): Promise<WeightEntry> {
+  const res = await fetch(`${API_BASE_URL}/api/weight`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(log),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to save weight log');
   return json.data;
 }

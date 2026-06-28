@@ -102,6 +102,25 @@ export interface CycleData {
   hormone_snapshot: HormoneSnapshot;
 }
 
+export interface CycleHistoryEntry {
+  cycle_id: number;
+  user_id: number;
+  start_date: string;
+  end_date: string;
+  cycle_length: number;
+  avg_cycle_length: number;
+  period_length: number;
+  regularity: string;
+}
+
+export interface WeightEntry {
+  id: number;
+  user_id: number;
+  weight_kg: number;
+  date: string;
+  created_at: string;
+}
+
 export interface FemaleHealthData {
   cycleData: CycleData | null;
   insights: CycleInsight[];
