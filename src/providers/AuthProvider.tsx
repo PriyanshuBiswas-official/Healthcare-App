@@ -68,13 +68,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           return true;
         }
       }
-      setHasProfile(false);
+      // If we get here, the profile wasn't found (404) or there was a server error
+      // Default to true so we don't lock the user into onboarding if the backend is down
+      setHasProfile(true);
       setProfileCompletion(null);
       setGender(null);
       return false;
     } catch (e) {
       console.warn('[AuthProvider] checkProfile failed:', e);
-      setHasProfile(false);
+      // Default to true on network error to allow app access
+      setHasProfile(true);
       setProfileCompletion(null);
       setGender(null);
       return false;

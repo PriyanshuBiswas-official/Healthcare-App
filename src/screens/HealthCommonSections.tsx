@@ -590,9 +590,7 @@ export const VitalsDashboardSection: React.FC = () => {
         <View style={{ width: Spacing.sm }} />
         <MiniMetricCard icon="🫁" label="SpO₂" value="98" unit="%" color={Colors.amber} subtitle="Excellent" />
       </View>
-      <View style={[vit.logRow, { marginBottom: Spacing.xl }]}>
-        <LogButton label="Log Vitals" icon="🩺" color={Colors.teal} onPress={() => setShowLog(true)} />
-      </View>
+      <View style={{ height: Spacing.md }} />
     </>
   );
 };
