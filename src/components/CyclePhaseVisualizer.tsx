@@ -1,43 +1,29 @@
-/**
- * CyclePhaseVisualizer
- *
- * A line chart showing 4 hormone curves across the user's menstrual cycle.
- * Built entirely with React Native primitives — no SVG, no external libraries.
- *
- * Technique: each pair of adjacent data points is connected by a thin View
- * that is absolutely positioned at the midpoint between the two points and
- * rotated to the correct angle. This gives smooth, natural-looking lines.
- *
- * The chart, day labels, and phase bar all scroll together horizontally so
- * every single day of the cycle is accessible.
- *
- * Props:
- *   cycleLength — total days in this user's cycle (default 28, fully adaptive)
- *   currentDay  — which day the user is on today  (default 18)
- */
-
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import {
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  Dimensions,
 } from 'react-native';
+import Svg, { Path, Defs, LinearGradient, Stop, Circle } from 'react-native-svg';
 import { GlassCardView } from './SharedComponents';
 import { Colors, Radius, Spacing, Typography } from '../theme/theme';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Layout constants
 // ─────────────────────────────────────────────────────────────────────────────
-const COL_WIDTH    = 36;   // dp per day — wide enough for breathing room
-const CURVE_H      = 130;  // drawable curve area height
-const LINE_W       = 2.8;  // line stroke thickness
-const DOT_R        = 3.5;  // normal dot radius at each data point
-const DOT_R_SEL    = 6.5;  // dot radius when that day is selected
-const DAY_ROW_H    = 24;   // height of the day-number label row
-const PHASE_BAR_H  = 22;   // height of the phase label bar
+const COL_WIDTH = 32;   // column width for each day
+const CURVE_H = 180;  // height of the hormone curve chart
+const LINE_W = 2.0;  // line stroke thickness
+const DOT_R = 3;    // normal dot radius at each data point
+const DOT_R_SEL = 5.5;  // dot radius when that day is selected
+const DAY_ROW_H = 36;   // height of the day-number label row (date + weekday)
+const PHASE_BAR_H = 38;   // height of the phase label bar
 const SUBDIVISIONS = 8;    // Catmull-Rom sub-segments per day interval
+
+const { width: screenWidth } = Dimensions.get('window');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -51,29 +37,31 @@ interface HormoneFrame {
   progesterone: number;
 }
 
-interface Segment { cx: number; cy: number; len: number; angle: number }
-interface Dot     { x: number;  y: number;  day: number }
+interface Point { x: number; y: number }
+interface Dot { x: number; y: number; day: number }
 
 interface HormoneRenderData {
   key: HormoneKey;
   label: string;
   color: string;
-  segments: Segment[];
+  pathData: string;
+  areaPathData: string;
   dots: Dot[];
 }
 
 export interface CyclePhaseVisualizerProps {
   cycleLength?: number;
   currentDay?: number;
+  startDate?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Hormone config
 // ─────────────────────────────────────────────────────────────────────────────
 const HORMONES: { key: HormoneKey; label: string; color: string }[] = [
-  { key: 'fsh',          label: 'FSH',          color: '#7EC8E3' },
-  { key: 'lh',           label: 'LH',           color: Colors.purple },
-  { key: 'estrogen',     label: 'Estrogen',     color: Colors.pink },
+  { key: 'fsh', label: 'FSH', color: '#7EC8E3' },
+  { key: 'lh', label: 'LH', color: Colors.purple },
+  { key: 'estrogen', label: 'Estrogen', color: Colors.pink },
   { key: 'progesterone', label: 'Progesterone', color: Colors.success },
 ];
 
@@ -85,7 +73,7 @@ function bell(x: number, center: number, width: number, amp: number): number {
 }
 
 function buildHormoneData(cycleLength: number): HormoneFrame[] {
-  const ovDay   = cycleLength * 0.50;   // ovulation at ~50 % through cycle
+  const ovDay = cycleLength * 0.50;   // ovulation at ~50 % through cycle
   const lutPeak = cycleLength * 0.75;   // progesterone peak at ~75 %
   return Array.from({ length: cycleLength }, (_, i) => {
     const d = i + 1;
@@ -98,7 +86,7 @@ function buildHormoneData(cycleLength: number): HormoneFrame[] {
       ),
       estrogen: Math.min(1,
         bell(d, ovDay - 1, cycleLength * 0.12, 0.82) +
-        bell(d, lutPeak,   cycleLength * 0.10, 0.38) + 0.10,
+        bell(d, lutPeak, cycleLength * 0.10, 0.38) + 0.10,
       ),
       progesterone: Math.min(1,
         d > ovDay
@@ -112,10 +100,6 @@ function buildHormoneData(cycleLength: number): HormoneFrame[] {
 // ─────────────────────────────────────────────────────────────────────────────
 // Catmull-Rom spline helpers
 // ─────────────────────────────────────────────────────────────────────────────
-/**
- * Evaluates a Catmull-Rom spline at parameter t ∈ [0,1] between p1 and p2,
- * using p0 and p3 as the outer control points.
- */
 function catmullRom(
   p0: number, p1: number, p2: number, p3: number, t: number,
 ): number {
@@ -123,69 +107,56 @@ function catmullRom(
     2 * p1 +
     (-p0 + p2) * t +
     (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t +
-    (-p0 + 3 * p1 - 3 * p2 + p3)    * t * t * t
+    (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Pre-compute pixel positions for all hormones (independent of visibility)
-// Uses Catmull-Rom spline subdivision so curves are genuinely smooth.
-// Each day-to-day interval is split into SUBDIVISIONS tiny sub-segments.
-// At ~4–5 dp per sub-segment, joints are invisible to the naked eye.
+// Pre-compute pixel positions for all hormones using SVG path data
 // ─────────────────────────────────────────────────────────────────────────────
 function buildChartData(
   hormoneData: HormoneFrame[],
   cycleLength: number,
 ): HormoneRenderData[] {
   return HORMONES.map(h => {
-    const segments: Segment[] = [];
-    const dots: Dot[]         = [];
+    const dots: Dot[] = [];
+    const points: Point[] = [];
 
-    // Pre-compute the pixel Y value at each data day
-    const ys = hormoneData.map(f => (1 - f[h.key]) * CURVE_H);
-    // X is always the centre of each column (evenly spaced)
+    const ys = hormoneData.map(f => (1 - f[h.key]) * (CURVE_H - 20) + 10);
     const cx0 = COL_WIDTH / 2;
 
-    // One dot per real data day
     for (let i = 0; i < cycleLength; i++) {
       dots.push({ x: cx0 + i * COL_WIDTH, y: ys[i], day: i + 1 });
     }
 
-    // Build spline segments between consecutive days
+    // Generate subdivided spline points
     for (let i = 0; i < cycleLength - 1; i++) {
-      // Catmull-Rom control points (clamp at boundaries)
       const p0y = ys[Math.max(0, i - 1)];
       const p1y = ys[i];
       const p2y = ys[i + 1];
       const p3y = ys[Math.min(cycleLength - 1, i + 2)];
 
       for (let s = 0; s < SUBDIVISIONS; s++) {
-        const t1 = s       / SUBDIVISIONS;
-        const t2 = (s + 1) / SUBDIVISIONS;
-
-        // X is linear (columns are evenly spaced, no need for spline on X)
-        const x1 = cx0 + i * COL_WIDTH + t1 * COL_WIDTH;
-        const x2 = cx0 + i * COL_WIDTH + t2 * COL_WIDTH;
-
-        // Y is smooth Catmull-Rom
-        const y1 = catmullRom(p0y, p1y, p2y, p3y, t1);
-        const y2 = catmullRom(p0y, p1y, p2y, p3y, t2);
-
-        const dx  = x2 - x1;
-        const dy  = y2 - y1;
-        const len = Math.sqrt(dx * dx + dy * dy);
-        const ang = Math.atan2(dy, dx) * (180 / Math.PI);
-
-        segments.push({
-          cx:    (x1 + x2) / 2,
-          cy:    (y1 + y2) / 2,
-          len,
-          angle: ang,
-        });
+        const t = s / SUBDIVISIONS;
+        const x = cx0 + i * COL_WIDTH + t * COL_WIDTH;
+        const y = catmullRom(p0y, p1y, p2y, p3y, t);
+        points.push({ x, y });
       }
     }
+    // Add the final point
+    points.push({ x: cx0 + (cycleLength - 1) * COL_WIDTH, y: ys[cycleLength - 1] });
 
-    return { ...h, segments, dots };
+    // Format path strings
+    let pathData = '';
+    if (points.length > 0) {
+      pathData = `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ');
+    }
+
+    const firstX = points[0]?.x ?? 0;
+    const lastX = points[points.length - 1]?.x ?? 0;
+    const areaPathData = pathData ? `${pathData} L ${lastX} ${CURVE_H} L ${firstX} ${CURVE_H} Z` : '';
+
+    return { ...h, pathData, areaPathData, dots };
   });
 }
 
@@ -234,21 +205,39 @@ function levelLabel(v: number): string {
 // ─────────────────────────────────────────────────────────────────────────────
 export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
   cycleLength = 28,
-  currentDay  = 18,
+  currentDay = 18,
+  startDate,
 }) => {
-  const [selectedDay,    setSelectedDay]    = useState<number | null>(null);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [activeHormones, setActiveHormones] = useState<Set<HormoneKey>>(
     new Set<HormoneKey>(['fsh', 'lh', 'estrogen', 'progesterone']),
   );
 
+  const scrollRef = useRef<ScrollView>(null);
+
+  // ── Compute calendar dates from start_date ───────────────────────────
+  const DAY_ABBR = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const dayLabels = useMemo(() => {
+    const base = startDate ? new Date(startDate) : new Date();
+    return Array.from({ length: cycleLength }, (_, i) => {
+      const d = new Date(base);
+      d.setDate(d.getDate() + i);
+      return {
+        date: d.getDate(),
+        month: d.getMonth(),
+        dayAbbr: DAY_ABBR[d.getDay()],
+      };
+    });
+  }, [startDate, cycleLength]);
+
   // ── Derived phase boundaries (scale with cycle length) ────────────────────
-  const menEnd  = Math.min(5, Math.round(cycleLength * 0.18));
+  const menEnd = Math.min(5, Math.round(cycleLength * 0.18));
   const ovStart = Math.round(cycleLength * 0.43);
-  const ovEnd   = Math.round(cycleLength * 0.54);
+  const ovEnd = Math.round(cycleLength * 0.54);
 
   // ── Data ─────────────────────────────────────────────────────────────────
   const hormoneData = useMemo(() => buildHormoneData(cycleLength), [cycleLength]);
-  const chartData   = useMemo(
+  const chartData = useMemo(
     () => buildChartData(hormoneData, cycleLength),
     [hormoneData, cycleLength],
   );
@@ -257,22 +246,31 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
   const totalWidth = cycleLength * COL_WIDTH;
 
   const phaseBands = [
-    { label: 'Menstruation', start: 0,       end: menEnd,       color: Colors.pink   },
-    { label: 'Follicular',   start: menEnd,   end: ovStart,      color: '#7EC8E3'     },
-    { label: 'Ovulation',    start: ovStart,  end: ovEnd,        color: Colors.amber  },
-    { label: 'Luteal',       start: ovEnd,    end: cycleLength,  color: Colors.purple },
+    { label: 'Menstruation', start: 0, end: menEnd, color: Colors.pink },
+    { label: 'Follicular', start: menEnd, end: ovStart, color: '#7EC8E3' },
+    { label: 'Ovulation', start: ovStart, end: ovEnd, color: Colors.amber },
+    { label: 'Luteal', start: ovEnd, end: cycleLength, color: Colors.purple },
   ];
 
   // ── Tooltip ───────────────────────────────────────────────────────────────
-  const focusDay   = selectedDay ?? currentDay;
+  const focusDay = selectedDay ?? currentDay;
   const focusPhase = getPhase(focusDay, menEnd, ovStart, ovEnd);
 
   // ── Countdown ─────────────────────────────────────────────────────────────
-  const daysToNextPeriod    = cycleLength - currentDay;
-  const rawDaysToOv         = ovStart - currentDay;
+  const daysToNextPeriod = cycleLength - currentDay;
+  const rawDaysToOv = ovStart - currentDay;
   const daysToNextOvulation = rawDaysToOv > 0
     ? rawDaysToOv
     : cycleLength - currentDay + ovStart;
+
+  // Auto-scroll to center the today line
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const targetX = (currentDay - 1) * COL_WIDTH + COL_WIDTH / 2 - (screenWidth - 32) / 2;
+      scrollRef.current?.scrollTo({ x: Math.max(0, targetX), animated: false });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [currentDay, screenWidth]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const toggleHormone = useCallback((key: HormoneKey) => {
@@ -307,7 +305,6 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
                   ? { borderColor: h.color + '80', backgroundColor: h.color + '18' }
                   : { borderColor: Colors.bgCardBorder },
               ]}>
-              {/* Line swatch that visually matches the chart lines */}
               <View style={[cv.legendSwatch, { backgroundColor: active ? h.color : Colors.textMuted }]} />
               <Text style={[cv.legendLabel, { color: active ? h.color : Colors.textMuted }]}>
                 {h.label}
@@ -319,6 +316,7 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
 
       {/* ── Horizontal scroll area — chart + day labels + phase bar ─────────── */}
       <ScrollView
+        ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         bounces={false}
@@ -327,7 +325,7 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
         <View style={{ width: totalWidth }}>
 
           {/* Chart canvas */}
-          <View style={[cv.chartWrap, { width: totalWidth }]}>
+          <View style={[cv.chartWrap, { width: totalWidth, height: CURVE_H }]}>
 
             {/* Phase background bands */}
             {phaseBands.map(band => (
@@ -337,75 +335,61 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
                 style={[
                   cv.phaseBandBg,
                   {
-                    left:             (band.start / cycleLength) * totalWidth,
-                    width:            ((band.end - band.start) / cycleLength) * totalWidth,
-                    backgroundColor:  band.color + '14',
+                    left: (band.start / cycleLength) * totalWidth,
+                    width: ((band.end - band.start) / cycleLength) * totalWidth,
+                    backgroundColor: band.color + '14',
                     borderRightColor: band.color + '35',
                   },
                 ]}
               />
             ))}
 
-            {/* Hormone lines + dots */}
-            {chartData.map(h => {
-              const visible = activeHormones.has(h.key);
-              if (!visible) { return null; }
-              return (
-                <React.Fragment key={h.key}>
+            {/* Svg drawing curves and areas */}
+            <Svg style={StyleSheet.absoluteFill} width={totalWidth} height={CURVE_H}>
+              <Defs>
+                {HORMONES.map(h => (
+                  <LinearGradient key={`grad-${h.key}`} id={`grad-${h.key}`} x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0%" stopColor={h.color} stopOpacity={0.25} />
+                    <Stop offset="100%" stopColor={h.color} stopOpacity={0.00} />
+                  </LinearGradient>
+                ))}
+              </Defs>
 
-                  {/* ── Line segments (rotated Views) ───────────────────── */}
-                  {h.segments.map((seg, i) => (
-                    <View
-                      key={i}
-                      pointerEvents="none"
-                      style={{
-                        position:        'absolute',
-                        // Centre the View at the midpoint, then rotate
-                        left:            seg.cx - seg.len / 2,
-                        top:             seg.cy - LINE_W / 2,
-                        width:           seg.len,
-                        height:          LINE_W,
-                        backgroundColor: h.color,
-                        borderRadius:    LINE_W / 2,
-                        opacity:         0.90,
-                        transform:       [{ rotate: `${seg.angle}deg` }],
-                      }}
-                    />
-                  ))}
-
-                  {/* ── Dots at each data point ─────────────────────────── */}
-                  {h.dots.map(dot => {
-                    const sel = selectedDay === dot.day;
-                    const r   = sel ? DOT_R_SEL : DOT_R;
-                    return (
-                      <View
-                        key={dot.day}
-                        pointerEvents="none"
-                        style={{
-                          position:        'absolute',
-                          left:            dot.x - r,
-                          top:             dot.y - r,
-                          width:           r * 2,
-                          height:          r * 2,
-                          borderRadius:    r,
-                          backgroundColor: h.color,
-                          opacity:         sel ? 1 : 0.8,
-                          borderWidth:     sel ? 1.5 : 0,
-                          borderColor:     '#fff',
-                        }}
-                      />
-                    );
-                  })}
-
-                </React.Fragment>
-              );
-            })}
+              {chartData.map(h => {
+                const visible = activeHormones.has(h.key);
+                if (!visible) { return null; }
+                return (
+                  <React.Fragment key={h.key}>
+                    {/* Area under curve */}
+                    <Path d={h.areaPathData} fill={`url(#grad-${h.key})`} />
+                    {/* Curve line */}
+                    <Path d={h.pathData} stroke={h.color} strokeWidth={LINE_W} fill="none" opacity={0.9} strokeLinecap="round" />
+                    {/* Interactive dots */}
+                    {h.dots.map(dot => {
+                      const sel = selectedDay === dot.day;
+                      if (!sel) return null;
+                      return (
+                        <Circle
+                          key={`dot-sel-${dot.day}`}
+                          cx={dot.x}
+                          cy={dot.y}
+                          r={DOT_R_SEL}
+                          fill={h.color}
+                          stroke="#ffffff"
+                          strokeWidth={1.5}
+                        />
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })}
+            </Svg>
 
             {/* ── Tappable invisible column overlays ──────────────────────── */}
             {Array.from({ length: cycleLength }, (_, i) => {
-              const day        = i + 1;
+              const day = i + 1;
               const isSelected = selectedDay === day;
-              const isCurrent  = day === currentDay;
+              const isCurrent = day === currentDay;
               return (
                 <TouchableOpacity
                   key={day}
@@ -414,13 +398,13 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
                   style={[
                     cv.colTouch,
                     {
-                      left:            i * COL_WIDTH,
-                      width:           COL_WIDTH,
+                      left: i * COL_WIDTH,
+                      width: COL_WIDTH,
                       backgroundColor: isSelected
                         ? 'rgba(255,255,255,0.07)'
                         : isCurrent
-                        ? 'rgba(255,255,255,0.03)'
-                        : 'transparent',
+                          ? 'rgba(255,255,255,0.03)'
+                          : 'transparent',
                     },
                   ]}
                 />
@@ -442,29 +426,37 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
 
           </View>{/* end chartWrap */}
 
+
           {/* ── Day labels row — every single day ──────────────────────────── */}
           <View style={[cv.dayLabelsRow, { width: totalWidth }]}>
-            {Array.from({ length: cycleLength }, (_, i) => {
-              const day        = i + 1;
+            {dayLabels.map((label, i) => {
+              const day = i + 1;
               const isSelected = selectedDay === day;
-              const isCurrent  = day === currentDay;
+              const isCurrent = day === currentDay;
               return (
                 <View key={day} style={[cv.dayLabelWrap, { width: COL_WIDTH }]}>
-                  {/* Tick mark above number */}
                   <View
                     style={[
                       cv.tick,
-                      isCurrent  && { backgroundColor: Colors.amber },
+                      isCurrent && { backgroundColor: Colors.amber },
                       isSelected && { backgroundColor: Colors.textSecondary },
                     ]}
                   />
                   <Text
                     style={[
-                      cv.dayLabel,
-                      isCurrent  && { color: Colors.amber,       fontWeight: Typography.bold },
+                      cv.dayLabelDate,
+                      isCurrent && { color: Colors.amber, fontWeight: Typography.bold },
                       isSelected && { color: Colors.textPrimary, fontWeight: Typography.semiBold },
                     ]}>
-                    {day}
+                    {label.date}
+                  </Text>
+                  <Text
+                    style={[
+                      cv.dayLabelAbbr,
+                      isCurrent && { color: Colors.amber },
+                      isSelected && { color: Colors.textSecondary },
+                    ]}>
+                    {label.dayAbbr}
                   </Text>
                 </View>
               );
@@ -481,9 +473,9 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
                   style={[
                     cv.phaseLabelChunk,
                     {
-                      width:           w,
+                      width: w,
                       backgroundColor: band.color + '22',
-                      borderColor:     band.color + '45',
+                      borderColor: band.color + '45',
                     },
                   ]}>
                   <Text
@@ -568,222 +560,229 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
 // ─────────────────────────────────────────────────────────────────────────────
 const cv = StyleSheet.create({
   card: {
-    paddingTop:     Spacing.base,
-    paddingBottom:  Spacing.base,
-    paddingLeft:    Spacing.base,
-    paddingRight:   Spacing.base,
-    marginBottom:   Spacing.xl,
-    overflow:       'hidden',
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.sm,
+    paddingLeft: Spacing.sm,
+    paddingRight: Spacing.sm,
+    marginBottom: Spacing.base,
+    overflow: 'hidden',
   },
 
   // ── Legend ────────────────────────────────────────────────────────────────
   legendRow: {
-    flexDirection:  'row',
-    flexWrap:       'wrap',
-    gap:            Spacing.xs,
-    marginBottom:   Spacing.md,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginBottom: Spacing.md,
   },
   legendPill: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    paddingVertical:    4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 3,
     paddingHorizontal: Spacing.sm,
-    borderRadius:      Radius.full,
-    borderWidth:       1,
-    gap:               6,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    gap: 5,
   },
   legendSwatch: {
-    width:        20,
-    height:       2.5,
+    width: 16,
+    height: 2,
     borderRadius: 2,
   },
   legendLabel: {
-    fontSize:   10,
+    fontSize: 10,
     fontWeight: Typography.semiBold,
   },
 
   // ── Chart ─────────────────────────────────────────────────────────────────
   chartWrap: {
-    height:   CURVE_H,
+    height: CURVE_H,
     position: 'relative',
     overflow: 'visible',
   },
   phaseBandBg: {
-    position:         'absolute',
-    top:               0,
-    bottom:            0,
-    borderRightWidth:  1,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    borderRightWidth: 1,
   },
   colTouch: {
     position: 'absolute',
-    top:       0,
-    bottom:    0,
+    top: 0,
+    bottom: 0,
   },
 
   // ── Needle ────────────────────────────────────────────────────────────────
   needle: {
-    position:   'absolute',
-    top:         0,
-    bottom:      0,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
     alignItems: 'center',
-    width:       1,
+    width: 1,
   },
   needleBubble: {
-    backgroundColor:   Colors.amber + '22',
-    borderWidth:        1,
-    borderColor:        Colors.amber + '80',
-    borderRadius:       Radius.full,
-    paddingHorizontal: 6,
-    paddingVertical:   2,
-    marginBottom:      3,
+    backgroundColor: Colors.amber + '22',
+    borderWidth: 1,
+    borderColor: Colors.amber + '80',
+    borderRadius: Radius.full,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    marginBottom: 2,
     // Keep bubble visible even though needle is 1dp wide
-    marginLeft: -20,
-    width:       42,
+    marginLeft: -16,
+    width: 36,
     alignItems: 'center',
   },
   needleBubbleText: {
-    fontSize:   8,
-    color:      Colors.amber,
+    fontSize: 8,
+    color: Colors.amber,
     fontWeight: Typography.bold,
   },
   needleLine: {
-    flex:            1,
-    width:           1.5,
+    flex: 1,
+    width: 1.5,
     backgroundColor: Colors.amber,
-    opacity:         0.65,
+    opacity: 0.65,
   },
 
   // ── Day labels ────────────────────────────────────────────────────────────
   dayLabelsRow: {
     flexDirection: 'row',
-    height:        DAY_ROW_H,
-    alignItems:    'center',
-    marginTop:     4,
+    height: DAY_ROW_H,
+    alignItems: 'center',
+    marginTop: 4,
   },
   dayLabelWrap: {
     alignItems: 'center',
-    gap:         2,
+    gap: 1,
   },
   tick: {
-    width:           1.5,
-    height:          5,
-    borderRadius:    1,
+    width: 1.5,
+    height: 4,
+    borderRadius: 1,
     backgroundColor: Colors.bgCardBorder,
   },
-  dayLabel: {
-    fontSize:  9,
-    color:     Colors.textMuted,
+  dayLabelDate: {
+    fontSize: 12,
+    color: Colors.textPrimary,
+    fontWeight: Typography.semiBold,
+    textAlign: 'center',
+  },
+  dayLabelAbbr: {
+    fontSize: 9,
+    color: Colors.textMuted,
     textAlign: 'center',
   },
 
   // ── Phase bar ─────────────────────────────────────────────────────────────
   phaseLabelBar: {
     flexDirection: 'row',
-    height:        PHASE_BAR_H,
-    gap:            2,
-    marginTop:     Spacing.xs,
+    height: PHASE_BAR_H,
+    gap: 2,
+    marginTop: Spacing.xs,
   },
   phaseLabelChunk: {
-    justifyContent:    'center',
-    alignItems:        'center',
-    borderRadius:       5,
-    borderWidth:        1,
-    paddingHorizontal:  3,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 5,
+    borderWidth: 1,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
   },
   phaseLabelText: {
-    fontSize:   9,
-    fontWeight: Typography.semiBold,
+    fontSize: 12,
+    fontWeight: Typography.bold,
     textAlign: 'center',
   },
 
   // ── Tooltip ───────────────────────────────────────────────────────────────
   tooltip: {
     backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth:      1,
-    borderRadius:    Radius.md,
-    padding:         Spacing.md,
-    marginTop:       Spacing.md,
-    marginBottom:    Spacing.md,
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    padding: Spacing.sm,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
   tooltipHeader: {
     flexDirection: 'row',
-    alignItems:    'center',
-    marginBottom:   6,
-    gap:            6,
+    alignItems: 'center',
+    marginBottom: 4,
+    gap: 5,
   },
   tooltipDot: {
-    width:        8,
-    height:       8,
-    borderRadius: 4,
-    flexShrink:   0,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    flexShrink: 0,
   },
   tooltipPhaseName: {
-    fontSize:   Typography.sm,
+    fontSize: Typography.md,
     fontWeight: Typography.bold,
   },
   tooltipDayLabel: {
-    flex:       1,
-    fontSize:   Typography.xs,
-    color:      Colors.textMuted,
+    flex: 1,
+    fontSize: Typography.xs,
+    color: Colors.textMuted,
     fontWeight: Typography.medium,
   },
   tooltipDismissBtn: {
-    padding: 4,
+    padding: 3,
   },
   tooltipDismissX: {
     fontSize: Typography.xs,
-    color:    Colors.textMuted,
+    color: Colors.textMuted,
   },
   tooltipDesc: {
-    fontSize:     Typography.xs,
-    color:        Colors.textSecondary,
-    lineHeight:   17,
-    marginBottom: 10,
+    fontSize: Typography.xs,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+    marginBottom: 8,
   },
   tooltipHormoneRow: {
-    flexDirection:  'row',
+    flexDirection: 'row',
     justifyContent: 'space-between',
   },
   tooltipHormoneItem: {
     alignItems: 'center',
-    flex:       1,
+    flex: 1,
   },
   tooltipHormoneLevel: {
-    fontSize:   Typography.sm,
+    fontSize: Typography.sm,
     fontWeight: Typography.bold,
   },
   tooltipHormoneKey: {
-    fontSize:  9,
-    color:     Colors.textMuted,
-    marginTop: 2,
+    fontSize: 10,
+    color: Colors.textMuted,
+    marginTop: 1,
   },
 
   // ── Countdown ─────────────────────────────────────────────────────────────
   countdownStrip: {
-    flexDirection:  'row',
-    alignItems:     'center',
-    paddingTop:     Spacing.md,
-    borderTopWidth:  1,
-    borderTopColor:  Colors.divider,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Colors.divider,
   },
   countdownItem: {
-    flex:       1,
+    flex: 1,
     alignItems: 'center',
   },
   countdownVal: {
-    fontSize:   Typography.lg,
+    fontSize: Typography.lg,
     fontWeight: Typography.extraBold,
   },
   countdownLbl: {
-    fontSize:  9,
-    color:     Colors.textMuted,
+    fontSize: 10,
+    color: Colors.textMuted,
     textAlign: 'center',
-    marginTop:  2,
-    lineHeight: 13,
+    marginTop: 1,
+    lineHeight: 14,
   },
   countdownDivider: {
-    width:           1,
-    height:          36,
+    width: 1,
+    height: 28,
     backgroundColor: Colors.divider,
   },
 });

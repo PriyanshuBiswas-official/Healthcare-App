@@ -8,8 +8,8 @@ import {
   Switch,
   Image,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, Shadows, GlassCard } from '../theme/theme';
-import { GlassCardView, SectionHeader, StatPill, ProgressBar } from '../components/SharedComponents';
+import { Colors, Typography, Spacing, Radius, GlassCard } from '../theme/theme';
+import { GlassCardView, SectionHeader, ProgressBar } from '../components/SharedComponents';
 import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../providers/AuthProvider';
@@ -152,10 +152,10 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
   const displayEmail = profileData?.email || user?.email || '';
 
   const healthStats = [
-    { label: 'Age', value: profileData?.age ? `${profileData.age}` : '--', color: Colors.teal },
-    { label: 'Weight', value: profileData?.weight ? `${profileData.weight} kg` : '--', color: Colors.pink },
-    { label: 'Height', value: profileData?.height ? `${profileData.height} cm` : '--', color: Colors.amber },
-    { label: 'Blood', value: profileData?.blood_group || '--', color: Colors.purple },
+    { label: 'Age', value: profileData?.age ? `${profileData.age}` : '--' },
+    { label: 'Weight', value: profileData?.weight ? `${profileData.weight} kg` : '--' },
+    { label: 'Height', value: profileData?.height ? `${profileData.height} cm` : '--' },
+    { label: 'Blood', value: profileData?.blood_group || '--' },
   ];
 
   const setToggle = (key: string, value: boolean) =>
@@ -185,9 +185,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
             <View style={styles.backPlaceholder} />
           )}
           <Text style={styles.pageTitle}>Profile</Text>
-          <TouchableOpacity style={styles.editBtn} activeOpacity={0.7}>
-            <Text style={styles.editBtnText}>Edit</Text>
-          </TouchableOpacity>
+          <View style={{ width: 40 }} />
         </View>
 
         <GlassCardView style={styles.profileCard} accentColor={Colors.teal}>
@@ -203,22 +201,24 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
               <Text style={styles.name}>{displayName}</Text>
               <Text style={styles.email}>{displayEmail}</Text>
               <View style={styles.memberBadge}>
-                <Text style={styles.memberBadgeText}>Premium Member</Text>
+                <Text style={styles.memberBadgeText}>Free Account</Text>
               </View>
             </View>
           </View>
           <View style={styles.profileMeta}>
-            <Text style={styles.metaItem}>Member since Jan 2025</Text>
-            <Text style={styles.metaDot}>·</Text>
             <Text style={styles.metaItem}>Health Score 78</Text>
           </View>
         </GlassCardView>
 
-        <View style={styles.statsRow}>
-          {healthStats.map(stat => (
-            <StatPill key={stat.label} label={stat.label} value={stat.value} color={stat.color} />
+        <GlassCardView style={styles.statsRow}>
+          {healthStats.map((stat, i) => (
+            <View key={stat.label} style={styles.statItem}>
+              <Text style={styles.statValue}>{stat.value}</Text>
+              <Text style={styles.statLabel}>{stat.label}</Text>
+              {i < healthStats.length - 1 && <View style={styles.statDivider} />}
+            </View>
           ))}
-        </View>
+        </GlassCardView>
 
         {percentage < 100 && (
           <>
@@ -336,19 +336,6 @@ const styles = StyleSheet.create({
     fontWeight: Typography.bold,
     color: Colors.textPrimary,
   },
-  editBtn: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.teal + '20',
-    borderWidth: 1,
-    borderColor: Colors.teal + '50',
-  },
-  editBtnText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.teal,
-  },
   profileCard: { padding: Spacing.lg, marginBottom: Spacing.lg },
   profileRow: { flexDirection: 'row', alignItems: 'center' },
   avatar: {
@@ -388,14 +375,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm + 2,
     paddingVertical: 3,
     borderRadius: Radius.full,
-    backgroundColor: Colors.amber + '20',
+    backgroundColor: Colors.teal + '20',
     borderWidth: 1,
-    borderColor: Colors.amber + '50',
+    borderColor: Colors.teal + '50',
   },
   memberBadgeText: {
     fontSize: Typography.xs,
     fontWeight: Typography.semiBold,
-    color: Colors.amber,
+    color: Colors.teal,
     letterSpacing: 0.3,
   },
   profileMeta: {
@@ -407,12 +394,32 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.divider,
   },
   metaItem: { fontSize: Typography.xs, color: Colors.textSecondary },
-  metaDot: { fontSize: Typography.xs, color: Colors.textMuted, marginHorizontal: Spacing.sm },
   statsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
+    paddingVertical: Spacing.sm + 2,
+    paddingHorizontal: Spacing.base,
     marginBottom: Spacing.xl,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: Typography.base,
+    fontWeight: Typography.bold,
+    color: Colors.textPrimary,
+  },
+  statLabel: {
+    fontSize: Typography.xs,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    height: '80%',
+    backgroundColor: Colors.divider,
+    position: 'absolute',
+    right: 0,
   },
   completeCard: {
     ...GlassCard,
