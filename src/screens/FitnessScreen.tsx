@@ -868,7 +868,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       </ScrollView>
 
       {/* ── Plan Setup Modal ───────────────────────────────── */}
-      <Modal visible={planModalVisible} animationType="slide" transparent>
+      {planModalVisible && <Modal visible={planModalVisible} animationType="slide" transparent>
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setPlanModalVisible(false)}
@@ -1033,10 +1033,10 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         )}
           </TouchableOpacity>
         </TouchableOpacity>
-      </Modal>
+      </Modal>}
 
       {/* ── Add Exercise Modal ───────────────────────────────── */}
-      <Modal visible={addExModalVisible} animationType="slide" transparent>
+      {addExModalVisible && <Modal visible={addExModalVisible} animationType="slide" transparent>
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setAddExModalVisible(false)}
@@ -1096,10 +1096,10 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
             </View>
           </TouchableOpacity>
         </TouchableOpacity>
-      </Modal>
+      </Modal>}
 
       {/* ── Edit Exercise Modal ───────────────────────────────── */}
-      <Modal visible={editExModalVisible} animationType="slide" transparent>
+      {editExModalVisible && <Modal visible={editExModalVisible} animationType="slide" transparent>
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setEditExModalVisible(false)}
@@ -1181,7 +1181,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
             </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>
-      </Modal>
+      </Modal>}
 
       {/* ── Log Activity Modal ───────────────────────────────── */}
       <Modal visible={logActivityVisible} animationType="slide" transparent>

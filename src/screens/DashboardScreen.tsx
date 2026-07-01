@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -177,7 +177,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   };
 
   // Rendering weight trend sparkline
-  const renderWeightSparkline = () => {
+  const sparklineElement = useMemo(() => {
     if (weightLogs.length < 2) {
       return (
         <View style={styles.sparklinePlaceholder}>
@@ -225,7 +225,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         </Svg>
       </View>
     );
-  };
+  }, [weightLogs]);
 
   return (
     <View style={styles.root}>
@@ -494,7 +494,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               </View>
             )}
           </View>
-          {renderWeightSparkline()}
+          {sparklineElement}
         </GlassCardView>
 
         {/* SECTION: TODAY'S VITALS */}

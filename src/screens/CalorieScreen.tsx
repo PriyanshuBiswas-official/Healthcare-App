@@ -653,7 +653,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
       </ScrollView>
 
       {/* ── Meal Logging Modal ─────────────────────────────────── */}
-      <Modal visible={modalVisible} animationType="slide" transparent>
+      {modalVisible && <Modal visible={modalVisible} animationType="slide" transparent>
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setModalVisible(false)}
@@ -745,10 +745,10 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
             </KeyboardAvoidingView>
           </TouchableOpacity>
         </TouchableOpacity>
-      </Modal>
+      </Modal>}
 
       {/* ── Custom Water Modal ────────────────────────────────── */}
-      <Modal visible={customWaterVisible} animationType="fade" transparent>
+      {customWaterVisible && <Modal visible={customWaterVisible} animationType="fade" transparent>
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setCustomWaterVisible(false)}
@@ -783,10 +783,10 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
             </View>
           </TouchableOpacity>
         </TouchableOpacity>
-      </Modal>
+      </Modal>}
 
       {/* ── Goal Setup Modal (first-time users) ──────────────── */}
-      <Modal visible={goalSetupVisible} animationType="slide" transparent>
+      {goalSetupVisible && <Modal visible={goalSetupVisible} animationType="slide" transparent>
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setGoalSetupVisible(false)}
@@ -859,7 +859,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
             </View>
           </TouchableOpacity>
         </TouchableOpacity>
-      </Modal>
+      </Modal>}
     </KeyboardAvoidingView>
   );
 }

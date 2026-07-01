@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -268,7 +268,7 @@ export const SleepTrackerSection: React.FC<{ sleepLogs?: SleepLog[] }> = ({ slee
   const [showLog, setShowLog] = useState(false);
 
   // Build last 7 days of data from real logs
-  const weekData = Array.from({ length: 7 }, (_, i) => {
+  const weekData = useMemo(() => Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
     const dateStr = d.toISOString().split('T')[0];
@@ -280,7 +280,7 @@ export const SleepTrackerSection: React.FC<{ sleepLogs?: SleepLog[] }> = ({ slee
       isToday: i === 6,
       hasData: !!log,
     };
-  });
+  }), [sleepLogs]);
 
   const loggedDays = weekData.filter(d => d.hasData);
   const avg = loggedDays.length > 0
@@ -388,7 +388,7 @@ export const MentalHealthSection: React.FC<{ moodLogs?: MoodLog[] }> = ({ moodLo
   const stressColor = stress === 'Low' ? Colors.success : stress === 'Moderate' ? Colors.amber : Colors.danger ?? '#FF5E5E';
 
   // Build last 7 days of energy data from real logs
-  const weekData = Array.from({ length: 7 }, (_, i) => {
+  const weekData = useMemo(() => Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
     const dateStr = d.toISOString().split('T')[0];
@@ -401,7 +401,7 @@ export const MentalHealthSection: React.FC<{ moodLogs?: MoodLog[] }> = ({ moodLo
       isToday: i === 6,
       hasData: !!log && energyVal > 0,
     };
-  });
+  }), [moodLogs]);
 
   const loggedDays = weekData.filter(d => d.hasData);
   const avgEnergy = loggedDays.length > 0

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { API_BASE_URL } from '../config/api';
@@ -39,11 +39,12 @@ const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
   const [profileCompletion, setProfileCompletion] = useState<ProfileCompletion | null>(null);
   const [gender, setGender] = useState<string | null>(null);
+
+  const user = session?.user ?? null;
 
   const checkProfile = useCallback(async (activeSession?: Session | null): Promise<boolean> => {
     const targetSession = activeSession !== undefined ? activeSession : session;
@@ -90,7 +91,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       if (!active) return;
       setSession(initialSession);
-      setUser(initialSession?.user ?? null);
       if (initialSession) {
         checkProfile(initialSession).then(() => {
           if (active) setIsLoading(false);
@@ -105,7 +105,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
       if (!active) return;
       setSession(newSession);
-      setUser(newSession?.user ?? null);
       if (newSession) {
         checkProfile(newSession);
       } else {
@@ -122,8 +121,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
+  const value = useMemo(
+    () => ({ session, user, isLoading, hasProfile, profileCompletion, gender, checkProfile }),
+    [session, user, isLoading, hasProfile, profileCompletion, gender, checkProfile],
+  );
+
   return (
-    <AuthContext.Provider value={{ session, user, isLoading, hasProfile, profileCompletion, gender, checkProfile }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
