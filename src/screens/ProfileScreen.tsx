@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,13 @@ import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../providers/AuthProvider';
 import { API_BASE_URL } from '../config/api';
+import PersonalInfoScreen from './profile/PersonalInfoScreen';
+import MedicalHistoryScreen from './profile/MedicalHistoryScreen';
+import MedicationsScreen from './profile/MedicationsScreen';
+import AllergiesScreen from './profile/AllergiesScreen';
+import EmergencyContactsScreen from './profile/EmergencyContactsScreen';
+
+type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency';
 
 type MenuItem = {
   icon: string;
@@ -34,15 +41,27 @@ interface ProfileData {
   date_of_birth?: string;
   blood_group?: string;
   goals?: string[];
+  medications?: { name: string; dosage: string; frequency: string; start_date?: string; end_date?: string }[];
+  allergies?: string;
+  medical_profile?: { allergies?: string; conditions?: string };
 }
 
-const HEALTH_PROFILE: MenuItem[] = [
-  { icon: '👤', label: 'Personal Information', sub: 'Name, DOB, gender', color: Colors.teal },
-  { icon: '📋', label: 'Medical History', sub: 'Conditions, surgeries', color: Colors.pink },
-  { icon: '💊', label: 'Medications', sub: '3 active prescriptions', color: Colors.amber, badge: '3' },
-  { icon: '⚠️', label: 'Allergies', sub: 'Penicillin, peanuts', color: Colors.danger },
-  { icon: '🆘', label: 'Emergency Contacts', sub: '2 contacts saved', color: Colors.purple },
-];
+function getHealthProfile(profileData: ProfileData | null): MenuItem[] {
+  const meds = profileData?.medications;
+  const medCount = Array.isArray(meds) ? meds.length : 0;
+  const allergiesRaw = (profileData as any)?.allergies || (profileData as any)?.medical_profile?.allergies || '';
+  const allergyList = typeof allergiesRaw === 'string'
+    ? allergiesRaw.split(',').map((s: string) => s.trim()).filter(Boolean)
+    : Array.isArray(allergiesRaw) ? allergiesRaw : [];
+
+  return [
+    { icon: '👤', label: 'Personal Information', sub: 'Name, DOB, gender', color: Colors.teal },
+    { icon: '📋', label: 'Medical History', sub: 'Conditions, surgeries', color: Colors.pink },
+    { icon: '💊', label: 'Medications', sub: medCount > 0 ? `${medCount} active prescription${medCount > 1 ? 's' : ''}` : 'No active medications', color: Colors.amber, badge: medCount > 0 ? String(medCount) : undefined },
+    { icon: '⚠️', label: 'Allergies', sub: allergyList.length > 0 ? allergyList.slice(0, 2).join(', ') : 'No allergies recorded', color: Colors.danger },
+    { icon: '🆘', label: 'Emergency Contacts', sub: 'Emergency contacts', color: Colors.purple },
+  ];
+}
 
 const CONNECTED_DEVICES: MenuItem[] = [
   { icon: '⌚', label: 'Apple Watch', sub: 'Synced · Last: 2 min ago', color: Colors.teal, badge: 'On' },
@@ -124,25 +143,26 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
     Object.fromEntries(PREFERENCES.map(p => [p.key, p.default])) as Record<string, boolean>,
   );
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [activeSection, setActiveSection] = useState<HealthSection | null>(null);
+
+  const fetchProfile = useCallback(async () => {
+    if (!session?.access_token) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/profile`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setProfileData(json.data);
+      }
+    } catch (e) {
+      console.warn('[ProfileScreen] Backend fetch failed:', e);
+    }
+  }, [session?.access_token]);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!session?.access_token) return;
-
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/profile`, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        const json = await res.json();
-        if (json.success && json.data) {
-          setProfileData(json.data);
-        }
-      } catch (e) {
-        console.warn('[ProfileScreen] Backend fetch failed:', e);
-      }
-    };
     fetchProfile();
-  }, [session?.access_token]);
+  }, [fetchProfile]);
 
   const percentage: number = profileCompletion?.percentage ?? 0;
   const isComplete = profileCompletion?.completed ?? false;
@@ -171,6 +191,39 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
 
   return (
     <View style={styles.root}>
+      {activeSection ? (
+        <>
+          {activeSection === 'personal' && (
+            <PersonalInfoScreen
+              onBack={() => { setActiveSection(null); fetchProfile(); }}
+              onSaved={fetchProfile}
+            />
+          )}
+          {activeSection === 'medical' && (
+            <MedicalHistoryScreen
+              onBack={() => { setActiveSection(null); fetchProfile(); }}
+              onSaved={fetchProfile}
+            />
+          )}
+          {activeSection === 'medications' && (
+            <MedicationsScreen
+              onBack={() => { setActiveSection(null); fetchProfile(); }}
+              onSaved={fetchProfile}
+            />
+          )}
+          {activeSection === 'allergies' && (
+            <AllergiesScreen
+              onBack={() => { setActiveSection(null); fetchProfile(); }}
+              onSaved={fetchProfile}
+            />
+          )}
+          {activeSection === 'emergency' && (
+            <EmergencyContactsScreen
+              onBack={() => setActiveSection(null)}
+            />
+          )}
+        </>
+      ) : (
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
@@ -251,10 +304,22 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
 
         <SectionHeader title="Health Profile" subtitle="Manage your medical information" />
         <GlassCardView style={styles.menuCard}>
-          {HEALTH_PROFILE.map((item, i) => (
+          {getHealthProfile(profileData).map((item, i) => (
             <View key={item.label}>
-              <MenuRow item={item} />
-              {i < HEALTH_PROFILE.length - 1 && <View style={styles.divider} />}
+              <MenuRow
+                item={item}
+                onPress={() => {
+                  const sectionMap: Record<string, HealthSection> = {
+                    'Personal Information': 'personal',
+                    'Medical History': 'medical',
+                    'Medications': 'medications',
+                    'Allergies': 'allergies',
+                    'Emergency Contacts': 'emergency',
+                  };
+                  setActiveSection(sectionMap[item.label] || null);
+                }}
+              />
+              {i < getHealthProfile(profileData).length - 1 && <View style={styles.divider} />}
             </View>
           ))}
         </GlassCardView>
@@ -302,6 +367,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
 
         <Text style={styles.version}>HealthApp v0.0.1 · Build 1</Text>
       </ScrollView>
+      )}
     </View>
   );
 }

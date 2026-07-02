@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Alert,
   Animated,
   ActivityIndicator,
+  BackHandler,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../theme/theme';
 import { GlassCardView, ProgressBar } from '../components/SharedComponents';
@@ -165,6 +166,20 @@ export default function ProfileSetupScreen({ onBack }: Props) {
       }).start();
     });
   };
+
+  // ── Android Back Button ──────────────────────────────────────
+  useEffect(() => {
+    const onBackPress = () => {
+      if (step > 0) {
+        animateTransition(() => setStep(s => s - 1));
+        return true;
+      }
+      onBack();
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [step, onBack]);
 
   const validateStep = (): string | null => {
     switch (step) {

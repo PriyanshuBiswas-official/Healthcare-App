@@ -46,6 +46,7 @@ type AppAction =
   | { type: 'CLOSE_WORKOUT_LOG' }
   | { type: 'OPEN_HEALTH_LOG' }
   | { type: 'CLOSE_HEALTH_LOG' }
+  | { type: 'CLOSE_OVERLAY' }
   | { type: 'SAVE_HEALTH_LOG'; log: HealthLogDraft };
 
 const INITIAL_STATE: AppState = {
@@ -101,6 +102,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'CLOSE_HEALTH_LOG':
       return { ...state, activeTab: state.previousTab };
 
+    case 'CLOSE_OVERLAY':
+      return { ...state, activeTab: state.previousTab };
+
     case 'SAVE_HEALTH_LOG':
       return { ...state, activeTab: state.previousTab, lastHealthLog: action.log };
 
@@ -130,6 +134,7 @@ function AppShell() {
   const { setForceHidden } = useScrollVisibility();
   const { session } = useAuth();
   const mountedTabs = useRef<Set<TabName>>(new Set(['Home']));
+  const tabHistory = useRef<TabName[]>(['Home']);
   const stateRef = useRef(state);
   stateRef.current = state;
 
@@ -138,14 +143,15 @@ function AppShell() {
   const openProfile = useCallback(() => dispatch({ type: 'OPEN_PROFILE' }), []);
   const openNotifications = useCallback(() => dispatch({ type: 'OPEN_NOTIFICATIONS' }), []);
   const openProfileSetup = useCallback(() => dispatch({ type: 'OPEN_PROFILE_SETUP' }), []);
-  const closeProfile = useCallback(() => dispatch({ type: 'SWITCH_TAB', tab: stateRef.current.previousTab }), []);
-  const closeNotifications = useCallback(() => dispatch({ type: 'SWITCH_TAB', tab: stateRef.current.previousTab }), []);
+  const closeProfile = useCallback(() => dispatch({ type: 'CLOSE_OVERLAY' }), []);
+  const closeNotifications = useCallback(() => dispatch({ type: 'CLOSE_OVERLAY' }), []);
   const closeProfileSetup = useCallback(() => dispatch({ type: 'CLOSE_PROFILE_SETUP' }), []);
   const openHealthLog = useCallback(() => dispatch({ type: 'OPEN_HEALTH_LOG' }), []);
   const closeHealthLog = useCallback(() => dispatch({ type: 'CLOSE_HEALTH_LOG' }), []);
   const closeWorkoutLog = useCallback(() => dispatch({ type: 'CLOSE_WORKOUT_LOG' }), []);
 
   const openAI = useCallback((fromTab?: TabName, startInChat = true) => {
+    tabHistory.current.push('AI');
     dispatch({ type: 'OPEN_AI', from: fromTab, startInChat });
   }, []);
 
@@ -160,13 +166,25 @@ function AppShell() {
   const handleTabChange = useCallback((tab: TabName) => {
     mountedTabs.current.add(tab);
     if (tab === 'AI') {
+      tabHistory.current.push('AI');
       dispatch({ type: 'OPEN_AI', startInChat: false, from: undefined });
       return;
+    }
+    // Returning to Home clears the back history
+    if (tab === 'Home') {
+      tabHistory.current = ['Home'];
+    } else {
+      tabHistory.current.push(tab);
     }
     dispatch({ type: 'SWITCH_TAB', tab });
   }, []);
 
   const navigateToTab = useCallback((tab: TabName) => {
+    if (tab === 'Home') {
+      tabHistory.current = ['Home'];
+    } else {
+      tabHistory.current.push(tab);
+    }
     dispatch({ type: 'SWITCH_TAB', tab });
   }, []);
 
@@ -181,15 +199,26 @@ function AppShell() {
   useEffect(() => {
     const onBack = () => {
       const s = stateRef.current;
+      // Overlay tabs: close overlay (no history change — overlays are modals)
       if (OVERLAY_TABS.includes(s.activeTab)) {
         if (s.activeTab === 'WorkoutLog') {
           dispatch({ type: 'CLOSE_WORKOUT_LOG' });
+        } else if (s.activeTab === 'HealthLog') {
+          dispatch({ type: 'CLOSE_HEALTH_LOG' });
         } else {
-          dispatch({ type: 'SWITCH_TAB', tab: s.previousTab });
+          dispatch({ type: 'CLOSE_OVERLAY' });
         }
         return true;
       }
-      return false;
+      // Main tabs: if on Home, exit app
+      if (s.activeTab === 'Home') {
+        return false;
+      }
+      // Main tabs: pop history and switch to previous
+      tabHistory.current.pop();
+      const prev = tabHistory.current[tabHistory.current.length - 1] ?? 'Home';
+      dispatch({ type: 'SWITCH_TAB', tab: prev });
+      return true;
     };
     const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
     return () => sub.remove();

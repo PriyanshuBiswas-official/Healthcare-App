@@ -1,0 +1,208 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { GlassCardView } from '../../components/SharedComponents';
+
+interface EmergencyContact {
+  name: string;
+  relationship: string;
+  phone: string;
+}
+
+interface Props {
+  onBack: () => void;
+}
+
+const INITIAL_CONTACTS: EmergencyContact[] = [
+  { name: '', relationship: '', phone: '' },
+];
+
+export default function EmergencyContactsScreen({ onBack }: Props) {
+  const [contacts, setContacts] = useState<EmergencyContact[]>(INITIAL_CONTACTS);
+  const [editing, setEditing] = useState(false);
+
+  const updateContact = (index: number, field: keyof EmergencyContact, value: string) => {
+    setContacts(prev => prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)));
+  };
+
+  const addContact = () => {
+    setContacts(prev => [...prev, { name: '', relationship: '', phone: '' }]);
+  };
+
+  const removeContact = (index: number) => {
+    setContacts(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSave = () => {
+    const filled = contacts.filter(c => c.name.trim());
+    if (filled.length === 0) {
+      Alert.alert('Validation', 'Add at least one contact');
+      return;
+    }
+    setEditing(false);
+    Alert.alert('Saved', `${filled.length} emergency contact(s) saved locally`);
+  };
+
+  return (
+    <View style={styles.root}>
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
+          <Text style={styles.backIcon}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.pageTitle}>Emergency Contacts</Text>
+        {editing ? (
+          <TouchableOpacity style={styles.editBtn} onPress={handleSave} activeOpacity={0.7}>
+            <Text style={styles.editBtnSave}>Save</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.editBtn} onPress={() => setEditing(true)} activeOpacity={0.7}>
+            <Text style={styles.editBtnText}>Edit</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        <View style={styles.banner}>
+          <Text style={styles.bannerIcon}>ℹ️</Text>
+          <Text style={styles.bannerText}>
+            Emergency contacts are stored locally on this device and are not synced to the cloud.
+          </Text>
+        </View>
+
+        {editing ? (
+          <>
+            {contacts.map((contact, i) => (
+              <GlassCardView key={i} style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardTitle}>Contact {i + 1}</Text>
+                  {contacts.length > 1 && (
+                    <TouchableOpacity onPress={() => removeContact(i)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                      <Text style={styles.removeBtn}>Remove</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <Text style={styles.label}>Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={contact.name}
+                  onChangeText={v => updateContact(i, 'name', v)}
+                  placeholder="Full name"
+                  placeholderTextColor={Colors.textMuted}
+                />
+                <Text style={styles.label}>Relationship</Text>
+                <TextInput
+                  style={styles.input}
+                  value={contact.relationship}
+                  onChangeText={v => updateContact(i, 'relationship', v)}
+                  placeholder="e.g. Spouse, Parent, Sibling"
+                  placeholderTextColor={Colors.textMuted}
+                />
+                <Text style={styles.label}>Phone Number</Text>
+                <TextInput
+                  style={styles.input}
+                  value={contact.phone}
+                  onChangeText={v => updateContact(i, 'phone', v)}
+                  placeholder="+1 (555) 000-0000"
+                  placeholderTextColor={Colors.textMuted}
+                  keyboardType="phone-pad"
+                />
+              </GlassCardView>
+            ))}
+
+            <TouchableOpacity style={styles.addBtn} onPress={addContact} activeOpacity={0.7}>
+              <Text style={styles.addBtnText}>+ Add Another Contact</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <GlassCardView style={styles.card}>
+            {contacts.filter(c => c.name.trim()).length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyIcon}>🆘</Text>
+                <Text style={styles.emptyText}>No emergency contacts</Text>
+                <Text style={styles.emptySub}>Tap Edit to add emergency contacts</Text>
+              </View>
+            ) : (
+              contacts.filter(c => c.name.trim()).map((contact, i) => (
+                <View key={i}>
+                  <View style={styles.contactRow}>
+                    <View style={[styles.contactDot, { backgroundColor: Colors.purple }]} />
+                    <View style={styles.contactInfo}>
+                      <Text style={styles.contactName}>{contact.name}</Text>
+                      <Text style={styles.contactDetail}>
+                        {contact.relationship}{contact.phone ? ` · ${contact.phone}` : ''}
+                      </Text>
+                    </View>
+                  </View>
+                  {i < contacts.filter(c => c.name.trim()).length - 1 && <View style={styles.divider} />}
+                </View>
+              ))
+            )}
+          </GlassCardView>
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: Colors.bg },
+  topBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
+  },
+  backBtn: {
+    width: 40, height: 40, borderRadius: Radius.md, backgroundColor: Colors.bgCard,
+    borderWidth: 1, borderColor: Colors.bgCardBorder, alignItems: 'center', justifyContent: 'center',
+  },
+  backIcon: { fontSize: 20, color: Colors.textPrimary },
+  pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
+  editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+  editBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.purple },
+  editBtnSave: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.success },
+  scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
+  banner: {
+    flexDirection: 'row', alignItems: 'flex-start', backgroundColor: Colors.purple + '15',
+    borderWidth: 1, borderColor: Colors.purple + '40', borderRadius: Radius.md,
+    padding: Spacing.md, marginBottom: Spacing.lg,
+  },
+  bannerIcon: { fontSize: 16, marginRight: Spacing.sm, marginTop: 1 },
+  bannerText: { flex: 1, fontSize: Typography.sm, color: Colors.textSecondary, lineHeight: 18 },
+  card: { padding: Spacing.lg, marginBottom: Spacing.lg },
+  cardHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md,
+  },
+  cardTitle: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
+  removeBtn: { fontSize: Typography.sm, color: Colors.danger, fontWeight: Typography.semiBold },
+  label: {
+    fontSize: Typography.sm, fontWeight: Typography.semiBold, color: Colors.textSecondary,
+    marginBottom: Spacing.xs, textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+  input: {
+    backgroundColor: Colors.bgCardSolid, borderWidth: 1, borderColor: Colors.bgCardBorder,
+    borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
+    fontSize: Typography.base, color: Colors.textPrimary, marginBottom: Spacing.md,
+  },
+  addBtn: {
+    backgroundColor: Colors.purple + '15', borderWidth: 1, borderColor: Colors.purple + '40',
+    borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center', marginBottom: Spacing.lg,
+  },
+  addBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.purple },
+  emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
+  emptyIcon: { fontSize: 32, marginBottom: Spacing.md },
+  emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
+  emptySub: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: Spacing.xs },
+  contactRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },
+  contactDot: { width: 8, height: 8, borderRadius: 4, marginRight: Spacing.md },
+  contactInfo: { flex: 1 },
+  contactName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
+  contactDetail: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2 },
+  divider: { height: 1, backgroundColor: Colors.divider },
+});
