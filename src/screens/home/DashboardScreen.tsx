@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   TextInput,
   Dimensions,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
 import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar } from '../../components/SharedComponents';
@@ -145,6 +146,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [mealType, setMealType] = useState<MealType>('breakfast');
   const [waterAmount, setWaterAmount] = useState('');
   const [modalSaving, setModalSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -195,6 +197,23 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         .catch(err => console.warn('Failed to load water challenge on Dashboard:', err));
     }
   };
+
+  const handleRefresh = useCallback(async () => {
+    if (!session?.access_token) return;
+    setRefreshing(true);
+    const today = new Date().toISOString().split('T')[0];
+    await Promise.allSettled([
+      getSleepLogs(session.access_token).then(setSleepLogs),
+      getWeightLogs(session.access_token).then(setWeightLogs),
+      getMealsForDate(session.access_token, today).then(setMealsData),
+      getWaterForDate(session.access_token, today).then(setWaterData),
+      getCalorieGoal(session.access_token).then(setNutritionGoal),
+      getTodaySummary(session.access_token, today).then(setActivitySummary),
+      getActivityGoal(session.access_token).then(setActivityGoal),
+      getWaterChallenge(session.access_token, 5).then(setWaterChallenge),
+    ]);
+    setRefreshing(false);
+  }, [session?.access_token]);
 
   useEffect(() => {
     loadData();
@@ -324,7 +343,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
   return (
     <View style={styles.root}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[Colors.teal, Colors.pink]} tintColor={Colors.teal} progressBackgroundColor={Colors.bgCard} />}>
         {/* SECTION 1: HEADER */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <View style={styles.header}>

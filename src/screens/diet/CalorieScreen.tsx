@@ -12,6 +12,7 @@ import {
   Modal,
   Alert,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
@@ -81,6 +82,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
   const [goal, setGoal] = useState<NutritionGoal | null>(null);
   const [weeklyTrend, setWeeklyTrend] = useState<WeeklyTrendDay[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // ── Goal edit state ────────────────────────────────────────
   const [isEditingGoal, setIsEditingGoal] = useState(false);
@@ -171,6 +173,28 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     } finally {
       setLoading(false);
     }
+  }, [session?.access_token, todayStr]);
+
+  const handleRefresh = useCallback(async () => {
+    if (!session?.access_token) return;
+    setRefreshing(true);
+    const [mealsRes, waterRes, goalRes, weeklyRes] = await Promise.allSettled([
+      dietService.getMealsForDate(session.access_token, todayStr),
+      dietService.getWaterForDate(session.access_token, todayStr),
+      dietService.getCalorieGoal(session.access_token),
+      dietService.getWeeklyTrend(session.access_token, todayStr),
+    ]);
+    if (mealsRes.status === 'fulfilled') setMeals(mealsRes.value.meals);
+    if (waterRes.status === 'fulfilled') {
+      setWaterLogs(waterRes.value.logs);
+      setWaterTotalMl(waterRes.value.total_ml);
+    }
+    if (goalRes.status === 'fulfilled') {
+      setGoal(goalRes.value);
+      setTempGoal(String(goalRes.value?.calorie_goal ?? 0));
+    }
+    if (weeklyRes.status === 'fulfilled') setWeeklyTrend(weeklyRes.value);
+    setRefreshing(false);
   }, [session?.access_token, todayStr]);
 
   useEffect(() => {
@@ -314,7 +338,8 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[Colors.teal, Colors.pink]} tintColor={Colors.teal} progressBackgroundColor={Colors.bgCard} />}>
         {/* Header */}
         <View style={styles.header}>
           <View>

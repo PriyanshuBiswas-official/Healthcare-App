@@ -11,6 +11,7 @@ import {
   TextInput,
   Platform,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius, Shadows } from '../../theme/theme';
@@ -514,6 +515,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   const [prs, setPrs] = useState<PersonalRecord[]>([]);
   const [activityGoal, setActivityGoal] = useState<ActivityGoal | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // ── Plan setup modal state ─────────────────────────────────
   const [planModalVisible, setPlanModalVisible] = useState(false);
@@ -585,6 +587,32 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     } finally {
       setLoading(false);
     }
+  }, [session?.access_token, todayStr]);
+
+  const handleRefresh = useCallback(async () => {
+    if (!session?.access_token) return;
+    setRefreshing(true);
+    const [summaryRes, workoutRes, weeklyRes, prsRes, goalRes] = await Promise.allSettled([
+      activityService.getTodaySummary(session.access_token, todayStr),
+      activityService.getTodayWorkout(session.access_token, todayStr),
+      activityService.getWeeklyStats(session.access_token, todayStr),
+      activityService.getPersonalRecords(session.access_token),
+      activityService.getActivityGoal(session.access_token),
+    ]);
+    if (summaryRes.status === 'fulfilled') setSummary(summaryRes.value);
+    if (workoutRes.status === 'fulfilled') {
+      setExercises(workoutRes.value.exercises);
+      setDayName(workoutRes.value.day_name);
+      setPlanName(workoutRes.value.plan_name);
+      setPlanDayId(workoutRes.value.plan_day_id);
+    }
+    if (weeklyRes.status === 'fulfilled') {
+      setWeeklyDays(weeklyRes.value.days);
+      setWeeklyStats(weeklyRes.value.stats);
+    }
+    if (prsRes.status === 'fulfilled') setPrs(prsRes.value);
+    if (goalRes.status === 'fulfilled') setActivityGoal(goalRes.value);
+    setRefreshing(false);
   }, [session?.access_token, todayStr]);
 
   useEffect(() => {
@@ -804,7 +832,8 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
         onScroll={onScroll}
-        scrollEventThrottle={16}>
+        scrollEventThrottle={16}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[Colors.teal, Colors.pink]} tintColor={Colors.teal} progressBackgroundColor={Colors.bgCard} />}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.dateText}>{formatDateHeader(today)}</Text>

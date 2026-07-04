@@ -9,6 +9,7 @@ import {
   Modal,
   TextInput,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import Svg, { Circle, Rect, Line, Polyline, Defs, LinearGradient, Stop, Path, G, Text as SvgText } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
@@ -534,6 +535,7 @@ export default function HealthScreenFemale({
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
   const [weightLogs, setWeightLogs] = useState<WeightEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // ── Cycle setup modal state ──────────────────────────────────────────────
   const [showCycleSetup, setShowCycleSetup] = useState(false);
@@ -582,6 +584,36 @@ export default function HealthScreenFemale({
     } finally {
       setLoading(false);
     }
+  }, [session?.access_token]);
+
+  const handleRefresh = useCallback(async () => {
+    const token = session?.access_token;
+    if (!token) return;
+    setRefreshing(true);
+    const safe = async <T,>(p: Promise<T>): Promise<T | null> => {
+      try { return await p; } catch { return null; }
+    };
+    const [periods, moods, discharges, symptoms, ins, cycle, hist, sleeps, weights] = await Promise.all([
+      safe(getPeriodLogs(token)),
+      safe(getMoodLogs(token)),
+      safe(getDischargeLogs(token)),
+      safe(getSymptomsLogs(token)),
+      safe(getInsights(token)),
+      safe(getLatestCycle(token)),
+      safe(getCycleHistory(token)),
+      safe(getSleepLogs(token)),
+      safe(getWeightLogs(token)),
+    ]);
+    setPeriodLogs(periods ?? []);
+    setMoodLogs(moods ?? []);
+    setDischargeLogs(discharges ?? []);
+    setSymptomsLogs(symptoms ?? []);
+    setInsights(ins ?? []);
+    setCycleHistory(hist ?? []);
+    setSleepLogs(sleeps ?? []);
+    setWeightLogs(weights ?? []);
+    if (cycle) setCycleData(cycle);
+    setRefreshing(false);
   }, [session?.access_token]);
 
   useEffect(() => {
@@ -748,7 +780,8 @@ export default function HealthScreenFemale({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scroll}
         onScroll={onScroll}
-        scrollEventThrottle={16}>
+        scrollEventThrottle={16}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[Colors.teal, Colors.pink]} tintColor={Colors.teal} progressBackgroundColor={Colors.bgCard} />}>
         <View style={s.header}>
           <Text style={s.title}>Your Health</Text>
           <View style={s.headerActions}>
