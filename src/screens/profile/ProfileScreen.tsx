@@ -8,17 +8,17 @@ import {
   Switch,
   Image,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, GlassCard } from '../theme/theme';
-import { GlassCardView, SectionHeader, ProgressBar } from '../components/SharedComponents';
-import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../providers/AuthProvider';
-import { API_BASE_URL } from '../config/api';
-import PersonalInfoScreen from './profile/PersonalInfoScreen';
-import MedicalHistoryScreen from './profile/MedicalHistoryScreen';
-import MedicationsScreen from './profile/MedicationsScreen';
-import AllergiesScreen from './profile/AllergiesScreen';
-import EmergencyContactsScreen from './profile/EmergencyContactsScreen';
+import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { GlassCardView, SectionHeader, ProgressBar } from '../../components/SharedComponents';
+import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../providers/AuthProvider';
+import { API_BASE_URL } from '../../config/api';
+import PersonalInfoScreen from './PersonalInfoScreen';
+import MedicalHistoryScreen from './MedicalHistoryScreen';
+import MedicationsScreen from './MedicationsScreen';
+import AllergiesScreen from './AllergiesScreen';
+import EmergencyContactsScreen from './EmergencyContactsScreen';
 
 type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency';
 

@@ -11,14 +11,14 @@ import {
   Alert,
 } from 'react-native';
 import Svg, { Circle, Rect, Line, Polyline, Defs, LinearGradient, Stop, Path, G, Text as SvgText } from 'react-native-svg';
-import { Colors, Typography, Spacing, Radius } from '../theme/theme';
+import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import {
   GlassCardView,
   SectionHeader,
   ProfileAvatarButton,
   NotificationIconButton,
-} from '../components/SharedComponents';
-import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
+} from '../../components/SharedComponents';
+import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import {
   InnerTabBar,
   HormoneRangeBar,
@@ -28,8 +28,8 @@ import {
   VitalsDashboardSection,
   AIHealthInsightsSection,
 } from './HealthCommonSections';
-import { CyclePhaseVisualizer } from '../components/CyclePhaseVisualizer';
-import { useAuth } from '../providers/AuthProvider';
+import { CyclePhaseVisualizer } from '../../components/CyclePhaseVisualizer';
+import { useAuth } from '../../providers/AuthProvider';
 import { HealthLogDraft } from './HealthLogScreen';
 import {
   getPeriodLogs,
@@ -43,8 +43,8 @@ import {
   getWeightLogs,
   saveWeightLog,
   saveCycle,
-} from '../services/healthService';
-import type { PeriodLog, MoodLog, DischargeLog, SymptomsLog, CycleInsight, CycleData, CycleHistoryEntry, SleepLog, WeightEntry } from '../types/health';
+} from '../../services/healthService';
+import type { PeriodLog, MoodLog, DischargeLog, SymptomsLog, CycleInsight, CycleData, CycleHistoryEntry, SleepLog, WeightEntry } from '../../types/health';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

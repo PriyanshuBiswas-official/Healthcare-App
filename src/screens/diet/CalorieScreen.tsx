@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   TextInput,
   KeyboardAvoidingView,
   Platform,
@@ -12,12 +13,13 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../theme/theme';
-import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
-import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../components/SharedComponents';
-import { useAuth } from '../providers/AuthProvider';
-import * as dietService from '../services/dietService';
-import type { NutritionLog, NutritionGoal, WeeklyTrendDay, MealType } from '../types/diet';
+import Svg, { Circle } from 'react-native-svg';
+import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
+import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../../components/SharedComponents';
+import { useAuth } from '../../providers/AuthProvider';
+import * as dietService from '../../services/dietService';
+import type { NutritionLog, NutritionGoal, WeeklyTrendDay, MealType } from '../../types/diet';
 
 // ── Meal category definitions ────────────────────────────────
 
@@ -381,43 +383,40 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                   {(() => {
                     const size = 140;
                     const stroke = 12;
-                    const inner = size - stroke * 2;
+                    const radius = (size - stroke) / 2;
+                    const circumference = 2 * Math.PI * radius;
                     const clampedProgress = Math.min(progress, 1);
+                    const offset = circumference - clampedProgress * circumference;
                     const color = progress > 1 ? Colors.pink : Colors.teal;
-                    const rightDeg = Math.min(clampedProgress * 360, 180);
-                    const leftDeg = clampedProgress > 0.5 ? Math.min((clampedProgress - 0.5) * 360, 180) : 0;
                     return (
-                      <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: Colors.bgCardBorder, overflow: 'hidden' }}>
-                        {/* Right half */}
-                        <View style={{ position: 'absolute', top: 0, right: 0, width: size / 2, height: size, overflow: 'hidden' }}>
-                          <View style={{
-                            width: size / 2,
-                            height: size,
-                            borderRadius: size / 2,
-                            backgroundColor: color,
-                            transform: [{ rotate: `${rightDeg - 180}deg` }],
-                            transformOrigin: 'left center',
-                          }} />
-                        </View>
-                        {/* Left half */}
-                        <View style={{ position: 'absolute', top: 0, left: 0, width: size / 2, height: size, overflow: 'hidden' }}>
-                          <View style={{
-                            width: size / 2,
-                            height: size,
-                            borderRadius: size / 2,
-                            backgroundColor: color,
-                            transform: [{ rotate: `${leftDeg}deg` }],
-                            transformOrigin: 'right center',
-                          }} />
-                        </View>
-                        {/* Inner circle (background) */}
-                        <View style={{ position: 'absolute', top: stroke, left: stroke, width: inner, height: inner, borderRadius: inner / 2, backgroundColor: Colors.bgCard, alignItems: 'center', justifyContent: 'center' }}>
-                          <Text style={styles.gaugeValue}>{totalCalories.toLocaleString()}</Text>
-                          <Text style={styles.gaugeUnit}>kcal eaten</Text>
-                        </View>
-                      </View>
+                      <Svg width={size} height={size}>
+                        <Circle
+                          cx={size / 2}
+                          cy={size / 2}
+                          r={radius}
+                          stroke={Colors.bgCardBorder}
+                          strokeWidth={stroke}
+                          fill="none"
+                        />
+                        <Circle
+                          cx={size / 2}
+                          cy={size / 2}
+                          r={radius}
+                          stroke={color}
+                          strokeWidth={stroke}
+                          fill="none"
+                          strokeDasharray={circumference}
+                          strokeDashoffset={offset}
+                          strokeLinecap="round"
+                          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                        />
+                      </Svg>
                     );
                   })()}
+                  <View style={styles.gaugeCenter}>
+                    <Text style={styles.gaugeValue}>{totalCalories.toLocaleString()}</Text>
+                    <Text style={styles.gaugeUnit}>kcal eaten</Text>
+                  </View>
                 </View>
 
                 <View style={styles.calorieStats}>
@@ -503,8 +502,10 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                 const timeStr = hasMeals ? formatTime(catMeals[catMeals.length - 1].logged_at) : null;
 
                 return (
-                  <View key={cat.key}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.sm }}>
+                  <Pressable
+                    key={cat.key}
+                    onPress={() => openMealModal(cat.key)}
+                    style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.sm }, pressed && { opacity: 0.5 }]}>
                       <View style={[styles.iconWrapSm, { backgroundColor: hasMeals ? cat.color + '20' : Colors.bgCardBorder, width: 44, height: 44, borderRadius: Radius.md }]}>
                         <Text style={{ fontSize: 22, opacity: hasMeals ? 1 : 0.5 }}>{cat.icon}</Text>
                       </View>
@@ -518,7 +519,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                           )}
                         </View>
                         <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 4 }} numberOfLines={1}>
-                          {hasMeals ? foodNames : 'Not logged yet - AI suggestion ready'}
+                          {hasMeals ? foodNames : 'Not logged yet - tap to log'}
                         </Text>
                       </View>
                       <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
@@ -528,17 +529,13 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                             <Text style={{ fontSize: 10, color: Colors.textMuted, marginTop: 2 }}>kcal · {timeStr}</Text>
                           </>
                         ) : (
-                          <TouchableOpacity
-                            onPress={() => openMealModal(cat.key)}
-                            style={{ paddingHorizontal: Spacing.md, paddingVertical: 6, backgroundColor: Colors.bgCardBorder, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center' }}>
+                          <View style={{ paddingHorizontal: Spacing.md, paddingVertical: 6, backgroundColor: Colors.bgCardBorder, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center' }}>
                             <Text style={{ fontSize: Typography.xs, color: Colors.textPrimary, fontWeight: Typography.bold, marginRight: 4 }}>Log</Text>
                             <Text style={{ fontSize: 12, color: Colors.textPrimary }}>↗</Text>
-                          </TouchableOpacity>
+                          </View>
                         )}
                       </View>
-                    </View>
-                    {index < MEAL_CATEGORIES.length - 1 && <View style={{ height: 1, backgroundColor: Colors.bgCardBorder, marginVertical: Spacing.xs }} />}
-                  </View>
+                    </Pressable>
                 );
               })}
             </GlassCardView>
@@ -911,7 +908,8 @@ const styles = StyleSheet.create({
 
   calorieCard: { padding: Spacing.lg, marginBottom: Spacing.xl },
   calorieRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  gaugeWrap: { width: 140, height: 140 },
+  gaugeWrap: { width: 140, height: 140, alignItems: 'center', justifyContent: 'center' },
+  gaugeCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   gaugeValue: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary },
   gaugeUnit: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2 },
   calorieStats: { flex: 1, marginLeft: Spacing.lg },
@@ -936,7 +934,7 @@ const styles = StyleSheet.create({
   macroTarget: { fontSize: 10, color: Colors.textMuted, marginTop: 4, alignSelf: 'flex-end' },
 
   // Modal styles
-  modalOverlay: { flex: 1, justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: {
     backgroundColor: Colors.bgCardSolid,
     borderTopLeftRadius: Radius.xl,

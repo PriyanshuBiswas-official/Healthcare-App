@@ -13,9 +13,9 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Colors, Typography, Spacing, Radius } from '../theme/theme';
-import { useAuth } from '../providers/AuthProvider';
-import { API_BASE_URL } from '../config/api';
+import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { useAuth } from '../../providers/AuthProvider';
+import { API_BASE_URL } from '../../config/api';
 
 type AuthStackParamList = {
   Welcome: undefined;

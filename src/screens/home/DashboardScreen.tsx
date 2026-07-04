@@ -9,16 +9,22 @@ import {
   Modal,
   TextInput,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../theme/theme';
-import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar } from '../components/SharedComponents';
-import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
-import ProfileCompletionBanner from '../components/ProfileCompletionBanner';
-import { useAuth } from '../providers/AuthProvider';
+import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar } from '../../components/SharedComponents';
+import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
+import ProfileCompletionBanner from '../../components/ProfileCompletionBanner';
+import { useAuth } from '../../providers/AuthProvider';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg';
-import { SleepTrackerSection, VitalsDashboardSection } from './HealthCommonSections';
-import { getSleepLogs, getWeightLogs, saveWeightLog } from '../services/healthService';
-import type { SleepLog, WeightEntry } from '../types/health';
+import { SleepTrackerSection, VitalsDashboardSection } from '../health/HealthCommonSections';
+import { getSleepLogs, getWeightLogs, saveWeightLog } from '../../services/healthService';
+import { getMealsForDate, getWaterForDate, getCalorieGoal, logMeal, logWater, getWaterChallenge } from '../../services/dietService';
+import { getTodaySummary, getActivityGoal } from '../../services/activityService';
+import type { SleepLog, WeightEntry } from '../../types/health';
+import type { DayMealsResponse, DayWaterResponse, NutritionGoal, MealType, WaterChallenge } from '../../types/diet';
+import type { ActivitySummary, ActivityGoal } from '../../types/activity';
+import type { TabName } from '../../navigation/TabBar';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -108,7 +114,7 @@ const CompactRing = ({ size, progress, color, children }: any) => {
   );
 };
 
-export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void }) {
+export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void }) {
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion } = useAuth();
   
@@ -121,6 +127,24 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [weightInput, setWeightInput] = useState('');
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [currentHour, setCurrentHour] = useState(new Date().getHours());
+  const [mealsData, setMealsData] = useState<DayMealsResponse | null>(null);
+  const [waterData, setWaterData] = useState<DayWaterResponse | null>(null);
+  const [nutritionGoal, setNutritionGoal] = useState<NutritionGoal | null>(null);
+  const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null);
+  const [activityGoal, setActivityGoal] = useState<ActivityGoal | null>(null);
+  const [waterChallenge, setWaterChallenge] = useState<WaterChallenge | null>(null);
+  const [showMealModal, setShowMealModal] = useState(false);
+  const [showWaterModal, setShowWaterModal] = useState(false);
+  const [showMedModal, setShowMedModal] = useState(false);
+  const [mealFood, setMealFood] = useState('');
+  const [mealCalories, setMealCalories] = useState('');
+  const [mealProtein, setMealProtein] = useState('');
+  const [mealCarbs, setMealCarbs] = useState('');
+  const [mealFat, setMealFat] = useState('');
+  const [mealFiber, setMealFiber] = useState('');
+  const [mealType, setMealType] = useState<MealType>('breakfast');
+  const [waterAmount, setWaterAmount] = useState('');
+  const [modalSaving, setModalSaving] = useState(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -136,6 +160,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
   const loadData = () => {
     if (session?.access_token) {
+      const today = new Date().toISOString().split('T')[0];
+
       getSleepLogs(session.access_token)
         .then(setSleepLogs)
         .catch(err => console.warn('Failed to load sleep logs on Dashboard:', err));
@@ -143,6 +169,30 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getWeightLogs(session.access_token)
         .then(setWeightLogs)
         .catch(err => console.warn('Failed to load weight logs on Dashboard:', err));
+
+      getMealsForDate(session.access_token, today)
+        .then(setMealsData)
+        .catch(err => console.warn('Failed to load meals on Dashboard:', err));
+
+      getWaterForDate(session.access_token, today)
+        .then(setWaterData)
+        .catch(err => console.warn('Failed to load water on Dashboard:', err));
+
+      getCalorieGoal(session.access_token)
+        .then(setNutritionGoal)
+        .catch(err => console.warn('Failed to load nutrition goal on Dashboard:', err));
+
+      getTodaySummary(session.access_token, today)
+        .then(setActivitySummary)
+        .catch(err => console.warn('Failed to load activity summary on Dashboard:', err));
+
+      getActivityGoal(session.access_token)
+        .then(setActivityGoal)
+        .catch(err => console.warn('Failed to load activity goal on Dashboard:', err));
+
+      getWaterChallenge(session.access_token, 5)
+        .then(setWaterChallenge)
+        .catch(err => console.warn('Failed to load water challenge on Dashboard:', err));
     }
   };
 
@@ -173,6 +223,51 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       loadData();
     } catch (e) {
       console.warn('Failed to save weight:', e);
+    }
+  };
+
+  const handleSaveMeal = async () => {
+    if (!session?.access_token || !mealFood.trim()) return;
+    setModalSaving(true);
+    try {
+      await logMeal(session.access_token, {
+        food: mealFood.trim(),
+        taken_as: mealType,
+        calories: parseInt(mealCalories, 10) || 0,
+        protein: parseInt(mealProtein, 10) || 0,
+        carbs: parseInt(mealCarbs, 10) || 0,
+        fat: parseInt(mealFat, 10) || 0,
+        fiber: parseInt(mealFiber, 10) || 0,
+      });
+      setShowMealModal(false);
+      setMealFood('');
+      setMealCalories('');
+      setMealProtein('');
+      setMealCarbs('');
+      setMealFat('');
+      setMealFiber('');
+      setMealType('breakfast');
+      loadData();
+    } catch (e) {
+      console.warn('Failed to save meal:', e);
+    } finally {
+      setModalSaving(false);
+    }
+  };
+
+  const handleSaveWater = async () => {
+    const parsed = parseInt(waterAmount, 10);
+    if (!parsed || parsed <= 0 || !session?.access_token) return;
+    setModalSaving(true);
+    try {
+      await logWater(session.access_token, parsed);
+      setShowWaterModal(false);
+      setWaterAmount('');
+      loadData();
+    } catch (e) {
+      console.warn('Failed to save water:', e);
+    } finally {
+      setModalSaving(false);
     }
   };
 
@@ -392,10 +487,10 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionScroll}>
           {[
-            { icon: '🍽️', label: 'Log Meal', desc: 'Record calories', color: Colors.amber },
-            { icon: '💧', label: 'Log Water', desc: 'Add a glass', color: '#3b82f6' },
-            { icon: '💪', label: 'Log Workout', desc: 'Track activity', color: Colors.purple },
-            { icon: '💊', label: 'Medicine', desc: 'Check dose', color: Colors.pink },
+            { icon: '🍽️', label: 'Log Meal', desc: 'Record calories', color: Colors.amber, onPress: () => setShowMealModal(true) },
+            { icon: '💧', label: 'Log Water', desc: 'Add a glass', color: '#3b82f6', onPress: () => setShowWaterModal(true) },
+            { icon: '💪', label: 'Log Workout', desc: 'Track activity', color: Colors.purple, onPress: () => navigateToTab?.('Activity') },
+            { icon: '💊', label: 'Medicine', desc: 'Check dose', color: Colors.pink, onPress: () => setShowMedModal(true) },
             { icon: '⚖️', label: 'Log Weight', desc: 'Record metric', color: Colors.teal, onPress: () => setShowWeightModal(true) },
           ].map((action, i) => (
             <TouchableOpacity key={i} style={styles.quickActionCard} onPress={action.onPress}>
@@ -412,43 +507,75 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         </ScrollView>
 
         {/* SECTION: TODAY'S PROGRESS */}
-        <SectionHeader title="Today's Progress" action="View All →" />
+        <SectionHeader title="Today's Progress" />
         <View style={styles.progressGrid}>
-          <GlassCardView style={styles.progressCard}>
-            <Text style={styles.progressCardTitle}>🔥 Calories</Text>
-            <CompactRing size={82} progress={0.73} color={Colors.amber}>
-              <Text style={styles.progressVal}>1,840</Text>
-              <Text style={styles.progressSub}>/ 2500 kcal</Text>
-            </CompactRing>
-            <Text style={[styles.progressPct, { color: Colors.amber }]}>73%</Text>
-          </GlassCardView>
-          
-          <GlassCardView style={styles.progressCard}>
-            <Text style={styles.progressCardTitle}>💧 Water</Text>
-            <CompactRing size={82} progress={0.68} color="#3b82f6">
-              <Text style={styles.progressVal}>1,700</Text>
-              <Text style={styles.progressSub}>/ 2500 ml</Text>
-            </CompactRing>
-            <Text style={[styles.progressPct, { color: '#3b82f6' }]}>68%</Text>
-          </GlassCardView>
+          {(() => {
+            const calorieTarget = nutritionGoal?.calorie_goal ?? 2500;
+            const consumedCal = mealsData?.totals.calories ?? 0;
+            const calPct = calorieTarget > 0 ? Math.min(consumedCal / calorieTarget, 1) : 0;
 
-          <GlassCardView style={styles.progressCard}>
-            <Text style={styles.progressCardTitle}>💊 Medication</Text>
-            <CompactRing size={82} progress={0.67} color={Colors.pink}>
-              <Text style={styles.progressVal}>2/3</Text>
-              <Text style={styles.progressSub}>Taken</Text>
-            </CompactRing>
-            <Text style={[styles.progressPct, { color: Colors.pink }]}>67%</Text>
-          </GlassCardView>
+            const waterTarget = nutritionGoal?.water_goal ?? 2500;
+            const consumedWater = waterData?.total_ml ?? 0;
+            const waterPct = waterTarget > 0 ? Math.min(consumedWater / waterTarget, 1) : 0;
 
-          <GlassCardView style={styles.progressCard}>
-            <Text style={styles.progressCardTitle}>💪 Workout</Text>
-            <CompactRing size={82} progress={0.78} color={Colors.purple}>
-              <Text style={styles.progressVal}>35</Text>
-              <Text style={styles.progressSub}>/ 45 min</Text>
-            </CompactRing>
-            <Text style={[styles.progressPct, { color: Colors.purple }]}>78%</Text>
-          </GlassCardView>
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todaySleep = sleepLogs.find(s => s.date === todayStr);
+            const sleepHrs = todaySleep?.sleep_hr ?? 0;
+            const sleepTarget = 8;
+            const sleepPct = sleepTarget > 0 ? Math.min(sleepHrs / sleepTarget, 1) : 0;
+
+            const exerciseTarget = activityGoal?.exercise_min_goal ?? 45;
+            const exerciseMin = activitySummary?.exercise_minutes ?? 0;
+            const exercisePct = exerciseTarget > 0 ? Math.min(exerciseMin / exerciseTarget, 1) : 0;
+
+            return (
+              <>
+                <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Diet')}>
+                  <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
+                    <Text style={styles.progressCardTitle}>🔥 Calories</Text>
+                    <CompactRing size={82} progress={calPct} color={Colors.amber}>
+                      <Text style={styles.progressVal}>{consumedCal.toLocaleString()}</Text>
+                      <Text style={styles.progressSub}>/ {calorieTarget.toLocaleString()} kcal</Text>
+                    </CompactRing>
+                    <Text style={[styles.progressPct, { color: Colors.amber }]}>{Math.round(calPct * 100)}%</Text>
+                  </GlassCardView>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Diet')}>
+                  <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
+                    <Text style={styles.progressCardTitle}>💧 Water</Text>
+                    <CompactRing size={82} progress={waterPct} color="#3b82f6">
+                      <Text style={styles.progressVal}>{consumedWater.toLocaleString()}</Text>
+                      <Text style={styles.progressSub}>/ {waterTarget.toLocaleString()} ml</Text>
+                    </CompactRing>
+                    <Text style={[styles.progressPct, { color: '#3b82f6' }]}>{Math.round(waterPct * 100)}%</Text>
+                  </GlassCardView>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Health')}>
+                  <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
+                    <Text style={styles.progressCardTitle}>🌙 Sleep</Text>
+                    <CompactRing size={82} progress={sleepPct} color={Colors.purple}>
+                      <Text style={styles.progressVal}>{sleepHrs > 0 ? sleepHrs : '—'}</Text>
+                      <Text style={styles.progressSub}>/ {sleepTarget} hrs</Text>
+                    </CompactRing>
+                    <Text style={[styles.progressPct, { color: Colors.purple }]}>{sleepHrs > 0 ? `${Math.round(sleepPct * 100)}%` : '—'}</Text>
+                  </GlassCardView>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Activity')}>
+                  <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
+                    <Text style={styles.progressCardTitle}>💪 Workout</Text>
+                    <CompactRing size={82} progress={exercisePct} color={Colors.teal}>
+                      <Text style={styles.progressVal}>{exerciseMin}</Text>
+                      <Text style={styles.progressSub}>/ {exerciseTarget} min</Text>
+                    </CompactRing>
+                    <Text style={[styles.progressPct, { color: Colors.teal }]}>{Math.round(exercisePct * 100)}%</Text>
+                  </GlassCardView>
+                </TouchableOpacity>
+              </>
+            );
+          })()}
         </View>
 
         {/* SECTION: TODAY'S MEDICATIONS */}
@@ -543,10 +670,10 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           <Text style={styles.challengeTitle}>💧 Hydration Hero</Text>
           <Text style={styles.challengeDesc}>Drink 2.5L water for 5 days in a row.</Text>
           <View style={{ marginTop: Spacing.sm }}>
-            <ProgressBar progress={0.6} color={Colors.amber} height={8} />
+            <ProgressBar progress={waterChallenge?.progress ?? 0} color={Colors.amber} height={8} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-              <Text style={styles.challengeProgressText}>3 / 5 days complete</Text>
-              <Text style={styles.challengeStreakText}>🔥 3d streak</Text>
+              <Text style={styles.challengeProgressText}>{waterChallenge?.daysComplete ?? 0} / {waterChallenge?.totalDays ?? 5} days complete</Text>
+              <Text style={styles.challengeStreakText}>🔥 {waterChallenge?.streak ?? 0}d streak</Text>
             </View>
           </View>
         </GlassCardView>
@@ -603,28 +730,151 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
       {/* WEIGHT LOG MODAL */}
       <Modal visible={showWeightModal} transparent animationType="slide">
-        <View style={styles.modalBg}>
-          <GlassCardView style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Log Weight</Text>
-            <Text style={styles.modalSub}>Enter your current weight in kg</Text>
-            <TextInput
-              style={styles.modalInput}
-              keyboardType="decimal-pad"
-              value={weightInput}
-              onChangeText={setWeightInput}
-              placeholder="e.g. 62.5"
-              placeholderTextColor={Colors.textMuted}
-            />
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowWeightModal(false)}>
-                <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.modalSave} onPress={handleSaveWeight}>
-                <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </GlassCardView>
-        </View>
+        <TouchableOpacity activeOpacity={1} onPress={() => setShowWeightModal(false)} style={styles.modalBg}>
+          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ alignSelf: 'stretch' }}>
+            <GlassCardView style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Log Weight</Text>
+              <Text style={styles.modalSub}>Enter your current weight in kg</Text>
+              <TextInput
+                style={styles.modalInput}
+                keyboardType="decimal-pad"
+                value={weightInput}
+                onChangeText={setWeightInput}
+                placeholder="e.g. 62.5"
+                placeholderTextColor={Colors.textMuted}
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalCancel} onPress={() => setShowWeightModal(false)}>
+                  <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalSave} onPress={handleSaveWeight}>
+                  <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </GlassCardView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+      {/* MEAL LOG MODAL */}
+      <Modal visible={showMealModal} transparent animationType="slide">
+        <TouchableOpacity activeOpacity={1} onPress={() => setShowMealModal(false)} style={styles.modalBg}>
+          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ alignSelf: 'stretch' }}>
+            <GlassCardView style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Log Meal</Text>
+              <Text style={styles.modalSub}>Record what you ate</Text>
+
+              <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md, alignSelf: 'stretch' }}>
+                {(['breakfast', 'lunch', 'snack', 'dinner'] as MealType[]).map(type => (
+                  <TouchableOpacity
+                    key={type}
+                    onPress={() => setMealType(type)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: Spacing.sm,
+                      borderRadius: Radius.md,
+                      alignItems: 'center',
+                      backgroundColor: mealType === type ? Colors.teal + '20' : Colors.bgCardBorder,
+                      borderWidth: mealType === type ? 1 : 0,
+                      borderColor: Colors.teal,
+                    }}>
+                    <Text style={{ fontSize: Typography.xs, color: mealType === type ? Colors.teal : Colors.textSecondary, fontWeight: Typography.bold, textTransform: 'capitalize' }}>{type}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TextInput style={[styles.modalInput, { width: '100%' }]} value={mealFood} onChangeText={setMealFood} placeholder="Food name *" placeholderTextColor={Colors.textMuted} />
+              <TextInput style={[styles.modalInput, { width: '100%' }]} value={mealCalories} onChangeText={setMealCalories} keyboardType="number-pad" placeholder="Calories (kcal)" placeholderTextColor={Colors.textMuted} />
+
+              <View style={{ flexDirection: 'row', gap: Spacing.sm, alignSelf: 'stretch' }}>
+                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealProtein} onChangeText={setMealProtein} keyboardType="number-pad" placeholder="Protein (g)" placeholderTextColor={Colors.textMuted} />
+                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealCarbs} onChangeText={setMealCarbs} keyboardType="number-pad" placeholder="Carbs (g)" placeholderTextColor={Colors.textMuted} />
+              </View>
+              <View style={{ flexDirection: 'row', gap: Spacing.sm, alignSelf: 'stretch' }}>
+                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealFat} onChangeText={setMealFat} keyboardType="number-pad" placeholder="Fat (g)" placeholderTextColor={Colors.textMuted} />
+                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealFiber} onChangeText={setMealFiber} keyboardType="number-pad" placeholder="Fiber (g)" placeholderTextColor={Colors.textMuted} />
+              </View>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalCancel} onPress={() => setShowMealModal(false)}>
+                  <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalSave} onPress={handleSaveMeal} disabled={modalSaving}>
+                  {modalSaving ? <ActivityIndicator size="small" color={Colors.bg} /> : <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Save</Text>}
+                </TouchableOpacity>
+              </View>
+            </GlassCardView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* WATER LOG MODAL */}
+      <Modal visible={showWaterModal} transparent animationType="slide">
+        <TouchableOpacity activeOpacity={1} onPress={() => setShowWaterModal(false)} style={styles.modalBg}>
+          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ alignSelf: 'stretch' }}>
+            <GlassCardView style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Log Water</Text>
+              <Text style={styles.modalSub}>How much water did you drink?</Text>
+
+              <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md, alignSelf: 'stretch' }}>
+                {[200, 250, 300, 500].map(amount => (
+                  <TouchableOpacity
+                    key={amount}
+                    onPress={() => setWaterAmount(String(amount))}
+                    style={{
+                      flex: 1,
+                      paddingVertical: Spacing.sm,
+                      borderRadius: Radius.md,
+                      alignItems: 'center',
+                      backgroundColor: waterAmount === String(amount) ? '#3b82f6' + '20' : Colors.bgCardBorder,
+                      borderWidth: waterAmount === String(amount) ? 1 : 0,
+                      borderColor: '#3b82f6',
+                    }}>
+                    <Text style={{ fontSize: Typography.xs, color: waterAmount === String(amount) ? '#3b82f6' : Colors.textSecondary, fontWeight: Typography.bold }}>{amount}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TextInput style={[styles.modalInput, { width: '100%' }]} value={waterAmount} onChangeText={setWaterAmount} keyboardType="number-pad" placeholder="Custom amount (ml)" placeholderTextColor={Colors.textMuted} />
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalCancel} onPress={() => setShowWaterModal(false)}>
+                  <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.modalSave, { backgroundColor: '#3b82f6' }]} onPress={handleSaveWater} disabled={modalSaving}>
+                  {modalSaving ? <ActivityIndicator size="small" color={Colors.bg} /> : <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Save</Text>}
+                </TouchableOpacity>
+              </View>
+            </GlassCardView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* MEDICINE MODAL */}
+      <Modal visible={showMedModal} transparent animationType="slide">
+        <TouchableOpacity activeOpacity={1} onPress={() => setShowMedModal(false)} style={styles.modalBg}>
+          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ alignSelf: 'stretch' }}>
+            <GlassCardView style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Log Medicine</Text>
+              <Text style={styles.modalSub}>Track your medication intake</Text>
+
+              <TextInput style={[styles.modalInput, { width: '100%' }]} placeholder="Medicine name" placeholderTextColor={Colors.textMuted} />
+              <TextInput style={[styles.modalInput, { width: '100%' }]} placeholder="Dosage (e.g. 500 mg)" placeholderTextColor={Colors.textMuted} />
+
+              <View style={{ backgroundColor: Colors.pink + '15', borderRadius: Radius.md, padding: Spacing.md, alignSelf: 'stretch', marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.pink + '30' }}>
+                <Text style={{ fontSize: Typography.xs, color: Colors.pink, fontWeight: Typography.bold, textAlign: 'center' }}>Feature coming soon</Text>
+              </View>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalCancel} onPress={() => setShowMedModal(false)}>
+                  <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.modalSave, { opacity: 0.5 }]} disabled>
+                  <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </GlassCardView>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -999,9 +1249,7 @@ const styles = StyleSheet.create({
   },
   progressCard: {
     width: '48%',
-    padding: Spacing.md,
     marginBottom: Spacing.md,
-    alignItems: 'center',
   },
   progressCardTitle: {
     fontSize: Typography.xs,
@@ -1348,30 +1596,33 @@ const styles = StyleSheet.create({
   // MODAL STYLING
   modalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.xl,
   },
   modalContainer: {
-    width: '100%',
+    alignSelf: 'stretch',
     padding: Spacing.lg,
-    alignItems: 'center',
+    alignItems: 'stretch',
+    backgroundColor: Colors.bgCardSolid,
   },
   modalTitle: {
     fontSize: Typography.md,
     fontWeight: Typography.bold,
     color: Colors.textPrimary,
     marginBottom: 4,
+    textAlign: 'center',
   },
   modalSub: {
     fontSize: Typography.xs,
     color: Colors.textSecondary,
     marginBottom: Spacing.md,
+    textAlign: 'center',
   },
   modalInput: {
-    width: '100%',
-    height: 48,
+    height: 52,
+    flexShrink: 0,
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.bgCardBorder,
@@ -1380,11 +1631,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     fontSize: Typography.md,
     textAlign: 'center',
+    textAlignVertical: 'center',
     marginBottom: Spacing.lg,
   },
   modalActions: {
     flexDirection: 'row',
     gap: Spacing.md,
+    alignSelf: 'stretch',
   },
   modalCancel: {
     flex: 1,

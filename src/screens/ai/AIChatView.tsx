@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../theme/theme';
+import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
 
 export type Message = {
   id: string;

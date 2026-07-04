@@ -14,10 +14,10 @@ import {
   ActivityIndicator,
   BackHandler,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../theme/theme';
-import { GlassCardView, ProgressBar } from '../components/SharedComponents';
-import { useAuth } from '../providers/AuthProvider';
-import { API_BASE_URL } from '../config/api';
+import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { GlassCardView, ProgressBar } from '../../components/SharedComponents';
+import { useAuth } from '../../providers/AuthProvider';
+import { API_BASE_URL } from '../../config/api';
 
 const TOTAL_STEPS = 7;
 

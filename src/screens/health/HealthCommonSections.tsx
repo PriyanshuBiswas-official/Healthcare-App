@@ -8,9 +8,9 @@ import {
   TextInput,
   ScrollView,
 } from 'react-native';
-import type { SleepLog, MoodLog } from '../types/health';
-import { Colors, Typography, Spacing, Radius, GlassCard } from '../theme/theme';
-import { GlassCardView, SectionHeader, ProgressBar } from '../components/SharedComponents';
+import type { SleepLog, MoodLog } from '../../types/health';
+import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { GlassCardView, SectionHeader, ProgressBar } from '../../components/SharedComponents';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // InnerTabBar — horizontal sub-navigation used inside both health screens

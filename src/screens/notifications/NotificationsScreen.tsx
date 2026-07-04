@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Switch,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, Shadows } from '../theme/theme';
-import { GlassCardView, SectionHeader } from '../components/SharedComponents';
-import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
+import { Colors, Typography, Spacing, Radius, Shadows } from '../../theme/theme';
+import { GlassCardView, SectionHeader } from '../../components/SharedComponents';
+import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 
 type NotificationItem = {
   id: string;

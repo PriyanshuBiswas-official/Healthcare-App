@@ -10,10 +10,10 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../theme/theme';
-import { useAuth } from '../providers/AuthProvider';
-import * as activityService from '../services/activityService';
-import { WorkoutSet } from '../types/activity';
+import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { useAuth } from '../../providers/AuthProvider';
+import * as activityService from '../../services/activityService';
+import { WorkoutSet } from '../../types/activity';
 
 interface SetEntry {
   set_no: number;

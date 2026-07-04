@@ -7,14 +7,14 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../theme/theme';
+import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import {
   GlassCardView,
   SectionHeader,
   ProfileAvatarButton,
   NotificationIconButton,
-} from '../components/SharedComponents';
-import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
+} from '../../components/SharedComponents';
+import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import {
   InnerTabBar,
   HormoneRangeBar,
@@ -25,9 +25,9 @@ import {
   PreventiveCareSection,
   AIHealthInsightsSection,
 } from './HealthCommonSections';
-import { useAuth } from '../providers/AuthProvider';
-import { getSleepLogs, getMoodLogs } from '../services/healthService';
-import type { SleepLog, MoodLog } from '../types/health';
+import { useAuth } from '../../providers/AuthProvider';
+import { getSleepLogs, getMoodLogs } from '../../services/healthService';
+import type { SleepLog, MoodLog } from '../../types/health';
 
 const { width } = Dimensions.get('window');
 

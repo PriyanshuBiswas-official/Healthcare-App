@@ -16,7 +16,16 @@ export interface WaterLog {
   water_id: number;
   user_id: number;
   amount_in_ml: number;
-  logged_at: string;
+  water_goal: number;
+  goal_reached: boolean;
+  date: string;
+}
+
+export interface WaterChallenge {
+  daysComplete: number;
+  totalDays: number;
+  progress: number;
+  streak: number;
 }
 
 export interface NutritionGoal {

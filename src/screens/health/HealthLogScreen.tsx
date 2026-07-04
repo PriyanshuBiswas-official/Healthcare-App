@@ -9,14 +9,14 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../theme/theme';
-import { GlassCardView } from '../components/SharedComponents';
-import { saveMoodLog } from '../services/healthService';
-import { savePeriodLog } from '../services/healthService';
-import { saveDischargeLog } from '../services/healthService';
-import { saveSymptomsLog } from '../services/healthService';
-import { saveSleepLog } from '../services/healthService';
-import { getPeriodLogs } from '../services/healthService';
+import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { GlassCardView } from '../../components/SharedComponents';
+import { saveMoodLog } from '../../services/healthService';
+import { savePeriodLog } from '../../services/healthService';
+import { saveDischargeLog } from '../../services/healthService';
+import { saveSymptomsLog } from '../../services/healthService';
+import { saveSleepLog } from '../../services/healthService';
+import { getPeriodLogs } from '../../services/healthService';
 
 export interface HealthLogDraft {
   createdAt: string;

@@ -3,20 +3,20 @@ import { View, StatusBar, StyleSheet, SafeAreaView, BackHandler, ActivityIndicat
 import { Colors } from './src/theme/theme';
 import TabBar, { TabName } from './src/navigation/TabBar';
 import { ScrollVisibilityProvider, useScrollVisibility } from './src/navigation/ScrollVisibilityContext';
-import DashboardScreen from './src/screens/DashboardScreen';
-import HealthScreen from './src/screens/HealthScreen';
-import FitnessScreen from './src/screens/FitnessScreen';
-import CalorieScreen from './src/screens/CalorieScreen';
-import AIAdvisorScreen from './src/screens/AIAdvisorScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
-import NotificationsScreen from './src/screens/NotificationsScreen';
-import ProfileSetupScreen from './src/screens/ProfileSetupScreen';
-import WorkoutLogScreen from './src/screens/WorkoutLogScreen';
-import HealthLogScreen, { HealthLogDraft } from './src/screens/HealthLogScreen';
+import DashboardScreen from './src/screens/home/DashboardScreen';
+import HealthScreen from './src/screens/health/HealthScreen';
+import FitnessScreen from './src/screens/fitness/FitnessScreen';
+import CalorieScreen from './src/screens/diet/CalorieScreen';
+import AIAdvisorScreen from './src/screens/ai/AIAdvisorScreen';
+import ProfileScreen from './src/screens/profile/ProfileScreen';
+import NotificationsScreen from './src/screens/notifications/NotificationsScreen';
+import ProfileSetupScreen from './src/screens/profile/ProfileSetupScreen';
+import WorkoutLogScreen from './src/screens/fitness/WorkoutLogScreen';
+import HealthLogScreen, { HealthLogDraft } from './src/screens/health/HealthLogScreen';
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import OnboardingScreen from './src/screens/OnboardingScreen';
+import OnboardingScreen from './src/screens/auth/OnboardingScreen';
 import { AuthStack } from './src/navigation/AuthStack';
 const Stack = createNativeStackNavigator();
 
@@ -243,6 +243,7 @@ function AppShell() {
                   onProfilePress={openProfile}
                   onNotificationsPress={openNotifications}
                   onCompleteProfile={openProfileSetup}
+                  navigateToTab={navigateToTab}
                 />
               )}
               {tab === 'Health' && (

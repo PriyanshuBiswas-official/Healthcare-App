@@ -6,6 +6,7 @@ import type {
   DayMealsResponse,
   DayWaterResponse,
   WeeklyTrendDay,
+  WaterChallenge,
 } from '../types/diet';
 
 function authHeaders(token: string) {
@@ -90,6 +91,15 @@ export async function deleteWaterLog(token: string, id: number): Promise<void> {
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.error || 'Failed to delete water log');
+}
+
+export async function getWaterChallenge(token: string, days: number = 5): Promise<WaterChallenge> {
+  const res = await fetch(`${API_BASE_URL}/api/diet/water/challenge?days=${days}`, {
+    headers: authHeaders(token),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch water challenge');
+  return json.data;
 }
 
 // ── Goals ─────────────────────────────────────────────────

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { supabase } from '../lib/supabase';
-import { GoogleSignin } from '../lib/googleSignin';
+import { supabase } from '../../lib/supabase';
+import { GoogleSignin } from '../../lib/googleSignin';
 
 type AuthStackParamList = {
   Onboarding: undefined;
