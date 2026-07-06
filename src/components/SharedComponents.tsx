@@ -16,7 +16,7 @@ interface GlassCardProps {
   accentColor?: string;
 }
 
-export const GlassCardView: React.FC<GlassCardProps> = ({
+export const GlassCardView: React.FC<GlassCardProps> = React.memo(({
   children,
   style,
   accentColor,
@@ -29,14 +29,14 @@ export const GlassCardView: React.FC<GlassCardProps> = ({
     ]}>
     {children}
   </View>
-);
+));
 
 // ─── Profile Avatar Button ───────────────────────────────────────────────────
 export const ProfileAvatarButton: React.FC<{
   onPress?: () => void;
   userName?: string;
   avatarUrl?: string;
-}> = ({ onPress, userName, avatarUrl }) => (
+}> = React.memo(({ onPress, userName, avatarUrl }) => (
   <TouchableOpacity style={profileAvatarStyles.avatar} onPress={onPress} activeOpacity={0.8}>
     {avatarUrl ? (
       <Image source={{ uri: avatarUrl }} style={profileAvatarStyles.avatarImage} />
@@ -46,10 +46,10 @@ export const ProfileAvatarButton: React.FC<{
       </Text>
     )}
   </TouchableOpacity>
-);
+));
 
 // ─── Notification Icon Button ────────────────────────────────────────────────
-export const NotificationIconButton: React.FC<{ onPress?: () => void; unreadCount?: number }> = ({
+export const NotificationIconButton: React.FC<{ onPress?: () => void; unreadCount?: number }> = React.memo(({
   onPress,
   unreadCount = 0,
 }) => (
@@ -61,7 +61,7 @@ export const NotificationIconButton: React.FC<{ onPress?: () => void; unreadCoun
       </View>
     )}
   </TouchableOpacity>
-);
+));
 
 // ─── Section Header ──────────────────────────────────────────────────────────
 interface SectionHeaderProps {
@@ -71,7 +71,7 @@ interface SectionHeaderProps {
   onAction?: () => void;
 }
 
-export const SectionHeader: React.FC<SectionHeaderProps> = ({
+export const SectionHeader: React.FC<SectionHeaderProps> = React.memo(({
   title,
   subtitle,
   action,
@@ -90,7 +90,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       </TouchableOpacity>
     )}
   </View>
-);
+));
 
 // ─── Stat Pill ───────────────────────────────────────────────────────────────
 interface StatPillProps {
@@ -99,12 +99,12 @@ interface StatPillProps {
   color: string;
 }
 
-export const StatPill: React.FC<StatPillProps> = ({ label, value, color }) => (
+export const StatPill: React.FC<StatPillProps> = React.memo(({ label, value, color }) => (
   <View style={[sharedStyles.statPill, { borderColor: color + '50', backgroundColor: color + '18' }]}>
     <Text style={[sharedStyles.statValue, { color }]}>{value}</Text>
     <Text style={sharedStyles.statLabel}>{label}</Text>
   </View>
-);
+));
 
 // ─── Progress Bar ────────────────────────────────────────────────────────────
 interface ProgressBarProps {
@@ -114,7 +114,7 @@ interface ProgressBarProps {
   style?: object;
 }
 
-export const ProgressBar: React.FC<ProgressBarProps> = ({
+export const ProgressBar: React.FC<ProgressBarProps> = React.memo(({
   progress,
   color,
   height = 6,
@@ -133,7 +133,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       ]}
     />
   </View>
-);
+));
 
 // ─── Circular Ring ───────────────────────────────────────────────────────────
 interface RingProps {
@@ -146,7 +146,7 @@ interface RingProps {
   unit?: string;
 }
 
-export const CircularRing: React.FC<RingProps> = ({
+export const CircularRing: React.FC<RingProps> = React.memo(({
   size,
   strokeWidth,
   progress,
@@ -190,7 +190,7 @@ export const CircularRing: React.FC<RingProps> = ({
       ]} />
     </View>
   );
-};
+});
 
 // ─── Chip / Tag ──────────────────────────────────────────────────────────────
 interface ChipProps {
@@ -201,7 +201,7 @@ interface ChipProps {
   icon?: string;
 }
 
-export const Chip: React.FC<ChipProps> = ({
+export const Chip: React.FC<ChipProps> = React.memo(({
   label,
   selected,
   color = Colors.teal,
@@ -218,7 +218,7 @@ export const Chip: React.FC<ChipProps> = ({
     {icon && <Text style={chipStyles.icon}>{icon}</Text>}
     <Text style={[chipStyles.label, selected && { color }]}>{label}</Text>
   </TouchableOpacity>
-);
+));
 
 // ─── Primary Button ──────────────────────────────────────────────────────────
 interface PrimaryButtonProps extends TouchableOpacityProps {
@@ -227,7 +227,7 @@ interface PrimaryButtonProps extends TouchableOpacityProps {
   icon?: string;
 }
 
-export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
+export const PrimaryButton: React.FC<PrimaryButtonProps> = React.memo(({
   label,
   color = Colors.teal,
   icon,
@@ -241,7 +241,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
     {icon && <Text style={btnStyles.icon}>{icon}</Text>}
     <Text style={btnStyles.label}>{label}</Text>
   </TouchableOpacity>
-);
+));
 
 // ─── Shared Styles ───────────────────────────────────────────────────────────
 const sharedStyles = StyleSheet.create({

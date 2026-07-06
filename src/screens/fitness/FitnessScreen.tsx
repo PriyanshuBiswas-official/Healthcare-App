@@ -11,15 +11,17 @@ import {
   TextInput,
   Platform,
   Alert,
+  RefreshControl,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, Shadows } from '../theme/theme';
-import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../components/SharedComponents';
-import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
-import { TabName } from '../navigation/TabBar';
-import { useAuth } from '../providers/AuthProvider';
-import * as activityService from '../services/activityService';
-import type { ActivitySummary, TodayExercise, WeeklyDay, WeeklyStats, PersonalRecord, ActivityGoal } from '../types/activity';
-import type { PlanDayInput } from '../services/activityService';
+import Svg, { Circle } from 'react-native-svg';
+import { Colors, Typography, Spacing, Radius, Shadows } from '../../theme/theme';
+import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../../components/SharedComponents';
+import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
+import { TabName } from '../../navigation/TabBar';
+import { useAuth } from '../../providers/AuthProvider';
+import * as activityService from '../../services/activityService';
+import type { ActivitySummary, TodayExercise, WeeklyDay, WeeklyStats, PersonalRecord, ActivityGoal } from '../../types/activity';
+import type { PlanDayInput } from '../../services/activityService';
 
 const { width } = Dimensions.get('window');
 
@@ -91,10 +93,6 @@ function DailyProgressCard({ summary, goal, onLogActivity }: { summary: Activity
   const exerciseProgress = summary && exerciseTarget > 0 ? Math.min(summary.exercise_minutes / exerciseTarget, 1) : 0;
   const stepsProgress = summary && stepsTarget > 0 ? Math.min(summary.steps / stepsTarget, 1) : 0;
 
-  const ringScore = burnTarget > 0 || exerciseTarget > 0 || stepsTarget > 0
-    ? Math.round((burnProgress + exerciseProgress + stepsProgress) / 3 * 100)
-    : 0;
-
   const rings = [
     { label: 'Burn', current: summary?.calories_burned ?? 0, target: burnTarget, unit: 'kcal', color: Colors.pink, progress: burnProgress },
     { label: 'Exercise', current: summary?.exercise_minutes ?? 0, target: exerciseTarget, unit: 'min', color: Colors.purple, progress: exerciseProgress },
@@ -111,12 +109,55 @@ function DailyProgressCard({ summary, goal, onLogActivity }: { summary: Activity
       </View>
       <View style={styles.ringsRow}>
         <View style={styles.ringsVisual}>
-          <View style={[styles.ringOuter, { borderColor: Colors.pink + '40' }]}>
-            <View style={[styles.ringMid, { borderColor: Colors.purple + '50' }]}>
-              <View style={[styles.ringInner, { borderColor: Colors.teal + '60' }]}>
-                <Text style={styles.ringScore}>{ringScore}</Text>
-              </View>
-            </View>
+          <View style={styles.ringsSvgWrap}>
+            {(() => {
+              const size = 110;
+              const cx = size / 2;
+              const cy = size / 2;
+              const outerR = 46;
+              const midR = 33;
+              const innerR = 21;
+              const outerStroke = 12;
+              const midStroke = 10;
+              const innerStroke = 8;
+
+              const outerCirc = 2 * Math.PI * outerR;
+              const midCirc = 2 * Math.PI * midR;
+              const innerCirc = 2 * Math.PI * innerR;
+              const minDot = 2;
+
+              return (
+                <Svg width={size} height={size}>
+                  <Circle cx={cx} cy={cy} r={outerR} stroke={Colors.pink + '30'} strokeWidth={outerStroke} fill="none" />
+                  <Circle
+                    cx={cx} cy={cy} r={outerR}
+                    stroke={Colors.pink} strokeWidth={outerStroke} fill="none"
+                    strokeDasharray={outerCirc}
+                    strokeDashoffset={outerCirc - Math.max(burnProgress, minDot / outerCirc) * outerCirc}
+                    strokeLinecap="round"
+                    transform={`rotate(-90 ${cx} ${cy})`}
+                  />
+                  <Circle cx={cx} cy={cy} r={midR} stroke={Colors.purple + '30'} strokeWidth={midStroke} fill="none" />
+                  <Circle
+                    cx={cx} cy={cy} r={midR}
+                    stroke={Colors.purple} strokeWidth={midStroke} fill="none"
+                    strokeDasharray={midCirc}
+                    strokeDashoffset={midCirc - Math.max(exerciseProgress, minDot / midCirc) * midCirc}
+                    strokeLinecap="round"
+                    transform={`rotate(-90 ${cx} ${cy})`}
+                  />
+                  <Circle cx={cx} cy={cy} r={innerR} stroke={Colors.teal + '30'} strokeWidth={innerStroke} fill="none" />
+                  <Circle
+                    cx={cx} cy={cy} r={innerR}
+                    stroke={Colors.teal} strokeWidth={innerStroke} fill="none"
+                    strokeDasharray={innerCirc}
+                    strokeDashoffset={innerCirc - Math.max(stepsProgress, minDot / innerCirc) * innerCirc}
+                    strokeLinecap="round"
+                    transform={`rotate(-90 ${cx} ${cy})`}
+                  />
+                </Svg>
+              );
+            })()}
           </View>
         </View>
         <View style={styles.ringsMetrics}>
@@ -474,6 +515,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   const [prs, setPrs] = useState<PersonalRecord[]>([]);
   const [activityGoal, setActivityGoal] = useState<ActivityGoal | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // ── Plan setup modal state ─────────────────────────────────
   const [planModalVisible, setPlanModalVisible] = useState(false);
@@ -545,6 +587,32 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     } finally {
       setLoading(false);
     }
+  }, [session?.access_token, todayStr]);
+
+  const handleRefresh = useCallback(async () => {
+    if (!session?.access_token) return;
+    setRefreshing(true);
+    const [summaryRes, workoutRes, weeklyRes, prsRes, goalRes] = await Promise.allSettled([
+      activityService.getTodaySummary(session.access_token, todayStr),
+      activityService.getTodayWorkout(session.access_token, todayStr),
+      activityService.getWeeklyStats(session.access_token, todayStr),
+      activityService.getPersonalRecords(session.access_token),
+      activityService.getActivityGoal(session.access_token),
+    ]);
+    if (summaryRes.status === 'fulfilled') setSummary(summaryRes.value);
+    if (workoutRes.status === 'fulfilled') {
+      setExercises(workoutRes.value.exercises);
+      setDayName(workoutRes.value.day_name);
+      setPlanName(workoutRes.value.plan_name);
+      setPlanDayId(workoutRes.value.plan_day_id);
+    }
+    if (weeklyRes.status === 'fulfilled') {
+      setWeeklyDays(weeklyRes.value.days);
+      setWeeklyStats(weeklyRes.value.stats);
+    }
+    if (prsRes.status === 'fulfilled') setPrs(prsRes.value);
+    if (goalRes.status === 'fulfilled') setActivityGoal(goalRes.value);
+    setRefreshing(false);
   }, [session?.access_token, todayStr]);
 
   useEffect(() => {
@@ -764,7 +832,8 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
         onScroll={onScroll}
-        scrollEventThrottle={16}>
+        scrollEventThrottle={16}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[Colors.teal, Colors.pink]} tintColor={Colors.teal} progressBackgroundColor={Colors.bgCard} />}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.dateText}>{formatDateHeader(today)}</Text>
@@ -868,7 +937,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       </ScrollView>
 
       {/* ── Plan Setup Modal ───────────────────────────────── */}
-      <Modal visible={planModalVisible} animationType="slide" transparent>
+      {planModalVisible && <Modal visible={planModalVisible} animationType="slide" transparent>
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setPlanModalVisible(false)}
@@ -1033,10 +1102,10 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         )}
           </TouchableOpacity>
         </TouchableOpacity>
-      </Modal>
+      </Modal>}
 
       {/* ── Add Exercise Modal ───────────────────────────────── */}
-      <Modal visible={addExModalVisible} animationType="slide" transparent>
+      {addExModalVisible && <Modal visible={addExModalVisible} animationType="slide" transparent>
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setAddExModalVisible(false)}
@@ -1096,10 +1165,10 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
             </View>
           </TouchableOpacity>
         </TouchableOpacity>
-      </Modal>
+      </Modal>}
 
       {/* ── Edit Exercise Modal ───────────────────────────────── */}
-      <Modal visible={editExModalVisible} animationType="slide" transparent>
+      {editExModalVisible && <Modal visible={editExModalVisible} animationType="slide" transparent>
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setEditExModalVisible(false)}
@@ -1181,7 +1250,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
             </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>
-      </Modal>
+      </Modal>}
 
       {/* ── Log Activity Modal ───────────────────────────────── */}
       <Modal visible={logActivityVisible} animationType="slide" transparent>
@@ -1402,36 +1471,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   ringsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.base },
-  ringsVisual: { marginRight: Spacing.lg },
-  ringOuter: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringMid: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    borderWidth: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringInner: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    borderWidth: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringScore: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.extraBold,
-    color: Colors.textPrimary,
-  },
+  ringsVisual: { marginRight: Spacing.lg, width: 110, height: 110 },
+  ringsSvgWrap: { width: 110, height: 110 },
   ringsMetrics: { flex: 1, gap: Spacing.sm },
   ringMetric: { marginBottom: Spacing.xs },
   ringMetricHeader: {
@@ -1744,7 +1785,7 @@ const styles = StyleSheet.create({
     fontWeight: Typography.bold,
   },
   // Modal styles
-  modalOverlay: { flex: 1, justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: {
     backgroundColor: Colors.bgCardSolid,
     borderTopLeftRadius: Radius.xl,

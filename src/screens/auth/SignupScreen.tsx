@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { supabase } from '../lib/supabase';
-import { GoogleSignin } from '../lib/googleSignin';
-import { API_BASE_URL } from '../config/api';
-import { useAuth } from '../providers/AuthProvider';
+import { supabase } from '../../lib/supabase';
+import { GoogleSignin } from '../../lib/googleSignin';
+import { API_BASE_URL } from '../../config/api';
+import { useAuth } from '../../providers/AuthProvider';
 
 type AuthStackParamList = {
   Welcome: undefined;

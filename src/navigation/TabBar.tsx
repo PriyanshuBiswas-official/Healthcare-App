@@ -19,7 +19,7 @@ const TABS: { name: TabName; icon: string; activeColor: string }[] = [
   { name: 'Activity', icon: 'run-fast', activeColor: Colors.teal },
 ];
 
-export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
+function TabBar({ activeTab, onTabChange }: TabBarProps) {
   const { visible } = useScrollVisibility();
   const anim = React.useRef(new Animated.Value(0)).current;
 
@@ -29,7 +29,6 @@ export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
 
   const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 80] });
   const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.0] });
-  const activeHighlight = Colors.teal;
 
   return (
     <Animated.View style={[styles.container, styles.floating, { transform: [{ translateY }], opacity }]}>
@@ -48,12 +47,12 @@ export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
                 <MaterialCommunityIcons
                   name={tab.icon}
                   size={34}
-                  color={isActive ? activeHighlight : Colors.text}
+                  color={isActive ? Colors.teal : Colors.text}
                   style={styles.icon}
                 />
               </View>
               {isActive && (
-                <View style={[styles.activeIndicator, { backgroundColor: activeHighlight, shadowColor: activeHighlight }]} />
+                <View style={[styles.activeIndicator, { backgroundColor: Colors.teal, shadowColor: Colors.teal }]} />
               )}
             </TouchableOpacity>
           );
@@ -137,3 +136,5 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 });
+
+export default React.memo(TabBar);

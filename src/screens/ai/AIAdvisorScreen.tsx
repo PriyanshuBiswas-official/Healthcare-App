@@ -10,12 +10,12 @@ import {
   BackHandler,
   Animated,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../theme/theme';
-import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton } from '../components/SharedComponents';
-import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
-import { TabName } from '../navigation/TabBar';
+import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton } from '../../components/SharedComponents';
+import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
+import { TabName } from '../../navigation/TabBar';
 import AIChatView, { useChatState } from './AIChatView';
-import { useAuth } from '../providers/AuthProvider';
+import { useAuth } from '../../providers/AuthProvider';
 
 const APPOINTMENT_SLOTS = [
   { time: '10:00 AM', date: 'Thu, Jun 12', doctor: 'Dr. Priya Sharma', spec: 'Gynecologist', available: true },

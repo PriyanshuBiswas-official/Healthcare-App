@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,13 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  BackHandler,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Colors, Typography, Spacing, Radius } from '../theme/theme';
-import { useAuth } from '../providers/AuthProvider';
-import { API_BASE_URL } from '../config/api';
+import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { useAuth } from '../../providers/AuthProvider';
+import { API_BASE_URL } from '../../config/api';
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -135,6 +136,20 @@ export default function OnboardingScreen() {
       setStep(step - 1);
     }
   };
+
+  // ── Android Back Button ──────────────────────────────────────
+  useEffect(() => {
+    const onBackPress = () => {
+      if (step > 1) {
+        prevStep();
+        return true;
+      }
+      // Step 1: let React Navigation handle it (pop screen)
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [step]);
 
   const getOnboardingData = () => {
     const formattedDob = `${dobYear}-${dobMonth.padStart(2, '0')}-${dobDay.padStart(2, '0')}`;

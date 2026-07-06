@@ -6,15 +6,16 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../theme/theme';
+import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import {
   GlassCardView,
   SectionHeader,
   ProfileAvatarButton,
   NotificationIconButton,
-} from '../components/SharedComponents';
-import { useScrollVisibility } from '../navigation/ScrollVisibilityContext';
+} from '../../components/SharedComponents';
+import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import {
   InnerTabBar,
   HormoneRangeBar,
@@ -25,9 +26,9 @@ import {
   PreventiveCareSection,
   AIHealthInsightsSection,
 } from './HealthCommonSections';
-import { useAuth } from '../providers/AuthProvider';
-import { getSleepLogs, getMoodLogs } from '../services/healthService';
-import type { SleepLog, MoodLog } from '../types/health';
+import { useAuth } from '../../providers/AuthProvider';
+import { getSleepLogs, getMoodLogs } from '../../services/healthService';
+import type { SleepLog, MoodLog } from '../../types/health';
 
 const { width } = Dimensions.get('window');
 
@@ -45,6 +46,7 @@ export default function HealthScreenMale({
   const [activeTab, setActiveTab] = useState('Overview');
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
   const [moodLogs, setMoodLogs] = useState<MoodLog[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   const TABS = ['Overview', 'Hormones', 'Vitals'];
@@ -62,6 +64,17 @@ export default function HealthScreenMale({
     } catch {}
   }, [session?.access_token]);
 
+  const handleRefresh = useCallback(async () => {
+    const token = session?.access_token;
+    if (!token) return;
+    setRefreshing(true);
+    const sleeps = await getSleepLogs(token).catch(() => null);
+    const moods = await getMoodLogs(token).catch(() => null);
+    if (sleeps) setSleepLogs(sleeps);
+    if (moods) setMoodLogs(moods);
+    setRefreshing(false);
+  }, [session?.access_token]);
+
   useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => {
@@ -75,7 +88,8 @@ export default function HealthScreenMale({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scroll}
         onScroll={onScroll}
-        scrollEventThrottle={16}>
+        scrollEventThrottle={16}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[Colors.teal, Colors.pink]} tintColor={Colors.teal} progressBackgroundColor={Colors.bgCard} />}>
 
         <View style={s.header}>
           <Text style={s.title}>Your Health</Text>

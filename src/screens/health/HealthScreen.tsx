@@ -1,7 +1,7 @@
 import React from 'react';
 import HealthScreenFemale from './HealthScreenFemale';
 import HealthScreenMale from './HealthScreenMale';
-import { useAuth } from '../providers/AuthProvider';
+import { useAuth } from '../../providers/AuthProvider';
 import { HealthLogDraft } from './HealthLogScreen';
 
 // ─── Health Screen Wrapper ───────────────────────────────────────────────────

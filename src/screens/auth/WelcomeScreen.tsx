@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Colors, Typography, Spacing, Radius } from '../theme/theme';
+import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 
 type AuthStackParamList = {
   Welcome: undefined;
