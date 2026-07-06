@@ -16,6 +16,7 @@ import HealthLogScreen, { HealthLogDraft } from './src/screens/health/HealthLogS
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import OnboardingScreen from './src/screens/auth/OnboardingScreen';
 import { AuthStack } from './src/navigation/AuthStack';
 const Stack = createNativeStackNavigator();
@@ -194,6 +195,16 @@ function AppShell() {
     setForceHidden(OVERLAY_TABS.includes(state.activeTab));
   }, [state.activeTab, setForceHidden]);
 
+  // ── Status bar color per screen ────────────────────────────────
+
+  useEffect(() => {
+    if (state.activeTab === 'Home') {
+      StatusBar.setBackgroundColor(Colors.bgHero, false);
+    } else {
+      StatusBar.setBackgroundColor(Colors.bg, false);
+    }
+  }, [state.activeTab]);
+
   // ── BackHandler (single stable listener using ref) ────────────
 
   useEffect(() => {
@@ -355,18 +366,20 @@ const RootComponent = () => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <View style={styles.root}>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <View style={styles.root}>
         <StatusBar
           barStyle="light-content"
-          backgroundColor={Colors.bg}
+          backgroundColor={Colors.bgHero}
           translucent={false}
         />
-        <SafeAreaView style={styles.safeArea}>
-          <RootComponent />
-        </SafeAreaView>
-      </View>
-    </AuthProvider>
+          <SafeAreaView style={styles.safeArea}>
+            <RootComponent />
+          </SafeAreaView>
+        </View>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 
@@ -377,7 +390,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.bg,
+    backgroundColor: Colors.bgHero,
   },
   screenContainer: {
     flex: 1,

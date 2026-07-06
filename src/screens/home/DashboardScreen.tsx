@@ -11,12 +11,17 @@ import {
   Dimensions,
   ActivityIndicator,
   RefreshControl,
+  StatusBar,
+  PanResponder,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
 import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import ProfileCompletionBanner from '../../components/ProfileCompletionBanner';
 import { useAuth } from '../../providers/AuthProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg';
 import { SleepTrackerSection, VitalsDashboardSection } from '../health/HealthCommonSections';
 import { getSleepLogs, getWeightLogs, saveWeightLog } from '../../services/healthService';
@@ -117,11 +122,91 @@ const CompactRing = ({ size, progress, color, children }: any) => {
 
 export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void }) {
   const { onScroll } = useScrollVisibility();
-  const { user, session, profileCompletion } = useAuth();
+  const { user, session, profileCompletion, gender } = useAuth();
+  const insets = useSafeAreaInsets();
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+  const heroHeightRef = useRef(0);
   
+  const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date>(new Date());
+  const [calendarCurrentMonth, setCalendarCurrentMonth] = useState<Date>(new Date());
+  const [calendarExpanded, setCalendarExpanded] = useState<boolean>(true);
+
+  // Swipe gesture to change months
+  const calendarSwipe = useRef({ startX: 0 }).current;
+  const calendarPanResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 20 && Math.abs(g.dx) > Math.abs(g.dy),
+      onPanResponderGrant: (_, g) => { calendarSwipe.startX = g.x0; },
+      onPanResponderRelease: (_, g) => {
+        const dx = g.dx;
+        if (Math.abs(dx) > 50) {
+          const direction = dx < 0 ? 1 : -1;
+          setCalendarCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + direction, 1));
+        }
+      },
+    })
+  ).current;
+
+  // Dynamic status bar color on scroll
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    onScroll(e);
+    const y = e.nativeEvent.contentOffset.y;
+    if (y >= heroHeightRef.current - 80) {
+      StatusBar.setBackgroundColor(Colors.bg, false);
+    } else {
+      StatusBar.setBackgroundColor(Colors.bgHero, false);
+    }
+  }, [onScroll]);
+
+  const getDaysInMonth = useCallback((date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const numDays = new Date(year, month + 1, 0).getDate();
+    
+    const days = [];
+    const prevNumDays = new Date(year, month, 0).getDate();
+    
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      days.push({
+        date: new Date(year, month - 1, prevNumDays - i),
+        isCurrentMonth: false,
+      });
+    }
+    for (let i = 1; i <= numDays; i++) {
+      days.push({
+        date: new Date(year, month, i),
+        isCurrentMonth: true,
+      });
+    }
+    const remaining = 7 - (days.length % 7);
+    if (remaining < 7) {
+      for (let i = 1; i <= remaining; i++) {
+        days.push({
+          date: new Date(year, month + 1, i),
+          isCurrentMonth: false,
+        });
+      }
+    }
+    return days;
+  }, []);
+
+  const getWeekDays = useCallback((date: Date) => {
+    const currentDay = date.getDay();
+    const sunday = new Date(date.getFullYear(), date.getMonth(), date.getDate() - currentDay);
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() + i);
+      days.push({
+        date: d,
+        isCurrentMonth: d.getMonth() === date.getMonth(),
+      });
+    }
+    return days;
+  }, []);
+
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
   const [weightLogs, setWeightLogs] = useState<WeightEntry[]>([]);
@@ -343,18 +428,23 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
   return (
     <View style={styles.root}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}
+      {/* ─── SCROLLABLE CONTENT ─── */}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={handleScroll} scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[Colors.teal, Colors.pink]} tintColor={Colors.teal} progressBackgroundColor={Colors.bgCard} />}>
-        {/* SECTION 1: HEADER */}
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <View style={styles.header}>
-            <View style={styles.headerTextContainer}>
-              <Text style={styles.headerDate}>{todayDateStr}</Text>
-              <Text style={styles.greeting} numberOfLines={1} ellipsizeMode="tail">
+
+        {/* ─── HERO SURFACE — extends from the very top ─── */}
+        <Animated.View style={[styles.heroSurface, { marginTop: -insets.top, paddingTop: insets.top, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
+          onLayout={(e) => { heroHeightRef.current = e.nativeEvent.layout.height; }}>
+
+          {/* ── Greeting + Notifications ── */}
+          <View style={styles.heroTopBar}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.heroDate}>{todayDateStr}</Text>
+              <Text style={styles.heroGreeting} numberOfLines={1}>
                 Hi, {user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'} 👋
               </Text>
             </View>
-            <View style={styles.headerActions}>
+            <View style={styles.heroTopBarActions}>
               <NotificationIconButton onPress={onNotificationsPress} />
               <ProfileAvatarButton
                 onPress={onProfilePress}
@@ -363,6 +453,48 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               />
             </View>
           </View>
+
+          {/* ── Health Score + Overview ── */}
+          <View style={styles.heroOverviewRow}>
+            <View style={styles.heroScoreArea}>
+              <HeroScoreRing score={86} />
+            </View>
+            <View style={styles.heroOverviewText}>
+              <Text style={styles.heroOverviewLabel}>Health Record Overview</Text>
+              <Text style={styles.heroOverviewSub}>Showing data from {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</Text>
+              <TouchableOpacity style={styles.heroReportBtn}>
+                <Text style={styles.heroReportBtnText}>Full Report →</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* ── AI Summary ── */}
+          <View style={styles.heroAiInset}>
+            <View style={styles.heroAiHeader}>
+              <View style={styles.heroAiTitleRow}>
+                <Text style={styles.heroAiSparkle}>✦</Text>
+                <Text style={styles.heroAiTitle}>AI HEALTH SUMMARY</Text>
+              </View>
+              <TouchableOpacity style={styles.heroAiChatBtn}>
+                <Text style={styles.heroAiChatText}>💬 Chat</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.heroAiText}>
+              Vitals stable. Sleep +12% vs last week. Light activity advised today — cortisol elevated from yesterday's session.
+            </Text>
+            <View style={styles.heroAiTagRow}>
+              {[
+                { label: '● Vitals stable', color: Colors.success },
+                { label: '● Sleep +12%',    color: Colors.purple },
+                { label: '● Rest advised',  color: Colors.amber },
+              ].map((tag, i) => (
+                <View key={i} style={[styles.heroAiTag, { backgroundColor: tag.color + '15', borderColor: tag.color + '40' }]}>
+                  <Text style={[styles.heroAiTagText, { color: tag.color }]}>{tag.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
         </Animated.View>
 
         {showBanner && (
@@ -373,138 +505,258 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           />
         )}
 
-        {/* SECTION 2: HEALTH SCORE HERO CARD */}
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <GlassCardView style={styles.heroCard}>
-            <View style={styles.heroTopRow}>
-              <View style={styles.heroLeft}>
-                <HeroScoreRing score={86} />
-              </View>
-              <View style={styles.heroRight}>
-                <Text style={styles.heroTitle}>Great job! 🎉</Text>
-                <Text style={styles.heroSub}>You're making healthier choices every day.</Text>
-                <TouchableOpacity style={styles.heroBtn}>
-                  <Text style={styles.heroBtnText}>View Full Report →</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            
-            <View style={styles.heroPillRow}>
-              {[
-                { icon: '🔥', text: 'Calories' },
-                { icon: '💧', text: 'Water' },
-                { icon: '💪', text: 'Workout' },
-                { icon: '🌙', text: 'Sleep' },
-                { icon: '👟', text: 'Steps' },
-              ].map((item, i) => (
-                <View key={i} style={styles.heroPill}>
-                  <Text style={styles.heroPillIcon}>{item.icon}</Text>
-                  <Text style={styles.heroPillText}>{item.text}</Text>
-                </View>
-              ))}
-            </View>
 
-            {/* AI HEALTH SUMMARY CONTAINER */}
-            <View style={styles.aiSummaryBox}>
-              <View style={styles.aiSummaryHeader}>
-                <View style={styles.aiSummaryTitleWrap}>
-                  <Text style={styles.aiSummarySparkle}>✦</Text>
-                  <Text style={styles.aiSummaryTitle}>AI HEALTH SUMMARY</Text>
-                </View>
-                <TouchableOpacity style={styles.aiSummaryChatBtn}>
-                  <Text style={styles.aiSummaryChatText}>💬 Chat with AI</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.aiSummaryText}>
-                Your vitals are stable today. Sleep quality improved +12% vs last week. Cortisol is elevated from yesterday's push session — light activity is advised today.
-              </Text>
-              <View style={styles.aiSummaryTagRow}>
-                <View style={[styles.aiSummaryTag, { backgroundColor: Colors.success + '15', borderColor: Colors.success + '40' }]}>
-                  <Text style={[styles.aiSummaryTagText, { color: Colors.success }]}>● Vitals stable</Text>
-                </View>
-                <View style={[styles.aiSummaryTag, { backgroundColor: Colors.purple + '15', borderColor: Colors.purple + '40' }]}>
-                  <Text style={[styles.aiSummaryTagText, { color: Colors.purple }]}>● Sleep +12%</Text>
-                </View>
-                <View style={[styles.aiSummaryTag, { backgroundColor: Colors.amber + '15', borderColor: Colors.amber + '40' }]}>
-                  <Text style={[styles.aiSummaryTagText, { color: Colors.amber }]}>● Rest day advised</Text>
-                </View>
-              </View>
-            </View>
-          </GlassCardView>
-        </Animated.View>
 
-        {/* SECTION: HEALTH ALERT */}
-        <GlassCardView style={[styles.alertCard, { borderColor: Colors.danger + '44' }]} accentColor={Colors.danger}>
-          <View style={styles.alertHeader}>
-            <Text style={styles.alertIcon}>⚠️</Text>
-            <Text style={styles.alertTitle}>HEALTH ALERT</Text>
+        {/* SECTION: COLLAPSIBLE MONTHLY CALENDAR */}
+        <TouchableOpacity style={styles.calendarSectionHeader} onPress={() => setCalendarExpanded(!calendarExpanded)} activeOpacity={0.7}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.sectionTitle}>Health Calendar</Text>
+            <Text style={styles.sectionSubtitle}>Your schedule at a glance</Text>
           </View>
-          <Text style={styles.alertText}>
-            Dehydration Risk: You've logged 50% less water today compared to your daily average. Try to drink a glass now.
-          </Text>
-        </GlassCardView>
-
-        {/* SECTION: DAILY HEALTH TIMELINE */}
-        <SectionHeader title="Health Timeline" subtitle="Your day at a glance" action="View All" />
-        <GlassCardView style={styles.newTimelineCard}>
-          <View style={styles.newTimelineContainer}>
-            <View style={styles.newTimelineLine} />
-            {[
-              { time: '08:00 AM', title: 'Medication', sub: 'Vitamin D3 1000 IU', icon: '💊', color: Colors.purple, rightText: '✓ Taken', rightType: 'taken' },
-              { time: '09:15 AM', title: 'Water', sub: '400 ml recorded', icon: '💧', color: '#3b82f6', rightText: '400 ml', rightType: 'value' },
-              { time: '10:00 AM', title: 'Breakfast', sub: 'Oats with fruits, Almonds', icon: '🍽️', color: Colors.amber, rightText: '450 kcal', rightType: 'value' },
-              { time: '12:00 PM', title: 'Steps', sub: '2,350 steps', icon: '👟', color: Colors.success, rightText: '2,350', rightType: 'value' },
-              { time: '04:30 PM', title: 'Workout', sub: 'Strength Training', icon: '💪', color: Colors.pink, rightText: '45 min', rightType: 'value' },
-              { time: '08:00 PM', title: 'Medication (Upcoming)', sub: 'Metformin 500 mg', icon: '💊', color: Colors.amber, rightText: `${getNextDoseHours(20)}h ${60 - new Date().getMinutes()}m`, rightType: 'countdown' },
-              { time: '10:30 PM', title: 'Sleep Goal', sub: 'Target: 8 hrs', icon: '🌙', color: Colors.purple, rightText: 'Upcoming', rightType: 'upcoming' },
-            ].map((item, index) => (
-              <View key={index} style={styles.newTimelineRow}>
-                {/* Left circular icon */}
-                <View style={[styles.newTimelineIconBg, { backgroundColor: item.color + '15', borderColor: item.color + '30' }]}>
-                  <Text style={styles.newTimelineCardIcon}>{item.icon}</Text>
-                </View>
-                
-                {/* Vertical line node */}
-                <View style={styles.newTimelineNodeContainer}>
-                  <View style={[styles.newTimelineNode, { backgroundColor: item.color }]} />
-                </View>
-
-                {/* Content */}
-                <View style={styles.newTimelineContent}>
-                  <Text style={[styles.newTimelineTime, { color: item.color }]}>{item.time}</Text>
-                  <Text style={styles.newTimelineTitle}>{item.title}</Text>
-                  <Text style={styles.newTimelineSub}>{item.sub}</Text>
-                </View>
-
-                {/* Right side Badge */}
-                <View style={styles.newTimelineRight}>
-                  {item.rightType === 'taken' && (
-                    <View style={styles.badgeTaken}>
-                      <Text style={styles.badgeTakenText}>{item.rightText}</Text>
-                    </View>
-                  )}
-                  {item.rightType === 'value' && (
-                    <Text style={[styles.badgeValueText, { color: item.color }]}>{item.rightText}</Text>
-                  )}
-                  {item.rightType === 'countdown' && (
-                    <View style={styles.badgeCountdown}>
-                      <Text style={styles.badgeCountdownText}>🕒 {item.rightText}</Text>
-                    </View>
-                  )}
-                  {item.rightType === 'upcoming' && (
-                    <View style={styles.badgeUpcoming}>
-                      <Text style={styles.badgeUpcomingText}>{item.rightText}</Text>
-                    </View>
-                  )}
-                  <Text style={styles.newTimelineChevron}>❯</Text>
-                </View>
-              </View>
-            ))}
+          <View style={styles.calendarTogglePill}>
+            <Text style={styles.calendarToggleLabel}>{calendarExpanded ? 'Week' : 'Month'}</Text>
+            <Text style={styles.calendarToggleChevron}>{calendarExpanded ? '▾' : '▴'}</Text>
           </View>
+        </TouchableOpacity>
+        {(() => {
+          const isSameDay = (d1: Date, d2: Date) => 
+            d1.getFullYear() === d2.getFullYear() &&
+            d1.getMonth() === d2.getMonth() &&
+            d1.getDate() === d2.getDate();
+
+          const today = new Date();
+          const displayedDays = calendarExpanded 
+            ? getDaysInMonth(calendarCurrentMonth) 
+            : getWeekDays(calendarSelectedDate);
+
+          const monthYearString = calendarCurrentMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+          const getEventsForDate = (date: Date, isCurrentMonth: boolean) => {
+            // Hide event indicators/agendas for padding days from other months when expanded
+            if (calendarExpanded && !isCurrentMonth) {
+              return [];
+            }
+
+            const list = [];
+            const dayNum = date.getDate();
+            const monthNum = date.getMonth();
+            const dayOfWeek = date.getDay();
+
+            // Period prediction (predicted cycle: 12th to 16th of current month)
+            if (gender === 'female' && dayNum >= 12 && dayNum <= 16) {
+              list.push({ type: 'period', icon: '🩸', label: 'Menstrual Period Day' });
+            }
+
+            // Doctor visit mock
+            if (dayNum === 7 || (dayNum === 12 && monthNum === 4)) {
+              list.push({ type: 'appointment', icon: '👨‍⚕️', label: 'Doctor Appointment: Dr. Sharma at 04:30 PM' });
+            } else if (dayNum === 22) {
+              list.push({ type: 'appointment', icon: '🦷', label: 'Dentist Checkup at 10:00 AM' });
+            }
+
+            // Workout split schedule
+            if (dayOfWeek === 1 || dayOfWeek === 4) {
+              list.push({ type: 'workout', icon: '💪', label: 'Workout: Push Day Split' });
+            } else if (dayOfWeek === 2 || dayOfWeek === 5) {
+              list.push({ type: 'workout', icon: '🏃‍♂️', label: 'Workout: Pull Day Split' });
+            } else if (dayOfWeek === 3 || dayOfWeek === 6) {
+              list.push({ type: 'workout', icon: '🦵', label: 'Workout: Legs Day Split' });
+            } else {
+              list.push({ type: 'workout', icon: '🧘', label: 'Active Recovery & Stretching' });
+            }
+
+            // Med schedule
+            list.push({ type: 'medication', icon: '💊', label: 'Vitamin D3 (08:00 AM) & Metformin (08:00 PM)' });
+
+            return list;
+          };
+
+          const selectedEvents = getEventsForDate(calendarSelectedDate, true);
+
+          return (
+            <View style={styles.calendarContainer}>
+              {/* Swipeable area */}
+              <View {...calendarPanResponder.panHandlers}>
+                <View style={styles.calendarHeader}>
+                  <View>
+                    <Text style={styles.calendarMonthYear}>
+                      {calendarCurrentMonth.toLocaleString('en-US', { month: 'long' })}
+                    </Text>
+                    <Text style={styles.calendarYearSub}>
+                      {calendarCurrentMonth.getFullYear()}
+                    </Text>
+                  </View>
+
+                  {calendarExpanded && (
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      <TouchableOpacity
+                        style={styles.calendarNavBtn}
+                        onPress={() => {
+                          const prev = new Date(calendarCurrentMonth.getFullYear(), calendarCurrentMonth.getMonth() - 1, 1);
+                          setCalendarCurrentMonth(prev);
+                        }}
+                      >
+                        <Text style={styles.calendarNavBtnText}>‹</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.calendarNavBtn}
+                        onPress={() => {
+                          const next = new Date(calendarCurrentMonth.getFullYear(), calendarCurrentMonth.getMonth() + 1, 1);
+                          setCalendarCurrentMonth(next);
+                        }}
+                      >
+                        <Text style={styles.calendarNavBtnText}>›</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+
+              <View style={styles.calendarWeekdayRow}>
+                {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((day, idx) => (
+                  <Text key={idx} style={styles.calendarWeekdayText}>{day}</Text>
+                ))}
+              </View>
+
+              <View style={styles.calendarGrid}>
+                {displayedDays.map((item, idx) => {
+                  const isSelected = isSameDay(item.date, calendarSelectedDate);
+                  const isTodayDate = isSameDay(item.date, today);
+                  const dayEvents = getEventsForDate(item.date, item.isCurrentMonth);
+
+                  return (
+                    <TouchableOpacity 
+                      key={idx} 
+                      style={styles.calendarDayCell}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setCalendarSelectedDate(item.date);
+                        if (item.date.getMonth() !== calendarCurrentMonth.getMonth()) {
+                          setCalendarCurrentMonth(new Date(item.date.getFullYear(), item.date.getMonth(), 1));
+                        }
+                      }}
+                    >
+                      <View style={[
+                        styles.calendarDayCircle,
+                        isTodayDate && styles.calendarTodayCircle,
+                        isSelected && styles.calendarSelectedCircle,
+                      ]}>
+                        <Text style={[
+                          styles.calendarDayNumber,
+                          !item.isCurrentMonth && styles.calendarOtherMonthNumber,
+                          isSelected && styles.calendarSelectedNumber,
+                        ]}>
+                          {item.date.getDate()}
+                        </Text>
+
+                        {item.isCurrentMonth && (
+                          <View style={styles.calendarIndicatorContainer}>
+                            {dayEvents.slice(0, 3).map((evt, eIdx) => {
+                              let dotColor = Colors.teal;
+                              if (evt.type === 'period') dotColor = Colors.pink;
+                              else if (evt.type === 'appointment') dotColor = '#3b82f6';
+                              else if (evt.type === 'medication') dotColor = Colors.amber;
+                              
+                              return (
+                                <View 
+                                  key={eIdx} 
+                                  style={[styles.calendarDot, { backgroundColor: dotColor }]} 
+                                />
+                              );
+                            })}
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              </View>
+            </View>
+          );
+        })()}
+
+        {/* SECTION: TODAY'S AGENDA */}
+        <SectionHeader
+          title={`Agenda — ${calendarSelectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`}
+        />
+        <GlassCardView style={styles.agendaCard}>
+          {(() => {
+            const isSameDay = (d1: Date, d2: Date) =>
+              d1.getFullYear() === d2.getFullYear() &&
+              d1.getMonth() === d2.getMonth() &&
+              d1.getDate() === d2.getDate();
+
+            const today = new Date();
+            const agendaEvents: { icon: string; label: string; time: string; type: string }[] = [];
+
+            if (gender === 'female') {
+              const periodStart = new Date(today.getFullYear(), today.getMonth(), 3);
+              const daysInCycle = 5;
+              for (let d = 0; d < daysInCycle; d++) {
+                const day = new Date(periodStart);
+                day.setDate(periodStart.getDate() + d);
+                if (isSameDay(day, calendarSelectedDate)) {
+                  agendaEvents.push({ icon: '🩸', label: 'Period Day', time: 'All day', type: 'period' });
+                }
+              }
+            }
+
+            const workoutDays = [1, 3, 5];
+            if (workoutDays.includes(calendarSelectedDate.getDay())) {
+              agendaEvents.push({ icon: '💪', label: 'Workout Day', time: '07:00 AM', type: 'workout' });
+            }
+
+            if (calendarSelectedDate.getDate() % 14 === 0) {
+              agendaEvents.push({ icon: '🩺', label: 'Dr. Sharma — Cardiology', time: '10:30 AM', type: 'appointment' });
+            }
+
+            agendaEvents.push({ icon: '💊', label: 'Vitamin D3 1000 IU', time: '08:00 AM', type: 'medication' });
+            agendaEvents.push({ icon: '💊', label: 'Metformin 500 mg', time: '08:00 PM', type: 'medication' });
+
+            const typeConfig: Record<string, { accentColor: string; badge: string }> = {
+              period:      { accentColor: Colors.pink,   badge: 'Period' },
+              appointment: { accentColor: '#3b82f6',     badge: 'Appointment' },
+              workout:     { accentColor: Colors.teal,   badge: 'Workout' },
+              medication:  { accentColor: Colors.textMuted, badge: 'Medication' },
+            };
+
+            if (agendaEvents.length === 0) {
+              return (
+                <View style={styles.agendaEmpty}>
+                  <Text style={styles.agendaEmptyIcon}>📅</Text>
+                  <Text style={styles.agendaEmptyText}>Nothing scheduled</Text>
+                  <Text style={styles.agendaEmptySubtext}>Enjoy your free day</Text>
+                </View>
+              );
+            }
+
+            return (
+              <View style={{ gap: Spacing.xs }}>
+                {agendaEvents.map((evt, idx) => {
+                  const cfg = typeConfig[evt.type] ?? typeConfig.medication;
+                  return (
+                    <View key={idx} style={styles.agendaEventRow}>
+                      <View style={[styles.agendaEventAccentDot, { backgroundColor: cfg.accentColor }]} />
+                      <View style={styles.agendaEventIconWrap}>
+                        <Text style={styles.agendaEventIcon}>{evt.icon}</Text>
+                      </View>
+                      <View style={styles.agendaEventInfo}>
+                        <Text style={styles.agendaEventLabel}>{evt.label}</Text>
+                        <Text style={styles.agendaEventTime}>{evt.time}</Text>
+                      </View>
+                      <View style={styles.agendaEventBadge}>
+                        <Text style={styles.agendaEventBadgeText}>{cfg.badge}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            );
+          })()}
         </GlassCardView>
 
         {/* SECTION: REDESIGNED QUICK ACTIONS */}
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <SectionHeader title="Quick Actions" />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionScroll}>
           {[
             { icon: '🍽️', label: 'Log Meal', desc: 'Record calories', color: Colors.amber, onPress: () => setShowMealModal(true) },
@@ -525,6 +777,63 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        {/* SECTION: DAILY HEALTH TIMELINE */}
+        <SectionHeader title="Health Timeline" subtitle="Your day at a glance" action="View All" />
+        <View style={styles.newTimelineContainer}>
+          <View style={styles.newTimelineLine} />
+          {[
+            { time: '08:00 AM', title: 'Medication', sub: 'Vitamin D3 1000 IU', icon: '💊', color: Colors.purple, rightText: '✓ Taken', rightType: 'taken' },
+            { time: '09:15 AM', title: 'Water', sub: '400 ml recorded', icon: '💧', color: '#3b82f6', rightText: '400 ml', rightType: 'value' },
+            { time: '10:00 AM', title: 'Breakfast', sub: 'Oats with fruits, Almonds', icon: '🍽️', color: Colors.amber, rightText: '450 kcal', rightType: 'value' },
+            { time: '12:00 PM', title: 'Steps', sub: '2,350 steps', icon: '👟', color: Colors.success, rightText: '2,350', rightType: 'value' },
+            { time: '04:30 PM', title: 'Workout', sub: 'Strength Training', icon: '💪', color: Colors.pink, rightText: '45 min', rightType: 'value' },
+            { time: '08:00 PM', title: 'Medication (Upcoming)', sub: 'Metformin 500 mg', icon: '💊', color: Colors.amber, rightText: `${getNextDoseHours(20)}h ${60 - new Date().getMinutes()}m`, rightType: 'countdown' },
+            { time: '10:30 PM', title: 'Sleep Goal', sub: 'Target: 8 hrs', icon: '🌙', color: Colors.purple, rightText: 'Upcoming', rightType: 'upcoming' },
+          ].map((item, index) => (
+            <View key={index} style={styles.newTimelineRow}>
+              {/* Left circular icon */}
+              <View style={[styles.newTimelineIconBg, { backgroundColor: item.color + '15', borderColor: item.color + '30' }]}>
+                <Text style={styles.newTimelineCardIcon}>{item.icon}</Text>
+              </View>
+              
+              {/* Vertical line node */}
+              <View style={styles.newTimelineNodeContainer}>
+                <View style={[styles.newTimelineNode, { backgroundColor: item.color }]} />
+              </View>
+
+              {/* Content */}
+              <View style={styles.newTimelineContent}>
+                <Text style={[styles.newTimelineTime, { color: item.color }]}>{item.time}</Text>
+                <Text style={styles.newTimelineTitle}>{item.title}</Text>
+                <Text style={styles.newTimelineSub}>{item.sub}</Text>
+              </View>
+
+              {/* Right side Badge */}
+              <View style={styles.newTimelineRight}>
+                {item.rightType === 'taken' && (
+                  <View style={styles.badgeTaken}>
+                    <Text style={styles.badgeTakenText}>{item.rightText}</Text>
+                  </View>
+                )}
+                {item.rightType === 'value' && (
+                  <Text style={[styles.badgeValueText, { color: item.color }]}>{item.rightText}</Text>
+                )}
+                {item.rightType === 'countdown' && (
+                  <View style={styles.badgeCountdown}>
+                    <Text style={styles.badgeCountdownText}>🕒 {item.rightText}</Text>
+                  </View>
+                )}
+                {item.rightType === 'upcoming' && (
+                  <View style={styles.badgeUpcoming}>
+                    <Text style={styles.badgeUpcomingText}>{item.rightText}</Text>
+                  </View>
+                )}
+                <Text style={styles.newTimelineChevron}>❯</Text>
+              </View>
+            </View>
+          ))}
+        </View>
 
         {/* SECTION: TODAY'S PROGRESS */}
         <SectionHeader title="Today's Progress" />
@@ -888,9 +1197,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                 <TouchableOpacity style={styles.modalCancel} onPress={() => setShowMedModal(false)}>
                   <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.modalSave, { opacity: 0.5 }]} disabled>
-                  <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Save</Text>
-                </TouchableOpacity>
               </View>
             </GlassCardView>
           </TouchableOpacity>
@@ -902,101 +1208,160 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl },
-  header: {
+  scroll: { paddingHorizontal: Spacing.base, paddingTop: 0 },
+
+  // ─── HERO SURFACE ───
+  heroSurface: {
+    backgroundColor: Colors.bgHero,
+    marginHorizontal: -Spacing.base,
+    marginBottom: Spacing.base,
+    borderBottomLeftRadius: Radius.xl,
+    borderBottomRightRadius: Radius.xl,
+    paddingBottom: Spacing.base,
+    // Shadow underneath the hero
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 10,
+    zIndex: 2,
+  },
+  heroTopBar: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xs,
   },
-  headerTextContainer: {
-    flex: 1,
-    paddingRight: Spacing.md,
-  },
-  headerDate: {
-    fontSize: Typography.sm,
-    color: Colors.textMuted,
-    marginBottom: 4,
+  heroDate: {
+    fontSize: Typography.xs,
+    color: Colors.teal + 'AA',
     fontWeight: Typography.medium,
+    marginBottom: 2,
+    letterSpacing: 0.5,
   },
-  greeting: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-    letterSpacing: -0.3,
+  heroGreeting: {
+    fontSize: Typography.xl,
+    fontWeight: Typography.extraBold,
+    color: Colors.white,
+    letterSpacing: -0.4,
   },
-  headerActions: {
+  heroTopBarActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
+    marginTop: Spacing.xs,
   },
 
-  // HERO CARD
-  heroCard: {
-    padding: Spacing.lg,
-    marginBottom: Spacing.xl,
-    backgroundColor: '#0F1223',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 229, 204, 0.15)',
-  },
-  heroTopRow: {
+  // ── Integrated Score Ring + Overview ──
+  heroOverviewRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
+    gap: Spacing.lg,
   },
-  heroLeft: {
-    marginRight: Spacing.lg,
+  heroScoreArea: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  heroRight: {
+  heroOverviewText: {
     flex: 1,
   },
-  heroTitle: {
-    fontSize: Typography.xl,
-    fontWeight: Typography.bold,
+  heroOverviewLabel: {
+    fontSize: Typography.md,
+    fontWeight: Typography.extraBold,
     color: Colors.white,
-    marginBottom: Spacing.xs,
+    marginBottom: 3,
+    lineHeight: 22,
   },
-  heroSub: {
-    fontSize: Typography.sm,
+  heroOverviewSub: {
+    fontSize: Typography.xs,
     color: Colors.textSecondary,
-    marginBottom: Spacing.md,
-    lineHeight: 18,
+    lineHeight: 16,
+    marginBottom: Spacing.sm,
   },
-  heroBtn: {
+  heroReportBtn: {
     alignSelf: 'flex-start',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: Colors.teal + '80',
+    borderRadius: Radius.sm,
     backgroundColor: Colors.teal + '15',
+    borderWidth: 1,
+    borderColor: Colors.teal + '30',
   },
-  heroBtnText: {
+  heroReportBtnText: {
     color: Colors.teal,
     fontSize: Typography.xs,
     fontWeight: Typography.bold,
   },
-  heroPillRow: {
+
+  // ── AI Summary Inset ──
+  heroAiInset: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+    padding: Spacing.md,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.purpleDim,
+    borderWidth: 1,
+    borderColor: Colors.purple + '30',
+  },
+  heroAiHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  heroPill: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: Radius.md,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    flex: 1,
-    marginHorizontal: 2,
+    marginBottom: Spacing.sm,
   },
-  heroPillIcon: {
-    fontSize: 14,
-    marginBottom: 2,
+  heroAiTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  heroPillText: {
+  heroAiSparkle: {
+    fontSize: 12,
+    color: Colors.purple,
+  },
+  heroAiTitle: {
     fontSize: 9,
+    fontWeight: Typography.bold,
+    color: Colors.purple,
+    letterSpacing: 1,
+  },
+  heroAiChatBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.purple + '22',
+    borderWidth: 1,
+    borderColor: Colors.purple + '44',
+  },
+  heroAiChatText: {
+    fontSize: 9,
+    fontWeight: Typography.bold,
+    color: Colors.purple,
+  },
+  heroAiText: {
+    fontSize: Typography.xs,
     color: Colors.textSecondary,
-    fontWeight: Typography.medium,
+    lineHeight: 16,
+    marginBottom: Spacing.sm,
+  },
+  heroAiTagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+  },
+  heroAiTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radius.full,
+    borderWidth: 0.5,
+  },
+  heroAiTagText: {
+    fontSize: 8,
+    fontWeight: Typography.bold,
   },
   aiSummaryBox: {
     marginTop: Spacing.lg,
@@ -1089,12 +1454,10 @@ const styles = StyleSheet.create({
   },
 
   // DAILY HEALTH TIMELINE
-  newTimelineCard: {
-    padding: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
   newTimelineContainer: {
     position: 'relative',
+    paddingHorizontal: Spacing.xs,
+    marginBottom: Spacing.xl,
   },
   newTimelineLine: {
     position: 'absolute',
@@ -1207,12 +1570,6 @@ const styles = StyleSheet.create({
   },
 
   // QUICK ACTIONS REDESIGNED
-  sectionTitle: {
-    fontSize: Typography.md,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.md,
-  },
   quickActionScroll: {
     paddingBottom: Spacing.lg,
     gap: Spacing.md,
@@ -1675,5 +2032,293 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: Colors.teal,
+  },
+
+  // COLLAPSIBLE MONTHLY CALENDAR
+  calendarSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.xs,
+  },
+  sectionTitle: {
+    fontSize: Typography.md,
+    fontWeight: Typography.bold,
+    color: Colors.textPrimary,
+  },
+  sectionSubtitle: {
+    fontSize: Typography.xs,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  calendarTogglePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: Radius.full,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  calendarToggleLabel: {
+    fontSize: 10,
+    fontWeight: Typography.bold,
+    color: Colors.textSecondary,
+  },
+  calendarToggleChevron: {
+    fontSize: 10,
+    color: Colors.teal,
+  },
+  calendarContainer: {
+    marginBottom: Spacing.xl,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.xl,
+    paddingHorizontal: Spacing.xs,
+  },
+  calendarMonthYear: {
+    fontSize: 28,
+    fontWeight: Typography.extraBold,
+    color: Colors.textPrimary,
+    letterSpacing: -0.5,
+    lineHeight: 32,
+  },
+  calendarYearSub: {
+    fontSize: Typography.sm,
+    color: Colors.textMuted,
+    fontWeight: Typography.medium,
+    marginTop: 2,
+  },
+  calendarMonthText: {
+    fontSize: Typography.md,
+    fontWeight: Typography.bold,
+    color: Colors.textPrimary,
+  },
+  calendarNavBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  calendarNavBtnText: {
+    color: Colors.textPrimary,
+    fontSize: 18,
+    lineHeight: 20,
+    fontWeight: 'bold',
+  },
+  calendarToggleBtn: {
+    paddingVertical: 5,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.teal + '44',
+    backgroundColor: Colors.teal + '15',
+  },
+  calendarToggleText: {
+    fontSize: 10,
+    fontWeight: Typography.bold,
+    color: Colors.teal,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 4,
+  },
+  calendarWeekdayRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
+  },
+  calendarWeekdayText: {
+    width: `${100 / 7}%`,
+    textAlign: 'center',
+    fontSize: 9,
+    fontWeight: Typography.bold,
+    color: Colors.textMuted,
+    letterSpacing: 0.4,
+  },
+  calendarDayCell: {
+    width: `${100 / 7}%`,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  calendarDayCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 6,
+  },
+  calendarSelectedCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: Colors.teal + '25',
+    borderWidth: 1.5,
+    borderColor: Colors.teal,
+  },
+  calendarDayNumber: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.semiBold,
+    color: Colors.textSecondary,
+  },
+  calendarSelectedNumber: {
+    color: Colors.white,
+    fontWeight: Typography.bold,
+  },
+  calendarOtherMonthNumber: {
+    color: Colors.textMuted + '33',
+  },
+  calendarTodayCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1.5,
+    borderColor: Colors.purple,
+    backgroundColor: Colors.purple + '12',
+  },
+  calendarIndicatorContainer: {
+    flexDirection: 'row',
+    position: 'absolute',
+    bottom: 6,
+    alignSelf: 'center',
+    gap: 3,
+  },
+  calendarDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+  },
+  calendarSummaryBox: {
+    marginTop: Spacing.xl,
+  },
+  calendarAgendaDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    marginBottom: Spacing.lg,
+    marginHorizontal: Spacing.xs,
+  },
+  calendarSummaryTitle: {
+    fontSize: 10,
+    fontWeight: Typography.bold,
+    color: Colors.textMuted,
+    marginBottom: Spacing.md,
+    letterSpacing: 0.8,
+    paddingHorizontal: Spacing.xs,
+  },
+  calendarEventItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginVertical: 3,
+  },
+  calendarEventText: {
+    fontSize: Typography.xs,
+    color: Colors.textPrimary,
+    fontWeight: Typography.medium,
+  },
+  agendaCard: {
+    padding: Spacing.base,
+    marginBottom: Spacing.xl,
+  },
+  agendaEventRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+    gap: Spacing.md,
+  },
+  agendaEventAccentDot: {
+    width: 3,
+    height: 32,
+    borderRadius: 2,
+  },
+  agendaEventIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  agendaEventIcon: {
+    fontSize: 18,
+  },
+  agendaEventInfo: {
+    flex: 1,
+  },
+  agendaEventLabel: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.semiBold,
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  agendaEventTime: {
+    fontSize: Typography.xs,
+    color: Colors.textMuted,
+  },
+  agendaEventBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    backgroundColor: 'rgba(255,255,255,0.09)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  agendaEventBadgeText: {
+    fontSize: 9,
+    fontWeight: Typography.semiBold,
+    color: Colors.textSecondary,
+    letterSpacing: 0.4,
+  },
+  agendaEmpty: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
+    gap: Spacing.sm,
+  },
+  agendaEmptyIcon: {
+    fontSize: 32,
+  },
+  agendaEmptyText: {
+    fontSize: Typography.base,
+    fontWeight: Typography.semiBold,
+    color: Colors.textSecondary,
+  },
+  agendaEmptySubtext: {
+    fontSize: Typography.xs,
+    color: Colors.textMuted,
+  },
+  // OLD — kept for reference, may be cleaned up later
+  agendaCardItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.sm + 2,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    gap: Spacing.sm,
+  },
+  agendaIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
