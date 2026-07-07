@@ -20,6 +20,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import OnboardingScreen from './src/screens/auth/OnboardingScreen';
 import { AuthStack } from './src/navigation/AuthStack';
 import LoadingScreen from './src/components/LoadingScreen';
+import ErrorScreen from './src/screens/error/ErrorScreen';
+import ErrorBoundary from './src/components/ErrorBoundary';
+import { NetworkProvider } from './src/services/networkService';
+import OfflineBanner from './src/components/OfflineBanner';
 const Stack = createNativeStackNavigator();
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
@@ -244,6 +248,7 @@ function AppShell() {
 
   return (
     <>
+      <OfflineBanner />
       <View style={styles.screenContainer}>
         {MAIN_TABS.map(tab => (
           mountedTabs.current.has(tab) && (
@@ -251,44 +256,54 @@ function AppShell() {
               key={tab}
               style={[styles.screenWrapper, state.activeTab !== tab && styles.screenHidden]}>
               {tab === 'Home' && (
-                <MemoizedDashboard
-                  onProfilePress={openProfile}
-                  onNotificationsPress={openNotifications}
-                  onCompleteProfile={openProfileSetup}
-                  navigateToTab={navigateToTab}
-                />
+                <ErrorBoundary>
+                  <MemoizedDashboard
+                    onProfilePress={openProfile}
+                    onNotificationsPress={openNotifications}
+                    onCompleteProfile={openProfileSetup}
+                    navigateToTab={navigateToTab}
+                  />
+                </ErrorBoundary>
               )}
               {tab === 'Health' && (
-                <MemoizedHealthScreen
-                  onProfilePress={openProfile}
-                  onNotificationsPress={openNotifications}
-                  onOpenHealthLog={openHealthLog}
-                  lastHealthLog={state.lastHealthLog}
-                />
+                <ErrorBoundary>
+                  <MemoizedHealthScreen
+                    onProfilePress={openProfile}
+                    onNotificationsPress={openNotifications}
+                    onOpenHealthLog={openHealthLog}
+                    lastHealthLog={state.lastHealthLog}
+                  />
+                </ErrorBoundary>
               )}
               {tab === 'AI' && (
-                <MemoizedAIAdvisorScreen
-                  onProfilePress={openProfile}
-                  onNotificationsPress={openNotifications}
-                  startInChat={state.aiStartInChat}
-                  originTab={state.aiOrigin ?? undefined}
-                  navigateToTab={navigateToTab}
-                  isTabActive={state.activeTab === 'AI'}
-                />
+                <ErrorBoundary>
+                  <MemoizedAIAdvisorScreen
+                    onProfilePress={openProfile}
+                    onNotificationsPress={openNotifications}
+                    startInChat={state.aiStartInChat}
+                    originTab={state.aiOrigin ?? undefined}
+                    navigateToTab={navigateToTab}
+                    isTabActive={state.activeTab === 'AI'}
+                  />
+                </ErrorBoundary>
               )}
               {tab === 'Activity' && (
-                <MemoizedFitnessScreen
-                  onProfilePress={openProfile}
-                  onNotificationsPress={openNotifications}
-                  onOpenAI={openAI}
-                  onOpenWorkoutLog={openWorkoutLog}
-                />
+                <ErrorBoundary>
+                  <MemoizedFitnessScreen
+                    onProfilePress={openProfile}
+                    onNotificationsPress={openNotifications}
+                    onOpenAI={openAI}
+                    onOpenWorkoutLog={openWorkoutLog}
+                  />
+                </ErrorBoundary>
               )}
               {tab === 'Diet' && (
-                <MemoizedCalorieScreen
-                  onProfilePress={openProfile}
-                  onNotificationsPress={openNotifications}
-                />
+                <ErrorBoundary>
+                  <MemoizedCalorieScreen
+                    onProfilePress={openProfile}
+                    onNotificationsPress={openNotifications}
+                  />
+                </ErrorBoundary>
               )}
             </View>
           )
@@ -330,10 +345,31 @@ function AppShell() {
 // ── Root Component ───────────────────────────────────────────────────
 
 const RootComponent = () => {
-  const { session, isLoading, hasProfile } = useAuth();
+  const { session, isLoading, hasProfile, networkError, maintenanceData, retryAfterNetworkError } = useAuth();
 
   if (isLoading || (session?.user && hasProfile === null)) {
     return <LoadingScreen />;
+  }
+
+  if (networkError) {
+    return (
+      <ErrorScreen
+        type="no-internet"
+        onRetry={retryAfterNetworkError}
+        onGoHome={retryAfterNetworkError}
+      />
+    );
+  }
+
+  if (maintenanceData) {
+    return (
+      <ErrorScreen
+        type="maintenance"
+        title={maintenanceData.title}
+        message={maintenanceData.message}
+        estimatedReturn={maintenanceData.estimatedReturn}
+      />
+    );
   }
 
   if (!session?.user) {
@@ -355,9 +391,11 @@ const RootComponent = () => {
   }
 
   return (
-    <ScrollVisibilityProvider>
-      <AppShell />
-    </ScrollVisibilityProvider>
+    <NetworkProvider>
+      <ScrollVisibilityProvider>
+        <AppShell />
+      </ScrollVisibilityProvider>
+    </NetworkProvider>
   );
 };
 
