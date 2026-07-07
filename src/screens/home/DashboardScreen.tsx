@@ -12,7 +12,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   StatusBar,
-  PanResponder,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
@@ -20,6 +19,7 @@ import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../../t
 import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import ProfileCompletionBanner from '../../components/ProfileCompletionBanner';
+import HealthCalendar from '../../components/HealthCalendar';
 import { useAuth } from '../../providers/AuthProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg';
@@ -132,22 +132,17 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date>(new Date());
   const [calendarCurrentMonth, setCalendarCurrentMonth] = useState<Date>(new Date());
   const [calendarExpanded, setCalendarExpanded] = useState<boolean>(true);
+  const [showAllMeds, setShowAllMeds] = useState<boolean>(false);
 
-  // Swipe gesture to change months
-  const calendarSwipe = useRef({ startX: 0 }).current;
-  const calendarPanResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 20 && Math.abs(g.dx) > Math.abs(g.dy),
-      onPanResponderGrant: (_, g) => { calendarSwipe.startX = g.x0; },
-      onPanResponderRelease: (_, g) => {
-        const dx = g.dx;
-        if (Math.abs(dx) > 50) {
-          const direction = dx < 0 ? 1 : -1;
-          setCalendarCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + direction, 1));
-        }
-      },
-    })
-  ).current;
+  const [medicationsData, setMedicationsData] = useState([
+    { name: 'Paracetamol', dose: '500 mg', time: '08:00 AM', taken: true, color: Colors.purple, purpose: 'Fever' },
+    { name: 'Metformin', dose: '500 mg', time: '08:00 PM', taken: false, color: Colors.amber, purpose: 'Sugar' },
+    { name: 'Vitamin D3', dose: '1000 IU', time: '09:00 AM', taken: true, color: Colors.blue, purpose: 'Vitamin' },
+    { name: 'Cetirizine', dose: '10 mg', time: '08:00 AM', taken: false, color: Colors.pink, purpose: 'Allergy' },
+    { name: 'Omeprazole', dose: '20 mg', time: '07:00 AM', taken: true, color: Colors.teal, purpose: 'Acidity' },
+    { name: 'Amlodipine', dose: '5 mg', time: '08:00 AM', taken: false, color: Colors.success, purpose: 'BP' },
+    { name: 'Atorvastatin', dose: '10 mg', time: '09:00 PM', taken: false, color: Colors.textSecondary, purpose: 'Cholesterol' },
+  ]);
 
   // Dynamic status bar color on scroll
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -159,53 +154,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       StatusBar.setBackgroundColor(Colors.bgHero, false);
     }
   }, [onScroll]);
-
-  const getDaysInMonth = useCallback((date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDayIndex = new Date(year, month, 1).getDay();
-    const numDays = new Date(year, month + 1, 0).getDate();
-    
-    const days = [];
-    const prevNumDays = new Date(year, month, 0).getDate();
-    
-    for (let i = firstDayIndex - 1; i >= 0; i--) {
-      days.push({
-        date: new Date(year, month - 1, prevNumDays - i),
-        isCurrentMonth: false,
-      });
-    }
-    for (let i = 1; i <= numDays; i++) {
-      days.push({
-        date: new Date(year, month, i),
-        isCurrentMonth: true,
-      });
-    }
-    const remaining = 7 - (days.length % 7);
-    if (remaining < 7) {
-      for (let i = 1; i <= remaining; i++) {
-        days.push({
-          date: new Date(year, month + 1, i),
-          isCurrentMonth: false,
-        });
-      }
-    }
-    return days;
-  }, []);
-
-  const getWeekDays = useCallback((date: Date) => {
-    const currentDay = date.getDay();
-    const sunday = new Date(date.getFullYear(), date.getMonth(), date.getDate() - currentDay);
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() + i);
-      days.push({
-        date: d,
-        isCurrentMonth: d.getMonth() === date.getMonth(),
-      });
-    }
-    return days;
-  }, []);
 
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
@@ -508,172 +456,15 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
 
         {/* SECTION: COLLAPSIBLE MONTHLY CALENDAR */}
-        <TouchableOpacity style={styles.calendarSectionHeader} onPress={() => setCalendarExpanded(!calendarExpanded)} activeOpacity={0.7}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.sectionTitle}>Health Calendar</Text>
-            <Text style={styles.sectionSubtitle}>Your schedule at a glance</Text>
-          </View>
-          <View style={styles.calendarTogglePill}>
-            <Text style={styles.calendarToggleLabel}>{calendarExpanded ? 'Week' : 'Month'}</Text>
-            <Text style={styles.calendarToggleChevron}>{calendarExpanded ? '▾' : '▴'}</Text>
-          </View>
-        </TouchableOpacity>
-        {(() => {
-          const isSameDay = (d1: Date, d2: Date) => 
-            d1.getFullYear() === d2.getFullYear() &&
-            d1.getMonth() === d2.getMonth() &&
-            d1.getDate() === d2.getDate();
-
-          const today = new Date();
-          const displayedDays = calendarExpanded 
-            ? getDaysInMonth(calendarCurrentMonth) 
-            : getWeekDays(calendarSelectedDate);
-
-          const monthYearString = calendarCurrentMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-
-          const getEventsForDate = (date: Date, isCurrentMonth: boolean) => {
-            // Hide event indicators/agendas for padding days from other months when expanded
-            if (calendarExpanded && !isCurrentMonth) {
-              return [];
-            }
-
-            const list = [];
-            const dayNum = date.getDate();
-            const monthNum = date.getMonth();
-            const dayOfWeek = date.getDay();
-
-            // Period prediction (predicted cycle: 12th to 16th of current month)
-            if (gender === 'female' && dayNum >= 12 && dayNum <= 16) {
-              list.push({ type: 'period', icon: '🩸', label: 'Menstrual Period Day' });
-            }
-
-            // Doctor visit mock
-            if (dayNum === 7 || (dayNum === 12 && monthNum === 4)) {
-              list.push({ type: 'appointment', icon: '👨‍⚕️', label: 'Doctor Appointment: Dr. Sharma at 04:30 PM' });
-            } else if (dayNum === 22) {
-              list.push({ type: 'appointment', icon: '🦷', label: 'Dentist Checkup at 10:00 AM' });
-            }
-
-            // Workout split schedule
-            if (dayOfWeek === 1 || dayOfWeek === 4) {
-              list.push({ type: 'workout', icon: '💪', label: 'Workout: Push Day Split' });
-            } else if (dayOfWeek === 2 || dayOfWeek === 5) {
-              list.push({ type: 'workout', icon: '🏃‍♂️', label: 'Workout: Pull Day Split' });
-            } else if (dayOfWeek === 3 || dayOfWeek === 6) {
-              list.push({ type: 'workout', icon: '🦵', label: 'Workout: Legs Day Split' });
-            } else {
-              list.push({ type: 'workout', icon: '🧘', label: 'Active Recovery & Stretching' });
-            }
-
-            // Med schedule
-            list.push({ type: 'medication', icon: '💊', label: 'Vitamin D3 (08:00 AM) & Metformin (08:00 PM)' });
-
-            return list;
-          };
-
-          const selectedEvents = getEventsForDate(calendarSelectedDate, true);
-
-          return (
-            <View style={styles.calendarContainer}>
-              {/* Swipeable area */}
-              <View {...calendarPanResponder.panHandlers}>
-                <View style={styles.calendarHeader}>
-                  <View>
-                    <Text style={styles.calendarMonthYear}>
-                      {calendarCurrentMonth.toLocaleString('en-US', { month: 'long' })}
-                    </Text>
-                    <Text style={styles.calendarYearSub}>
-                      {calendarCurrentMonth.getFullYear()}
-                    </Text>
-                  </View>
-
-                  {calendarExpanded && (
-                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                      <TouchableOpacity
-                        style={styles.calendarNavBtn}
-                        onPress={() => {
-                          const prev = new Date(calendarCurrentMonth.getFullYear(), calendarCurrentMonth.getMonth() - 1, 1);
-                          setCalendarCurrentMonth(prev);
-                        }}
-                      >
-                        <Text style={styles.calendarNavBtnText}>‹</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.calendarNavBtn}
-                        onPress={() => {
-                          const next = new Date(calendarCurrentMonth.getFullYear(), calendarCurrentMonth.getMonth() + 1, 1);
-                          setCalendarCurrentMonth(next);
-                        }}
-                      >
-                        <Text style={styles.calendarNavBtnText}>›</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-
-              <View style={styles.calendarWeekdayRow}>
-                {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((day, idx) => (
-                  <Text key={idx} style={styles.calendarWeekdayText}>{day}</Text>
-                ))}
-              </View>
-
-              <View style={styles.calendarGrid}>
-                {displayedDays.map((item, idx) => {
-                  const isSelected = isSameDay(item.date, calendarSelectedDate);
-                  const isTodayDate = isSameDay(item.date, today);
-                  const dayEvents = getEventsForDate(item.date, item.isCurrentMonth);
-
-                  return (
-                    <TouchableOpacity 
-                      key={idx} 
-                      style={styles.calendarDayCell}
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        setCalendarSelectedDate(item.date);
-                        if (item.date.getMonth() !== calendarCurrentMonth.getMonth()) {
-                          setCalendarCurrentMonth(new Date(item.date.getFullYear(), item.date.getMonth(), 1));
-                        }
-                      }}
-                    >
-                      <View style={[
-                        styles.calendarDayCircle,
-                        isTodayDate && styles.calendarTodayCircle,
-                        isSelected && styles.calendarSelectedCircle,
-                      ]}>
-                        <Text style={[
-                          styles.calendarDayNumber,
-                          !item.isCurrentMonth && styles.calendarOtherMonthNumber,
-                          isSelected && styles.calendarSelectedNumber,
-                        ]}>
-                          {item.date.getDate()}
-                        </Text>
-
-                        {item.isCurrentMonth && (
-                          <View style={styles.calendarIndicatorContainer}>
-                            {dayEvents.slice(0, 3).map((evt, eIdx) => {
-                              let dotColor = Colors.teal;
-                              if (evt.type === 'period') dotColor = Colors.pink;
-                              else if (evt.type === 'appointment') dotColor = Colors.blue;
-                              else if (evt.type === 'medication') dotColor = Colors.amber;
-                              
-                              return (
-                                <View 
-                                  key={eIdx} 
-                                  style={[styles.calendarDot, { backgroundColor: dotColor }]} 
-                                />
-                              );
-                            })}
-                          </View>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              </View>
-            </View>
-          );
-        })()}
+        <HealthCalendar
+          selectedDate={calendarSelectedDate}
+          currentMonth={calendarCurrentMonth}
+          expanded={calendarExpanded}
+          gender={gender}
+          onDateSelect={setCalendarSelectedDate}
+          onMonthChange={setCalendarCurrentMonth}
+          onToggleExpand={() => setCalendarExpanded(!calendarExpanded)}
+        />
 
         {/* SECTION: TODAY'S AGENDA */}
         <SectionHeader
@@ -907,29 +698,56 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           })()}
         </View>
 
-        {/* SECTION: TODAY'S MEDICATIONS */}
-        <SectionHeader title="Today's Medications" action="View All →" />
-        <GlassCardView style={styles.medsCard}>
-          <View style={styles.medRow}>
-            <View style={styles.medIconCheck}><Text style={{ color: Colors.bg, fontSize: Typography.xs, fontWeight: Typography.bold }}>✓</Text></View>
-            <View style={styles.medInfo}>
-              <Text style={styles.medName}>Vitamin D3</Text>
-              <Text style={styles.medDose}>1000 IU · Done</Text>
+        {/* SECTION: WEEKLY CHALLENGE */}
+        <SectionHeader title="Weekly Challenge" />
+        <GlassCardView style={styles.challengeCard} accentColor={Colors.amber}>
+          <Text style={styles.challengeTitle}>💧 Hydration Hero</Text>
+          <Text style={styles.challengeDesc}>Drink 2.5L water for 5 days in a row.</Text>
+          <View style={{ marginTop: Spacing.sm }}>
+            <ProgressBar progress={waterChallenge?.progress ?? 0} color={Colors.amber} height={8} />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+              <Text style={styles.challengeProgressText}>{waterChallenge?.daysComplete ?? 0} / {waterChallenge?.totalDays ?? 5} days complete</Text>
+              <Text style={styles.challengeStreakText}>🔥 {waterChallenge?.streak ?? 0}d streak</Text>
             </View>
-            <Text style={styles.medTime}>08:00 AM</Text>
           </View>
-          <View style={[styles.medRow, { borderBottomWidth: 0, marginBottom: Spacing.md }]}>
-            <View style={styles.medIconPending} />
-            <View style={styles.medInfo}>
-              <Text style={styles.medName}>Metformin</Text>
-              <Text style={styles.medDose}>500 mg · Next dose in {getNextDoseHours(20)} hrs</Text>
-            </View>
-            <Text style={styles.medTime}>08:00 PM</Text>
-          </View>
-          <TouchableOpacity style={styles.medActionBtn}>
-            <Text style={styles.medActionText}>✓ Mark All as Taken</Text>
-          </TouchableOpacity>
         </GlassCardView>
+
+        {/* SECTION: TODAY'S MEDICATIONS */}
+        <SectionHeader title="Today's Medications" />
+        <View style={styles.medList}>
+          {medicationsData.slice(0, showAllMeds ? medicationsData.length : 5).map((med, index) => (
+            <View key={index} style={[styles.medItem, index < Math.min(5, medicationsData.length) - 1 && styles.medItemBorder]}>
+              <TouchableOpacity
+                style={[styles.medCheck, med.taken && { backgroundColor: Colors.success, borderColor: Colors.success }]}
+                onPress={() => {
+                  setMedicationsData(prev => prev.map((m, i) => i === index ? { ...m, taken: !m.taken } : m));
+                }}
+                activeOpacity={0.7}
+              >
+                {med.taken && <Text style={styles.medCheckIcon}>✓</Text>}
+              </TouchableOpacity>
+              <View style={styles.medInfo}>
+                <Text style={styles.medName}>{med.name}</Text>
+                <View style={[styles.medPurposeBadge, { backgroundColor: med.color + '18', borderColor: med.color + '40' }]}>
+                  <Text style={[styles.medPurposeText, { color: med.color }]}>{med.purpose}</Text>
+                </View>
+                <Text style={styles.medDose}>{med.dose} · {med.time}</Text>
+              </View>
+              <View style={[styles.medIndicator, { backgroundColor: med.color }]} />
+            </View>
+          ))}
+        </View>
+        {medicationsData.length > 5 && (
+          <TouchableOpacity
+            style={styles.medShowAllBtn}
+            onPress={() => setShowAllMeds(!showAllMeds)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.medShowAllText}>
+              {showAllMeds ? 'Show Less' : `Show All ${medicationsData.length} Medications`}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* SECTION: WEIGHT TRACKING */}
         <SectionHeader title="Weight Progress" action="Log Weight" onAction={() => setShowWeightModal(true)} />
@@ -992,37 +810,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             </View>
           </View>
         </GlassCardView>
-
-        {/* SECTION: WEEKLY CHALLENGE */}
-        <SectionHeader title="Weekly Challenge" />
-        <GlassCardView style={styles.challengeCard} accentColor={Colors.amber}>
-          <Text style={styles.challengeTitle}>💧 Hydration Hero</Text>
-          <Text style={styles.challengeDesc}>Drink 2.5L water for 5 days in a row.</Text>
-          <View style={{ marginTop: Spacing.sm }}>
-            <ProgressBar progress={waterChallenge?.progress ?? 0} color={Colors.amber} height={8} />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-              <Text style={styles.challengeProgressText}>{waterChallenge?.daysComplete ?? 0} / {waterChallenge?.totalDays ?? 5} days complete</Text>
-              <Text style={styles.challengeStreakText}>🔥 {waterChallenge?.streak ?? 0}d streak</Text>
-            </View>
-          </View>
-        </GlassCardView>
-        {/* SECTION: AI HEALTH ASSISTANT */}
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <View style={styles.aiBanner}>
-            <View style={styles.aiBannerLeft}>
-              <View style={styles.aiBannerIconWrap}>
-                <Text style={styles.aiBannerIcon}>🤖</Text>
-              </View>
-              <View style={{ flex: 1, marginLeft: Spacing.md }}>
-                <Text style={styles.aiBannerTitle}>AI Health Assistant</Text>
-                <Text style={styles.aiBannerSub}>Ask anything about nutrition, workouts, medications & more.</Text>
-              </View>
-            </View>
-            <TouchableOpacity style={styles.aiBannerBtn}>
-              <Text style={styles.aiBannerBtnText}>✦ Ask AI</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
 
         {/* SECTION: SMALL CARD WEEKLY TRENDS */}
         <SectionHeader title="Weekly Trends (7d Averages)" />
@@ -1650,64 +1437,74 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
 
-  // MEDS CARD
-  medsCard: {
-    padding: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
-  medRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-    paddingBottom: Spacing.sm,
+  // MEDS LIST
+  medList: {
     marginBottom: Spacing.sm,
   },
-  medIconCheck: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: Colors.success,
+  medItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xs,
+  },
+  medItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.divider,
+  },
+  medCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.textMuted,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.md,
   },
-  medIconPending: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: Colors.textMuted,
-    marginRight: Spacing.md,
+  medCheckIcon: {
+    color: Colors.bg,
+    fontSize: Typography.xs,
+    fontWeight: Typography.bold,
   },
   medInfo: {
     flex: 1,
   },
   medName: {
     fontSize: Typography.sm,
-    color: Colors.textPrimary,
     fontWeight: Typography.semiBold,
+    color: Colors.textPrimary,
+  },
+  medPurposeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+    marginTop: 3,
+    marginBottom: 2,
+  },
+  medPurposeText: {
+    fontSize: 10,
+    fontWeight: Typography.bold,
   },
   medDose: {
     fontSize: Typography.xs,
     color: Colors.textMuted,
+    marginTop: 2,
   },
-  medTime: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
+  medIndicator: {
+    width: 4,
+    height: 28,
+    borderRadius: 2,
   },
-  medActionBtn: {
-    backgroundColor: Colors.success + '22',
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
+  medShowAllBtn: {
+    paddingVertical: Spacing.md,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.success + '55',
   },
-  medActionText: {
-    color: Colors.success,
-    fontWeight: Typography.bold,
+  medShowAllText: {
     fontSize: Typography.sm,
+    fontWeight: Typography.bold,
+    color: Colors.teal,
   },
 
   // WEIGHT CARD
@@ -1895,54 +1692,6 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
 
-  // AI BANNER
-  aiBanner: {
-    ...GlassCard,
-    padding: Spacing.lg,
-    marginBottom: Spacing.xl,
-    backgroundColor: Colors.purpleDim,
-    borderColor: Colors.purple + '55',
-    borderWidth: 1,
-  },
-  aiBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  aiBannerIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.purple + '33',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  aiBannerIcon: {
-    fontSize: Typography.xl,
-  },
-  aiBannerTitle: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-    marginBottom: 2,
-  },
-  aiBannerSub: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    lineHeight: 16,
-  },
-  aiBannerBtn: {
-    backgroundColor: Colors.purple,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.sm,
-    alignItems: 'center',
-  },
-  aiBannerBtnText: {
-    color: Colors.white,
-    fontWeight: Typography.bold,
-    fontSize: Typography.base,
-  },
-
   // WEEKLY TRENDS SCROLL
   trendsScroll: {
     paddingBottom: Spacing.lg,
@@ -2034,205 +1783,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.teal,
   },
 
-  // COLLAPSIBLE MONTHLY CALENDAR
-  calendarSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.lg,
-    paddingHorizontal: Spacing.xs,
-  },
-  sectionTitle: {
-    fontSize: Typography.md,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  sectionSubtitle: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  calendarTogglePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.chipBg,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  calendarToggleLabel: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.textSecondary,
-  },
-  calendarToggleChevron: {
-    fontSize: Typography.xs,
-    color: Colors.teal,
-  },
-  calendarContainer: {
-    marginBottom: Spacing.xl,
-  },
-  calendarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.xl,
-    paddingHorizontal: Spacing.xs,
-  },
-  calendarMonthYear: {
-    fontSize: Typography.xxl,
-    fontWeight: Typography.extraBold,
-    color: Colors.textPrimary,
-    letterSpacing: Typography.lsTight,
-    lineHeight: 32,
-  },
-  calendarYearSub: {
-    fontSize: Typography.sm,
-    color: Colors.textMuted,
-    fontWeight: Typography.medium,
-    marginTop: 2,
-  },
-  calendarMonthText: {
-    fontSize: Typography.md,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  calendarNavBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.chipBg,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  calendarNavBtnText: {
-    color: Colors.textPrimary,
-    fontSize: Typography.lg,
-    lineHeight: 20,
-    fontWeight: Typography.bold,
-  },
-  calendarToggleBtn: {
-    paddingVertical: 5,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: Colors.teal + '44',
-    backgroundColor: Colors.teal + '15',
-  },
-  calendarToggleText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.teal,
-  },
-  calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 4,
-  },
-  calendarWeekdayRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: Spacing.sm,
-    paddingHorizontal: Spacing.xs,
-  },
-  calendarWeekdayText: {
-    width: `${100 / 7}%`,
-    textAlign: 'center',
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.textMuted,
-    letterSpacing: Typography.lsWide,
-  },
-  calendarDayCell: {
-    width: `${100 / 7}%`,
-    height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  calendarDayCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: 6,
-  },
-  calendarSelectedCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: Colors.teal + '25',
-    borderWidth: 1.5,
-    borderColor: Colors.teal,
-  },
-  calendarDayNumber: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.textSecondary,
-  },
-  calendarSelectedNumber: {
-    color: Colors.white,
-    fontWeight: Typography.bold,
-  },
-  calendarOtherMonthNumber: {
-    color: Colors.textMuted + '33',
-  },
-  calendarTodayCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    borderWidth: 1.5,
-    borderColor: Colors.purple,
-    backgroundColor: Colors.purple + '12',
-  },
-  calendarIndicatorContainer: {
-    flexDirection: 'row',
-    position: 'absolute',
-    bottom: 6,
-    alignSelf: 'center',
-    gap: 3,
-  },
-  calendarDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-  },
-  calendarSummaryBox: {
-    marginTop: Spacing.xl,
-  },
-  calendarAgendaDivider: {
-    height: 1,
-    backgroundColor: Colors.divider,
-    marginBottom: Spacing.lg,
-    marginHorizontal: Spacing.xs,
-  },
-  calendarSummaryTitle: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.textMuted,
-    marginBottom: Spacing.md,
-    letterSpacing: Typography.lsWider,
-    paddingHorizontal: Spacing.xs,
-  },
-  calendarEventItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    marginVertical: 3,
-  },
-  calendarEventText: {
-    fontSize: Typography.xs,
-    color: Colors.textPrimary,
-    fontWeight: Typography.medium,
-  },
   agendaCard: {
     padding: Spacing.base,
     marginBottom: Spacing.xl,
