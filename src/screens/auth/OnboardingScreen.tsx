@@ -226,7 +226,7 @@ export default function OnboardingScreen() {
             <TextInput
               style={styles.textInput}
               placeholder="Your Name"
-              placeholderTextColor="#52525B"
+              placeholderTextColor={Colors.textPlaceholder}
               value={displayName}
               onChangeText={setDisplayName}
               autoFocus
@@ -267,7 +267,7 @@ export default function OnboardingScreen() {
               <TextInput
                 style={[styles.textInput, styles.dobInput]}
                 placeholder="YYYY"
-                placeholderTextColor="#52525B"
+                placeholderTextColor={Colors.textPlaceholder}
                 keyboardType="number-pad"
                 maxLength={4}
                 value={dobYear}
@@ -276,7 +276,7 @@ export default function OnboardingScreen() {
               <TextInput
                 style={[styles.textInput, styles.dobInput]}
                 placeholder="MM"
-                placeholderTextColor="#52525B"
+                placeholderTextColor={Colors.textPlaceholder}
                 keyboardType="number-pad"
                 maxLength={2}
                 value={dobMonth}
@@ -285,7 +285,7 @@ export default function OnboardingScreen() {
               <TextInput
                 style={[styles.textInput, styles.dobInput]}
                 placeholder="DD"
-                placeholderTextColor="#52525B"
+                placeholderTextColor={Colors.textPlaceholder}
                 keyboardType="number-pad"
                 maxLength={2}
                 value={dobDay}
@@ -319,7 +319,7 @@ export default function OnboardingScreen() {
                 <TextInput
                   style={styles.textInput}
                   placeholder="e.g. 175"
-                  placeholderTextColor="#52525B"
+                  placeholderTextColor={Colors.textPlaceholder}
                   keyboardType="decimal-pad"
                   value={height}
                   onChangeText={setHeight}
@@ -330,7 +330,7 @@ export default function OnboardingScreen() {
                 <TextInput
                   style={styles.textInput}
                   placeholder="e.g. 70"
-                  placeholderTextColor="#52525B"
+                  placeholderTextColor={Colors.textPlaceholder}
                   keyboardType="decimal-pad"
                   value={weight}
                   onChangeText={setWeight}
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: Radius.sm,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: Colors.bgCard,
   },
   backButtonText: {
     color: Colors.text,
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   textInput: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: Colors.tooltipBg,
     borderWidth: 1,
     borderColor: Colors.bgCardBorder,
     borderRadius: Radius.md,
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   goalButton: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    backgroundColor: Colors.bgCard,
     borderWidth: 1,
     borderColor: Colors.bgCardBorder,
     borderRadius: Radius.md,
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
   badgeOption: {
     flex: 1,
     paddingVertical: 14,
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    backgroundColor: Colors.bgCard,
     borderWidth: 1,
     borderColor: Colors.bgCardBorder,
     borderRadius: Radius.md,
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 50,
     borderRadius: Radius.md,
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    backgroundColor: Colors.bgCard,
     borderWidth: 1,
     borderColor: Colors.bgCardBorder,
     justifyContent: 'center',
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   activityButton: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    backgroundColor: Colors.bgCard,
     borderWidth: 1,
     borderColor: Colors.bgCardBorder,
     borderRadius: Radius.md,
@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
   },
   aiFeatureCard: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    backgroundColor: Colors.bgCard,
     borderWidth: 1,
     borderColor: Colors.bgCardBorder,
     borderRadius: Radius.md,
@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
     gap: Spacing.base,
   },
   aiFeatureIcon: {
-    fontSize: 28,
+    fontSize: Typography.lg,
   },
   aiFeatureContent: {
     flex: 1,

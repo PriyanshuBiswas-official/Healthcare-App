@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: Radius.md, backgroundColor: Colors.bgCard,
     borderWidth: 1, borderColor: Colors.bgCardBorder, alignItems: 'center', justifyContent: 'center',
   },
-  backIcon: { fontSize: 20, color: Colors.textPrimary },
+  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
   pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
   editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
   editBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.purple },
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.purple + '40', borderRadius: Radius.md,
     padding: Spacing.md, marginBottom: Spacing.lg,
   },
-  bannerIcon: { fontSize: 16, marginRight: Spacing.sm, marginTop: 1 },
+  bannerIcon: { fontSize: Typography.sm, marginRight: Spacing.sm, marginTop: 1 },
   bannerText: { flex: 1, fontSize: Typography.sm, color: Colors.textSecondary, lineHeight: 18 },
   card: { padding: Spacing.lg, marginBottom: Spacing.lg },
   cardHeader: {
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   removeBtn: { fontSize: Typography.sm, color: Colors.danger, fontWeight: Typography.semiBold },
   label: {
     fontSize: Typography.sm, fontWeight: Typography.semiBold, color: Colors.textSecondary,
-    marginBottom: Spacing.xs, textTransform: 'uppercase', letterSpacing: 0.5,
+    marginBottom: Spacing.xs, textTransform: 'uppercase', letterSpacing: Typography.lsWide,
   },
   input: {
     backgroundColor: Colors.bgCardSolid, borderWidth: 1, borderColor: Colors.bgCardBorder,
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   },
   addBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.purple },
   emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
-  emptyIcon: { fontSize: 32, marginBottom: Spacing.md },
+  emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
   emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
   emptySub: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: Spacing.xs },
   contactRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },

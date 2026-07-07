@@ -255,7 +255,7 @@ const sharedStyles = StyleSheet.create({
     fontSize: Typography.md,
     fontWeight: Typography.bold,
     color: Colors.textPrimary,
-    letterSpacing: 0.3,
+    letterSpacing: Typography.lsWide,
   },
   sectionSubtitle: {
     fontSize: Typography.sm,
@@ -319,10 +319,10 @@ const ringStyles = StyleSheet.create({
     marginTop: -2,
   },
   label: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     color: Colors.textSecondary,
     marginTop: 2,
-    letterSpacing: 0.5,
+    letterSpacing: Typography.lsWide,
     textTransform: 'uppercase',
   },
   glowDot: {
@@ -354,8 +354,7 @@ const chipStyles = StyleSheet.create({
     fontWeight: Typography.medium,
   },
   icon: {
-    fontSize: 13,
-    marginRight: 4,
+    fontSize: Typography.sm,
   },
 });
 
@@ -393,7 +392,7 @@ const notifIconStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   bell: {
-    fontSize: 18,
+    fontSize: Typography.lg,
   },
   badge: {
     position: 'absolute',
@@ -410,7 +409,7 @@ const notifIconStyles = StyleSheet.create({
     borderColor: Colors.bg,
   },
   badgeText: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.bg,
   },
@@ -426,13 +425,13 @@ const btnStyles = StyleSheet.create({
     borderRadius: Radius.full,
   },
   icon: {
-    fontSize: 16,
+    fontSize: Typography.base,
     marginRight: Spacing.sm,
   },
   label: {
     fontSize: Typography.base,
     fontWeight: Typography.bold,
     color: Colors.bg,
-    letterSpacing: 0.3,
+    letterSpacing: Typography.lsWide,
   },
 });

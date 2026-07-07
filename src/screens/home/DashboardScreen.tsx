@@ -74,7 +74,7 @@ const HeroScoreRing = ({ score }: { score: number }) => {
         />
       </Svg>
       <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <Text style={{ fontSize: 24, fontWeight: Typography.extraBold, color: Colors.white, lineHeight: 28 }}>{score}</Text>
+        <Text style={{ fontSize: Typography.xl, fontWeight: Typography.extraBold, color: Colors.white, lineHeight: 28 }}>{score}</Text>
         <Text style={{ fontSize: Typography.xs, color: Colors.textMuted }}>/100</Text>
       </View>
     </View>
@@ -653,7 +653,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                             {dayEvents.slice(0, 3).map((evt, eIdx) => {
                               let dotColor = Colors.teal;
                               if (evt.type === 'period') dotColor = Colors.pink;
-                              else if (evt.type === 'appointment') dotColor = '#3b82f6';
+                              else if (evt.type === 'appointment') dotColor = Colors.blue;
                               else if (evt.type === 'medication') dotColor = Colors.amber;
                               
                               return (
@@ -715,7 +715,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
             const typeConfig: Record<string, { accentColor: string; badge: string }> = {
               period:      { accentColor: Colors.pink,   badge: 'Period' },
-              appointment: { accentColor: '#3b82f6',     badge: 'Appointment' },
+              appointment: { accentColor: Colors.blue,     badge: 'Appointment' },
               workout:     { accentColor: Colors.teal,   badge: 'Workout' },
               medication:  { accentColor: Colors.textMuted, badge: 'Medication' },
             };
@@ -760,7 +760,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionScroll}>
           {[
             { icon: '🍽️', label: 'Log Meal', desc: 'Record calories', color: Colors.amber, onPress: () => setShowMealModal(true) },
-            { icon: '💧', label: 'Log Water', desc: 'Add a glass', color: '#3b82f6', onPress: () => setShowWaterModal(true) },
+            { icon: '💧', label: 'Log Water', desc: 'Add a glass', color: Colors.blue, onPress: () => setShowWaterModal(true) },
             { icon: '💪', label: 'Log Workout', desc: 'Track activity', color: Colors.purple, onPress: () => navigateToTab?.('Activity') },
             { icon: '💊', label: 'Medicine', desc: 'Check dose', color: Colors.pink, onPress: () => setShowMedModal(true) },
             { icon: '⚖️', label: 'Log Weight', desc: 'Record metric', color: Colors.teal, onPress: () => setShowWeightModal(true) },
@@ -784,7 +784,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           <View style={styles.newTimelineLine} />
           {[
             { time: '08:00 AM', title: 'Medication', sub: 'Vitamin D3 1000 IU', icon: '💊', color: Colors.purple, rightText: '✓ Taken', rightType: 'taken' },
-            { time: '09:15 AM', title: 'Water', sub: '400 ml recorded', icon: '💧', color: '#3b82f6', rightText: '400 ml', rightType: 'value' },
+            { time: '09:15 AM', title: 'Water', sub: '400 ml recorded', icon: '💧', color: Colors.blue, rightText: '400 ml', rightType: 'value' },
             { time: '10:00 AM', title: 'Breakfast', sub: 'Oats with fruits, Almonds', icon: '🍽️', color: Colors.amber, rightText: '450 kcal', rightType: 'value' },
             { time: '12:00 PM', title: 'Steps', sub: '2,350 steps', icon: '👟', color: Colors.success, rightText: '2,350', rightType: 'value' },
             { time: '04:30 PM', title: 'Workout', sub: 'Strength Training', icon: '💪', color: Colors.pink, rightText: '45 min', rightType: 'value' },
@@ -873,11 +873,11 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                 <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Diet')}>
                   <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
                     <Text style={styles.progressCardTitle}>💧 Water</Text>
-                    <CompactRing size={82} progress={waterPct} color="#3b82f6">
+                    <CompactRing size={82} progress={waterPct} color={Colors.blue}>
                       <Text style={styles.progressVal}>{consumedWater.toLocaleString()}</Text>
                       <Text style={styles.progressSub}>/ {waterTarget.toLocaleString()} ml</Text>
                     </CompactRing>
-                    <Text style={[styles.progressPct, { color: '#3b82f6' }]}>{Math.round(waterPct * 100)}%</Text>
+                    <Text style={[styles.progressPct, { color: Colors.blue }]}>{Math.round(waterPct * 100)}%</Text>
                   </GlassCardView>
                 </TouchableOpacity>
 
@@ -911,7 +911,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         <SectionHeader title="Today's Medications" action="View All →" />
         <GlassCardView style={styles.medsCard}>
           <View style={styles.medRow}>
-            <View style={styles.medIconCheck}><Text style={{ color: Colors.bg, fontSize: 10, fontWeight: 'bold' }}>✓</Text></View>
+            <View style={styles.medIconCheck}><Text style={{ color: Colors.bg, fontSize: Typography.xs, fontWeight: Typography.bold }}>✓</Text></View>
             <View style={styles.medInfo}>
               <Text style={styles.medName}>Vitamin D3</Text>
               <Text style={styles.medDose}>1000 IU · Done</Text>
@@ -943,7 +943,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             </View>
             {weightLogs.length > 1 && (
               <View style={[styles.weightTrendBadge, { backgroundColor: Colors.success + '15' }]}>
-                <Text style={{ color: Colors.success, fontSize: Typography.xs, fontWeight: 'bold' }}>
+                <Text style={{ color: Colors.success, fontSize: Typography.xs, fontWeight: Typography.bold }}>
                   {weightLogs[weightLogs.length - 1].weight_kg - weightLogs[0].weight_kg <= 0 ? '↓' : '↑'}{' '}
                   {Math.abs(weightLogs[weightLogs.length - 1].weight_kg - weightLogs[0].weight_kg).toFixed(1)} kg
                 </Text>
@@ -963,7 +963,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         <SectionHeader title="Next Appointment" />
         <GlassCardView style={styles.aptCard}>
           <View style={styles.aptRow}>
-            <View style={styles.aptAvatar}><Text style={{ fontSize: 24 }}>👨‍⚕️</Text></View>
+            <View style={styles.aptAvatar}><Text style={{ fontSize: Typography.xl }}>👨‍⚕️</Text></View>
             <View style={styles.aptInfo}>
               <Text style={styles.aptName}>Dr. Sharma</Text>
               <Text style={styles.aptSpec}>General Physician</Text>
@@ -1032,7 +1032,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             { metric: 'Weight', value: '62.4 kg', change: '↓ 0.2kg', color: Colors.pink },
             { metric: 'Steps', value: '7,450 steps', change: '↑ 12%', color: Colors.amber },
             { metric: 'Sleep', value: '7.2 hrs', change: '↑ 8%', color: Colors.purple },
-            { metric: 'Hydration', value: '1.8 Litres', change: '↓ 2%', color: '#3b82f6' },
+            { metric: 'Hydration', value: '1.8 Litres', change: '↓ 2%', color: Colors.blue },
           ].map((item, index) => (
             <GlassCardView key={index} style={styles.trendMetricCard}>
               <Text style={styles.trendMetricName}>{item.metric}</Text>
@@ -1154,11 +1154,11 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                       paddingVertical: Spacing.sm,
                       borderRadius: Radius.md,
                       alignItems: 'center',
-                      backgroundColor: waterAmount === String(amount) ? '#3b82f6' + '20' : Colors.bgCardBorder,
+                      backgroundColor: waterAmount === String(amount) ? Colors.blue + '20' : Colors.bgCardBorder,
                       borderWidth: waterAmount === String(amount) ? 1 : 0,
-                      borderColor: '#3b82f6',
+                      borderColor: Colors.blue,
                     }}>
-                    <Text style={{ fontSize: Typography.xs, color: waterAmount === String(amount) ? '#3b82f6' : Colors.textSecondary, fontWeight: Typography.bold }}>{amount}</Text>
+                    <Text style={{ fontSize: Typography.xs, color: waterAmount === String(amount) ? Colors.blue : Colors.textSecondary, fontWeight: Typography.bold }}>{amount}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -1169,7 +1169,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                 <TouchableOpacity style={styles.modalCancel} onPress={() => setShowWaterModal(false)}>
                   <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.modalSave, { backgroundColor: '#3b82f6' }]} onPress={handleSaveWater} disabled={modalSaving}>
+                <TouchableOpacity style={[styles.modalSave, { backgroundColor: Colors.blue }]} onPress={handleSaveWater} disabled={modalSaving}>
                   {modalSaving ? <ActivityIndicator size="small" color={Colors.bg} /> : <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Save</Text>}
                 </TouchableOpacity>
               </View>
@@ -1219,7 +1219,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: Radius.xl,
     paddingBottom: Spacing.base,
     // Shadow underneath the hero
-    shadowColor: '#000',
+    shadowColor: Colors.shadowColor,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 16,
@@ -1239,7 +1239,7 @@ const styles = StyleSheet.create({
     color: Colors.teal + 'AA',
     fontWeight: Typography.medium,
     marginBottom: 2,
-    letterSpacing: 0.5,
+    letterSpacing: Typography.lsWide,
   },
   heroGreeting: {
     fontSize: Typography.xl,
@@ -1320,14 +1320,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   heroAiSparkle: {
-    fontSize: 12,
+    fontSize: Typography.sm,
     color: Colors.purple,
   },
   heroAiTitle: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.purple,
-    letterSpacing: 1,
+    letterSpacing: Typography.lsWider,
   },
   heroAiChatBtn: {
     paddingHorizontal: 8,
@@ -1338,7 +1338,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.purple + '44',
   },
   heroAiChatText: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.purple,
   },
@@ -1360,7 +1360,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
   },
   heroAiTagText: {
-    fontSize: 8,
+    fontSize: Typography.micro,
     fontWeight: Typography.bold,
   },
   aiSummaryBox: {
@@ -1383,14 +1383,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   aiSummarySparkle: {
-    fontSize: 14,
+    fontSize: Typography.sm,
     color: Colors.purple,
   },
   aiSummaryTitle: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.purple,
-    letterSpacing: 1,
+    letterSpacing: Typography.lsWider,
   },
   aiSummaryChatBtn: {
     paddingHorizontal: 8,
@@ -1401,7 +1401,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.purple + '44',
   },
   aiSummaryChatText: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.purple,
   },
@@ -1423,7 +1423,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
   },
   aiSummaryTagText: {
-    fontSize: 8,
+    fontSize: Typography.micro,
     fontWeight: Typography.bold,
   },
 
@@ -1440,12 +1440,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
     gap: Spacing.xs,
   },
-  alertIcon: { fontSize: 16 },
+  alertIcon: { fontSize: Typography.md },
   alertTitle: {
     fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.danger,
-    letterSpacing: 1,
+    letterSpacing: Typography.lsWider,
   },
   alertText: {
     fontSize: Typography.sm,
@@ -1483,7 +1483,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   newTimelineCardIcon: {
-    fontSize: 18,
+    fontSize: Typography.lg,
   },
   newTimelineNodeContainer: {
     width: 36,
@@ -1502,7 +1502,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   newTimelineTime: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     marginBottom: 2,
   },
@@ -1512,7 +1512,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   newTimelineSub: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     color: Colors.textMuted,
   },
   newTimelineRight: {
@@ -1529,7 +1529,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
   },
   badgeTakenText: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.success,
   },
@@ -1546,7 +1546,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
   },
   badgeCountdownText: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.amber,
   },
@@ -1559,7 +1559,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
   },
   badgeUpcomingText: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.purple,
   },
@@ -1577,10 +1577,10 @@ const styles = StyleSheet.create({
   quickActionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#16182C',
+    backgroundColor: Colors.chartBg,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: Colors.chipBg,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     width: 175,
@@ -1596,7 +1596,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.sm,
   },
   quickActionIcon: {
-    fontSize: 16,
+    fontSize: Typography.base,
   },
   quickActionTextContent: {
     flex: 1,
@@ -1607,13 +1607,13 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   quickActionDesc: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     color: Colors.textMuted,
     marginTop: 1,
   },
   quickActionPlus: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: Typography.base,
+    fontWeight: Typography.bold,
     marginLeft: 4,
   },
 
@@ -1641,7 +1641,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   progressSub: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     color: Colors.textMuted,
   },
   progressPct: {
@@ -1778,7 +1778,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   aptTimeIcon: {
-    fontSize: 12,
+    fontSize: Typography.sm,
     marginRight: 4,
   },
   aptTimeText: {
@@ -1824,7 +1824,7 @@ const styles = StyleSheet.create({
     color: Colors.teal,
   },
   ageLabel: {
-    fontSize: 8,
+    fontSize: Typography.micro,
     color: Colors.teal,
   },
   ageInfo: {
@@ -1874,7 +1874,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   communityPost: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    backgroundColor: Colors.bgCard,
     padding: Spacing.md,
     borderRadius: Radius.md,
   },
@@ -1891,7 +1891,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   communityPostLikes: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     color: Colors.textMuted,
   },
 
@@ -1918,7 +1918,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   aiBannerIcon: {
-    fontSize: 24,
+    fontSize: Typography.xl,
   },
   aiBannerTitle: {
     fontSize: Typography.base,
@@ -1966,14 +1966,14 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   trendMetricChange: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
   },
 
   // MODAL STYLING
   modalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.xl,
@@ -2003,7 +2003,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.bgCardBorder,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: Colors.overlay,
     color: Colors.textPrimary,
     paddingHorizontal: Spacing.md,
     fontSize: Typography.md,
@@ -2059,17 +2059,17 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: Radius.full,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: Colors.chipBg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: Colors.bgCardBorder,
   },
   calendarToggleLabel: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.textSecondary,
   },
   calendarToggleChevron: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     color: Colors.teal,
   },
   calendarContainer: {
@@ -2083,10 +2083,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xs,
   },
   calendarMonthYear: {
-    fontSize: 28,
+    fontSize: Typography.xxl,
     fontWeight: Typography.extraBold,
     color: Colors.textPrimary,
-    letterSpacing: -0.5,
+    letterSpacing: Typography.lsTight,
     lineHeight: 32,
   },
   calendarYearSub: {
@@ -2106,15 +2106,15 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: Colors.chipBg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: Colors.bgCardBorder,
   },
   calendarNavBtnText: {
     color: Colors.textPrimary,
-    fontSize: 18,
+    fontSize: Typography.lg,
     lineHeight: 20,
-    fontWeight: 'bold',
+    fontWeight: Typography.bold,
   },
   calendarToggleBtn: {
     paddingVertical: 5,
@@ -2125,7 +2125,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.teal + '15',
   },
   calendarToggleText: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.teal,
   },
@@ -2145,10 +2145,10 @@ const styles = StyleSheet.create({
   calendarWeekdayText: {
     width: `${100 / 7}%`,
     textAlign: 'center',
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.textMuted,
-    letterSpacing: 0.4,
+    letterSpacing: Typography.lsWide,
   },
   calendarDayCell: {
     width: `${100 / 7}%`,
@@ -2210,16 +2210,16 @@ const styles = StyleSheet.create({
   },
   calendarAgendaDivider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: Colors.divider,
     marginBottom: Spacing.lg,
     marginHorizontal: Spacing.xs,
   },
   calendarSummaryTitle: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.textMuted,
     marginBottom: Spacing.md,
-    letterSpacing: 0.8,
+    letterSpacing: Typography.lsWider,
     paddingHorizontal: Spacing.xs,
   },
   calendarEventItem: {
@@ -2242,7 +2242,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: Colors.bgCardBorder,
     gap: Spacing.md,
   },
   agendaEventAccentDot: {
@@ -2256,10 +2256,10 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: Colors.bgCardBorder,
   },
   agendaEventIcon: {
-    fontSize: 18,
+    fontSize: Typography.lg,
   },
   agendaEventInfo: {
     flex: 1,
@@ -2278,15 +2278,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: 3,
     borderRadius: Radius.full,
-    backgroundColor: 'rgba(255,255,255,0.09)',
+    backgroundColor: Colors.chipBg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: Colors.chipBorder,
   },
   agendaEventBadgeText: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.semiBold,
     color: Colors.textSecondary,
-    letterSpacing: 0.4,
+    letterSpacing: Typography.lsWide,
   },
   agendaEmpty: {
     alignItems: 'center',
@@ -2294,7 +2294,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   agendaEmptyIcon: {
-    fontSize: 32,
+    fontSize: Typography.xxl,
   },
   agendaEmptyText: {
     fontSize: Typography.base,

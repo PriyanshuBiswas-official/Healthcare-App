@@ -80,7 +80,7 @@ export default function AIChatView({ messages, input, setInput, sendMessage, scr
             key={p.label}
             onPress={() => sendMessage(p.label)}
             style={styles.quickChip}>
-            <Text style={{ fontSize: 14 }}>{p.icon}</Text>
+            <Text style={{ fontSize: Typography.xs }}>{p.icon}</Text>
             <Text style={styles.quickChipText}>{p.label}</Text>
           </TouchableOpacity>
         ))}
@@ -99,7 +99,7 @@ export default function AIChatView({ messages, input, setInput, sendMessage, scr
             style={[styles.msgRow, msg.role === 'user' && styles.msgRowUser]}>
             {msg.role === 'ai' && (
               <View style={styles.msgAvatar}>
-                <Text style={{ fontSize: 12, color: Colors.purple }}>✦</Text>
+                <Text style={{ fontSize: Typography.sm, color: Colors.purple }}>✦</Text>
               </View>
             )}
             <View style={[
@@ -130,7 +130,7 @@ export default function AIChatView({ messages, input, setInput, sendMessage, scr
           style={[styles.sendBtn, { backgroundColor: input.trim() ? Colors.purple : Colors.bgCardBorder }]}
           onPress={() => sendMessage(input)}
           disabled={!input.trim()}>
-          <Text style={{ fontSize: 18 }}>↑</Text>
+          <Text style={{ fontSize: Typography.lg }}>↑</Text>
         </TouchableOpacity>
       </View>
     </>
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4, ...Shadows.teal,
   },
   msgText: { fontSize: Typography.sm, color: Colors.textPrimary, lineHeight: 20 },
-  msgTime: { fontSize: 10, color: Colors.textMuted, marginTop: 5, alignSelf: 'flex-end' },
+  msgTime: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 5, alignSelf: 'flex-end' },
   inputRow: {
     flexDirection: 'row', alignItems: 'flex-end',
     padding: Spacing.base, borderTopWidth: 1,

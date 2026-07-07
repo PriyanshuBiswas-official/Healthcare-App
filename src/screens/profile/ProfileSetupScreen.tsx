@@ -921,7 +921,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backPlaceholder: { width: 40 },
-  backIcon: { fontSize: 20, color: Colors.textPrimary },
+  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
   pageTitle: {
     fontSize: Typography.md,
     fontWeight: Typography.bold,
@@ -954,7 +954,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   stepIcon: {
-    fontSize: 32,
+    fontSize: Typography.xxl,
     marginBottom: Spacing.sm,
   },
   stepTitle: {
@@ -978,9 +978,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: Colors.chipBg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: Colors.chipBorder,
     borderRadius: Radius.md,
     color: Colors.textPrimary,
     paddingVertical: Spacing.base,
@@ -1004,9 +1004,9 @@ const styles = StyleSheet.create({
   genderBadge: {
     flex: 1,
     paddingVertical: 14,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: Colors.chipBg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: Colors.chipBorder,
     borderRadius: Radius.md,
     alignItems: 'center',
   },
@@ -1031,9 +1031,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
     borderRadius: Radius.full,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: Colors.chipBg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: Colors.chipBorder,
   },
   bloodChipSelected: {
     borderColor: Colors.teal,
@@ -1056,9 +1056,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
     borderRadius: Radius.full,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: Colors.chipBg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: Colors.chipBorder,
   },
   chipSelected: {
     borderColor: Colors.teal,
@@ -1135,7 +1135,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.base,
     borderRadius: Radius.lg,
-    backgroundColor: 'rgba(255,179,71,0.08)',
+    backgroundColor: Colors.amberDim,
     borderWidth: 1.5,
     borderColor: Colors.amber + '35',
     marginBottom: Spacing.md,
@@ -1145,7 +1145,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.amber + '70',
   },
   skipCardSelectedGreen: {
-    backgroundColor: 'rgba(0,229,160,0.10)',
+    backgroundColor: Colors.success + '1A',
     borderColor: Colors.success + '60',
   },
   skipIconWrap: {
@@ -1164,7 +1164,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.success + '25',
   },
   skipIcon: {
-    fontSize: 20,
+    fontSize: Typography.lg,
   },
   skipContent: {
     flex: 1,
@@ -1205,7 +1205,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.success,
   },
   skipCheckMark: {
-    fontSize: 14,
+    fontSize: Typography.sm,
     fontWeight: Typography.bold,
     color: Colors.bg,
   },
@@ -1218,9 +1218,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.md,
     borderRadius: Radius.md,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: Colors.chipBg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: Colors.chipBorder,
   },
   medInfo: {
     flex: 1,
@@ -1241,7 +1241,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   removeBtn: {
-    fontSize: 16,
+    fontSize: Typography.base,
     color: Colors.danger,
     fontWeight: Typography.bold,
     paddingLeft: Spacing.md,
@@ -1255,9 +1255,9 @@ const styles = StyleSheet.create({
     width: '47%',
     padding: Spacing.lg,
     borderRadius: Radius.lg,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: Colors.chipBg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: Colors.chipBorder,
     alignItems: 'center',
   },
   dietCardSelected: {
@@ -1265,7 +1265,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.tealDim,
   },
   dietIcon: {
-    fontSize: 28,
+    fontSize: Typography.xxl,
     marginBottom: Spacing.sm,
   },
   dietLabel: {

@@ -334,7 +334,7 @@ const RootComponent = () => {
   if (isLoading || (session?.user && hasProfile === null)) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={Colors.teal} />
       </View>
     );
   }

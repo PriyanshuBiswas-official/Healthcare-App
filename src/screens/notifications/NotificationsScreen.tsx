@@ -102,7 +102,7 @@ function NotificationCard({ item }: { item: NotificationItem }) {
     <GlassCardView style={[styles.notifCard, !item.read && { borderColor: item.color + '40' }]}>
       <View style={styles.notifRow}>
         <View style={[styles.notifIconWrap, { backgroundColor: item.color + '20' }]}>
-          <Text style={{ fontSize: 20 }}>{item.icon}</Text>
+          <Text style={{ fontSize: Typography.lg }}>{item.icon}</Text>
         </View>
         <View style={styles.notifContent}>
           <View style={styles.notifTitleRow}>
@@ -238,7 +238,7 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
             <GlassCardView style={styles.quietHoursCard} accentColor={Colors.purple}>
               <View style={styles.quietRow}>
                 <View style={[styles.quietIcon, { backgroundColor: Colors.purple + '20' }]}>
-                  <Text style={{ fontSize: 20 }}>🌙</Text>
+                  <Text style={{ fontSize: Typography.lg }}>🌙</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.quietTitle}>Quiet Hours</Text>
@@ -272,7 +272,7 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
             <GlassCardView style={styles.upcomingCard}>
               <View style={styles.upcomingRow}>
                 <View style={[styles.upcomingIcon, { backgroundColor: Colors.pink + '20' }]}>
-                  <Text style={{ fontSize: 18 }}>🏥</Text>
+                   <Text style={{ fontSize: Typography.md }}>🏥</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.upcomingTitle}>Dr. Priya Sharma</Text>
@@ -287,7 +287,7 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
             <GlassCardView style={styles.upcomingCard}>
               <View style={styles.upcomingRow}>
                 <View style={[styles.upcomingIcon, { backgroundColor: Colors.teal + '20' }]}>
-                  <Text style={{ fontSize: 18 }}>💊</Text>
+                   <Text style={{ fontSize: Typography.md }}>💊</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.upcomingTitle}>Metformin 500mg</Text>
@@ -302,7 +302,7 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
             <GlassCardView style={styles.upcomingCard}>
               <View style={styles.upcomingRow}>
                 <View style={[styles.upcomingIcon, { backgroundColor: Colors.amber + '20' }]}>
-                  <Text style={{ fontSize: 18 }}>🧪</Text>
+                   <Text style={{ fontSize: Typography.md }}>🧪</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.upcomingTitle}>Blood Lab Panel</Text>
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backPlaceholder: { width: 40 },
-  backIcon: { fontSize: 20, color: Colors.textPrimary },
+  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
   pageTitle: {
     fontSize: Typography.lg,
     fontWeight: Typography.bold,
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   badgeText: {
-    fontSize: 11,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.bg,
   },
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.pink + '30',
   },
   tabBadgeText: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.textSecondary,
   },
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   notifTime: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     color: Colors.textMuted,
   },
 
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  reminderIconText: { fontSize: 18 },
+  reminderIconText: { fontSize: Typography.md },
   reminderContent: { flex: 1, marginLeft: Spacing.md },
   reminderLabel: {
     fontSize: Typography.base,
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
   },
   upcomingBadgeText: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
   },
 });

@@ -114,7 +114,7 @@ function CycleAnalyticsChart({ cycleHistory }: { cycleHistory: CycleHistoryEntry
   if (isEmpty) {
     return (
       <View style={{ marginTop: 16, alignItems: 'center', paddingVertical: 30 }}>
-        <Text style={{ fontSize: 13, color: Colors.textMuted }}>No cycle history yet. Log your periods to see trends.</Text>
+        <Text style={{ fontSize: Typography.sm, color: Colors.textMuted }}>No cycle history yet. Log your periods to see trends.</Text>
       </View>
     );
   }
@@ -200,7 +200,7 @@ function CycleAnalyticsChart({ cycleHistory }: { cycleHistory: CycleHistoryEntry
             const tipY = barY - tipH - 8;
             return (
               <G>
-                <Rect x={tipX} y={tipY} width={tipW} height={tipH} rx={6} fill="#1A1C2E" stroke={Colors.bgCardBorder} strokeWidth={1} />
+                <Rect x={tipX} y={tipY} width={tipW} height={tipH} rx={6} fill={Colors.modalBg} stroke={Colors.bgCardBorder} strokeWidth={1} />
                 <SvgText x={tipX + 8} y={tipY + 13} fill={Colors.pink} fontSize="10" fontWeight="bold">
                   {d.period}d period
                 </SvgText>
@@ -263,7 +263,7 @@ function SleepCycleCorrelationChart({ sleepLogs, cycleData }: { sleepLogs: Sleep
 
     return [
       { phase: 'Menstrual', hours: phaseSums.Menstrual.count > 0 ? +(phaseSums.Menstrual.total / phaseSums.Menstrual.count).toFixed(1) : 0, color: Colors.pink, count: phaseSums.Menstrual.count },
-      { phase: 'Follicular', hours: phaseSums.Follicular.count > 0 ? +(phaseSums.Follicular.total / phaseSums.Follicular.count).toFixed(1) : 0, color: '#7EC8E3', count: phaseSums.Follicular.count },
+      { phase: 'Follicular', hours: phaseSums.Follicular.count > 0 ? +(phaseSums.Follicular.total / phaseSums.Follicular.count).toFixed(1) : 0, color: Colors.follicular, count: phaseSums.Follicular.count },
       { phase: 'Ovulation', hours: phaseSums.Ovulation.count > 0 ? +(phaseSums.Ovulation.total / phaseSums.Ovulation.count).toFixed(1) : 0, color: Colors.amber, count: phaseSums.Ovulation.count },
       { phase: 'Luteal', hours: phaseSums.Luteal.count > 0 ? +(phaseSums.Luteal.total / phaseSums.Luteal.count).toFixed(1) : 0, color: Colors.purple, count: phaseSums.Luteal.count },
     ];
@@ -280,11 +280,11 @@ function SleepCycleCorrelationChart({ sleepLogs, cycleData }: { sleepLogs: Sleep
 
   return (
     <View style={{ marginTop: 20 }}>
-      <Text style={{ fontSize: 14, color: Colors.textSecondary, fontWeight: '600', marginBottom: 12 }}>
+      <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold, marginBottom: 12 }}>
         Sleep Duration vs Cycle Phase
       </Text>
       {!hasData ? (
-        <Text style={{ fontSize: 13, color: Colors.textMuted, textAlign: 'center', paddingVertical: 20 }}>
+        <Text style={{ fontSize: Typography.sm, color: Colors.textMuted, textAlign: 'center', paddingVertical: 20 }}>
           Log sleep across different cycle phases to see correlation.
         </Text>
       ) : (
@@ -397,7 +397,7 @@ function WeightFluctuationChart({
     while (cycleDay < logEnd + cycleLen * dayMs) {
       const phases = [
         { start: 0, end: periodEnd, color: Colors.pink },
-        { start: periodEnd, end: ovStart, color: '#7EC8E3' },
+        { start: periodEnd, end: ovStart, color: Colors.follicular },
         { start: ovStart, end: ovEnd, color: Colors.amber },
         { start: ovEnd, end: cycleLen, color: Colors.purple },
       ];
@@ -448,7 +448,7 @@ function WeightFluctuationChart({
 
       {!hasData ? (
         <View style={{ alignItems: 'center', paddingVertical: 24 }}>
-          <Text style={{ fontSize: 13, color: Colors.textMuted }}>Log your weight to see the fluctuation chart.</Text>
+          <Text style={{ fontSize: Typography.sm, color: Colors.textMuted }}>Log your weight to see the fluctuation chart.</Text>
         </View>
       ) : (
         <Svg width="100%" height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
@@ -797,7 +797,7 @@ export default function HealthScreenFemale({
         {!cycleData && !loading && (
           <TouchableOpacity style={s.cycleSetupBanner} activeOpacity={0.85} onPress={() => setShowCycleSetup(true)}>
             <View style={s.cycleSetupBannerIcon}>
-              <Text style={{ fontSize: 20 }}>🩸</Text>
+              <Text style={{ fontSize: Typography.lg }}>🩸</Text>
             </View>
             <View style={s.cycleSetupBannerCopy}>
               <Text style={s.cycleSetupBannerTitle}>Set up your cycle</Text>
@@ -1107,7 +1107,7 @@ export default function HealthScreenFemale({
 
             <SectionHeader title="Sharing Controls (Template)" />
             <GlassCardView style={s.card}>
-              <Text style={{ fontSize: Typography.base, fontWeight: '700', color: Colors.textPrimary, marginBottom: 16 }}>
+              <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: 16 }}>
                 Configure Shared Data
               </Text>
               <View style={{ gap: Spacing.base }}>
@@ -1118,7 +1118,7 @@ export default function HealthScreenFemale({
                 ].map((item, idx) => (
                   <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <View style={{ flex: 1, paddingRight: 12 }}>
-                      <Text style={{ fontSize: Typography.sm, fontWeight: '600', color: Colors.textPrimary }}>{item.label}</Text>
+                      <Text style={{ fontSize: Typography.sm, fontWeight: Typography.semiBold, color: Colors.textPrimary }}>{item.label}</Text>
                       <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 4 }}>{item.desc}</Text>
                     </View>
                     <View style={{ width: 44, height: 24, borderRadius: 12, backgroundColor: Colors.bgCardBorder, justifyContent: 'center', paddingHorizontal: 2 }}>
@@ -1267,7 +1267,7 @@ const s = StyleSheet.create({
   logCtaCopy: { flex: 1, paddingRight: Spacing.md },
   logCtaTitle: { fontSize: Typography.md, color: Colors.textPrimary, fontWeight: Typography.bold },
   logCtaSub: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 3 },
-  logCtaIcon: { width: 34, height: 34, borderRadius: 17, overflow: 'hidden', textAlign: 'center', lineHeight: 33, backgroundColor: Colors.pink, color: Colors.bg, fontSize: 26, fontWeight: Typography.bold },
+  logCtaIcon: { width: 34, height: 34, borderRadius: 17, overflow: 'hidden', textAlign: 'center', lineHeight: 33, backgroundColor: Colors.pink, color: Colors.bg, fontSize: Typography.xl, fontWeight: Typography.bold },
   cycleTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.lg },
   cycleRingWrap: { width: 120, height: 120, justifyContent: 'center', alignItems: 'center', position: 'relative' },
   cycleRing: { position: 'absolute', width: 120, height: 120, borderRadius: 60, borderWidth: 8, borderColor: Colors.bgCardBorder },
@@ -1275,13 +1275,13 @@ const s = StyleSheet.create({
   ringDay: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.textPrimary },
   ringSub: { fontSize: Typography.xs, color: Colors.textSecondary },
   cycleInfoWrap: { flex: 1, marginLeft: Spacing.lg },
-  cyclePhaseLabel: { fontSize: 11, color: Colors.textMuted, textTransform: 'uppercase', marginBottom: 2 },
+  cyclePhaseLabel: { fontSize: Typography.xs, color: Colors.textMuted, textTransform: 'uppercase', marginBottom: 2 },
   phaseNameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm },
   phaseDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
   phaseName: { fontSize: Typography.xl, fontWeight: Typography.extraBold },
   cycleStatsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  cycleStatLabel: { width: '50%', fontSize: 11, color: Colors.textMuted, marginBottom: 2 },
-  cycleStatVal: { width: '50%', fontSize: 11, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: 2, textAlign: 'right' },
+  cycleStatLabel: { width: '50%', fontSize: Typography.xs, color: Colors.textMuted, marginBottom: 2 },
+  cycleStatVal: { width: '50%', fontSize: Typography.xs, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: 2, textAlign: 'right' },
   phaseBtnRow: { flexDirection: 'row', gap: Spacing.sm },
   phaseGap: { width: Spacing.sm },
 
@@ -1293,7 +1293,7 @@ const s = StyleSheet.create({
   chartCol: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
   moodTrack: { width: '100%', height: 68, borderRadius: Radius.sm, backgroundColor: Colors.bgCardBorder, justifyContent: 'flex-end', overflow: 'hidden' },
   moodBar: { width: '100%', borderRadius: Radius.sm },
-  chartLabel: { fontSize: 10, color: Colors.textMuted, marginTop: 5, fontWeight: Typography.semiBold },
+  chartLabel: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 5, fontWeight: Typography.semiBold },
   softDivider: { height: 1, backgroundColor: Colors.divider, marginVertical: Spacing.lg },
   flowTrendRow: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.sm },
   flowTrendItem: { flex: 1, alignItems: 'center' },
@@ -1301,17 +1301,17 @@ const s = StyleSheet.create({
   flowTrendFill: { width: '100%', backgroundColor: Colors.pink },
   signalRow: { flexDirection: 'row', alignItems: 'center' },
   signalIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.purple + '20' },
-  signalIconText: { color: Colors.purple, fontSize: 18 },
+  signalIconText: { color: Colors.purple, fontSize: Typography.lg },
   signalCopy: { flex: 1, marginLeft: Spacing.md },
   signalTitle: { fontSize: Typography.base, color: Colors.textPrimary, fontWeight: Typography.bold },
   signalText: { fontSize: Typography.xs, color: Colors.textSecondary, lineHeight: 18, marginTop: 3 },
   patternGrid: { flexDirection: 'row', gap: Spacing.sm },
   patternItem: { flex: 1, borderWidth: 1, borderColor: Colors.bgCardBorder, borderRadius: Radius.md, padding: Spacing.md, backgroundColor: Colors.bgCard },
-  patternLabel: { fontSize: 10, color: Colors.textMuted, textTransform: 'uppercase', marginBottom: 5 },
+  patternLabel: { fontSize: Typography.xs, color: Colors.textMuted, textTransform: 'uppercase', marginBottom: 5 },
   patternValue: { fontSize: Typography.sm, color: Colors.textPrimary, fontWeight: Typography.bold },
   partnerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
   partnerAvatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.pink + '22' },
-  partnerAvatarText: { fontSize: 22, color: Colors.pink, fontWeight: Typography.bold },
+  partnerAvatarText: { fontSize: Typography.xl, color: Colors.pink, fontWeight: Typography.bold },
   partnerTitleWrap: { flex: 1, marginLeft: Spacing.md },
   partnerTitle: { fontSize: Typography.md, color: Colors.textPrimary, fontWeight: Typography.bold },
   partnerSub: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2, lineHeight: 17 },
@@ -1323,12 +1323,12 @@ const s = StyleSheet.create({
   fertTitle: { fontSize: Typography.md, fontWeight: Typography.bold, color: Colors.textPrimary },
   fertSub: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2 },
   fertBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.full, borderWidth: 1 },
-  fertBadgeText: { fontSize: 10, fontWeight: Typography.bold },
+  fertBadgeText: { fontSize: Typography.xs, fontWeight: Typography.bold },
   fertGridRow: { flexDirection: 'row', gap: Spacing.sm },
   fertBox: { flex: 1, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, alignItems: 'center' },
-  fertBoxTitle: { fontSize: 11, fontWeight: Typography.semiBold, marginBottom: 4, textAlign: 'center' },
+  fertBoxTitle: { fontSize: Typography.xs, fontWeight: Typography.semiBold, marginBottom: 4, textAlign: 'center' },
   fertBoxVal: { fontSize: Typography.lg, fontWeight: Typography.bold, marginBottom: 4, textAlign: 'center' },
-  fertBoxSub: { fontSize: 10, color: Colors.textMuted, textAlign: 'center' },
+  fertBoxSub: { fontSize: Typography.xs, color: Colors.textMuted, textAlign: 'center' },
   infoBox: { backgroundColor: Colors.amber + '10', borderRadius: Radius.md, padding: Spacing.md, marginTop: Spacing.md, borderWidth: 1, borderColor: Colors.amber + '20' },
   infoText: { fontSize: Typography.xs, color: Colors.textSecondary, lineHeight: 18 },
   aiWrap: { marginTop: Spacing.xl },
@@ -1357,12 +1357,12 @@ const s = StyleSheet.create({
   cycleSetupBannerCopy: { flex: 1 },
   cycleSetupBannerTitle: { fontSize: Typography.md, color: Colors.textPrimary, fontWeight: Typography.bold },
   cycleSetupBannerSub: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 },
-  cycleSetupBannerArrow: { fontSize: 28, color: Colors.pink, fontWeight: Typography.bold, marginLeft: Spacing.sm },
+  cycleSetupBannerArrow: { fontSize: Typography.xxl, color: Colors.pink, fontWeight: Typography.bold, marginLeft: Spacing.sm },
 
   // Cycle Setup Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: Colors.overlayHeavy, justifyContent: 'flex-end' },
   modalSheet: {
-    backgroundColor: '#111322',
+    backgroundColor: Colors.modalBg,
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
     padding: Spacing.xl,

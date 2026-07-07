@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backPlaceholder: { width: 40 },
-  backIcon: { fontSize: 20, color: Colors.textPrimary },
+  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
   pageTitle: {
     fontSize: Typography.lg,
     fontWeight: Typography.bold,
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.xs,
     fontWeight: Typography.semiBold,
     color: Colors.teal,
-    letterSpacing: 0.3,
+    letterSpacing: Typography.lsWide,
   },
   profileMeta: {
     flexDirection: 'row',
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   completeCardIcon: {
-    fontSize: 22,
+    fontSize: Typography.xl,
     marginRight: Spacing.md,
   },
   completeCardTextWrap: {
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuIconText: { fontSize: 18 },
+  menuIconText: { fontSize: Typography.md },
   menuContent: { flex: 1, marginLeft: Spacing.md },
   menuLabel: {
     fontSize: Typography.base,
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   chevron: {
-    fontSize: 22,
+    fontSize: Typography.xl,
     color: Colors.textMuted,
     fontWeight: Typography.medium,
     marginLeft: Spacing.sm,
@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.danger + '40',
     marginBottom: Spacing.lg,
   },
-  logoutIcon: { fontSize: 16, marginRight: Spacing.sm },
+  logoutIcon: { fontSize: Typography.base, marginRight: Spacing.sm },
   logoutText: {
     fontSize: Typography.base,
     fontWeight: Typography.bold,

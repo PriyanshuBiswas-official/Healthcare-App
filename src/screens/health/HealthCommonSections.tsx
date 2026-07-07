@@ -62,7 +62,7 @@ const itb = StyleSheet.create({
   },
   tabActive: {
     backgroundColor: Colors.bgCard, 
-    shadowColor: '#000', 
+    shadowColor: Colors.shadowColor, 
     shadowOpacity: 0.2, 
     shadowRadius: 4, 
     elevation: 2
@@ -110,7 +110,7 @@ export const HormoneRangeBar: React.FC<HormoneRangeBarProps> = ({
       {/* Zone track */}
       <View style={hrb.trackWrap}>
         <View style={hrb.track}>
-          <View style={[hrb.zone, { flex: 3, backgroundColor: '#FF5E5E38', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }]} />
+          <View style={[hrb.zone, { flex: 3, backgroundColor: Colors.danger + '38', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }]} />
           <View style={[hrb.zone, { flex: 4, backgroundColor: Colors.success + '38' }]} />
           <View style={[hrb.zone, { flex: 3, backgroundColor: Colors.amber + '38', borderTopRightRadius: 5, borderBottomRightRadius: 5 }]} />
         </View>
@@ -148,7 +148,7 @@ const hrb = StyleSheet.create({
   markerOuter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.bg },
   markerInner: { width: 10, height: 10, borderRadius: 5 },
   zoneLabelRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  zoneLabel: { fontSize: 10, color: Colors.textMuted, flex: 1 },
+  zoneLabel: { fontSize: Typography.xs, color: Colors.textMuted, flex: 1 },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -170,7 +170,7 @@ const logS = StyleSheet.create({
     paddingVertical: Spacing.sm + 2, paddingHorizontal: Spacing.base,
     borderRadius: Radius.full, borderWidth: 1,
   },
-  icon: { fontSize: 14, marginRight: 6 },
+  icon: { fontSize: Typography.sm, marginRight: 6 },
   label: { fontSize: Typography.sm, fontWeight: Typography.semiBold },
 });
 
@@ -196,8 +196,8 @@ const qab = StyleSheet.create({
     flex: 1, alignItems: 'center', paddingVertical: Spacing.md,
     borderRadius: Radius.md, borderWidth: 1,
   },
-  icon: { fontSize: 22, marginBottom: 4 },
-  label: { fontSize: 11, fontWeight: Typography.semiBold, textAlign: 'center' },
+  icon: { fontSize: Typography.xl, marginBottom: 4 },
+  label: { fontSize: Typography.xs, fontWeight: Typography.semiBold, textAlign: 'center' },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -208,7 +208,7 @@ export const MiniMetricCard: React.FC<{
 }> = ({ icon, label, value, unit, color, subtitle }) => (
   <GlassCardView style={mmc.card} accentColor={color}>
     <View style={[mmc.iconWrap, { backgroundColor: color + '22' }]}>
-      <Text style={{ fontSize: 18 }}>{icon}</Text>
+      <Text style={{ fontSize: Typography.lg }}>{icon}</Text>
     </View>
     <View style={mmc.valueRow}>
       <Text style={[mmc.value, { color }]}>{value}</Text>
@@ -224,8 +224,8 @@ const mmc = StyleSheet.create({
   valueRow: { flexDirection: 'row', alignItems: 'baseline' },
   value: { fontSize: Typography.lg, fontWeight: Typography.extraBold },
   unit: { fontSize: Typography.xs, fontWeight: Typography.medium, marginLeft: 3 },
-  label: { fontSize: 11, color: Colors.textSecondary, fontWeight: Typography.semiBold, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.4 },
-  subtitle: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
+  label: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: Typography.semiBold, marginTop: 3, textTransform: 'uppercase', letterSpacing: Typography.lsWide },
+  subtitle: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2 },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -385,7 +385,7 @@ export const MentalHealthSection: React.FC<{ moodLogs?: MoodLog[] }> = ({ moodLo
   const rawStress = latestLog?.stress ?? 2; // default to 2
   const stress = rawStress <= 2 ? 'Low' : rawStress <= 4 ? 'Moderate' : 'High';
   const stressLevel = rawStress;
-  const stressColor = stress === 'Low' ? Colors.success : stress === 'Moderate' ? Colors.amber : Colors.danger ?? '#FF5E5E';
+  const stressColor = stress === 'Low' ? Colors.success : stress === 'Moderate' ? Colors.amber : Colors.danger;
 
   // Build last 7 days of energy data from real logs
   const weekData = useMemo(() => Array.from({ length: 7 }, (_, i) => {
@@ -425,7 +425,7 @@ export const MentalHealthSection: React.FC<{ moodLogs?: MoodLog[] }> = ({ moodLo
         </View>
         <View style={mhs.meterRow}>
           {[1, 2, 3, 4, 5].map(seg => {
-            const segColor = seg <= 2 ? Colors.success : seg === 3 || seg === 4 ? Colors.amber : Colors.danger ?? '#FF5E5E';
+            const segColor = seg <= 2 ? Colors.success : seg === 3 || seg === 4 ? Colors.amber : Colors.danger;
             const filled = seg <= stressLevel;
             return (
               <View
@@ -479,19 +479,19 @@ const mhs = StyleSheet.create({
   moodRow: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.xs, marginBottom: Spacing.md },
   moodCard: {
     flex: 1, alignItems: 'center', paddingVertical: Spacing.md, paddingHorizontal: 4,
-    borderRadius: Radius.md, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.bgCardBorder,
+    backgroundColor: Colors.tooltipBg,
   },
-  moodEmoji: { fontSize: 24, marginBottom: 5 },
-  moodEmojiSel: { fontSize: 30 },
-  moodCardLabel: { fontSize: 10, color: Colors.textMuted, fontWeight: Typography.semiBold, textAlign: 'center' },
+  moodEmoji: { fontSize: Typography.xl, marginBottom: 5 },
+  moodEmojiSel: { fontSize: Typography.xxl },
+  moodCardLabel: { fontSize: Typography.xs, color: Colors.textMuted, fontWeight: Typography.semiBold, textAlign: 'center' },
   moodSelectedDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: Colors.amber, marginTop: 4 },
   insightStrip: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.amber + '12',
     borderRadius: Radius.md, padding: Spacing.md, gap: Spacing.sm,
     borderWidth: 1, borderColor: Colors.amber + '25',
   },
-  insightIcon: { fontSize: 20 },
+  insightIcon: { fontSize: Typography.lg },
   insightText: { flex: 1, fontSize: Typography.xs, color: Colors.textSecondary, lineHeight: 17 },
   stressHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
   stressTitle: { fontSize: Typography.sm, color: Colors.textMuted, fontWeight: Typography.medium },
@@ -501,7 +501,7 @@ const mhs = StyleSheet.create({
   meterRow: { flexDirection: 'row', gap: 4, height: 10, marginBottom: 6 },
   meterSeg: { flex: 1, height: '100%' },
   meterLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.md },
-  meterLabel: { fontSize: 10, color: Colors.textMuted },
+  meterLabel: { fontSize: Typography.xs, color: Colors.textMuted },
   stressBtnsRow: { flexDirection: 'row', gap: Spacing.sm },
   stressBtn: {
     flex: 1, alignItems: 'center', paddingVertical: Spacing.sm,
@@ -513,8 +513,8 @@ const mhs = StyleSheet.create({
   weekCol: { flex: 1, alignItems: 'center' },
   weekBarTrack: { width: '70%', height: 70, backgroundColor: Colors.bgCardBorder, borderRadius: 5, justifyContent: 'flex-end', overflow: 'hidden', marginBottom: 4 },
   weekBar: { width: '100%', borderRadius: 5 },
-  weekEmoji: { fontSize: 13, marginBottom: 2 },
-  weekDayLbl: { fontSize: 10, color: Colors.textMuted },
+  weekEmoji: { fontSize: Typography.sm, marginBottom: 2 },
+  weekDayLbl: { fontSize: Typography.xs, color: Colors.textMuted },
   actRow: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.md, marginTop: Spacing.sm },
 });
 
@@ -558,7 +558,7 @@ export const VitalsDashboardSection: React.FC = () => {
       <GlassCardView style={vit.hrCard} accentColor={Colors.pink}>
         <View style={vit.hrHeader}>
           <View style={[vit.hrIcon, { backgroundColor: Colors.pink + '22' }]}>
-            <Text style={{ fontSize: 20 }}>❤️</Text>
+            <Text style={{ fontSize: Typography.lg }}>❤️</Text>
           </View>
           <View style={{ flex: 1, marginLeft: Spacing.md }}>
             <Text style={vit.hrLabel}>HEART RATE</Text>
@@ -664,12 +664,12 @@ const ai = StyleSheet.create({
   card: { padding: Spacing.base, marginBottom: Spacing.base },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.base, paddingBottom: Spacing.base, borderBottomWidth: 1, borderBottomColor: Colors.divider },
   iconWrap: { width: 34, height: 34, borderRadius: 17, backgroundColor: Colors.purple + '30', alignItems: 'center', justifyContent: 'center' },
-  iconText: { fontSize: 16, color: Colors.purple },
+  iconText: { fontSize: Typography.base, color: Colors.purple },
   label: { fontSize: 11, fontWeight: Typography.bold, color: Colors.purple, letterSpacing: 1.5 },
   date: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 1 },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.success, shadowColor: Colors.success, shadowRadius: 6, shadowOpacity: 1, elevation: 4 },
   insightRow: { flexDirection: 'row', paddingVertical: Spacing.md, gap: Spacing.md },
-  insightIcon: { fontSize: 22, marginTop: 2 },
+  insightIcon: { fontSize: Typography.xl, marginTop: 2 },
   insightTitle: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: 4 },
   insightBody: { fontSize: Typography.sm, color: Colors.textSecondary, lineHeight: 18 },
   cta: { marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.divider },
@@ -682,9 +682,9 @@ const ai = StyleSheet.create({
 const PREVENTIVE_ITEMS = [
   { icon: '🩺', label: 'Blood Pressure Check', detail: 'Last: Jan 10 · Next rec. Jan 25', status: 'Due Soon', statusColor: Colors.amber },
   { icon: '🔬', label: 'Full Blood Panel', detail: 'Last: Jun 10 · Next rec. Dec 10', status: 'Up to Date', statusColor: Colors.success },
-  { icon: '👁️', label: 'Eye Examination', detail: 'Last: Jan 2025 · Rec. every year', status: 'Due', statusColor: Colors.danger ?? '#FF5E5E' },
+  { icon: '👁️', label: 'Eye Examination', detail: 'Last: Jan 2025 · Rec. every year', status: 'Due', statusColor: Colors.danger },
   { icon: '🦷', label: 'Dental Check', detail: 'Last: Mar 5 · Next rec. Sep 5', status: 'Up to Date', statusColor: Colors.success },
-  { icon: '🏥', label: 'STI / Sexual Health Panel', detail: 'Rec. annually if sexually active', status: 'Overdue', statusColor: '#FF5E5E' },
+  { icon: '🏥', label: 'STI / Sexual Health Panel', detail: 'Rec. annually if sexually active', status: 'Overdue', statusColor: Colors.danger },
 ];
 
 export const PreventiveCareSection: React.FC = () => (
@@ -694,7 +694,7 @@ export const PreventiveCareSection: React.FC = () => (
       {PREVENTIVE_ITEMS.map((item, i) => (
         <View key={i} style={[prev.row, i < PREVENTIVE_ITEMS.length - 1 && { borderBottomWidth: 1, borderBottomColor: Colors.divider }]}>
           <View style={[prev.iconWrap, { backgroundColor: item.statusColor + '18' }]}>
-            <Text style={{ fontSize: 18 }}>{item.icon}</Text>
+            <Text style={{ fontSize: Typography.md }}>{item.icon}</Text>
           </View>
           <View style={{ flex: 1, marginLeft: Spacing.md }}>
             <Text style={prev.label}>{item.label}</Text>
@@ -722,9 +722,9 @@ const prev = StyleSheet.create({
 // Shared Modal Styles
 // ═══════════════════════════════════════════════════════════════════════════════
 export const modalS = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', justifyContent: 'flex-end' },
+  overlay: { flex: 1, backgroundColor: Colors.overlayHeavy, justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: '#111322', borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl,
+    backgroundColor: Colors.modalBg, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl,
     padding: Spacing.xl, paddingBottom: 40, borderWidth: 1, borderColor: Colors.bgCardBorder,
   },
   handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.textMuted, alignSelf: 'center', marginBottom: Spacing.lg },

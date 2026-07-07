@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   icon: {
-    fontSize: 20,
+    fontSize: Typography.xl,
     marginRight: Spacing.sm,
   },
   title: {

@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backIcon: { fontSize: 20, color: Colors.textPrimary },
+  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
   pageTitle: {
     fontSize: Typography.lg,
     fontWeight: Typography.bold,
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
-  emptyIcon: { fontSize: 32, marginBottom: Spacing.md },
+  emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
   emptyText: {
     fontSize: Typography.base,
     fontWeight: Typography.semiBold,

@@ -377,13 +377,13 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                 style={styles.noGoalBanner}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={[styles.iconWrapSm, { backgroundColor: Colors.amber + '20', width: 36, height: 36, borderRadius: 18 }]}>
-                    <Text style={{ fontSize: 16 }}>🎯</Text>
+                    <Text style={{ fontSize: Typography.base }}>🎯</Text>
                   </View>
                   <View style={{ flex: 1, marginLeft: Spacing.md }}>
                     <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textPrimary }}>Set up your diet goals</Text>
                     <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 }}>Track calories, macros, and water intake</Text>
                   </View>
-                  <Text style={{ fontSize: 18, color: Colors.textMuted }}>›</Text>
+                  <Text style={{ fontSize: Typography.lg, color: Colors.textMuted }}>›</Text>
                 </View>
               </TouchableOpacity>
             )}
@@ -392,7 +392,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
             <GlassCardView style={styles.aiCard} accentColor={Colors.amber}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm }}>
                 <View style={[styles.iconWrapSm, { backgroundColor: Colors.amber + '20' }]}>
-                  <Text style={{ fontSize: 14 }}>✦</Text>
+                  <Text style={{ fontSize: Typography.sm }}>✦</Text>
                 </View>
                 <Text style={[styles.aiLabel, { color: Colors.amber, marginLeft: Spacing.sm, marginBottom: 0 }]}>AI NUTRITION INSIGHT</Text>
               </View>
@@ -494,7 +494,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
             <GlassCardView style={styles.photoUploadCard}>
               <TouchableOpacity style={styles.photoUploadArea}>
                 <View style={styles.cameraIconWrap}>
-                  <Text style={{ fontSize: 28 }}>📷</Text>
+                  <Text style={{ fontSize: Typography.xxl }}>📷</Text>
                 </View>
                 <Text style={styles.photoUploadTitle}>Scan meal with AI</Text>
                 <Text style={styles.photoUploadSub}>Upload or take a photo to automatically log calories and macros.</Text>
@@ -532,14 +532,14 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                     onPress={() => openMealModal(cat.key)}
                     style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.sm }, pressed && { opacity: 0.5 }]}>
                       <View style={[styles.iconWrapSm, { backgroundColor: hasMeals ? cat.color + '20' : Colors.bgCardBorder, width: 44, height: 44, borderRadius: Radius.md }]}>
-                        <Text style={{ fontSize: 22, opacity: hasMeals ? 1 : 0.5 }}>{cat.icon}</Text>
+                        <Text style={{ fontSize: Typography.xl, opacity: hasMeals ? 1 : 0.5 }}>{cat.icon}</Text>
                       </View>
                       <View style={{ flex: 1, marginLeft: Spacing.md }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                           <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: hasMeals ? Colors.textPrimary : Colors.textSecondary }}>{cat.name}</Text>
                           {hasMeals && (
                             <View style={{ backgroundColor: Colors.teal + '30', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, marginLeft: Spacing.sm }}>
-                              <Text style={{ fontSize: 10, color: Colors.teal, fontWeight: Typography.bold }}>Logged</Text>
+                              <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.bold }}>Logged</Text>
                             </View>
                           )}
                         </View>
@@ -551,12 +551,12 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                         {hasMeals ? (
                           <>
                             <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary }}>{totalCals}</Text>
-                            <Text style={{ fontSize: 10, color: Colors.textMuted, marginTop: 2 }}>kcal · {timeStr}</Text>
+                            <Text style={{ fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2 }}>kcal · {timeStr}</Text>
                           </>
                         ) : (
                           <View style={{ paddingHorizontal: Spacing.md, paddingVertical: 6, backgroundColor: Colors.bgCardBorder, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center' }}>
                             <Text style={{ fontSize: Typography.xs, color: Colors.textPrimary, fontWeight: Typography.bold, marginRight: 4 }}>Log</Text>
-                            <Text style={{ fontSize: 12, color: Colors.textPrimary }}>↗</Text>
+                            <Text style={{ fontSize: Typography.sm, color: Colors.textPrimary }}>↗</Text>
                           </View>
                         )}
                       </View>
@@ -577,8 +577,8 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                   <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary }}>{waterPercent}% of daily goal</Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.teal + '15', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.teal + '30' }}>
-                  <Text style={{ fontSize: 12, marginRight: 6 }}>💧</Text>
-                  <Text style={{ fontSize: 10, color: Colors.teal, fontWeight: Typography.bold }}>{waterTotalMl} ml</Text>
+                  <Text style={{ fontSize: Typography.sm, marginRight: 6 }}>💧</Text>
+                  <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.bold }}>{waterTotalMl} ml</Text>
                 </View>
               </View>
 
@@ -586,7 +586,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               <View style={{ height: 8, borderRadius: 4, backgroundColor: Colors.bgCardBorder, marginBottom: Spacing.sm, overflow: 'hidden' }}>
                 <View style={{ height: '100%', borderRadius: 4, width: `${Math.min(waterPercent, 100)}%`, backgroundColor: Colors.teal }} />
               </View>
-              <Text style={{ fontSize: 10, color: Colors.textMuted, marginBottom: Spacing.base, textAlign: 'right' }}>{waterTotalMl} / {waterGoalMl} ml</Text>
+              <Text style={{ fontSize: Typography.xs, color: Colors.textMuted, marginBottom: Spacing.base, textAlign: 'right' }}>{waterTotalMl} / {waterGoalMl} ml</Text>
 
               {/* Quick add buttons */}
               <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
@@ -595,8 +595,8 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                     key={ml}
                     onPress={() => handleLogWater(ml)}
                     style={{ flex: 1, backgroundColor: Colors.bgCardBorder, paddingVertical: Spacing.sm, borderRadius: Radius.md, alignItems: 'center', borderWidth: 1, borderColor: Colors.bgCardBorder }}>
-                    <Text style={{ fontSize: 11, color: Colors.teal, fontWeight: Typography.bold }}>+{ml}</Text>
-                    <Text style={{ fontSize: 9, color: Colors.textMuted }}>ml</Text>
+                    <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.bold }}>+{ml}</Text>
+                    <Text style={{ fontSize: Typography.xs, color: Colors.textMuted }}>ml</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -618,21 +618,21 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               {AI_SUGGESTIONS.map((item, idx) => (
                 <GlassCardView key={idx} style={{ width: '48.5%', padding: Spacing.sm, marginBottom: Spacing.sm }}>
                   <View style={{ backgroundColor: item.color + '20', height: 70, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.md }}>
-                    <Text style={{ fontSize: 32 }}>{item.icon}</Text>
+                    <Text style={{ fontSize: Typography.xxl }}>{item.icon}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
                     <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textPrimary, flex: 1, marginRight: Spacing.xs, lineHeight: 18 }} numberOfLines={2}>{item.title}</Text>
                     <View style={{ backgroundColor: Colors.bgCardBorder, paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full }}>
-                      <Text style={{ fontSize: 9, color: item.color, fontWeight: Typography.bold }}>{item.type}</Text>
+                      <Text style={{ fontSize: Typography.xs, color: item.color, fontWeight: Typography.bold }}>{item.type}</Text>
                     </View>
                   </View>
-                  <Text style={{ fontSize: 10, color: Colors.textSecondary, marginBottom: Spacing.lg, lineHeight: 14 }} numberOfLines={2}>
+                  <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginBottom: Spacing.lg, lineHeight: 14 }} numberOfLines={2}>
                     {item.tags.join(' - ')}
                   </Text>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                    <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary }}>~{item.calories} <Text style={{ fontSize: 10, color: Colors.textMuted, fontWeight: 'normal' }}>kcal</Text></Text>
+                    <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary }}>~{item.calories} <Text style={{ fontSize: Typography.xs, color: Colors.textMuted, fontWeight: Typography.regular }}>kcal</Text></Text>
                     <View style={{ backgroundColor: item.color + '15', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, borderWidth: 1, borderColor: item.color + '30' }}>
-                      <Text style={{ fontSize: 9, color: item.color, fontWeight: Typography.bold }}>{item.highlight}</Text>
+                      <Text style={{ fontSize: Typography.xs, color: item.color, fontWeight: Typography.bold }}>{item.highlight}</Text>
                     </View>
                   </View>
                 </GlassCardView>
@@ -643,10 +643,10 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
             <SectionHeader title="WEEKLY NUTRITION TREND" />
             <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl }}>
-                <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary }}>Calorie intake <Text style={{ color: Colors.textSecondary, fontWeight: 'normal' }}>— past 7 days</Text></Text>
+                <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary }}>Calorie intake <Text style={{ color: Colors.textSecondary, fontWeight: Typography.regular }}>— past 7 days</Text></Text>
                 <View style={{ backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.purple, paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 10, marginRight: 4 }}>✦</Text>
-                  <Text style={{ fontSize: 10, color: Colors.purple, fontWeight: Typography.bold }}>AI analyzed Today</Text>
+                  <Text style={{ fontSize: Typography.xs, marginRight: 4 }}>✦</Text>
+                  <Text style={{ fontSize: Typography.xs, color: Colors.purple, fontWeight: Typography.bold }}>AI analyzed Today</Text>
                 </View>
               </View>
 
@@ -654,7 +654,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                 {weeklyTrend.map((day, idx) => (
                   <View key={idx} style={{ alignItems: 'center', width: '12%', height: '100%', justifyContent: 'flex-end' }}>
                     <View style={{ width: '100%', height: `${(day.val / 3000) * 100}%`, backgroundColor: day.today ? Colors.purple : day.val > 2000 ? Colors.amber : Colors.teal + '80', borderRadius: Radius.sm, minHeight: 20 }} />
-                    <Text style={{ fontSize: 12, color: day.today ? Colors.purple : Colors.textSecondary, marginTop: Spacing.sm, fontWeight: day.today ? Typography.bold : 'normal' }}>{day.day}</Text>
+                    <Text style={{ fontSize: Typography.sm, color: day.today ? Colors.purple : Colors.textSecondary, marginTop: Spacing.sm, fontWeight: day.today ? Typography.bold : Typography.regular }}>{day.day}</Text>
                   </View>
                 ))}
               </View>
@@ -664,7 +664,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary }}>Avg this week: <Text style={{ color: Colors.textPrimary, fontWeight: Typography.bold }}>{weeklyAvg.toLocaleString()} kcal</Text></Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.teal + '20', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.teal + '50' }}>
-                  <Text style={{ fontSize: 10, color: Colors.teal, fontWeight: Typography.bold }}>✓ {weeklyAvg <= calorieGoal ? 'Within goal' : 'Over goal'}</Text>
+                  <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.bold }}>✓ {weeklyAvg <= calorieGoal ? 'Within goal' : 'Over goal'}</Text>
                 </View>
               </View>
             </GlassCardView>
@@ -913,7 +913,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   iconWrapSm: { alignItems: 'center', justifyContent: 'center' },
-  aiLabel: { fontSize: 10, fontWeight: Typography.bold, letterSpacing: 1.5 },
+  aiLabel: { fontSize: Typography.xs, fontWeight: Typography.bold, letterSpacing: 1.5 },
   aiText: { fontSize: Typography.sm, color: Colors.textSecondary, lineHeight: 20 },
 
   photoUploadCard: { marginBottom: Spacing.lg, padding: Spacing.base },
@@ -941,7 +941,7 @@ const styles = StyleSheet.create({
   calorieStat: { marginBottom: Spacing.xs },
   goalHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   editBtn: { paddingHorizontal: 6, paddingVertical: 2, backgroundColor: Colors.bgCardBorder, borderRadius: Radius.sm },
-  editBtnText: { fontSize: 10, color: Colors.textSecondary },
+  editBtnText: { fontSize: Typography.xs, color: Colors.textSecondary },
   editGoalRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   editGoalInput: { flex: 1, backgroundColor: Colors.bg, color: Colors.textPrimary, fontSize: Typography.base, fontWeight: Typography.bold, borderRadius: Radius.sm, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: Colors.teal },
   saveGoalBtn: { marginLeft: 8, backgroundColor: Colors.teal, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
@@ -956,10 +956,10 @@ const styles = StyleSheet.create({
   macroItem: { width: '47%', borderWidth: 1, borderRadius: Radius.md, padding: Spacing.base },
   macroVal: { fontSize: Typography.lg, fontWeight: Typography.bold, marginBottom: 2 },
   macroLabel: { fontSize: Typography.xs, color: Colors.textSecondary, marginBottom: Spacing.xs },
-  macroTarget: { fontSize: 10, color: Colors.textMuted, marginTop: 4, alignSelf: 'flex-end' },
+  macroTarget: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 4, alignSelf: 'flex-end' },
 
   // Modal styles
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: Colors.overlay, justifyContent: 'flex-end' },
   modalContent: {
     backgroundColor: Colors.bgCardSolid,
     borderTopLeftRadius: Radius.xl,
