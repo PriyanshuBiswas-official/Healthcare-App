@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useReducer, useCallback } from 'react';
-import { View, StatusBar, StyleSheet, SafeAreaView, BackHandler, ActivityIndicator } from 'react-native';
+import { View, StatusBar, StyleSheet, SafeAreaView, BackHandler } from 'react-native';
 import { Colors } from './src/theme/theme';
 import TabBar, { TabName } from './src/navigation/TabBar';
 import { ScrollVisibilityProvider, useScrollVisibility } from './src/navigation/ScrollVisibilityContext';
@@ -19,6 +19,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import OnboardingScreen from './src/screens/auth/OnboardingScreen';
 import { AuthStack } from './src/navigation/AuthStack';
+import LoadingScreen from './src/components/LoadingScreen';
 const Stack = createNativeStackNavigator();
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
@@ -332,11 +333,7 @@ const RootComponent = () => {
   const { session, isLoading, hasProfile } = useAuth();
 
   if (isLoading || (session?.user && hasProfile === null)) {
-    return (
-      <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={Colors.teal} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   if (!session?.user) {

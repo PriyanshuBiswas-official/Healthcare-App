@@ -25,11 +25,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg';
 import { SleepTrackerSection, VitalsDashboardSection } from '../health/HealthCommonSections';
 import { getSleepLogs, getWeightLogs, saveWeightLog } from '../../services/healthService';
-import { getMealsForDate, getWaterForDate, getCalorieGoal, logMeal, logWater, getWaterChallenge } from '../../services/dietService';
-import { getTodaySummary, getActivityGoal } from '../../services/activityService';
+import { getMealsForDate, getWaterForDate, getCalorieGoal, logMeal, logWater, getWaterChallenge, getWeeklyTrend } from '../../services/dietService';
+import { getTodaySummary, getActivityGoal, getWeeklyStats } from '../../services/activityService';
 import type { SleepLog, WeightEntry } from '../../types/health';
-import type { DayMealsResponse, DayWaterResponse, NutritionGoal, MealType, WaterChallenge } from '../../types/diet';
-import type { ActivitySummary, ActivityGoal } from '../../types/activity';
+import type { DayMealsResponse, DayWaterResponse, NutritionGoal, MealType, WaterChallenge, WeeklyTrendDay } from '../../types/diet';
+import type { ActivitySummary, ActivityGoal, WeeklyData } from '../../types/activity';
 import type { TabName } from '../../navigation/TabBar';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -167,6 +167,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null);
   const [activityGoal, setActivityGoal] = useState<ActivityGoal | null>(null);
   const [waterChallenge, setWaterChallenge] = useState<WaterChallenge | null>(null);
+  const [weeklyTrend, setWeeklyTrend] = useState<WeeklyTrendDay[]>([]);
+  const [weeklyActivity, setWeeklyActivity] = useState<WeeklyData | null>(null);
   const [showMealModal, setShowMealModal] = useState(false);
   const [showWaterModal, setShowWaterModal] = useState(false);
   const [showMedModal, setShowMedModal] = useState(false);
@@ -228,6 +230,14 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getWaterChallenge(session.access_token, 5)
         .then(setWaterChallenge)
         .catch(err => console.warn('Failed to load water challenge on Dashboard:', err));
+
+      getWeeklyTrend(session.access_token)
+        .then(setWeeklyTrend)
+        .catch(err => console.warn('Failed to load weekly trend on Dashboard:', err));
+
+      getWeeklyStats(session.access_token, today)
+        .then(setWeeklyActivity)
+        .catch(err => console.warn('Failed to load weekly stats on Dashboard:', err));
     }
   };
 
@@ -244,6 +254,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getTodaySummary(session.access_token, today).then(setActivitySummary),
       getActivityGoal(session.access_token).then(setActivityGoal),
       getWaterChallenge(session.access_token, 5).then(setWaterChallenge),
+      getWeeklyTrend(session.access_token).then(setWeeklyTrend),
+      getWeeklyStats(session.access_token, today).then(setWeeklyActivity),
     ]);
     setRefreshing(false);
   }, [session?.access_token]);
@@ -374,6 +386,73 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     );
   }, [weightLogs]);
 
+  // Compute weekly trends from real data
+  const weeklyTrendsData = useMemo(() => {
+    const now = new Date();
+    const result: { metric: string; value: string; change: string; color: string }[] = [];
+
+    // Calories — from getWeeklyTrend API
+    if (weeklyTrend.length > 0) {
+      const totalCals = weeklyTrend.reduce((s, d) => s + d.val, 0);
+      const avgCals = Math.round(totalCals / weeklyTrend.length);
+      const firstHalf = weeklyTrend.slice(0, 3);
+      const secondHalf = weeklyTrend.slice(-3);
+      const avgFirst = firstHalf.reduce((s, d) => s + d.val, 0) / firstHalf.length;
+      const avgSecond = secondHalf.reduce((s, d) => s + d.val, 0) / secondHalf.length;
+      const calPct = avgFirst > 0 ? Math.round(((avgSecond - avgFirst) / avgFirst) * 100) : 0;
+      const calSign = calPct > 0 ? '↑' : '↓';
+      result.push({ metric: 'Calories', value: `${avgCals.toLocaleString()} kcal`, change: `${calSign} ${Math.abs(calPct)}%`, color: Colors.teal });
+    }
+
+    // Weight — from weightLogs
+    if (weightLogs.length > 0) {
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const fourteenDaysAgo = new Date(now);
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+      const thisWeek = weightLogs.filter(w => new Date(w.date) >= sevenDaysAgo);
+      const lastWeek = weightLogs.filter(w => new Date(w.date) >= fourteenDaysAgo && new Date(w.date) < sevenDaysAgo);
+      const avgThis = thisWeek.length > 0 ? thisWeek.reduce((s, w) => s + w.weight_kg, 0) / thisWeek.length : 0;
+      const avgLast = lastWeek.length > 0 ? lastWeek.reduce((s, w) => s + w.weight_kg, 0) / lastWeek.length : 0;
+      const weightDiff = avgLast > 0 ? (avgThis - avgLast).toFixed(1) : '0';
+      const weightSign = Number(weightDiff) > 0 ? '↑' : '↓';
+      result.push({ metric: 'Weight', value: `${avgThis.toFixed(1)} kg`, change: `${weightSign} ${Math.abs(Number(weightDiff))}kg`, color: Colors.pink });
+    }
+
+    // Steps — from getWeeklyStats API
+    if (weeklyActivity?.days && weeklyActivity.days.length > 0) {
+      const totalSteps = weeklyActivity.days.reduce((s, d) => s + d.steps, 0);
+      const avgSteps = Math.round(totalSteps / weeklyActivity.days.length);
+      const firstHalf = weeklyActivity.days.slice(0, 3);
+      const secondHalf = weeklyActivity.days.slice(-3);
+      const avgFirst = firstHalf.reduce((s, d) => s + d.steps, 0) / firstHalf.length;
+      const avgSecond = secondHalf.reduce((s, d) => s + d.steps, 0) / secondHalf.length;
+      const stepsPct = avgFirst > 0 ? Math.round(((avgSecond - avgFirst) / avgFirst) * 100) : 0;
+      const stepsSign = stepsPct > 0 ? '↑' : '↓';
+      result.push({ metric: 'Steps', value: `${avgSteps.toLocaleString()} steps`, change: `${stepsSign} ${Math.abs(stepsPct)}%`, color: Colors.amber });
+    }
+
+    // Sleep — from sleepLogs
+    if (sleepLogs.length > 0) {
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const fourteenDaysAgo = new Date(now);
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+      const thisWeek = sleepLogs.filter(s => new Date(s.date) >= sevenDaysAgo);
+      const lastWeek = sleepLogs.filter(s => new Date(s.date) >= fourteenDaysAgo && new Date(s.date) < sevenDaysAgo);
+      const avgThis = thisWeek.length > 0 ? thisWeek.reduce((s, l) => s + l.sleep_hr, 0) / thisWeek.length : 0;
+      const avgLast = lastWeek.length > 0 ? lastWeek.reduce((s, l) => s + l.sleep_hr, 0) / lastWeek.length : 0;
+      const sleepPct = avgLast > 0 ? Math.round(((avgThis - avgLast) / avgLast) * 100) : 0;
+      const sleepSign = sleepPct > 0 ? '↑' : '↓';
+      result.push({ metric: 'Sleep', value: `${avgThis.toFixed(1)} hrs`, change: `${sleepSign} ${Math.abs(sleepPct)}%`, color: Colors.purple });
+    }
+
+    // Hydration — placeholder until backend endpoint exists
+    result.push({ metric: 'Hydration', value: '— L', change: '—', color: Colors.blue });
+
+    return result;
+  }, [weeklyTrend, weightLogs, weeklyActivity, sleepLogs]);
+
   return (
     <View style={styles.root}>
       {/* ─── SCROLLABLE CONTENT ─── */}
@@ -460,7 +539,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           selectedDate={calendarSelectedDate}
           currentMonth={calendarCurrentMonth}
           expanded={calendarExpanded}
-          gender={gender}
+          gender={gender ?? 'female'}
           onDateSelect={setCalendarSelectedDate}
           onMonthChange={setCalendarCurrentMonth}
           onToggleExpand={() => setCalendarExpanded(!calendarExpanded)}
@@ -814,17 +893,11 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         {/* SECTION: SMALL CARD WEEKLY TRENDS */}
         <SectionHeader title="Weekly Trends (7d Averages)" />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.trendsScroll}>
-          {[
-            { metric: 'Calories', value: '1,920 kcal', change: '↓ 4%', color: Colors.teal },
-            { metric: 'Weight', value: '62.4 kg', change: '↓ 0.2kg', color: Colors.pink },
-            { metric: 'Steps', value: '7,450 steps', change: '↑ 12%', color: Colors.amber },
-            { metric: 'Sleep', value: '7.2 hrs', change: '↑ 8%', color: Colors.purple },
-            { metric: 'Hydration', value: '1.8 Litres', change: '↓ 2%', color: Colors.blue },
-          ].map((item, index) => (
+          {weeklyTrendsData.map((item, index) => (
             <GlassCardView key={index} style={styles.trendMetricCard}>
               <Text style={styles.trendMetricName}>{item.metric}</Text>
               <Text style={styles.trendMetricValue}>{item.value}</Text>
-              <Text style={[styles.trendMetricChange, { color: item.change.includes('↑') ? Colors.success : Colors.danger }]}>
+              <Text style={[styles.trendMetricChange, { color: item.change.includes('0%') ? Colors.textPrimary : item.change.includes('↑') ? Colors.success : Colors.danger }]}>
                 {item.change}
               </Text>
             </GlassCardView>
