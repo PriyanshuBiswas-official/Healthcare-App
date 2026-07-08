@@ -7,6 +7,7 @@ import {
   TouchableOpacityProps,
   Image,
 } from 'react-native';
+import Svg, { Circle, G } from 'react-native-svg';
 import { Colors, Radius, Spacing, Typography, GlassCard, Shadows } from '../theme/theme';
 
 // ─── Glass Card ─────────────────────────────────────────────────────────────
@@ -105,6 +106,77 @@ export const StatPill: React.FC<StatPillProps> = React.memo(({ label, value, col
     <Text style={sharedStyles.statLabel}>{label}</Text>
   </View>
 ));
+
+// ─── Activity Rings & Card ───────────────────────────────────────────────────
+export function ActivityRings({ steps, exercise, calories }: { steps: number; exercise: number; calories: number }) {
+  const size = 120;
+  const strokeWidth = 10;
+  const center = size / 2;
+  
+  const drawRing = (radius: number, color: string, percentage: number) => {
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (Math.min(percentage, 1) * circumference);
+    return (
+      <G rotation="-90" origin={`${center}, ${center}`}>
+        <Circle cx={center} cy={center} r={radius} stroke={color + '33'} strokeWidth={strokeWidth} fill="none" />
+        <Circle cx={center} cy={center} r={radius} stroke={color} strokeWidth={strokeWidth} fill="none" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" />
+      </G>
+    );
+  };
+
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size}>
+        {drawRing(50, Colors.pink, calories)}
+        {drawRing(36, Colors.teal, steps)}
+        {drawRing(22, Colors.blue, exercise)}
+      </Svg>
+    </View>
+  );
+}
+
+export const ActivityProgressCard = React.memo(({ 
+  steps, stepsTarget, 
+  exercise, exerciseTarget, 
+  calories, caloriesTarget 
+}: { 
+  steps: number; stepsTarget: number;
+  exercise: number; exerciseTarget: number;
+  calories: number; caloriesTarget: number;
+}) => {
+  const stepsPct = stepsTarget > 0 ? steps / stepsTarget : 0;
+  const exercisePct = exerciseTarget > 0 ? exercise / exerciseTarget : 0;
+  const caloriesPct = caloriesTarget > 0 ? calories / caloriesTarget : 0;
+
+  return (
+    <View style={activityCardStyles.activityRow}>
+      <ActivityRings steps={stepsPct} exercise={exercisePct} calories={caloriesPct} />
+      <View style={activityCardStyles.activityLegend}>
+        <View style={activityCardStyles.legendItem}>
+          <View style={[activityCardStyles.legendDot, { backgroundColor: Colors.teal }]} />
+          <View style={activityCardStyles.legendTextWrap}>
+            <Text style={activityCardStyles.legendLabel}>Steps</Text>
+            <Text style={activityCardStyles.legendValue}>{steps.toLocaleString()} <Text style={activityCardStyles.legendTarget}>/ {stepsTarget.toLocaleString()}</Text></Text>
+          </View>
+        </View>
+        <View style={activityCardStyles.legendItem}>
+          <View style={[activityCardStyles.legendDot, { backgroundColor: Colors.blue }]} />
+          <View style={activityCardStyles.legendTextWrap}>
+            <Text style={activityCardStyles.legendLabel}>Active Min</Text>
+            <Text style={activityCardStyles.legendValue}>{exercise.toLocaleString()} <Text style={activityCardStyles.legendTarget}>/ {exerciseTarget.toLocaleString()}</Text></Text>
+          </View>
+        </View>
+        <View style={activityCardStyles.legendItem}>
+          <View style={[activityCardStyles.legendDot, { backgroundColor: Colors.pink }]} />
+          <View style={activityCardStyles.legendTextWrap}>
+            <Text style={activityCardStyles.legendLabel}>Calories</Text>
+            <Text style={activityCardStyles.legendValue}>{calories.toLocaleString()} <Text style={activityCardStyles.legendTarget}>/ {caloriesTarget.toLocaleString()}</Text></Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+});
 
 // ─── Progress Bar ────────────────────────────────────────────────────────────
 interface ProgressBarProps {
@@ -433,5 +505,47 @@ const btnStyles = StyleSheet.create({
     fontWeight: Typography.bold,
     color: Colors.bg,
     letterSpacing: Typography.lsWide,
+  },
+});
+
+const activityCardStyles = StyleSheet.create({
+  activityCard: {
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  activityLegend: {
+    flex: 1,
+    marginLeft: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: Spacing.sm,
+  },
+  legendTextWrap: {
+    flex: 1,
+  },
+  legendLabel: {
+    fontSize: Typography.xs,
+    color: Colors.textSecondary,
+  },
+  legendValue: {
+    fontSize: Typography.sm,
+    color: Colors.white,
+    fontWeight: Typography.bold,
+  },
+  legendTarget: {
+    color: Colors.textMuted,
+    fontWeight: 'normal',
   },
 });

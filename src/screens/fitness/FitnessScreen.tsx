@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius, Shadows } from '../../theme/theme';
-import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../../components/SharedComponents';
+import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton, ActivityProgressCard } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { TabName } from '../../navigation/TabBar';
 import { useAuth } from '../../providers/AuthProvider';
@@ -107,73 +107,11 @@ function DailyProgressCard({ summary, goal, onLogActivity }: { summary: Activity
           <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>+ Log Activity</Text>
         </TouchableOpacity>
       </View>
-      <View style={styles.ringsRow}>
-        <View style={styles.ringsVisual}>
-          <View style={styles.ringsSvgWrap}>
-            {(() => {
-              const size = 110;
-              const cx = size / 2;
-              const cy = size / 2;
-              const outerR = 46;
-              const midR = 33;
-              const innerR = 21;
-              const outerStroke = 12;
-              const midStroke = 10;
-              const innerStroke = 8;
-
-              const outerCirc = 2 * Math.PI * outerR;
-              const midCirc = 2 * Math.PI * midR;
-              const innerCirc = 2 * Math.PI * innerR;
-              const minDot = 2;
-
-              return (
-                <Svg width={size} height={size}>
-                  <Circle cx={cx} cy={cy} r={outerR} stroke={Colors.pink + '30'} strokeWidth={outerStroke} fill="none" />
-                  <Circle
-                    cx={cx} cy={cy} r={outerR}
-                    stroke={Colors.pink} strokeWidth={outerStroke} fill="none"
-                    strokeDasharray={outerCirc}
-                    strokeDashoffset={outerCirc - Math.max(burnProgress, minDot / outerCirc) * outerCirc}
-                    strokeLinecap="round"
-                    transform={`rotate(-90 ${cx} ${cy})`}
-                  />
-                  <Circle cx={cx} cy={cy} r={midR} stroke={Colors.purple + '30'} strokeWidth={midStroke} fill="none" />
-                  <Circle
-                    cx={cx} cy={cy} r={midR}
-                    stroke={Colors.purple} strokeWidth={midStroke} fill="none"
-                    strokeDasharray={midCirc}
-                    strokeDashoffset={midCirc - Math.max(exerciseProgress, minDot / midCirc) * midCirc}
-                    strokeLinecap="round"
-                    transform={`rotate(-90 ${cx} ${cy})`}
-                  />
-                  <Circle cx={cx} cy={cy} r={innerR} stroke={Colors.teal + '30'} strokeWidth={innerStroke} fill="none" />
-                  <Circle
-                    cx={cx} cy={cy} r={innerR}
-                    stroke={Colors.teal} strokeWidth={innerStroke} fill="none"
-                    strokeDasharray={innerCirc}
-                    strokeDashoffset={innerCirc - Math.max(stepsProgress, minDot / innerCirc) * innerCirc}
-                    strokeLinecap="round"
-                    transform={`rotate(-90 ${cx} ${cy})`}
-                  />
-                </Svg>
-              );
-            })()}
-          </View>
-        </View>
-        <View style={styles.ringsMetrics}>
-          {rings.map(ring => (
-            <View key={ring.label} style={styles.ringMetric}>
-              <View style={styles.ringMetricHeader}>
-                <Text style={[styles.ringMetricLabel, { color: ring.color }]}>{ring.label}</Text>
-                <Text style={styles.ringMetricVal}>
-                  {ring.current.toLocaleString()} / {ring.target > 0 ? ring.target.toLocaleString() : '--'} {ring.unit}
-                </Text>
-              </View>
-              <ProgressBar progress={ring.progress} color={ring.color} height={5} />
-            </View>
-          ))}
-        </View>
-      </View>
+      <ActivityProgressCard 
+        steps={summary?.steps ?? 0} stepsTarget={stepsTarget}
+        exercise={summary?.exercise_minutes ?? 0} exerciseTarget={exerciseTarget}
+        calories={summary?.calories_burned ?? 0} caloriesTarget={burnTarget}
+      />
       <View style={styles.vitalRow}>
         <View style={styles.vitalPill}>
           <Text style={styles.vitalVal}>{summary?.distance ?? 0}</Text>

@@ -1,47 +1,87 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Rect } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
-import { SectionHeader, GlassCardView } from '../../components/SharedComponents';
+import { GlassCardView, SectionHeader, ActivityProgressCard } from '../../components/SharedComponents';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const { width } = Dimensions.get('window');
 
 // Mock Data
 const MOCK_PARTNER = {
   id: '1',
-  name: 'Sarah M.',
-  relation: 'Partner',
-  gender: 'female',
+  name: 'Sarah Williams',
+  age: 28,
+  gender: 'Female',
   avatar: 'S',
   status: 'online',
   isSharingWithMe: true,
-  amISharingWithThem: true,
 };
+
+// Mini Bar Chart Component
+function MiniBarChart({ data, color }: { data: number[]; color: string }) {
+  const chartHeight = 40;
+  const chartWidth = 60;
+  const max = Math.max(...data, 1);
+  const barWidth = 4;
+  const gap = (chartWidth - (data.length * barWidth)) / (data.length - 1);
+  
+  return (
+    <Svg width={chartWidth} height={chartHeight}>
+      {data.map((val, i) => {
+        const height = (val / max) * chartHeight;
+        return (
+          <Rect
+            key={i}
+            x={i * (barWidth + gap)}
+            y={chartHeight - height}
+            width={barWidth}
+            height={height}
+            fill={color}
+            rx={2}
+          />
+        );
+      })}
+    </Svg>
+  );
+}
 
 export default function PartnerHealthReportScreen({ onBack }: { onBack?: () => void }) {
   const insets = useSafeAreaInsets();
-  
-  // Sharing toggles state
-  const [shareVitals, setShareVitals] = useState(true);
-  const [shareActivity, setShareActivity] = useState(true);
-  const [shareSleep, setShareSleep] = useState(true);
-  const [shareCycle, setShareCycle] = useState(true);
-  const [twoWaySync, setTwoWaySync] = useState(MOCK_PARTNER.amISharingWithThem);
+  const [showMenu, setShowMenu] = useState(false);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* HEADER */}
-      <View style={styles.header}>
+      <View style={[styles.header, { zIndex: 10 }]}>
         <TouchableOpacity style={styles.backBtn} onPress={onBack}>
           <Text style={styles.backBtnIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Health Report</Text>
-        <View style={{ width: 40 }} />
+        <View style={styles.headerTitles}>
+          <Text style={styles.headerTitle}>Health Report</Text>
+          <Text style={styles.headerSubtitle}>Shared by Sarah <Text style={{ color: Colors.purple }}>🛡️</Text></Text>
+        </View>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMenu(!showMenu)}>
+          <Text style={styles.iconBtnText}>⋮</Text>
+        </TouchableOpacity>
+        
+        {/* DROPDOWN MENU */}
+        {showMenu && (
+          <View style={styles.dropdownMenu}>
+            <TouchableOpacity style={styles.dropdownItem} onPress={() => setShowMenu(false)}>
+              <Text style={styles.dropdownItemText}>Manage Permissions</Text>
+            </TouchableOpacity>
+            <View style={styles.dropdownDivider} />
+            <TouchableOpacity style={styles.dropdownItem} onPress={() => setShowMenu(false)}>
+              <Text style={[styles.dropdownItemText, { color: Colors.pink }]}>Remove Partner</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
-        {/* PARTNER PROFILE CARD */}
+        {/* PROFILE CARD */}
         <GlassCardView style={styles.profileCard}>
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
@@ -52,140 +92,175 @@ export default function PartnerHealthReportScreen({ onBack }: { onBack?: () => v
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{MOCK_PARTNER.name}</Text>
-              <View style={styles.relationBadge}>
-                <Text style={styles.relationBadgeText}>{MOCK_PARTNER.relation}</Text>
+              <Text style={styles.profileDetails}>{MOCK_PARTNER.age} • {MOCK_PARTNER.gender}</Text>
+              <View style={styles.activeBadge}>
+                <Text style={styles.activeBadgeText}>Active now</Text>
               </View>
             </View>
-          </View>
-        </GlassCardView>
-
-        {/* SHARING CONFIGURATION */}
-        <SectionHeader title="Access Configuration" subtitle="Manage what you share with Sarah" />
-        <GlassCardView style={styles.configCard}>
-          <View style={styles.configRow}>
-            <View style={styles.configText}>
-              <Text style={styles.configTitle}>Two-Way Sharing</Text>
-              <Text style={styles.configDesc}>Allow Sarah to see your health data too.</Text>
+            <View style={styles.datePicker}>
+              <Text style={styles.datePickerText}>May 20 – May 26, 2024</Text>
             </View>
-            <Switch 
-              value={twoWaySync} 
-              onValueChange={setTwoWaySync}
-              trackColor={{ false: Colors.bgCardBorder, true: Colors.teal }}
-              thumbColor={Colors.white}
-            />
           </View>
           
-          {twoWaySync && (
-            <View style={styles.granularConfig}>
-              <View style={styles.divider} />
-              
-              <View style={styles.configRowSmall}>
-                <Text style={styles.configLabel}>Vitals & PRs</Text>
-                <Switch value={shareVitals} onValueChange={setShareVitals} trackColor={{ true: Colors.teal }} style={{ transform: [{ scale: 0.8 }] }} />
-              </View>
-              
-              <View style={styles.configRowSmall}>
-                <Text style={styles.configLabel}>Activity & Workouts</Text>
-                <Switch value={shareActivity} onValueChange={setShareActivity} trackColor={{ true: Colors.teal }} style={{ transform: [{ scale: 0.8 }] }} />
-              </View>
-              
-              <View style={styles.configRowSmall}>
-                <Text style={styles.configLabel}>Sleep Tracking</Text>
-                <Switch value={shareSleep} onValueChange={setShareSleep} trackColor={{ true: Colors.teal }} style={{ transform: [{ scale: 0.8 }] }} />
-              </View>
-
-              {MOCK_PARTNER.gender === 'female' && (
-                <View style={styles.configRowSmall}>
-                  <Text style={styles.configLabel}>Cycle & Hormones</Text>
-                  <Switch value={shareCycle} onValueChange={setShareCycle} trackColor={{ true: Colors.teal }} style={{ transform: [{ scale: 0.8 }] }} />
-                </View>
-              )}
+          <View style={styles.overviewGrid}>
+            <View style={styles.overviewItem}>
+              <Text style={styles.overviewLabel}>Steps</Text>
+              <Text style={styles.overviewValue}>8,432</Text>
+              <MiniBarChart data={[3,5,2,8,4,9,6]} color={Colors.blue} />
             </View>
-          )}
+            <View style={styles.overviewItem}>
+              <Text style={styles.overviewLabel}>Active Time</Text>
+              <Text style={styles.overviewValue}>68 <Text style={styles.overviewUnit}>min</Text></Text>
+              <MiniBarChart data={[2,4,3,6,8,5,7]} color={Colors.success} />
+            </View>
+            <View style={styles.overviewItem}>
+              <Text style={styles.overviewLabel}>Calories</Text>
+              <Text style={styles.overviewValue}>1,720 <Text style={styles.overviewUnit}>kcal</Text></Text>
+              <MiniBarChart data={[5,6,4,7,5,8,6]} color={Colors.amber} />
+            </View>
+            <View style={styles.overviewItem}>
+              <Text style={styles.overviewLabel}>Sleep</Text>
+              <Text style={styles.overviewValue}>7h 24m</Text>
+              <MiniBarChart data={[7,6,8,7,5,7,8]} color={Colors.purple} />
+            </View>
+          </View>
         </GlassCardView>
 
-        {/* HEALTH DATA (MOCK) */}
-        {!MOCK_PARTNER.isSharingWithMe ? (
-          <View style={styles.noAccessContainer}>
-            <Text style={styles.noAccessIcon}>🔒</Text>
-            <Text style={styles.noAccessTitle}>No Access</Text>
-            <Text style={styles.noAccessDesc}>{MOCK_PARTNER.name} has not shared their health data with you.</Text>
-          </View>
-        ) : (
+        {/* VITALS SECTION */}
+        <SectionHeader title="❤️ Vitals" action="View all" />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+          <GlassCardView style={styles.vitalCard}>
+            <Text style={styles.vitalLabel}>💓 Heart Rate</Text>
+            <Text style={styles.vitalValue}>72 <Text style={styles.vitalUnit}>bpm</Text></Text>
+            <Text style={styles.vitalSub}>Resting</Text>
+          </GlassCardView>
+          <GlassCardView style={styles.vitalCard}>
+            <Text style={styles.vitalLabel}>🩸 Blood Pressure</Text>
+            <Text style={styles.vitalValue}>118/76 <Text style={styles.vitalUnit}>mmHg</Text></Text>
+            <Text style={[styles.vitalSub, { color: Colors.success }]}>Normal</Text>
+          </GlassCardView>
+          <GlassCardView style={styles.vitalCard}>
+            <Text style={styles.vitalLabel}>💧 SpO₂</Text>
+            <Text style={styles.vitalValue}>98 <Text style={styles.vitalUnit}>%</Text></Text>
+            <Text style={[styles.vitalSub, { color: Colors.success }]}>Normal</Text>
+          </GlassCardView>
+          <GlassCardView style={styles.vitalCard}>
+            <Text style={styles.vitalLabel}>⚖️ Weight</Text>
+            <Text style={styles.vitalValue}>62.4 <Text style={styles.vitalUnit}>kg</Text></Text>
+            <Text style={[styles.vitalSub, { color: Colors.success }]}>▼ 0.6 kg</Text>
+          </GlassCardView>
+        </ScrollView>
+
+        {/* ACTIVITY SECTION */}
+        <SectionHeader title="🏃 Activity" action="View all" />
+        <GlassCardView style={styles.dataCard}>
+          <ActivityProgressCard 
+            steps={8432} stepsTarget={10000}
+            exercise={68} exerciseTarget={90}
+            calories={1720} caloriesTarget={2200}
+          />
+        </GlassCardView>
+
+        {/* WOMEN'S HEALTH (Conditional based on gender) */}
+        {MOCK_PARTNER.gender === 'Female' && (
           <>
-            {/* WOMENS HEALTH (Conditional based on gender) */}
-            {MOCK_PARTNER.gender === 'female' && (
-              <>
-                <SectionHeader title="Women's Health" />
-                <GlassCardView style={styles.dataCard}>
-                  <View style={styles.cycleRow}>
-                    <View style={styles.cycleMetric}>
-                      <Text style={styles.cycleLabel}>Next Period</Text>
-                      <Text style={styles.cycleValueMain}>In 4 days</Text>
-                      <Text style={styles.cycleSub}>Luteal Phase</Text>
-                    </View>
-                    <View style={styles.cycleMetric}>
-                      <Text style={styles.cycleLabel}>Hormone Trends</Text>
-                      <Text style={styles.cycleValue}>Progesterone ↑</Text>
-                      <Text style={styles.cycleSub}>Estrogen ↓</Text>
-                    </View>
-                  </View>
-                </GlassCardView>
-              </>
-            )}
-
-            {/* WORKOUTS & PRs */}
-            <SectionHeader title="Activity & Workouts" />
-            <View style={styles.row}>
-              <GlassCardView style={[styles.dataCard, { flex: 1, marginRight: Spacing.sm }]}>
-                <Text style={styles.cardTitle}>Current Split</Text>
-                <Text style={styles.cardValueMain}>Push Day</Text>
-                <Text style={styles.cardSub}>Chest, Shoulders, Triceps</Text>
-              </GlassCardView>
-              <GlassCardView style={[styles.dataCard, { flex: 1, marginLeft: Spacing.sm }]}>
-                <Text style={styles.cardTitle}>Recent PR</Text>
-                <Text style={styles.cardValueMain}>185 lbs</Text>
-                <Text style={styles.cardSub}>Bench Press (3 reps)</Text>
-              </GlassCardView>
-            </View>
-
-            {/* VITALS & SLEEP */}
-            <SectionHeader title="Vitals & Recovery" />
+            <SectionHeader title="🌺 Cycle & Health" action="View log" />
             <GlassCardView style={styles.dataCard}>
-              <View style={styles.metricsGrid}>
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricIcon}>❤️</Text>
-                  <View>
-                    <Text style={styles.metricTitle}>Heart Rate</Text>
-                    <Text style={styles.metricValue}>64 bpm</Text>
-                  </View>
+              <View style={styles.cycleRow}>
+                <View style={styles.cycleMetric}>
+                  <Text style={styles.cycleLabel}>Next Period</Text>
+                  <Text style={styles.cycleValueMain}>In 4 days</Text>
+                  <Text style={styles.cycleSub}>Luteal Phase</Text>
                 </View>
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricIcon}>🩸</Text>
-                  <View>
-                    <Text style={styles.metricTitle}>Blood Pressure</Text>
-                    <Text style={styles.metricValue}>118/76</Text>
-                  </View>
-                </View>
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricIcon}>😴</Text>
-                  <View>
-                    <Text style={styles.metricTitle}>Sleep Last Night</Text>
-                    <Text style={styles.metricValue}>7h 24m</Text>
-                  </View>
-                </View>
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricIcon}>🔋</Text>
-                  <View>
-                    <Text style={styles.metricTitle}>Recovery Score</Text>
-                    <Text style={styles.metricValue}>82 / 100</Text>
-                  </View>
+                <View style={styles.cycleMetric}>
+                  <Text style={styles.cycleLabel}>Hormone Trends</Text>
+                  <Text style={styles.cycleValue}>Progesterone ↑</Text>
+                  <Text style={styles.cycleSub}>Estrogen ↓</Text>
                 </View>
               </View>
             </GlassCardView>
           </>
         )}
+
+        {/* MEDICATIONS SECTION */}
+        <SectionHeader title="💊 Medications" action="Schedule" />
+        <GlassCardView style={styles.dataCard}>
+          <View style={styles.medItem}>
+            <View style={[styles.workoutIcon, { backgroundColor: Colors.amber + '20' }]}><Text>💊</Text></View>
+            <View style={styles.workoutInfo}>
+              <Text style={styles.workoutTitle}>Metformin 500 mg</Text>
+              <Text style={styles.workoutSub}>Daily • 08:00 PM</Text>
+            </View>
+            <Text style={{ fontSize: 12, color: Colors.textMuted }}>Skipped today</Text>
+          </View>
+          <View style={[styles.medItem, { marginTop: Spacing.md }]}>
+            <View style={[styles.workoutIcon, { backgroundColor: Colors.teal + '20' }]}><Text>💊</Text></View>
+            <View style={styles.workoutInfo}>
+              <Text style={styles.workoutTitle}>Vitamin D3 1000 IU</Text>
+              <Text style={styles.workoutSub}>Daily • 08:00 AM</Text>
+            </View>
+            <Text style={{ fontSize: 12, color: Colors.success }}>Taken</Text>
+          </View>
+        </GlassCardView>
+
+        {/* GOALS SECTION */}
+        <SectionHeader title="✅ Goals" action="View all" />
+        <GlassCardView style={styles.dataCard}>
+          <View style={styles.goalItem}>
+            <View style={styles.goalTop}>
+              <Text style={styles.goalLabel}>10K Steps a day</Text>
+              <Text style={styles.goalPct}>84%</Text>
+            </View>
+            <View style={styles.goalTrack}><View style={[styles.goalFill, { width: '84%', backgroundColor: Colors.success }]} /></View>
+          </View>
+          <View style={[styles.goalItem, { marginTop: Spacing.md }]}>
+            <View style={styles.goalTop}>
+              <Text style={styles.goalLabel}>Drink 2.5L Water</Text>
+              <Text style={styles.goalPct}>72%</Text>
+            </View>
+            <View style={styles.goalTrack}><View style={[styles.goalFill, { width: '72%', backgroundColor: Colors.blue }]} /></View>
+          </View>
+          <View style={[styles.goalItem, { marginTop: Spacing.md }]}>
+            <View style={styles.goalTop}>
+              <Text style={styles.goalLabel}>Workout 4x/week</Text>
+              <Text style={styles.goalPct}>75%</Text>
+            </View>
+            <View style={styles.goalTrack}><View style={[styles.goalFill, { width: '75%', backgroundColor: Colors.purple }]} /></View>
+          </View>
+        </GlassCardView>
+
+        {/* WORKOUTS SECTION */}
+        <SectionHeader title="🏋️ Workouts" action="View all" />
+        <GlassCardView style={styles.dataCard}>
+          <View style={styles.workoutItem}>
+            <View style={[styles.workoutIcon, { backgroundColor: Colors.blue + '20' }]}><Text>🏋️</Text></View>
+            <View style={styles.workoutInfo}>
+              <Text style={styles.workoutTitle}>Strength Training</Text>
+              <Text style={styles.workoutSub}>May 26 • 45 min • 320 kcal</Text>
+            </View>
+            <Text style={styles.chevron}>{'>'}</Text>
+          </View>
+          <View style={[styles.workoutItem, { marginTop: Spacing.md }]}>
+            <View style={[styles.workoutIcon, { backgroundColor: Colors.success + '20' }]}><Text>🏃</Text></View>
+            <View style={styles.workoutInfo}>
+              <Text style={styles.workoutTitle}>HIIT</Text>
+              <Text style={styles.workoutSub}>May 24 • 30 min • 260 kcal</Text>
+            </View>
+            <Text style={styles.chevron}>{'>'}</Text>
+          </View>
+          <View style={[styles.workoutItem, { marginTop: Spacing.md }]}>
+            <View style={[styles.workoutIcon, { backgroundColor: Colors.purple + '20' }]}><Text>🧘‍♀️</Text></View>
+            <View style={styles.workoutInfo}>
+              <Text style={styles.workoutTitle}>Yoga</Text>
+              <Text style={styles.workoutSub}>May 22 • 40 min • 180 kcal</Text>
+            </View>
+            <Text style={styles.chevron}>{'>'}</Text>
+          </View>
+        </GlassCardView>
+
       </ScrollView>
+
+
     </View>
   );
 }
@@ -198,7 +273,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
   },
@@ -216,34 +290,53 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 20,
   },
+  headerTitles: {
+    flex: 1,
+    alignItems: 'center',
+  },
   headerTitle: {
     fontSize: Typography.lg,
     color: Colors.white,
     fontWeight: Typography.bold,
   },
+  headerSubtitle: {
+    fontSize: Typography.xs,
+    color: Colors.textMuted,
+  },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconBtnText: {
+    color: Colors.white,
+    fontSize: 20,
+  },
   scrollContent: {
     paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: 100, // Space for fixed banner
   },
   
   // Profile Card
   profileCard: {
     padding: Spacing.lg,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
     marginTop: Spacing.md,
   },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: Spacing.lg,
   },
   avatarContainer: {
     position: 'relative',
-    marginRight: Spacing.lg,
+    marginRight: Spacing.md,
   },
   avatarPlaceholder: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: Colors.purpleDim,
     alignItems: 'center',
     justifyContent: 'center',
@@ -268,113 +361,100 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    fontSize: Typography.xl,
+    fontSize: Typography.base,
     fontWeight: Typography.bold,
     color: Colors.white,
-    marginBottom: 4,
-  },
-  relationBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: Colors.teal + '20',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: Colors.teal + '40',
-  },
-  relationBadgeText: {
-    fontSize: 10,
-    color: Colors.teal,
-    fontWeight: Typography.semiBold,
-  },
-
-  // Config Card
-  configCard: {
-    padding: Spacing.lg,
-    marginBottom: Spacing.xl,
-  },
-  configRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  configText: {
-    flex: 1,
-    paddingRight: Spacing.md,
-  },
-  configTitle: {
-    fontSize: Typography.base,
-    color: Colors.white,
-    fontWeight: Typography.semiBold,
     marginBottom: 2,
   },
-  configDesc: {
+  profileDetails: {
     fontSize: Typography.xs,
     color: Colors.textMuted,
-    lineHeight: 18,
+    marginBottom: 4,
   },
-  granularConfig: {
-    marginTop: Spacing.md,
+  activeBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.success + '20',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: Radius.full,
   },
-  divider: {
-    height: 1,
+  activeBadgeText: {
+    fontSize: 10,
+    color: Colors.success,
+    fontWeight: Typography.semiBold,
+  },
+  datePicker: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
     backgroundColor: Colors.bgCardBorder,
-    marginBottom: Spacing.md,
+    borderRadius: Radius.sm,
   },
-  configRowSmall: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  configLabel: {
-    fontSize: Typography.sm,
+  datePickerText: {
+    fontSize: 10,
     color: Colors.textSecondary,
   },
 
-  // No Access
-  noAccessContainer: {
+  overviewGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: Colors.bgCardBorder,
+    paddingTop: Spacing.lg,
+  },
+  overviewItem: {
     alignItems: 'center',
-    paddingVertical: Spacing.xxl,
+    width: '23%',
   },
-  noAccessIcon: {
-    fontSize: 48,
-    marginBottom: Spacing.md,
+  overviewLabel: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    marginBottom: 4,
   },
-  noAccessTitle: {
-    fontSize: Typography.lg,
+  overviewValue: {
+    fontSize: Typography.base,
     color: Colors.white,
     fontWeight: Typography.bold,
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
-  noAccessDesc: {
-    fontSize: Typography.sm,
+  overviewUnit: {
+    fontSize: 10,
     color: Colors.textMuted,
-    textAlign: 'center',
+    fontWeight: 'normal',
+  },
+
+  // Vitals
+  hScroll: {
+    paddingBottom: Spacing.lg,
+    gap: Spacing.md,
+  },
+  vitalCard: {
+    padding: Spacing.md,
+    width: 120,
+  },
+  vitalLabel: {
+    fontSize: Typography.xs,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.sm,
+  },
+  vitalValue: {
+    fontSize: Typography.xl,
+    color: Colors.white,
+    fontWeight: Typography.bold,
+    marginBottom: 4,
+  },
+  vitalUnit: {
+    fontSize: Typography.xs,
+    color: Colors.textMuted,
+  },
+  vitalSub: {
+    fontSize: 10,
+    color: Colors.textMuted,
   },
 
   // Data Cards
   dataCard: {
-    padding: Spacing.lg,
-    marginBottom: Spacing.xl,
-  },
-  row: {
-    flexDirection: 'row',
-  },
-  cardTitle: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.xs,
-  },
-  cardValueMain: {
-    fontSize: Typography.xl,
-    color: Colors.white,
-    fontWeight: Typography.bold,
-    marginBottom: 4,
-  },
-  cardSub: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
   },
   
   // Cycle
@@ -408,31 +488,99 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
 
-  // Grid
-  metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.lg,
-  },
-  metricItem: {
-    width: '45%',
+  // Meds
+  medItem: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  metricIcon: {
-    fontSize: 24,
-    marginRight: Spacing.sm,
+
+  // Goals
+  goalItem: {},
+  goalTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  metricTitle: {
-    fontSize: 10,
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    marginBottom: 2,
-    letterSpacing: 0.5,
+  goalLabel: {
+    fontSize: Typography.sm,
+    color: Colors.textSecondary,
+    fontWeight: Typography.medium,
   },
-  metricValue: {
+  goalPct: {
+    fontSize: Typography.sm,
+    color: Colors.white,
+    fontWeight: Typography.semiBold,
+  },
+  goalTrack: {
+    height: 8,
+    backgroundColor: Colors.bgCardBorder,
+    borderRadius: 4,
+  },
+  goalFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+
+  // Workouts
+  workoutItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  workoutIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.md,
+  },
+  workoutInfo: {
+    flex: 1,
+  },
+  workoutTitle: {
     fontSize: Typography.base,
     color: Colors.white,
-    fontWeight: Typography.bold,
+    fontWeight: Typography.semiBold,
+    marginBottom: 4,
+  },
+  workoutSub: {
+    fontSize: Typography.xs,
+    color: Colors.textMuted,
+  },
+  chevron: {
+    fontSize: 16,
+    color: Colors.textMuted,
+  },
+  
+  // Dropdown Menu
+  dropdownMenu: {
+    position: 'absolute',
+    top: 60,
+    right: Spacing.lg,
+    backgroundColor: Colors.bgCardSolid,
+    borderWidth: 1,
+    borderColor: Colors.bgCardBorder,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.sm,
+    width: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  dropdownItem: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+  },
+  dropdownItemText: {
+    fontSize: Typography.sm,
+    color: Colors.white,
+    fontWeight: Typography.medium,
+  },
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: Colors.bgCardBorder,
+    marginVertical: Spacing.xs,
   },
 });
