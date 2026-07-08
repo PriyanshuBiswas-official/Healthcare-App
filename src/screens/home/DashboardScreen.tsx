@@ -120,15 +120,15 @@ const CompactRing = ({ size, progress, color, children }: any) => {
   );
 };
 
-export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void }) {
+export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab, onPartnerPress }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void; onPartnerPress?: (partnerId: string) => void; }) {
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion, gender } = useAuth();
   const insets = useSafeAreaInsets();
-  
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const heroHeightRef = useRef(0);
-  
+
   const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date>(new Date());
   const [calendarCurrentMonth, setCalendarCurrentMonth] = useState<Date>(new Date());
   const [calendarExpanded, setCalendarExpanded] = useState<boolean>(true);
@@ -202,7 +202,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getSleepLogs(session.access_token)
         .then(setSleepLogs)
         .catch(err => console.warn('Failed to load sleep logs on Dashboard:', err));
-        
+
       getWeightLogs(session.access_token)
         .then(setWeightLogs)
         .catch(err => console.warn('Failed to load weight logs on Dashboard:', err));
@@ -348,7 +348,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     const width = SCREEN_WIDTH - 64;
     const height = 80;
     const padding = 10;
-    
+
     const weights = weightLogs.map(w => w.weight_kg);
     const minW = Math.min(...weights) - 1;
     const maxW = Math.max(...weights) + 1;
@@ -512,8 +512,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             <View style={styles.heroAiTagRow}>
               {[
                 { label: '● Vitals stable', color: Colors.success },
-                { label: '● Sleep +12%',    color: Colors.purple },
-                { label: '● Rest advised',  color: Colors.amber },
+                { label: '● Sleep +12%', color: Colors.purple },
+                { label: '● Rest advised', color: Colors.amber },
               ].map((tag, i) => (
                 <View key={i} style={[styles.heroAiTag, { backgroundColor: tag.color + '15', borderColor: tag.color + '40' }]}>
                   <Text style={[styles.heroAiTagText, { color: tag.color }]}>{tag.label}</Text>
@@ -533,6 +533,47 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         )}
 
 
+
+        {/* SECTION: RELATIONSHIPS */}
+        <SectionHeader title="Active Relationships" subtitle="Shared health & activity" />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.relationshipsScroll}>
+          {[
+            { id: '1', name: 'Sarah M.', relation: 'Partner', avatar: 'https://i.pravatar.cc/150?u=sarah', status: 'online' },
+            { id: '2', name: 'Dr. Smith', relation: 'Doctor', avatar: 'https://i.pravatar.cc/150?u=drsmith', status: 'offline' },
+            { id: '3', name: 'Mike T.', relation: 'Coach', avatar: 'https://i.pravatar.cc/150?u=mike', status: 'online' },
+            { id: 'add', name: 'Add New', relation: 'Invite', avatar: '', status: 'none' },
+          ].map((partner, idx) => (
+            <TouchableOpacity
+              key={idx}
+              style={styles.partnerCard}
+              onPress={() => {
+                if (partner.id === 'add') {
+                  // handle invite logic
+                } else if (onPartnerPress) {
+                  onPartnerPress(partner.id);
+                }
+              }}
+            >
+              <View style={styles.partnerAvatarContainer}>
+                {partner.avatar ? (
+                  <View style={styles.partnerAvatarImagePlaceholder}>
+                    {/* Placeholder for actual image since Image is not imported */}
+                    <Text style={styles.partnerInitials}>{partner.name.substring(0, 1)}</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.partnerAvatarImagePlaceholder, { backgroundColor: Colors.teal + '20', borderWidth: 1, borderColor: Colors.teal + '50', borderStyle: 'dashed' }]}>
+                    <Text style={{ fontSize: 20, color: Colors.teal }}>+</Text>
+                  </View>
+                )}
+                {partner.status !== 'none' && (
+                  <View style={[styles.partnerStatusDot, { backgroundColor: partner.status === 'online' ? Colors.success : Colors.textMuted }]} />
+                )}
+              </View>
+              <Text style={styles.partnerName} numberOfLines={1}>{partner.name}</Text>
+              <Text style={styles.partnerRelation}>{partner.relation}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
         {/* SECTION: COLLAPSIBLE MONTHLY CALENDAR */}
         <HealthCalendar
@@ -584,10 +625,10 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             agendaEvents.push({ icon: '💊', label: 'Metformin 500 mg', time: '08:00 PM', type: 'medication' });
 
             const typeConfig: Record<string, { accentColor: string; badge: string }> = {
-              period:      { accentColor: Colors.pink,   badge: 'Period' },
-              appointment: { accentColor: Colors.blue,     badge: 'Appointment' },
-              workout:     { accentColor: Colors.teal,   badge: 'Workout' },
-              medication:  { accentColor: Colors.textMuted, badge: 'Medication' },
+              period: { accentColor: Colors.pink, badge: 'Period' },
+              appointment: { accentColor: Colors.blue, badge: 'Appointment' },
+              workout: { accentColor: Colors.teal, badge: 'Workout' },
+              medication: { accentColor: Colors.textMuted, badge: 'Medication' },
             };
 
             if (agendaEvents.length === 0) {
@@ -666,7 +707,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               <View style={[styles.newTimelineIconBg, { backgroundColor: item.color + '15', borderColor: item.color + '30' }]}>
                 <Text style={styles.newTimelineCardIcon}>{item.icon}</Text>
               </View>
-              
+
               {/* Vertical line node */}
               <View style={styles.newTimelineNodeContainer}>
                 <View style={[styles.newTimelineNode, { backgroundColor: item.color }]} />
@@ -739,7 +780,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                     <Text style={[styles.progressPct, { color: Colors.amber }]}>{Math.round(calPct * 100)}%</Text>
                   </GlassCardView>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Diet')}>
                   <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
                     <Text style={styles.progressCardTitle}>💧 Water</Text>
@@ -920,7 +961,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       {/* WEIGHT LOG MODAL */}
       <Modal visible={showWeightModal} transparent animationType="slide">
         <TouchableOpacity activeOpacity={1} onPress={() => setShowWeightModal(false)} style={styles.modalBg}>
-          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ alignSelf: 'stretch' }}>
+          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{ alignSelf: 'stretch' }}>
             <GlassCardView style={styles.modalContainer}>
               <Text style={styles.modalTitle}>Log Weight</Text>
               <Text style={styles.modalSub}>Enter your current weight in kg</Text>
@@ -947,7 +988,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       {/* MEAL LOG MODAL */}
       <Modal visible={showMealModal} transparent animationType="slide">
         <TouchableOpacity activeOpacity={1} onPress={() => setShowMealModal(false)} style={styles.modalBg}>
-          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ alignSelf: 'stretch' }}>
+          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{ alignSelf: 'stretch' }}>
             <GlassCardView style={styles.modalContainer}>
               <Text style={styles.modalTitle}>Log Meal</Text>
               <Text style={styles.modalSub}>Record what you ate</Text>
@@ -999,7 +1040,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       {/* WATER LOG MODAL */}
       <Modal visible={showWaterModal} transparent animationType="slide">
         <TouchableOpacity activeOpacity={1} onPress={() => setShowWaterModal(false)} style={styles.modalBg}>
-          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ alignSelf: 'stretch' }}>
+          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{ alignSelf: 'stretch' }}>
             <GlassCardView style={styles.modalContainer}>
               <Text style={styles.modalTitle}>Log Water</Text>
               <Text style={styles.modalSub}>How much water did you drink?</Text>
@@ -1041,7 +1082,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       {/* MEDICINE MODAL */}
       <Modal visible={showMedModal} transparent animationType="slide">
         <TouchableOpacity activeOpacity={1} onPress={() => setShowMedModal(false)} style={styles.modalBg}>
-          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ alignSelf: 'stretch' }}>
+          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{ alignSelf: 'stretch' }}>
             <GlassCardView style={styles.modalContainer}>
               <Text style={styles.modalTitle}>Log Medicine</Text>
               <Text style={styles.modalSub}>Track your medication intake</Text>
@@ -1943,5 +1984,58 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // RELATIONSHIPS
+  relationshipsScroll: {
+    paddingLeft: Spacing.md,
+    paddingRight: Spacing.lg,
+    paddingBottom: Spacing.xl,
+    gap: Spacing.md,
+  },
+  partnerCard: {
+    alignItems: 'center',
+    marginRight: Spacing.sm,
+  },
+  partnerAvatarContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginBottom: Spacing.xs,
+    position: 'relative',
+  },
+  partnerAvatarImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+    backgroundColor: Colors.purpleDim,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  partnerInitials: {
+    fontSize: Typography.lg,
+    color: Colors.white,
+    fontWeight: Typography.bold,
+  },
+  partnerStatusDot: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: Colors.bg,
+  },
+  partnerName: {
+    fontSize: Typography.xs,
+    color: Colors.textPrimary,
+    fontWeight: Typography.semiBold,
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  partnerRelation: {
+    fontSize: 9,
+    color: Colors.textMuted,
+    textAlign: 'center',
   },
 });

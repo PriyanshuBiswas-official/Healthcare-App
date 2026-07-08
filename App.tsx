@@ -13,6 +13,7 @@ import NotificationsScreen from './src/screens/notifications/NotificationsScreen
 import ProfileSetupScreen from './src/screens/profile/ProfileSetupScreen';
 import WorkoutLogScreen from './src/screens/fitness/WorkoutLogScreen';
 import HealthLogScreen, { HealthLogDraft } from './src/screens/health/HealthLogScreen';
+import PartnerHealthReportScreen from './src/screens/relationships/PartnerHealthReportScreen';
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -27,7 +28,7 @@ import OfflineBanner from './src/components/OfflineBanner';
 const Stack = createNativeStackNavigator();
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
-const OVERLAY_TABS: TabName[] = ['Profile', 'Notifications', 'WorkoutLog', 'HealthLog'];
+const OVERLAY_TABS: TabName[] = ['Profile', 'Notifications', 'WorkoutLog', 'HealthLog', 'PartnerReport'];
 
 // ── Reducer ──────────────────────────────────────────────────────────
 
@@ -52,6 +53,7 @@ type AppAction =
   | { type: 'CLOSE_WORKOUT_LOG' }
   | { type: 'OPEN_HEALTH_LOG' }
   | { type: 'CLOSE_HEALTH_LOG' }
+  | { type: 'OPEN_PARTNER_REPORT'; partnerId: string }
   | { type: 'CLOSE_OVERLAY' }
   | { type: 'SAVE_HEALTH_LOG'; log: HealthLogDraft };
 
@@ -108,6 +110,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'CLOSE_HEALTH_LOG':
       return { ...state, activeTab: state.previousTab };
 
+    case 'OPEN_PARTNER_REPORT':
+      return { ...state, previousTab: state.activeTab, activeTab: 'PartnerReport' };
+
     case 'CLOSE_OVERLAY':
       return { ...state, activeTab: state.previousTab };
 
@@ -131,6 +136,7 @@ const MemoizedProfileSetupScreen = React.memo(ProfileSetupScreen);
 const MemoizedNotificationsScreen = React.memo(NotificationsScreen);
 const MemoizedWorkoutLogScreen = React.memo(WorkoutLogScreen);
 const MemoizedHealthLogScreen = React.memo(HealthLogScreen);
+const MemoizedPartnerReportScreen = React.memo(PartnerHealthReportScreen);
 const MemoizedTabBar = React.memo(TabBar);
 
 // ── AppShell ─────────────────────────────────────────────────────────
@@ -151,10 +157,12 @@ function AppShell() {
   const openProfileSetup = useCallback(() => dispatch({ type: 'OPEN_PROFILE_SETUP' }), []);
   const closeProfile = useCallback(() => dispatch({ type: 'CLOSE_OVERLAY' }), []);
   const closeNotifications = useCallback(() => dispatch({ type: 'CLOSE_OVERLAY' }), []);
+  const closePartnerReport = useCallback(() => dispatch({ type: 'CLOSE_OVERLAY' }), []);
   const closeProfileSetup = useCallback(() => dispatch({ type: 'CLOSE_PROFILE_SETUP' }), []);
   const openHealthLog = useCallback(() => dispatch({ type: 'OPEN_HEALTH_LOG' }), []);
   const closeHealthLog = useCallback(() => dispatch({ type: 'CLOSE_HEALTH_LOG' }), []);
   const closeWorkoutLog = useCallback(() => dispatch({ type: 'CLOSE_WORKOUT_LOG' }), []);
+  const openPartnerReport = useCallback((partnerId: string) => dispatch({ type: 'OPEN_PARTNER_REPORT', partnerId }), []);
 
   const openAI = useCallback((fromTab?: TabName, startInChat = true) => {
     tabHistory.current.push('AI');
@@ -262,6 +270,7 @@ function AppShell() {
                     onNotificationsPress={openNotifications}
                     onCompleteProfile={openProfileSetup}
                     navigateToTab={navigateToTab}
+                    onPartnerPress={openPartnerReport}
                   />
                 </ErrorBoundary>
               )}
@@ -333,6 +342,11 @@ function AppShell() {
         {state.activeTab === 'HealthLog' && (
           <View style={styles.screenWrapper}>
             <MemoizedHealthLogScreen onBack={closeHealthLog} onSave={saveHealthLog} token={session?.access_token} />
+          </View>
+        )}
+        {state.activeTab === 'PartnerReport' && (
+          <View style={styles.screenWrapper}>
+            <MemoizedPartnerReportScreen onBack={closePartnerReport} />
           </View>
         )}
       </View>
