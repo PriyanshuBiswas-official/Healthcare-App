@@ -4,6 +4,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Rect } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import { GlassCardView, SectionHeader, ActivityProgressCard } from '../../components/SharedComponents';
+import {
+  ArrowLeft, MoreVertical, ShieldCheck, Heart, Activity as ActivityIcon,
+  Droplets, Scale, Footprints, Flower2, Pill, CheckCircle2, Dumbbell,
+  PersonStanding, ChevronRight, Settings, UserMinus,
+} from 'lucide-react-native';
 import { usePreferences } from '../../providers/PreferencesContext';
 
 const { width } = Dimensions.get('window');
@@ -57,24 +62,26 @@ export default function PartnerHealthReportScreen({ onBack }: { onBack?: () => v
       {/* HEADER */}
       <View style={[styles.header, { zIndex: 10 }]}>
         <TouchableOpacity style={styles.backBtn} onPress={onBack}>
-          <Text style={styles.backBtnIcon}>←</Text>
+          <ArrowLeft size={22} color={Colors.white} strokeWidth={2} />
         </TouchableOpacity>
         <View style={styles.headerTitles}>
           <Text style={styles.headerTitle}>Health Report</Text>
-          <Text style={styles.headerSubtitle}>Shared by Sarah <Text style={{ color: Colors.purple }}>🛡️</Text></Text>
+          <Text style={styles.headerSubtitle}>Shared by Sarah <ShieldCheck size={14} color={Colors.purple} style={{ marginLeft: 4 }} /></Text>
         </View>
         <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMenu(!showMenu)}>
-          <Text style={styles.iconBtnText}>⋮</Text>
+          <MoreVertical size={22} color={Colors.white} strokeWidth={2} />
         </TouchableOpacity>
         
         {/* DROPDOWN MENU */}
         {showMenu && (
           <View style={styles.dropdownMenu}>
             <TouchableOpacity style={styles.dropdownItem} onPress={() => setShowMenu(false)}>
+              <Settings size={14} color={Colors.textSecondary} style={{ marginRight: Spacing.sm }} />
               <Text style={styles.dropdownItemText}>Manage Permissions</Text>
             </TouchableOpacity>
             <View style={styles.dropdownDivider} />
             <TouchableOpacity style={styles.dropdownItem} onPress={() => setShowMenu(false)}>
+              <UserMinus size={14} color={Colors.pink} style={{ marginRight: Spacing.sm }} />
               <Text style={[styles.dropdownItemText, { color: Colors.pink }]}>Remove Partner</Text>
             </TouchableOpacity>
           </View>
@@ -130,25 +137,25 @@ export default function PartnerHealthReportScreen({ onBack }: { onBack?: () => v
 
         {/* VITALS SECTION */}
         {!hideVitals && (<>
-        <SectionHeader title="❤️ Vitals" action="View all" />
+        <SectionHeader title="Vitals" action="View all" />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
           <GlassCardView style={styles.vitalCard}>
-            <Text style={styles.vitalLabel}>💓 Heart Rate</Text>
+            <View style={styles.vitalLabelRow}><Heart size={13} color={Colors.pink} strokeWidth={2} /><Text style={[styles.vitalLabel, { marginLeft: 5 }]}>Heart Rate</Text></View>
             <Text style={styles.vitalValue}>72 <Text style={styles.vitalUnit}>bpm</Text></Text>
             <Text style={styles.vitalSub}>Resting</Text>
           </GlassCardView>
           <GlassCardView style={styles.vitalCard}>
-            <Text style={styles.vitalLabel}>🩸 Blood Pressure</Text>
+            <View style={styles.vitalLabelRow}><ActivityIcon size={13} color={Colors.amber} strokeWidth={2} /><Text style={[styles.vitalLabel, { marginLeft: 5 }]}>Blood Pressure</Text></View>
             <Text style={styles.vitalValue}>118/76 <Text style={styles.vitalUnit}>mmHg</Text></Text>
             <Text style={[styles.vitalSub, { color: Colors.success }]}>Normal</Text>
           </GlassCardView>
           <GlassCardView style={styles.vitalCard}>
-            <Text style={styles.vitalLabel}>💧 SpO₂</Text>
+            <View style={styles.vitalLabelRow}><Droplets size={13} color={Colors.blue} strokeWidth={2} /><Text style={[styles.vitalLabel, { marginLeft: 5 }]}>SpO₂</Text></View>
             <Text style={styles.vitalValue}>98 <Text style={styles.vitalUnit}>%</Text></Text>
             <Text style={[styles.vitalSub, { color: Colors.success }]}>Normal</Text>
           </GlassCardView>
           <GlassCardView style={styles.vitalCard}>
-            <Text style={styles.vitalLabel}>⚖️ Weight</Text>
+            <View style={styles.vitalLabelRow}><Scale size={13} color={Colors.teal} strokeWidth={2} /><Text style={[styles.vitalLabel, { marginLeft: 5 }]}>Weight</Text></View>
             <Text style={styles.vitalValue}>62.4 <Text style={styles.vitalUnit}>kg</Text></Text>
             <Text style={[styles.vitalSub, { color: Colors.success }]}>▼ 0.6 kg</Text>
           </GlassCardView>
@@ -156,7 +163,7 @@ export default function PartnerHealthReportScreen({ onBack }: { onBack?: () => v
         </>)}
 
         {/* ACTIVITY SECTION */}
-        <SectionHeader title="🏃 Activity" action="View all" />
+        <SectionHeader title="Activity" action="View all" />
         <GlassCardView style={styles.dataCard}>
           <ActivityProgressCard 
             steps={8432} stepsTarget={10000}
@@ -168,7 +175,7 @@ export default function PartnerHealthReportScreen({ onBack }: { onBack?: () => v
         {/* WOMEN'S HEALTH (Conditional based on gender) */}
         {MOCK_PARTNER.gender === 'Female' && (
           <>
-            <SectionHeader title="🌺 Cycle & Health" action="View log" />
+            <SectionHeader title="Cycle & Health" action="View log" />
             <GlassCardView style={styles.dataCard}>
               <View style={styles.cycleRow}>
                 <View style={styles.cycleMetric}>
@@ -187,10 +194,12 @@ export default function PartnerHealthReportScreen({ onBack }: { onBack?: () => v
         )}
 
         {/* MEDICATIONS SECTION */}
-        <SectionHeader title="💊 Medications" action="Schedule" />
+        <SectionHeader title="Medications" action="Schedule" />
         <GlassCardView style={styles.dataCard}>
           <View style={styles.medItem}>
-            <View style={[styles.workoutIcon, { backgroundColor: Colors.amber + '20' }]}><Text>💊</Text></View>
+            <View style={[styles.workoutIcon, { backgroundColor: Colors.amber + '20' }]}>
+              <Pill size={20} color={Colors.amber} strokeWidth={2} />
+            </View>
             <View style={styles.workoutInfo}>
               <Text style={styles.workoutTitle}>Metformin 500 mg</Text>
               <Text style={styles.workoutSub}>Daily • 08:00 PM</Text>
@@ -198,7 +207,9 @@ export default function PartnerHealthReportScreen({ onBack }: { onBack?: () => v
             <Text style={{ fontSize: 12, color: Colors.textMuted }}>Skipped today</Text>
           </View>
           <View style={[styles.medItem, { marginTop: Spacing.md }]}>
-            <View style={[styles.workoutIcon, { backgroundColor: Colors.teal + '20' }]}><Text>💊</Text></View>
+            <View style={[styles.workoutIcon, { backgroundColor: Colors.teal + '20' }]}>
+              <Pill size={20} color={Colors.teal} strokeWidth={2} />
+            </View>
             <View style={styles.workoutInfo}>
               <Text style={styles.workoutTitle}>Vitamin D3 1000 IU</Text>
               <Text style={styles.workoutSub}>Daily • 08:00 AM</Text>
@@ -208,7 +219,7 @@ export default function PartnerHealthReportScreen({ onBack }: { onBack?: () => v
         </GlassCardView>
 
         {/* GOALS SECTION */}
-        <SectionHeader title="✅ Goals" action="View all" />
+        <SectionHeader title="Goals" action="View all" />
         <GlassCardView style={styles.dataCard}>
           <View style={styles.goalItem}>
             <View style={styles.goalTop}>
@@ -234,31 +245,37 @@ export default function PartnerHealthReportScreen({ onBack }: { onBack?: () => v
         </GlassCardView>
 
         {/* WORKOUTS SECTION */}
-        <SectionHeader title="🏋️ Workouts" action="View all" />
+        <SectionHeader title="Workouts" action="View all" />
         <GlassCardView style={styles.dataCard}>
           <View style={styles.workoutItem}>
-            <View style={[styles.workoutIcon, { backgroundColor: Colors.blue + '20' }]}><Text>🏋️</Text></View>
+            <View style={[styles.workoutIcon, { backgroundColor: Colors.blue + '20' }]}>
+              <Dumbbell size={20} color={Colors.blue} strokeWidth={2} />
+            </View>
             <View style={styles.workoutInfo}>
               <Text style={styles.workoutTitle}>Strength Training</Text>
               <Text style={styles.workoutSub}>May 26 • 45 min • 320 kcal</Text>
             </View>
-            <Text style={styles.chevron}>{'>'}</Text>
+            <ChevronRight size={18} color={Colors.textMuted} strokeWidth={2} />
           </View>
           <View style={[styles.workoutItem, { marginTop: Spacing.md }]}>
-            <View style={[styles.workoutIcon, { backgroundColor: Colors.success + '20' }]}><Text>🏃</Text></View>
+            <View style={[styles.workoutIcon, { backgroundColor: Colors.success + '20' }]}>
+              <Footprints size={20} color={Colors.success} strokeWidth={2} />
+            </View>
             <View style={styles.workoutInfo}>
               <Text style={styles.workoutTitle}>HIIT</Text>
               <Text style={styles.workoutSub}>May 24 • 30 min • 260 kcal</Text>
             </View>
-            <Text style={styles.chevron}>{'>'}</Text>
+            <ChevronRight size={18} color={Colors.textMuted} strokeWidth={2} />
           </View>
           <View style={[styles.workoutItem, { marginTop: Spacing.md }]}>
-            <View style={[styles.workoutIcon, { backgroundColor: Colors.purple + '20' }]}><Text>🧘‍♀️</Text></View>
+            <View style={[styles.workoutIcon, { backgroundColor: Colors.purple + '20' }]}>
+              <PersonStanding size={20} color={Colors.purple} strokeWidth={2} />
+            </View>
             <View style={styles.workoutInfo}>
               <Text style={styles.workoutTitle}>Yoga</Text>
               <Text style={styles.workoutSub}>May 22 • 40 min • 180 kcal</Text>
             </View>
-            <Text style={styles.chevron}>{'>'}</Text>
+            <ChevronRight size={18} color={Colors.textMuted} strokeWidth={2} />
           </View>
         </GlassCardView>
 
@@ -290,10 +307,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.bgCardBorder,
   },
-  backBtnIcon: {
-    color: Colors.white,
-    fontSize: 20,
-  },
+  backBtnIcon: {},
   headerTitles: {
     flex: 1,
     alignItems: 'center',
@@ -313,10 +327,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconBtnText: {
-    color: Colors.white,
-    fontSize: 20,
-  },
+  iconBtnText: {},
   scrollContent: {
     paddingHorizontal: Spacing.base,
     paddingBottom: 100, // Space for fixed banner
@@ -435,10 +446,14 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     width: 120,
   },
+  vitalLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
   vitalLabel: {
     fontSize: Typography.xs,
     color: Colors.textSecondary,
-    marginBottom: Spacing.sm,
   },
   vitalValue: {
     fontSize: Typography.xl,

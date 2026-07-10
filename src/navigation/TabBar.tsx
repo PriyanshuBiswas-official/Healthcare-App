@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Colors, Typography, Spacing } from '../theme/theme';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Home, Stethoscope, Bot, Utensils, Activity } from 'lucide-react-native';
 import { useScrollVisibility } from './ScrollVisibilityContext';
 
 export type TabName = 'Home' | 'Health' | 'Diet' | 'Activity' | 'AI' | 'Profile' | 'Notifications' | 'WorkoutLog' | 'HealthLog' | 'PartnerReport';
@@ -11,12 +11,12 @@ interface TabBarProps {
   onTabChange: (tab: TabName) => void;
 }
 
-const TABS: { name: TabName; icon: string; activeColor: string }[] = [
-  { name: 'Home', icon: 'home', activeColor: Colors.teal },
-  { name: 'Health', icon: 'stethoscope', activeColor: Colors.pink },
-  { name: 'AI', icon: 'robot', activeColor: Colors.purple },
-  { name: 'Diet', icon: 'silverware-fork-knife', activeColor: Colors.amber },
-  { name: 'Activity', icon: 'run-fast', activeColor: Colors.teal },
+const TABS: { name: TabName; Icon: React.ElementType; activeColor: string }[] = [
+  { name: 'Home', Icon: Home, activeColor: Colors.teal },
+  { name: 'Health', Icon: Stethoscope, activeColor: Colors.pink },
+  { name: 'AI', Icon: Bot, activeColor: Colors.purple },
+  { name: 'Diet', Icon: Utensils, activeColor: Colors.amber },
+  { name: 'Activity', Icon: Activity, activeColor: Colors.teal },
 ];
 
 function TabBar({ activeTab, onTabChange }: TabBarProps) {
@@ -44,10 +44,10 @@ function TabBar({ activeTab, onTabChange }: TabBarProps) {
               accessibilityLabel={tab.name}
               accessibilityState={{ selected: isActive }}>
               <View style={styles.iconWrap}>
-                <MaterialCommunityIcons
-                  name={tab.icon}
-                  size={34}
+                <tab.Icon
+                  size={28}
                   color={isActive ? Colors.teal : Colors.text}
+                  strokeWidth={2}
                   style={styles.icon}
                 />
               </View>

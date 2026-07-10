@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius, Shadows } from '../../theme/theme';
+import { ChevronRight } from 'lucide-react-native';
 import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton, ActivityProgressCard } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { TabName } from '../../navigation/TabBar';
@@ -259,7 +260,7 @@ function TodaysWorkout({
                 </Text>
                 {ex.last_performance.completed && ex.target_weight && ex.target_weight > ex.last_performance.weight && (
                   <>
-                    <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginHorizontal: 4 }}>→</Text>
+                    <ChevronRight size={14} color={Colors.textSecondary} strokeWidth={2} style={{ marginHorizontal: 2 }} />
                     <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>
                       Try {ex.target_weight}kg
                     </Text>
@@ -267,7 +268,7 @@ function TodaysWorkout({
                 )}
                 {ex.last_performance.completed && (!ex.target_weight || ex.target_weight <= ex.last_performance.weight) && (
                   <>
-                    <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginHorizontal: 4 }}>→</Text>
+                    <ChevronRight size={14} color={Colors.textSecondary} strokeWidth={2} style={{ marginHorizontal: 2 }} />
                     <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>
                       Try {ex.last_performance.weight + 2.5}kg
                     </Text>

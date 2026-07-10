@@ -8,6 +8,7 @@ import {
   Switch,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, Shadows } from '../../theme/theme';
+import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView, SectionHeader } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 
@@ -172,7 +173,7 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
         <View style={styles.topBar}>
           {onBackPress ? (
             <TouchableOpacity style={styles.backBtn} onPress={onBackPress} activeOpacity={0.7}>
-              <Text style={styles.backIcon}>←</Text>
+              <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
             </TouchableOpacity>
           ) : (
             <View style={styles.backPlaceholder} />

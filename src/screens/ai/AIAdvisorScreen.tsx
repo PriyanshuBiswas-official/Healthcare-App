@@ -16,6 +16,7 @@ import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { TabName } from '../../navigation/TabBar';
 import AIChatView, { useChatState } from './AIChatView';
 import { useAuth } from '../../providers/AuthProvider';
+import { ArrowLeft } from 'lucide-react-native';
 
 const APPOINTMENT_SLOTS = [
   { time: '10:00 AM', date: 'Thu, Jun 12', doctor: 'Dr. Priya Sharma', spec: 'Gynecologist', available: true },
@@ -88,7 +89,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
               else setActiveTab('overview');
             }}
             style={styles.backBtn}>
-            <Text style={styles.backIcon}>←</Text>
+            <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
           </TouchableOpacity>
         )}
         

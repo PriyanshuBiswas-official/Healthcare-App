@@ -15,6 +15,7 @@ import {
   BackHandler,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView, ProgressBar } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
@@ -845,7 +846,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
     <SafeAreaView style={styles.root}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backBtn} onPress={goBack} activeOpacity={0.7}>
-          <Text style={styles.backIcon}>←</Text>
+          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Complete Profile</Text>
         <View style={styles.backPlaceholder} />

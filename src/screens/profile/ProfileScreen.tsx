@@ -9,6 +9,7 @@ import {
   Image,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView, SectionHeader, ProgressBar } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { supabase } from '../../lib/supabase';
@@ -234,7 +235,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
         <View style={styles.topBar}>
           {onBackPress ? (
             <TouchableOpacity style={styles.backBtn} onPress={onBackPress} activeOpacity={0.7}>
-              <Text style={styles.backIcon}>←</Text>
+              <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
             </TouchableOpacity>
           ) : (
             <View style={styles.backPlaceholder} />

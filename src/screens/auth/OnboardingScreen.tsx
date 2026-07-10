@@ -14,6 +14,7 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { ArrowLeft } from 'lucide-react-native';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
 
@@ -212,7 +213,7 @@ export default function OnboardingScreen() {
       <View style={styles.header}>
         {step > 1 && (
           <TouchableOpacity onPress={prevStep} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← Back</Text>
+            <><ArrowLeft size={18} color={Colors.teal} strokeWidth={2} /><Text style={styles.backButtonText}> Back</Text></>
           </TouchableOpacity>
         )}
         <Text style={styles.progressText}>Step {step} of 5</Text>
