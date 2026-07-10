@@ -28,6 +28,7 @@ import { usePreferences } from '../../providers/PreferencesContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg';
 import { launchCamera } from 'react-native-image-picker';
+import Voice from '@dev-amirzubair/react-native-voice';
 import { TabName } from '../../navigation/TabBar';
 import { SleepTrackerSection, VitalsDashboardSection } from '../health/HealthCommonSections';
 import { getSleepLogs, getWeightLogs, saveWeightLog } from '../../services/healthService';
@@ -139,14 +140,41 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [calendarCurrentMonth, setCalendarCurrentMonth] = useState<Date>(new Date());
   const [calendarExpanded, setCalendarExpanded] = useState<boolean>(true);
   const [showAllMeds, setShowAllMeds] = useState<boolean>(false);
+  const [isListening, setIsListening] = useState(false);
 
   const handleSearchPress = useCallback(() => {
     onOpenAI?.('Home', true, '');
   }, [onOpenAI]);
 
-  const handleVoicePress = useCallback(() => {
-    onOpenAI?.('Home', true, '');
-  }, [onOpenAI]);
+  const handleVoicePress = useCallback(async () => {
+    if (isListening) {
+      Voice.stop();
+      setIsListening(false);
+      return;
+    }
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          { title: 'Microphone Permission', message: 'App needs access to your microphone for voice search', buttonPositive: 'OK' },
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) return;
+      }
+      Voice.onSpeechResults = (e: any) => {
+        const text = e.value?.[0];
+        setIsListening(false);
+        if (text) {
+          onOpenAI?.('Home', true, text);
+        }
+      };
+      Voice.onSpeechError = () => setIsListening(false);
+      await Voice.start('en-US');
+      setIsListening(true);
+    } catch (e) {
+      console.warn('[Voice] start error:', e);
+      setIsListening(false);
+    }
+  }, [isListening, onOpenAI]);
 
   const handleCameraPress = useCallback(async () => {
     try {
@@ -231,6 +259,12 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     }, 60000);
     return () => clearInterval(interval);
   }, [fadeAnim, slideAnim]);
+
+  useEffect(() => {
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  }, []);
 
   const loadData = () => {
     if (session?.access_token) {
@@ -527,7 +561,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               </TouchableOpacity>
               <View style={styles.searchActions}>
                 <TouchableOpacity style={styles.searchActionBtn} onPress={handleVoicePress}>
-                  <Text style={styles.searchActionIcon}>🎤</Text>
+                  <Text style={[styles.searchActionIcon, isListening && { opacity: 0.6 }]}>{isListening ? '🔴' : '🎤'}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.searchActionBtn} onPress={handleCameraPress}>
                   <Text style={styles.searchActionIcon}>📷</Text>
