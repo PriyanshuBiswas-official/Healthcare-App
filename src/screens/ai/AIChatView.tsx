@@ -68,9 +68,18 @@ type AIChatViewProps = {
   setInput: (val: string) => void;
   sendMessage: (text: string) => void;
   scrollRef: React.RefObject<ScrollView | null>;
+  initialQuery?: string;
 };
 
-export default function AIChatView({ messages, input, setInput, sendMessage, scrollRef }: AIChatViewProps) {
+export default function AIChatView({ messages, input, setInput, sendMessage, scrollRef, initialQuery }: AIChatViewProps) {
+  const hasSentInitial = useRef(false);
+
+  useEffect(() => {
+    if (initialQuery && !hasSentInitial.current) {
+      hasSentInitial.current = true;
+      setTimeout(() => sendMessage(initialQuery), 300);
+    }
+  }, [initialQuery]);
   return (
     <>
       {/* Quick Prompts */}

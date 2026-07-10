@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Rect } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import { GlassCardView, SectionHeader, ActivityProgressCard } from '../../components/SharedComponents';
+import { usePreferences } from '../../providers/PreferencesContext';
 
 const { width } = Dimensions.get('window');
 
@@ -48,6 +49,7 @@ function MiniBarChart({ data, color }: { data: number[]; color: string }) {
 
 export default function PartnerHealthReportScreen({ onBack }: { onBack?: () => void }) {
   const insets = useSafeAreaInsets();
+  const { hideVitals } = usePreferences();
   const [showMenu, setShowMenu] = useState(false);
 
   return (
@@ -127,6 +129,7 @@ export default function PartnerHealthReportScreen({ onBack }: { onBack?: () => v
         </GlassCardView>
 
         {/* VITALS SECTION */}
+        {!hideVitals && (<>
         <SectionHeader title="❤️ Vitals" action="View all" />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
           <GlassCardView style={styles.vitalCard}>
@@ -150,6 +153,7 @@ export default function PartnerHealthReportScreen({ onBack }: { onBack?: () => v
             <Text style={[styles.vitalSub, { color: Colors.success }]}>▼ 0.6 kg</Text>
           </GlassCardView>
         </ScrollView>
+        </>)}
 
         {/* ACTIVITY SECTION */}
         <SectionHeader title="🏃 Activity" action="View all" />

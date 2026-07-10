@@ -15,6 +15,7 @@ import WorkoutLogScreen from './src/screens/fitness/WorkoutLogScreen';
 import HealthLogScreen, { HealthLogDraft } from './src/screens/health/HealthLogScreen';
 import PartnerHealthReportScreen from './src/screens/relationships/PartnerHealthReportScreen';
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
+import { PreferencesProvider } from './src/providers/PreferencesContext';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -37,6 +38,7 @@ type AppState = {
   previousTab: TabName;
   aiStartInChat: boolean;
   aiOrigin: TabName | null;
+  aiInitialQuery: string;
   showProfileSetup: boolean;
   workoutLogExercise: any;
   lastHealthLog: HealthLogDraft | null;
@@ -44,7 +46,7 @@ type AppState = {
 
 type AppAction =
   | { type: 'SWITCH_TAB'; tab: TabName }
-  | { type: 'OPEN_AI'; from?: TabName; startInChat?: boolean }
+  | { type: 'OPEN_AI'; from?: TabName; startInChat?: boolean; initialQuery?: string }
   | { type: 'OPEN_PROFILE' }
   | { type: 'OPEN_NOTIFICATIONS' }
   | { type: 'OPEN_PROFILE_SETUP' }
@@ -62,6 +64,7 @@ const INITIAL_STATE: AppState = {
   previousTab: 'Home',
   aiStartInChat: false,
   aiOrigin: null,
+  aiInitialQuery: '',
   showProfileSetup: false,
   workoutLogExercise: null,
   lastHealthLog: null,
@@ -79,6 +82,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         activeTab: 'AI',
         aiOrigin: action.from ?? state.activeTab,
         aiStartInChat: action.startInChat ?? false,
+        aiInitialQuery: action.initialQuery ?? '',
       };
 
     case 'OPEN_PROFILE':
@@ -164,9 +168,9 @@ function AppShell() {
   const closeWorkoutLog = useCallback(() => dispatch({ type: 'CLOSE_WORKOUT_LOG' }), []);
   const openPartnerReport = useCallback((partnerId: string) => dispatch({ type: 'OPEN_PARTNER_REPORT', partnerId }), []);
 
-  const openAI = useCallback((fromTab?: TabName, startInChat = true) => {
+  const openAI = useCallback((fromTab?: TabName, startInChat = true, initialQuery?: string) => {
     tabHistory.current.push('AI');
-    dispatch({ type: 'OPEN_AI', from: fromTab, startInChat });
+    dispatch({ type: 'OPEN_AI', from: fromTab, startInChat, initialQuery });
   }, []);
 
   const openWorkoutLog = useCallback((exercise: any) => {
@@ -271,6 +275,7 @@ function AppShell() {
                     onCompleteProfile={openProfileSetup}
                     navigateToTab={navigateToTab}
                     onPartnerPress={openPartnerReport}
+                    onOpenAI={openAI}
                   />
                 </ErrorBoundary>
               )}
@@ -290,6 +295,7 @@ function AppShell() {
                     onProfilePress={openProfile}
                     onNotificationsPress={openNotifications}
                     startInChat={state.aiStartInChat}
+                    initialQuery={state.aiInitialQuery}
                     originTab={state.aiOrigin ?? undefined}
                     navigateToTab={navigateToTab}
                     isTabActive={state.activeTab === 'AI'}
@@ -417,6 +423,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
+        <PreferencesProvider>
         <View style={styles.root}>
         <StatusBar
           barStyle="light-content"
@@ -427,6 +434,7 @@ export default function App() {
             <RootComponent />
           </SafeAreaView>
         </View>
+        </PreferencesProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

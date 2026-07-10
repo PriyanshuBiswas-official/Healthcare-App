@@ -27,6 +27,7 @@ import {
   AIHealthInsightsSection,
 } from './HealthCommonSections';
 import { useAuth } from '../../providers/AuthProvider';
+import { usePreferences } from '../../providers/PreferencesContext';
 import { getSleepLogs, getMoodLogs } from '../../services/healthService';
 import type { SleepLog, MoodLog } from '../../types/health';
 
@@ -43,13 +44,14 @@ export default function HealthScreenMale({
 }) {
   const { onScroll } = useScrollVisibility();
   const { user } = useAuth();
+  const { hideVitals } = usePreferences();
   const [activeTab, setActiveTab] = useState('Overview');
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
   const [moodLogs, setMoodLogs] = useState<MoodLog[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  const TABS = ['Overview', 'Hormones', 'Vitals'];
+  const TABS = hideVitals ? ['Overview', 'Hormones'] : ['Overview', 'Hormones', 'Vitals'];
 
   const { session } = useAuth();
 

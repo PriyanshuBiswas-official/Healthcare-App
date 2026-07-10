@@ -14,6 +14,9 @@ import {
   StatusBar,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Alert,
+  PermissionsAndroid,
+  Platform,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
 import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar } from '../../components/SharedComponents';
@@ -21,8 +24,11 @@ import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import ProfileCompletionBanner from '../../components/ProfileCompletionBanner';
 import HealthCalendar from '../../components/HealthCalendar';
 import { useAuth } from '../../providers/AuthProvider';
+import { usePreferences } from '../../providers/PreferencesContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg';
+import { launchCamera } from 'react-native-image-picker';
+import { TabName } from '../../navigation/TabBar';
 import { SleepTrackerSection, VitalsDashboardSection } from '../health/HealthCommonSections';
 import { getSleepLogs, getWeightLogs, saveWeightLog } from '../../services/healthService';
 import { getMealsForDate, getWaterForDate, getCalorieGoal, logMeal, logWater, getWaterChallenge, getWeeklyTrend } from '../../services/dietService';
@@ -30,7 +36,6 @@ import { getTodaySummary, getActivityGoal, getWeeklyStats } from '../../services
 import type { SleepLog, WeightEntry } from '../../types/health';
 import type { DayMealsResponse, DayWaterResponse, NutritionGoal, MealType, WaterChallenge, WeeklyTrendDay } from '../../types/diet';
 import type { ActivitySummary, ActivityGoal, WeeklyData } from '../../types/activity';
-import type { TabName } from '../../navigation/TabBar';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -120,9 +125,10 @@ const CompactRing = ({ size, progress, color, children }: any) => {
   );
 };
 
-export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab, onPartnerPress }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void; onPartnerPress?: (partnerId: string) => void; }) {
+export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab, onPartnerPress, onOpenAI }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void; onPartnerPress?: (partnerId: string) => void; onOpenAI?: (fromTab?: TabName, startInChat?: boolean, initialQuery?: string) => void; }) {
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion, gender } = useAuth();
+  const { hideVitals, hideCommunitySpotlight } = usePreferences();
   const insets = useSafeAreaInsets();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -133,6 +139,37 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [calendarCurrentMonth, setCalendarCurrentMonth] = useState<Date>(new Date());
   const [calendarExpanded, setCalendarExpanded] = useState<boolean>(true);
   const [showAllMeds, setShowAllMeds] = useState<boolean>(false);
+
+  const handleSearchPress = useCallback(() => {
+    onOpenAI?.('Home', true, '');
+  }, [onOpenAI]);
+
+  const handleVoicePress = useCallback(() => {
+    onOpenAI?.('Home', true, '');
+  }, [onOpenAI]);
+
+  const handleCameraPress = useCallback(async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          { title: 'Camera Permission', message: 'App needs access to your camera', buttonPositive: 'OK' },
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) return;
+      }
+      const result = await launchCamera({ mediaType: 'photo', quality: 0.8, saveToPhotos: false });
+      if (result.didCancel) return;
+      if (result.errorCode) {
+        Alert.alert('Camera Error', result.errorMessage || 'Could not open camera');
+        return;
+      }
+      if (result.assets?.[0]) {
+        onOpenAI?.('Home', true, 'Analyze this health image');
+      }
+    } catch (e: any) {
+      Alert.alert('Camera Error', e.message || 'Could not open camera');
+    }
+  }, [onOpenAI]);
 
   const [medicationsData, setMedicationsData] = useState([
     { name: 'Paracetamol', dose: '500 mg', time: '08:00 AM', taken: true, color: Colors.purple, purpose: 'Fever' },
@@ -478,6 +515,24 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                 userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
                 avatarUrl={user?.user_metadata?.avatar_url}
               />
+            </View>
+          </View>
+
+          {/* ── Search Bar ── */}
+          <View style={styles.searchBarContainer}>
+            <View style={styles.searchBar}>
+              <TouchableOpacity style={styles.searchBarInput} activeOpacity={0.8} onPress={handleSearchPress}>
+                <Text style={styles.searchIcon}>🔍</Text>
+                <Text style={styles.searchPlaceholder}>Ask anything about your health...</Text>
+              </TouchableOpacity>
+              <View style={styles.searchActions}>
+                <TouchableOpacity style={styles.searchActionBtn} onPress={handleVoicePress}>
+                  <Text style={styles.searchActionIcon}>🎤</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.searchActionBtn} onPress={handleCameraPress}>
+                  <Text style={styles.searchActionIcon}>📷</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
@@ -892,7 +947,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         </GlassCardView>
 
         {/* SECTION: TODAY'S VITALS */}
-        <VitalsDashboardSection />
+        {!hideVitals && <VitalsDashboardSection />}
 
         {/* SECTION: SLEEP TRACKER */}
         <SleepTrackerSection sleepLogs={sleepLogs} />
@@ -946,6 +1001,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         </ScrollView>
 
         {/* SECTION: COMMUNITY PREVIEW */}
+        {!hideCommunitySpotlight && (<>
         <SectionHeader title="Community Spotlight" action="Join Groups" />
         <GlassCardView style={styles.communityCard}>
           <View style={styles.communityPost}>
@@ -954,6 +1010,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             <Text style={styles.communityPostLikes}>❤️ 24 likes  ·  💬 8 comments</Text>
           </View>
         </GlassCardView>
+        </>)}
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -1153,6 +1210,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.sm,
     marginTop: Spacing.xs,
+  },
+
+  // ── Search Bar ──
+  searchBarContainer: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.md,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white + '12',
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.white + '15',
+  },
+  searchBarInput: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    gap: Spacing.sm,
+  },
+  searchIcon: {
+    fontSize: Typography.base,
+  },
+  searchPlaceholder: {
+    flex: 1,
+    fontSize: Typography.sm,
+    color: Colors.white + '60',
+  },
+  searchActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingRight: Spacing.sm,
+  },
+  searchActionBtn: {
+    padding: Spacing.sm,
+  },
+  searchActionIcon: {
+    fontSize: Typography.base,
   },
 
   // ── Integrated Score Ring + Overview ──

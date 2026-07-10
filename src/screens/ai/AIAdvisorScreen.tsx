@@ -24,7 +24,7 @@ const APPOINTMENT_SLOTS = [
   { time: '4:00 PM', date: 'Fri, Jun 13', doctor: 'Dr. Arun Pillai', spec: 'Nutritionist', available: true },
 ];
 
-export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, startInChat, originTab, navigateToTab, isTabActive }: { onProfilePress?: () => void; onNotificationsPress?: () => void; startInChat?: boolean; originTab?: TabName; navigateToTab?: (tab: TabName) => void; isTabActive?: boolean }) {
+export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, startInChat, initialQuery, originTab, navigateToTab, isTabActive }: { onProfilePress?: () => void; onNotificationsPress?: () => void; startInChat?: boolean; initialQuery?: string; originTab?: TabName; navigateToTab?: (tab: TabName) => void; isTabActive?: boolean }) {
   const { messages, input, setInput, sendMessage, scrollRef } = useChatState();
   const { user } = useAuth();
   const [bookedSlot, setBookedSlot] = useState<string | null>(null);
@@ -347,6 +347,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
           setInput={setInput}
           sendMessage={sendMessage}
           scrollRef={scrollRef}
+          initialQuery={initialQuery}
         />
       )}
     </KeyboardAvoidingView>

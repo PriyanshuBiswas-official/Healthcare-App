@@ -13,6 +13,7 @@ import { GlassCardView, SectionHeader, ProgressBar } from '../../components/Shar
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../providers/AuthProvider';
+import { usePreferences } from '../../providers/PreferencesContext';
 import { API_BASE_URL } from '../../config/api';
 import PersonalInfoScreen from './PersonalInfoScreen';
 import MedicalHistoryScreen from './MedicalHistoryScreen';
@@ -139,6 +140,7 @@ function ToggleRow({
 export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBackPress?: () => void; onCompleteProfile?: () => void }) {
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion } = useAuth();
+  const { hideVitals, setHideVitals, hideCommunitySpotlight, setHideCommunitySpotlight } = usePreferences();
   const [toggles, setToggles] = useState(
     Object.fromEntries(PREFERENCES.map(p => [p.key, p.default])) as Record<string, boolean>,
   );
@@ -348,6 +350,22 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
               {i < PREFERENCES.length - 1 && <View style={styles.divider} />}
             </View>
           ))}
+          <View style={styles.divider} />
+          <ToggleRow
+            icon="❤️"
+            label="Hide Vitals"
+            sub="Remove vitals from all health pages"
+            value={hideVitals}
+            onValueChange={setHideVitals}
+          />
+          <View style={styles.divider} />
+          <ToggleRow
+            icon="👥"
+            label="Hide Community Spotlight"
+            sub="Remove community posts from dashboard"
+            value={hideCommunitySpotlight}
+            onValueChange={setHideCommunitySpotlight}
+          />
         </GlassCardView>
 
         <SectionHeader title="Support" />

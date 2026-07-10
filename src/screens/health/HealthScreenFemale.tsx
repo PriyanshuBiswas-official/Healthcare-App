@@ -31,6 +31,7 @@ import {
 } from './HealthCommonSections';
 import { CyclePhaseVisualizer } from '../../components/CyclePhaseVisualizer';
 import { useAuth } from '../../providers/AuthProvider';
+import { usePreferences } from '../../providers/PreferencesContext';
 import { HealthLogDraft } from './HealthLogScreen';
 import {
   getPeriodLogs,
@@ -520,6 +521,7 @@ export default function HealthScreenFemale({
 }) {
   const { onScroll } = useScrollVisibility();
   const { user, session } = useAuth();
+  const { hideVitals } = usePreferences();
   const [activeTab, setActiveTab] = useState('Overview');
   const [selectedPhase, setSelectedPhase] = useState('Luteal');
   const scrollRef = useRef<ScrollView>(null);
@@ -910,7 +912,9 @@ export default function HealthScreenFemale({
             </GlassCardView>
 
             <SectionHeader title="Hormone Cycle" subtitle="Tap any day · Predicted model" />
-            <CyclePhaseVisualizer cycleLength={cycleLength} currentDay={cycleDay} startDate={cycleData?.start_date} />
+            <View style={{ marginHorizontal: -Spacing.base }}>
+              <CyclePhaseVisualizer cycleLength={cycleLength} currentDay={cycleDay} startDate={cycleData?.start_date} />
+            </View>
 
             <SectionHeader title="Cycle Analytics" subtitle="Flow & history trends" />
             <GlassCardView style={s.card}>
@@ -1001,7 +1005,7 @@ export default function HealthScreenFemale({
 
             <MentalHealthSection moodLogs={moodLogs} />
 
-            <VitalsDashboardSection />
+            {!hideVitals && <VitalsDashboardSection />}
           </>
         )}
 
@@ -1083,51 +1087,6 @@ export default function HealthScreenFemale({
             <View style={s.aiWrap}>
               <AIHealthInsightsSection mode="female" />
             </View>
-          </>
-        )}
-
-        {activeTab === 'Partner' && (
-          <>
-            <SectionHeader title="Partner Sharing" subtitle="Cycle and health visibility" />
-            <GlassCardView style={s.partnerCard}>
-              <View style={s.partnerHeader}>
-                <View style={s.partnerAvatar}>
-                  <Text style={s.partnerAvatarText}>♡</Text>
-                </View>
-                <View style={s.partnerTitleWrap}>
-                  <Text style={s.partnerTitle}>Partner access not connected</Text>
-                  <Text style={s.partnerSub}>Future sharing can show cycle phase, mood and symptom summaries.</Text>
-                </View>
-              </View>
-              <View style={s.partnerStatusRow}>
-                <Text style={s.partnerStatusText}>Sharing off</Text>
-                <Text style={s.partnerStatusMeta}>Private by default</Text>
-              </View>
-            </GlassCardView>
-
-            <SectionHeader title="Sharing Controls (Template)" />
-            <GlassCardView style={s.card}>
-              <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: 16 }}>
-                Configure Shared Data
-              </Text>
-              <View style={{ gap: Spacing.base }}>
-                {[
-                  { label: 'Share Current Cycle Phase', desc: 'Allows partner to see Menstrual, Follicular, Ovulation, Luteal phase predictions.', active: false },
-                  { label: 'Share Mood & Energy Levels', desc: 'Allows partner to see logged mood status and daily energy level.', active: false },
-                  { label: 'Share Symptom Summary', desc: 'Allows partner to view logged symptoms without detailed logs.', active: false },
-                ].map((item, idx) => (
-                  <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <View style={{ flex: 1, paddingRight: 12 }}>
-                      <Text style={{ fontSize: Typography.sm, fontWeight: Typography.semiBold, color: Colors.textPrimary }}>{item.label}</Text>
-                      <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 4 }}>{item.desc}</Text>
-                    </View>
-                    <View style={{ width: 44, height: 24, borderRadius: 12, backgroundColor: Colors.bgCardBorder, justifyContent: 'center', paddingHorizontal: 2 }}>
-                      <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: Colors.textSecondary }} />
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </GlassCardView>
           </>
         )}
 
@@ -1243,7 +1202,7 @@ export default function HealthScreenFemale({
   );
 }
 
-const TABS = ['Overview', 'Hormones', 'Fertility', 'Partner'];
+const TABS = ['Overview', 'Hormones', 'Fertility'];
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
@@ -1252,7 +1211,6 @@ const s = StyleSheet.create({
   title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   card: { padding: Spacing.base, marginBottom: Spacing.xl },
-  partnerCard: { padding: Spacing.base, marginBottom: Spacing.xl, borderColor: Colors.pink + '22' },
   logCta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1272,8 +1230,8 @@ const s = StyleSheet.create({
   cycleRingWrap: { width: 120, height: 120, justifyContent: 'center', alignItems: 'center', position: 'relative' },
   cycleRing: { position: 'absolute', width: 120, height: 120, borderRadius: 60, borderWidth: 8, borderColor: Colors.bgCardBorder },
   cycleRingCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  ringDay: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.textPrimary },
-  ringSub: { fontSize: Typography.xs, color: Colors.textSecondary },
+  ringDay: { fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary },
+  ringSub: { fontSize: Typography.micro, color: Colors.textSecondary },
   cycleInfoWrap: { flex: 1, marginLeft: Spacing.lg },
   cyclePhaseLabel: { fontSize: Typography.xs, color: Colors.textMuted, textTransform: 'uppercase', marginBottom: 2 },
   phaseNameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm },
@@ -1309,15 +1267,6 @@ const s = StyleSheet.create({
   patternItem: { flex: 1, borderWidth: 1, borderColor: Colors.bgCardBorder, borderRadius: Radius.md, padding: Spacing.md, backgroundColor: Colors.bgCard },
   patternLabel: { fontSize: Typography.xs, color: Colors.textMuted, textTransform: 'uppercase', marginBottom: 5 },
   patternValue: { fontSize: Typography.sm, color: Colors.textPrimary, fontWeight: Typography.bold },
-  partnerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
-  partnerAvatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.pink + '22' },
-  partnerAvatarText: { fontSize: Typography.xl, color: Colors.pink, fontWeight: Typography.bold },
-  partnerTitleWrap: { flex: 1, marginLeft: Spacing.md },
-  partnerTitle: { fontSize: Typography.md, color: Colors.textPrimary, fontWeight: Typography.bold },
-  partnerSub: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2, lineHeight: 17 },
-  partnerStatusRow: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: Colors.divider, paddingTop: Spacing.md },
-  partnerStatusText: { fontSize: Typography.sm, color: Colors.pink, fontWeight: Typography.bold },
-  partnerStatusMeta: { fontSize: Typography.xs, color: Colors.textMuted, fontWeight: Typography.semiBold },
   promptText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary, marginBottom: Spacing.md },
   fertHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.base },
   fertTitle: { fontSize: Typography.md, fontWeight: Typography.bold, color: Colors.textPrimary },

@@ -8,14 +8,13 @@ import {
   Dimensions,
 } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop, Circle } from 'react-native-svg';
-import { GlassCardView } from './SharedComponents';
 import { Colors, Radius, Spacing, Typography } from '../theme/theme';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Layout constants
 // ─────────────────────────────────────────────────────────────────────────────
 const COL_WIDTH = 32;   // column width for each day
-const CURVE_H = 180;  // height of the hormone curve chart
+const CURVE_H = 240;  // height of the hormone curve chart
 const LINE_W = 2.0;  // line stroke thickness
 const DOT_R = 3;    // normal dot radius at each data point
 const DOT_R_SEL = 5.5;  // dot radius when that day is selected
@@ -288,7 +287,7 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <GlassCardView style={cv.card}>
+    <View style={cv.card}>
 
       {/* ── Legend pills ───────────────────────────────────────────────────── */}
       <View style={cv.legendRow}>
@@ -337,7 +336,6 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
                   {
                     left: (band.start / cycleLength) * totalWidth,
                     width: ((band.end - band.start) / cycleLength) * totalWidth,
-                    backgroundColor: band.color + '14',
                     borderRightColor: band.color + '35',
                   },
                 ]}
@@ -551,7 +549,7 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
         </View>
       </View>
 
-    </GlassCardView>
+    </View>
   );
 };
 
@@ -562,8 +560,8 @@ const cv = StyleSheet.create({
   card: {
     paddingTop: Spacing.sm,
     paddingBottom: Spacing.sm,
-    paddingLeft: Spacing.sm,
-    paddingRight: Spacing.sm,
+    paddingLeft: 0,
+    paddingRight: 0,
     marginBottom: Spacing.base,
     overflow: 'hidden',
   },
@@ -573,7 +571,7 @@ const cv = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.xs,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
   },
   legendPill: {
     flexDirection: 'row',
@@ -700,8 +698,9 @@ const cv = StyleSheet.create({
     backgroundColor: Colors.tooltipBg,
     borderWidth: 1,
     borderRadius: Radius.md,
-    padding: Spacing.sm,
-    marginTop: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.base,
+    marginTop: Spacing.md,
     marginBottom: Spacing.sm,
   },
   tooltipHeader: {

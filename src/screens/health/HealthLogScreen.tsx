@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import { GlassCardView } from '../../components/SharedComponents';
+import { usePreferences } from '../../providers/PreferencesContext';
 import { saveMoodLog } from '../../services/healthService';
 import { savePeriodLog } from '../../services/healthService';
 import { saveDischargeLog } from '../../services/healthService';
@@ -90,6 +91,7 @@ const SEVERITY_OPTIONS = [
 ];
 
 export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScreenProps) {
+  const { hideVitals } = usePreferences();
   const [mood, setMood] = useState('Okay');
   const [energyLevel, setEnergyLevel] = useState('Medium');
   const [stress, setStress] = useState(2);
@@ -537,6 +539,7 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
           </View>
         </GlassCardView>
 
+        {!hideVitals && (
         <GlassCardView style={s.card}>
           <Text style={s.sectionTitle}>Vitals</Text>
           <View style={s.inputRow}>
@@ -563,6 +566,7 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
             </View>
           </View>
         </GlassCardView>
+        )}
 
         <GlassCardView style={s.card}>
           <Text style={s.sectionTitle}>Notes</Text>
