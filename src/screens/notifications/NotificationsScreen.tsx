@@ -140,7 +140,7 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
               <Bell size={32} color={Colors.textMuted} strokeWidth={1.5} />
             </View>
             <Text style={styles.emptyTitle}>No notifications yet</Text>
-            <Text style={styles.emptySub}>Tap "Test Notify" to send a test notification</Text>
+            <Text style={styles.emptySub}>Your notifications will be listed here</Text>
           </View>
         ) : (
           <>
