@@ -21,8 +21,13 @@ import MedicalHistoryScreen from './MedicalHistoryScreen';
 import MedicationsScreen from './MedicationsScreen';
 import AllergiesScreen from './AllergiesScreen';
 import EmergencyContactsScreen from './EmergencyContactsScreen';
+import WaterRemindersScreen from './WaterRemindersScreen';
+import WorkoutsRemindersScreen from './WorkoutsRemindersScreen';
+import AppointmentsRemindersScreen from './AppointmentsRemindersScreen';
+import SleepRemindersScreen from './SleepRemindersScreen';
+import HealthRemindersScreen from './HealthRemindersScreen';
 
-type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency';
+type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency' | 'reminders-water' | 'reminders-workouts' | 'reminders-appointments' | 'reminders-sleep' | 'reminders-health';
 
 type MenuItem = {
   icon: string;
@@ -68,6 +73,15 @@ function getHealthProfile(profileData: ProfileData | null): MenuItem[] {
 const CONNECTED_DEVICES: MenuItem[] = [
   { icon: '⌚', label: 'Apple Watch', sub: 'Synced · Last: 2 min ago', color: Colors.teal, badge: 'On' },
   { icon: '📱', label: 'Health Connect', sub: 'Steps, sleep, heart rate', color: Colors.pink },
+];
+
+const REMINDER_ITEMS: MenuItem[] = [
+  { icon: '💊', label: 'Medications', sub: 'Manage medication reminders', color: Colors.amber },
+  { icon: '💧', label: 'Water Reminders', sub: 'Hydration intake alerts', color: Colors.blue },
+  { icon: '💪', label: 'Workouts', sub: 'Exercise schedule & reminders', color: Colors.pink },
+  { icon: '🏥', label: 'Appointments', sub: 'Upcoming visits & alerts', color: Colors.teal },
+  { icon: '🌙', label: 'Sleep', sub: 'Bedtime & wake reminders', color: Colors.purple },
+  { icon: '❤️', label: 'Health', sub: 'General health reminders', color: Colors.danger },
 ];
 
 const PREFERENCES = [
@@ -225,6 +239,36 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
               onBack={() => setActiveSection(null)}
             />
           )}
+          {activeSection === 'reminders-water' && (
+            <WaterRemindersScreen
+              onBack={() => setActiveSection(null)}
+              onSaved={fetchProfile}
+            />
+          )}
+          {activeSection === 'reminders-workouts' && (
+            <WorkoutsRemindersScreen
+              onBack={() => setActiveSection(null)}
+              onSaved={fetchProfile}
+            />
+          )}
+          {activeSection === 'reminders-appointments' && (
+            <AppointmentsRemindersScreen
+              onBack={() => setActiveSection(null)}
+              onSaved={fetchProfile}
+            />
+          )}
+          {activeSection === 'reminders-sleep' && (
+            <SleepRemindersScreen
+              onBack={() => setActiveSection(null)}
+              onSaved={fetchProfile}
+            />
+          )}
+          {activeSection === 'reminders-health' && (
+            <HealthRemindersScreen
+              onBack={() => setActiveSection(null)}
+              onSaved={fetchProfile}
+            />
+          )}
         </>
       ) : (
       <ScrollView
@@ -323,6 +367,29 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
                 }}
               />
               {i < getHealthProfile(profileData).length - 1 && <View style={styles.divider} />}
+            </View>
+          ))}
+        </GlassCardView>
+
+        <SectionHeader title="Reminders" subtitle="Manage your daily reminders" />
+        <GlassCardView style={styles.menuCard}>
+          {REMINDER_ITEMS.map((item, i) => (
+            <View key={item.label}>
+              <MenuRow
+                item={item}
+                onPress={() => {
+                  const sectionMap: Record<string, HealthSection> = {
+                    'Medications': 'medications',
+                    'Water Reminders': 'reminders-water',
+                    'Workouts': 'reminders-workouts',
+                    'Appointments': 'reminders-appointments',
+                    'Sleep': 'reminders-sleep',
+                    'Health': 'reminders-health',
+                  };
+                  setActiveSection(sectionMap[item.label] || null);
+                }}
+              />
+              {i < REMINDER_ITEMS.length - 1 && <View style={styles.divider} />}
             </View>
           ))}
         </GlassCardView>

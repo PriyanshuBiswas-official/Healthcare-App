@@ -20,6 +20,7 @@ import {
   NotificationIconButton,
 } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
+import { useNotifications } from '../../providers/NotificationContext';
 import {
   InnerTabBar,
   HormoneRangeBar,
@@ -522,6 +523,7 @@ export default function HealthScreenFemale({
   const { onScroll } = useScrollVisibility();
   const { user, session } = useAuth();
   const { hideVitals } = usePreferences();
+  const { unreadCount } = useNotifications();
   const [activeTab, setActiveTab] = useState('Overview');
   const [selectedPhase, setSelectedPhase] = useState('Luteal');
   const scrollRef = useRef<ScrollView>(null);
@@ -787,7 +789,7 @@ export default function HealthScreenFemale({
         <View style={s.header}>
           <Text style={s.title}>Your Health</Text>
           <View style={s.headerActions}>
-            <NotificationIconButton onPress={onNotificationsPress} />
+            <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
             <ProfileAvatarButton
               onPress={onProfilePress}
               userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}

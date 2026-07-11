@@ -19,6 +19,7 @@ import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
+import { useNotifications } from '../../providers/NotificationContext';
 import * as dietService from '../../services/dietService';
 import type { NutritionLog, NutritionGoal, WeeklyTrendDay, MealType } from '../../types/diet';
 
@@ -71,6 +72,7 @@ function formatTime(isoString: string): string {
 export default function CalorieScreen({ onProfilePress, onNotificationsPress }: { onProfilePress?: () => void; onNotificationsPress?: () => void }) {
   const { onScroll } = useScrollVisibility();
   const { user, session } = useAuth();
+  const { unreadCount } = useNotifications();
 
   const today = useMemo(() => new Date(), []);
   const todayStr = useMemo(() => toDateString(today), [today]);
@@ -347,7 +349,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
             <Text style={styles.sub}>{formatDateHeader(today)}</Text>
           </View>
           <View style={styles.headerActions}>
-            <NotificationIconButton onPress={onNotificationsPress} />
+            <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
             <ProfileAvatarButton
               onPress={onProfilePress}
               userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}

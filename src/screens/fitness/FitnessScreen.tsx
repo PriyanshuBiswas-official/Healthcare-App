@@ -18,6 +18,7 @@ import { Colors, Typography, Spacing, Radius, Shadows } from '../../theme/theme'
 import { ChevronRight } from 'lucide-react-native';
 import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton, ActivityProgressCard } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
+import { useNotifications } from '../../providers/NotificationContext';
 import { TabName } from '../../navigation/TabBar';
 import { useAuth } from '../../providers/AuthProvider';
 import * as activityService from '../../services/activityService';
@@ -438,6 +439,7 @@ function RecoveryCard() {
 export default function FitnessScreen({ onProfilePress, onNotificationsPress, onOpenAI, onOpenWorkoutLog }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void; onOpenWorkoutLog?: (exercise: any) => void }) {
   const { onScroll } = useScrollVisibility();
   const { user, session } = useAuth();
+  const { unreadCount } = useNotifications();
   const [activeSegment, setActiveSegment] = useState<Segment>('Today');
   const [activeFilter, setActiveFilter] = useState('All');
 
@@ -779,7 +781,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
             <Text style={styles.title}>Activity & Gym</Text>
           </View>
           <View style={styles.headerRight}>
-            <NotificationIconButton onPress={onNotificationsPress} />
+            <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
             <ProfileAvatarButton
               onPress={onProfilePress}
               userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}

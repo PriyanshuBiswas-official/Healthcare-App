@@ -25,6 +25,7 @@ import ProfileCompletionBanner from '../../components/ProfileCompletionBanner';
 import HealthCalendar from '../../components/HealthCalendar';
 import { useAuth } from '../../providers/AuthProvider';
 import { usePreferences } from '../../providers/PreferencesContext';
+import { useNotifications } from '../../providers/NotificationContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg';
 import { launchCamera } from 'react-native-image-picker';
@@ -39,6 +40,33 @@ import type { DayMealsResponse, DayWaterResponse, NutritionGoal, MealType, Water
 import type { ActivitySummary, ActivityGoal, WeeklyData } from '../../types/activity';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+
+// ── Health Timeline Types ──
+type TimelineEventStatus = 'pending' | 'completed' | 'skipped' | 'stopped';
+type TimelineEventType = 'medication' | 'water' | 'meal' | 'steps' | 'workout' | 'sleep' | 'custom';
+
+type TimelineEvent = {
+  id: string;
+  time: string;
+  title: string;
+  sub: string;
+  icon: string;
+  color: string;
+  rightText: string;
+  rightType: 'taken' | 'value' | 'countdown' | 'upcoming';
+  type: TimelineEventType;
+  status: TimelineEventStatus;
+};
+
+const DEFAULT_TIMELINE: TimelineEvent[] = [
+  { id: '1', time: '08:00 AM', title: 'Medication', sub: 'Vitamin D3 1000 IU', icon: '💊', color: Colors.purple, rightText: '✓ Taken', rightType: 'taken', type: 'medication', status: 'completed' },
+  { id: '2', time: '09:15 AM', title: 'Water', sub: '400 ml recorded', icon: '💧', color: Colors.blue, rightText: '400 ml', rightType: 'value', type: 'water', status: 'completed' },
+  { id: '3', time: '10:00 AM', title: 'Breakfast', sub: 'Oats with fruits, Almonds', icon: '🍽️', color: Colors.amber, rightText: '450 kcal', rightType: 'value', type: 'meal', status: 'completed' },
+  { id: '4', time: '12:00 PM', title: 'Steps', sub: '2,350 steps', icon: '👟', color: Colors.success, rightText: '2,350', rightType: 'value', type: 'steps', status: 'completed' },
+  { id: '5', time: '04:30 PM', title: 'Workout', sub: 'Strength Training', icon: '💪', color: Colors.pink, rightText: '45 min', rightType: 'value', type: 'workout', status: 'pending' },
+  { id: '6', time: '08:00 PM', title: 'Medication (Upcoming)', sub: 'Metformin 500 mg', icon: '💊', color: Colors.amber, rightText: '', rightType: 'countdown', type: 'medication', status: 'pending' },
+  { id: '7', time: '10:30 PM', title: 'Sleep Goal', sub: 'Target: 8 hrs', icon: '🌙', color: Colors.purple, rightText: 'Upcoming', rightType: 'upcoming', type: 'sleep', status: 'pending' },
+];
 
 // Custom SVG Ring for Hero
 const HeroScoreRing = ({ score }: { score: number }) => {
@@ -130,6 +158,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion, gender } = useAuth();
   const { hideVitals, hideCommunitySpotlight } = usePreferences();
+  const { unreadCount } = useNotifications();
   const insets = useSafeAreaInsets();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -237,6 +266,15 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [showMealModal, setShowMealModal] = useState(false);
   const [showWaterModal, setShowWaterModal] = useState(false);
   const [showMedModal, setShowMedModal] = useState(false);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>(DEFAULT_TIMELINE);
+  const [timelineEditing, setTimelineEditing] = useState(false);
+  const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [draggedEventId, setDraggedEventId] = useState<string | null>(null);
+  const [dragY, setDragY] = useState(new Animated.Value(0));
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventTime, setNewEventTime] = useState('');
+  const [newEventSub, setNewEventSub] = useState('');
+  const [newEventType, setNewEventType] = useState<TimelineEventType>('custom');
   const [mealFood, setMealFood] = useState('');
   const [mealCalories, setMealCalories] = useState('');
   const [mealProtein, setMealProtein] = useState('');
@@ -406,6 +444,63 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     }
   };
 
+  // ── Timeline Helpers ──
+  const toggleTimelineEventStatus = (id: string) => {
+    setTimelineEvents(prev => prev.map(evt => {
+      if (evt.id !== id) return evt;
+      const newStatus: TimelineEventStatus = evt.status === 'completed' ? 'skipped' : 'completed';
+      return { ...evt, status: newStatus };
+    }));
+  };
+
+  const removeTimelineEvent = (id: string) => {
+    setTimelineEvents(prev => prev.filter(evt => evt.id !== id));
+  };
+
+  const addTimelineEvent = () => {
+    if (!newEventTitle.trim()) return;
+    const typeConfig: Record<TimelineEventType, { icon: string; color: string; rightType: TimelineEvent['rightType'] }> = {
+      medication: { icon: '💊', color: Colors.purple, rightType: 'upcoming' },
+      water: { icon: '💧', color: Colors.blue, rightType: 'value' },
+      meal: { icon: '🍽️', color: Colors.amber, rightType: 'value' },
+      steps: { icon: '👟', color: Colors.success, rightType: 'value' },
+      workout: { icon: '💪', color: Colors.pink, rightType: 'value' },
+      sleep: { icon: '🌙', color: Colors.purple, rightType: 'upcoming' },
+      custom: { icon: '📌', color: Colors.teal, rightType: 'upcoming' },
+    };
+    const cfg = typeConfig[newEventType];
+    const newEvent: TimelineEvent = {
+      id: Date.now().toString(),
+      time: newEventTime.trim() || 'Now',
+      title: newEventTitle.trim(),
+      sub: newEventSub.trim() || '',
+      icon: cfg.icon,
+      color: cfg.color,
+      rightText: '',
+      rightType: cfg.rightType,
+      type: newEventType,
+      status: 'pending',
+    };
+    setTimelineEvents(prev => [...prev, newEvent]);
+    setNewEventTitle('');
+    setNewEventTime('');
+    setNewEventSub('');
+    setNewEventType('custom');
+    setShowAddEventModal(false);
+  };
+
+  const moveTimelineEvent = (id: string, direction: 'up' | 'down') => {
+    setTimelineEvents(prev => {
+      const idx = prev.findIndex(e => e.id === id);
+      if (idx === -1) return prev;
+      const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (newIdx < 0 || newIdx >= prev.length) return prev;
+      const updated = [...prev];
+      [updated[idx], updated[newIdx]] = [updated[newIdx], updated[idx]];
+      return updated;
+    });
+  };
+
   // Rendering weight trend sparkline
   const sparklineElement = useMemo(() => {
     if (weightLogs.length < 2) {
@@ -543,7 +638,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               </Text>
             </View>
             <View style={styles.heroTopBarActions}>
-              <NotificationIconButton onPress={onNotificationsPress} />
+              <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
               <ProfileAvatarButton
                 onPress={onProfilePress}
                 userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
@@ -779,61 +874,145 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         </ScrollView>
 
         {/* SECTION: DAILY HEALTH TIMELINE */}
-        <SectionHeader title="Health Timeline" subtitle="Your day at a glance" action="View All" />
-        <View style={styles.newTimelineContainer}>
-          <View style={styles.newTimelineLine} />
-          {[
-            { time: '08:00 AM', title: 'Medication', sub: 'Vitamin D3 1000 IU', icon: '💊', color: Colors.purple, rightText: '✓ Taken', rightType: 'taken' },
-            { time: '09:15 AM', title: 'Water', sub: '400 ml recorded', icon: '💧', color: Colors.blue, rightText: '400 ml', rightType: 'value' },
-            { time: '10:00 AM', title: 'Breakfast', sub: 'Oats with fruits, Almonds', icon: '🍽️', color: Colors.amber, rightText: '450 kcal', rightType: 'value' },
-            { time: '12:00 PM', title: 'Steps', sub: '2,350 steps', icon: '👟', color: Colors.success, rightText: '2,350', rightType: 'value' },
-            { time: '04:30 PM', title: 'Workout', sub: 'Strength Training', icon: '💪', color: Colors.pink, rightText: '45 min', rightType: 'value' },
-            { time: '08:00 PM', title: 'Medication (Upcoming)', sub: 'Metformin 500 mg', icon: '💊', color: Colors.amber, rightText: `${getNextDoseHours(20)}h ${60 - new Date().getMinutes()}m`, rightType: 'countdown' },
-            { time: '10:30 PM', title: 'Sleep Goal', sub: 'Target: 8 hrs', icon: '🌙', color: Colors.purple, rightText: 'Upcoming', rightType: 'upcoming' },
-          ].map((item, index) => (
-            <View key={index} style={styles.newTimelineRow}>
-              {/* Left circular icon */}
-              <View style={[styles.newTimelineIconBg, { backgroundColor: item.color + '15', borderColor: item.color + '30' }]}>
-                <Text style={styles.newTimelineCardIcon}>{item.icon}</Text>
-              </View>
+        <SectionHeader
+          title="Health Timeline"
+          subtitle={timelineEditing ? 'Tap arrows to reorder, ✕ to remove' : 'Your day at a glance'}
+          action={timelineEditing ? 'Done' : 'Edit'}
+          onAction={() => setTimelineEditing(!timelineEditing)}
+        />
 
-              {/* Vertical line node */}
-              <View style={styles.newTimelineNodeContainer}>
-                <View style={[styles.newTimelineNode, { backgroundColor: item.color }]} />
-              </View>
+        {timelineEvents.length === 0 && !timelineEditing ? (
+          <GlassCardView style={{ padding: Spacing.xl, marginBottom: Spacing.xl, alignItems: 'center' }}>
+            <Text style={{ fontSize: 40, marginBottom: Spacing.md }}>📅</Text>
+            <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: Spacing.xs }}>
+              No Health Timeline
+            </Text>
+            <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.lg, lineHeight: 20 }}>
+              Set up your daily health timeline to track medications, workouts, meals, and more.
+            </Text>
+            <TouchableOpacity
+              style={{ backgroundColor: Colors.teal + '20', borderWidth: 1, borderColor: Colors.teal + '50', borderRadius: Radius.md, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md }}
+              onPress={() => setTimelineEvents(DEFAULT_TIMELINE)}
+              activeOpacity={0.7}>
+              <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.teal }}>Setup Timeline →</Text>
+            </TouchableOpacity>
+          </GlassCardView>
+        ) : (
+          <View style={styles.newTimelineContainer}>
+            <View style={styles.newTimelineLine} />
+            {timelineEvents.map((item, index) => {
+              const isSkipped = item.status === 'skipped';
+              const isStopped = item.status === 'stopped';
+              const isCompleted = item.status === 'completed';
 
-              {/* Content */}
-              <View style={styles.newTimelineContent}>
-                <Text style={[styles.newTimelineTime, { color: item.color }]}>{item.time}</Text>
-                <Text style={styles.newTimelineTitle}>{item.title}</Text>
-                <Text style={styles.newTimelineSub}>{item.sub}</Text>
-              </View>
+              let rightBadge;
+              if (isStopped) {
+                rightBadge = (
+                  <View style={styles.badgeStopped}>
+                    <Text style={styles.badgeStoppedText}>Stopped</Text>
+                  </View>
+                );
+              } else if (isSkipped) {
+                rightBadge = (
+                  <TouchableOpacity onPress={() => toggleTimelineEventStatus(item.id)}>
+                    <View style={styles.badgeSkipped}>
+                      <Text style={styles.badgeSkippedText}>Skipped</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              } else if (isCompleted) {
+                rightBadge = (
+                  <TouchableOpacity onPress={() => toggleTimelineEventStatus(item.id)}>
+                    <View style={styles.badgeTaken}>
+                      <Text style={styles.badgeTakenText}>{item.rightText || '✓ Done'}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              } else {
+                rightBadge = (
+                  <TouchableOpacity onPress={() => toggleTimelineEventStatus(item.id)}>
+                    {item.rightType === 'value' && (
+                      <Text style={[styles.badgeValueText, { color: item.color }]}>{item.rightText}</Text>
+                    )}
+                    {item.rightType === 'countdown' && (
+                      <View style={styles.badgeCountdown}>
+                        <Text style={styles.badgeCountdownText}>🕒 {item.rightText || `${getNextDoseHours(20)}h`}</Text>
+                      </View>
+                    )}
+                    {item.rightType === 'upcoming' && (
+                      <View style={styles.badgeUpcoming}>
+                        <Text style={styles.badgeUpcomingText}>{item.rightText || 'Upcoming'}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              }
 
-              {/* Right side Badge */}
-              <View style={styles.newTimelineRight}>
-                {item.rightType === 'taken' && (
-                  <View style={styles.badgeTaken}>
-                    <Text style={styles.badgeTakenText}>{item.rightText}</Text>
+              return (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.newTimelineRow,
+                    isStopped && { opacity: 0.4 },
+                    isSkipped && { opacity: 0.6 },
+                    isCompleted && {},
+                  ]}
+                >
+                  {timelineEditing && (
+                    <TouchableOpacity
+                      style={styles.timelineDragHandle}
+                      onPress={() => moveTimelineEvent(item.id, 'up')}
+                      onLongPress={() => {
+                        if (index > 0) moveTimelineEvent(item.id, 'up');
+                      }}
+                      activeOpacity={0.6}>
+                      <Text style={{ color: Colors.textMuted, fontSize: Typography.sm }}>☰</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  <View style={[styles.newTimelineIconBg, { backgroundColor: item.color + '15', borderColor: item.color + '30' }]}>
+                    <Text style={styles.newTimelineCardIcon}>{item.icon}</Text>
                   </View>
-                )}
-                {item.rightType === 'value' && (
-                  <Text style={[styles.badgeValueText, { color: item.color }]}>{item.rightText}</Text>
-                )}
-                {item.rightType === 'countdown' && (
-                  <View style={styles.badgeCountdown}>
-                    <Text style={styles.badgeCountdownText}>🕒 {item.rightText}</Text>
+
+                  <View style={styles.newTimelineNodeContainer}>
+                    <View style={[styles.newTimelineNode, { backgroundColor: item.color }]} />
                   </View>
-                )}
-                {item.rightType === 'upcoming' && (
-                  <View style={styles.badgeUpcoming}>
-                    <Text style={styles.badgeUpcomingText}>{item.rightText}</Text>
+
+                  <View style={styles.newTimelineContent}>
+                    <Text style={[styles.newTimelineTime, { color: item.color, textDecorationLine: isStopped || isSkipped ? 'line-through' : 'none' }]}>{item.time}</Text>
+                    <Text style={[styles.newTimelineTitle, isStopped && { textDecorationLine: 'line-through' }]}>
+                      {isStopped ? '[Stopped] ' : isSkipped ? '[Skipped] ' : ''}{item.title}
+                    </Text>
+                    <Text style={styles.newTimelineSub}>{item.sub}</Text>
                   </View>
-                )}
-                <Text style={styles.newTimelineChevron}>❯</Text>
-              </View>
-            </View>
-          ))}
-        </View>
+
+                  <View style={styles.newTimelineRight}>
+                    {rightBadge}
+                    <Text style={styles.newTimelineChevron}>❯</Text>
+                  </View>
+
+                  {timelineEditing && (
+                    <TouchableOpacity
+                      style={styles.timelineDeleteBtn}
+                      onPress={() => removeTimelineEvent(item.id)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                      <Text style={{ color: Colors.danger, fontSize: Typography.md }}>✕</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })}
+
+            {timelineEditing && (
+              <TouchableOpacity
+                style={styles.timelineAddBtn}
+                onPress={() => setShowAddEventModal(true)}
+                activeOpacity={0.7}>
+                <Text style={styles.timelineAddBtnText}>+ Add Event</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* SECTION: TODAY'S PROGRESS */}
         <SectionHeader title="Today's Progress" />
@@ -1188,6 +1367,72 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               <View style={styles.modalActions}>
                 <TouchableOpacity style={styles.modalCancel} onPress={() => setShowMedModal(false)}>
                   <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </GlassCardView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ADD TIMELINE EVENT MODAL */}
+      <Modal visible={showAddEventModal} transparent animationType="slide">
+        <TouchableOpacity activeOpacity={1} onPress={() => setShowAddEventModal(false)} style={styles.modalBg}>
+          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{ alignSelf: 'stretch' }}>
+            <GlassCardView style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Add Timeline Event</Text>
+              <Text style={styles.modalSub}>Add an event to your health timeline</Text>
+
+              <TextInput
+                style={[styles.modalInput, { width: '100%' }]}
+                value={newEventTitle}
+                onChangeText={setNewEventTitle}
+                placeholder="Event title *"
+                placeholderTextColor={Colors.textMuted}
+              />
+              <TextInput
+                style={[styles.modalInput, { width: '100%' }]}
+                value={newEventTime}
+                onChangeText={setNewEventTime}
+                placeholder="Time (e.g. 03:00 PM)"
+                placeholderTextColor={Colors.textMuted}
+              />
+              <TextInput
+                style={[styles.modalInput, { width: '100%' }]}
+                value={newEventSub}
+                onChangeText={setNewEventSub}
+                placeholder="Description (optional)"
+                placeholderTextColor={Colors.textMuted}
+              />
+
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md, alignSelf: 'stretch' }}>
+                {(['medication', 'water', 'meal', 'steps', 'workout', 'sleep', 'custom'] as TimelineEventType[]).map(type => {
+                  const typeLabels: Record<TimelineEventType, string> = {
+                    medication: '💊 Meds', water: '💧 Water', meal: '🍽️ Meal', steps: '👟 Steps', workout: '💪 Workout', sleep: '🌙 Sleep', custom: '📌 Custom',
+                  };
+                  return (
+                    <TouchableOpacity
+                      key={type}
+                      onPress={() => setNewEventType(type)}
+                      style={{
+                        paddingHorizontal: Spacing.sm + 2,
+                        paddingVertical: Spacing.sm,
+                        borderRadius: Radius.sm,
+                        backgroundColor: newEventType === type ? Colors.teal + '20' : Colors.bgCardBorder,
+                        borderWidth: newEventType === type ? 1 : 0,
+                        borderColor: Colors.teal,
+                      }}>
+                      <Text style={{ fontSize: Typography.xs, color: newEventType === type ? Colors.teal : Colors.textSecondary, fontWeight: Typography.bold }}>{typeLabels[type]}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalCancel} onPress={() => setShowAddEventModal(false)}>
+                  <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalSave} onPress={addTimelineEvent}>
+                  <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Add</Text>
                 </TouchableOpacity>
               </View>
             </GlassCardView>
@@ -1602,6 +1847,64 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     fontSize: Typography.xs,
     marginLeft: 4,
+  },
+  timelineDragHandle: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.xs,
+  },
+  timelineDeleteBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.danger + '15',
+    borderWidth: 1,
+    borderColor: Colors.danger + '30',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: Spacing.xs,
+  },
+  timelineAddBtn: {
+    backgroundColor: Colors.teal + '15',
+    borderWidth: 1,
+    borderColor: Colors.teal + '40',
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    marginTop: Spacing.md,
+  },
+  timelineAddBtnText: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.bold,
+    color: Colors.teal,
+  },
+  badgeStopped: {
+    backgroundColor: Colors.danger + '15',
+    borderColor: Colors.danger + '33',
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
+  badgeStoppedText: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.bold,
+    color: Colors.danger,
+  },
+  badgeSkipped: {
+    backgroundColor: Colors.amber + '15',
+    borderColor: Colors.amber + '33',
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
+  badgeSkippedText: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.bold,
+    color: Colors.amber,
   },
 
   // QUICK ACTIONS REDESIGNED

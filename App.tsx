@@ -16,6 +16,7 @@ import HealthLogScreen, { HealthLogDraft } from './src/screens/health/HealthLogS
 import PartnerHealthReportScreen from './src/screens/relationships/PartnerHealthReportScreen';
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 import { PreferencesProvider } from './src/providers/PreferencesContext';
+import { NotificationProvider } from './src/providers/NotificationContext';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -423,18 +424,20 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <PreferencesProvider>
-        <View style={styles.root}>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor={Colors.bgHero}
-          translucent={false}
-        />
-          <SafeAreaView style={styles.safeArea}>
-            <RootComponent />
-          </SafeAreaView>
-        </View>
-        </PreferencesProvider>
+        <NotificationProvider>
+          <PreferencesProvider>
+          <View style={styles.root}>
+          <StatusBar
+            barStyle="light-content"
+            backgroundColor={Colors.bgHero}
+            translucent={false}
+          />
+            <SafeAreaView style={styles.safeArea}>
+              <RootComponent />
+            </SafeAreaView>
+          </View>
+          </PreferencesProvider>
+        </NotificationProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

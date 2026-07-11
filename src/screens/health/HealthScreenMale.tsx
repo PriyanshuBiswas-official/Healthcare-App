@@ -16,6 +16,7 @@ import {
   NotificationIconButton,
 } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
+import { useNotifications } from '../../providers/NotificationContext';
 import {
   InnerTabBar,
   HormoneRangeBar,
@@ -45,6 +46,7 @@ export default function HealthScreenMale({
   const { onScroll } = useScrollVisibility();
   const { user } = useAuth();
   const { hideVitals } = usePreferences();
+  const { unreadCount } = useNotifications();
   const [activeTab, setActiveTab] = useState('Overview');
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
   const [moodLogs, setMoodLogs] = useState<MoodLog[]>([]);
@@ -96,7 +98,7 @@ export default function HealthScreenMale({
         <View style={s.header}>
           <Text style={s.title}>Your Health</Text>
           <View style={s.headerActions}>
-            <NotificationIconButton onPress={onNotificationsPress} />
+            <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
             <ProfileAvatarButton
               onPress={onProfilePress}
               userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}

@@ -16,6 +16,7 @@ import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { TabName } from '../../navigation/TabBar';
 import AIChatView, { useChatState } from './AIChatView';
 import { useAuth } from '../../providers/AuthProvider';
+import { useNotifications } from '../../providers/NotificationContext';
 import { ArrowLeft } from 'lucide-react-native';
 
 const APPOINTMENT_SLOTS = [
@@ -28,6 +29,7 @@ const APPOINTMENT_SLOTS = [
 export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, startInChat, initialQuery, originTab, navigateToTab, isTabActive }: { onProfilePress?: () => void; onNotificationsPress?: () => void; startInChat?: boolean; initialQuery?: string; originTab?: TabName; navigateToTab?: (tab: TabName) => void; isTabActive?: boolean }) {
   const { messages, input, setInput, sendMessage, scrollRef } = useChatState();
   const { user } = useAuth();
+  const { unreadCount } = useNotifications();
   const [bookedSlot, setBookedSlot] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'chat'>('overview');
   const [isBookingExpanded, setIsBookingExpanded] = useState(false);
@@ -109,7 +111,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
         )}
         
         <View style={styles.headerActions}>
-          <NotificationIconButton onPress={onNotificationsPress} />
+          <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
           <ProfileAvatarButton
             onPress={onProfilePress}
             userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}

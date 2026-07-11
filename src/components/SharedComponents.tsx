@@ -8,6 +8,7 @@ import {
   Image,
 } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
+import { Bell } from 'lucide-react-native';
 import { Colors, Radius, Spacing, Typography, GlassCard, Shadows } from '../theme/theme';
 
 // ─── Glass Card ─────────────────────────────────────────────────────────────
@@ -55,7 +56,7 @@ export const NotificationIconButton: React.FC<{ onPress?: () => void; unreadCoun
   unreadCount = 0,
 }) => (
   <TouchableOpacity style={notifIconStyles.btn} onPress={onPress} activeOpacity={0.8}>
-    <Text style={notifIconStyles.bell}>🔔</Text>
+    <Bell size={30} color={Colors.white} strokeWidth={2} />
     {unreadCount > 0 && (
       <View style={notifIconStyles.badge}>
         <Text style={notifIconStyles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -112,7 +113,7 @@ export function ActivityRings({ steps, exercise, calories }: { steps: number; ex
   const size = 120;
   const strokeWidth = 10;
   const center = size / 2;
-  
+
   const drawRing = (radius: number, color: string, percentage: number) => {
     const circumference = 2 * Math.PI * radius;
     const strokeDashoffset = circumference - (Math.min(percentage, 1) * circumference);
@@ -135,11 +136,11 @@ export function ActivityRings({ steps, exercise, calories }: { steps: number; ex
   );
 }
 
-export const ActivityProgressCard = React.memo(({ 
-  steps, stepsTarget, 
-  exercise, exerciseTarget, 
-  calories, caloriesTarget 
-}: { 
+export const ActivityProgressCard = React.memo(({
+  steps, stepsTarget,
+  exercise, exerciseTarget,
+  calories, caloriesTarget
+}: {
   steps: number; stepsTarget: number;
   exercise: number; exerciseTarget: number;
   calories: number; caloriesTarget: number;
@@ -456,20 +457,13 @@ const notifIconStyles = StyleSheet.create({
   btn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.purple + '20',
-    borderWidth: 1,
-    borderColor: Colors.purple + '50',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bell: {
-    fontSize: Typography.lg,
-  },
   badge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: 1,
+    right: -1,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
@@ -477,13 +471,14 @@ const notifIconStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: Colors.bg,
   },
   badgeText: {
-    fontSize: Typography.xs,
+    fontSize: 10,
     fontWeight: Typography.bold,
     color: Colors.bg,
+    lineHeight: 14,
   },
 });
 

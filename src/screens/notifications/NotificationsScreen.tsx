@@ -1,166 +1,109 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, Shadows } from '../../theme/theme';
-import { ArrowLeft } from 'lucide-react-native';
+import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { ArrowLeft, Bell } from 'lucide-react-native';
+import notifee, { AndroidImportance } from '@notifee/react-native';
 import { GlassCardView, SectionHeader } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
+import { useNotifications, AppNotification } from '../../providers/NotificationContext';
 
-type NotificationItem = {
-  id: string;
-  icon: string;
-  title: string;
-  subtitle: string;
-  time: string;
-  color: string;
-  read: boolean;
-};
-
-const NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: '1',
-    icon: '💊',
-    title: 'Medication Reminder',
-    subtitle: 'Time to take Metformin 500mg',
-    time: '2 min ago',
-    color: Colors.teal,
-    read: false,
-  },
-  {
-    id: '2',
-    icon: '🏥',
-    title: 'Appointment Tomorrow',
-    subtitle: 'Dr. Priya Sharma · Gynecologist at 10:30 AM',
-    time: '1 hour ago',
-    color: Colors.pink,
-    read: false,
-  },
-  {
-    id: '3',
-    icon: '🩺',
-    title: 'Vitals Alert',
-    subtitle: 'Your resting heart rate has been elevated for 3 days',
-    time: '3 hours ago',
-    color: Colors.amber,
-    read: false,
-  },
-  {
-    id: '4',
-    icon: '📊',
-    title: 'Weekly Health Report',
-    subtitle: 'Your health score improved by 4% this week',
-    time: 'Yesterday',
-    color: Colors.purple,
-    read: true,
-  },
-  {
-    id: '5',
-    icon: '🏃',
-    title: 'Workout Streak',
-    subtitle: "Amazing! You've maintained a 5-day workout streak",
-    time: 'Yesterday',
-    color: Colors.teal,
-    read: true,
-  },
-  {
-    id: '6',
-    icon: '💤',
-    title: 'Sleep Insight',
-    subtitle: 'Your sleep quality dropped 12% — consider reducing screen time',
-    time: '2 days ago',
-    color: Colors.pink,
-    read: true,
-  },
-  {
-    id: '7',
-    icon: '🧪',
-    title: 'Lab Results Available',
-    subtitle: 'Your CBC panel results are ready for review',
-    time: '3 days ago',
-    color: Colors.amber,
-    read: true,
-  },
-];
-
-const REMINDER_CATEGORIES = [
-  { key: 'medications', icon: '💊', label: 'Medication Reminders', sub: 'Daily dose alerts & refills', default: true },
-  { key: 'appointments', icon: '🏥', label: 'Appointment Alerts', sub: '24h & 1h before visits', default: true },
-  { key: 'cycle', icon: '🌸', label: 'Cycle Tracking', sub: 'Phase changes & fertility', default: true },
-  { key: 'vitals', icon: '🩺', label: 'Vitals Alerts', sub: 'Abnormal readings', default: true },
-  { key: 'workouts', icon: '💪', label: 'Workout Reminders', sub: 'Scheduled sessions', default: false },
-  { key: 'hydration', icon: '💧', label: 'Hydration Reminders', sub: 'Water intake goals', default: false },
-  { key: 'sleep', icon: '🌙', label: 'Sleep Reminders', sub: 'Bedtime & wake alerts', default: false },
-] as const;
-
-function NotificationCard({ item }: { item: NotificationItem }) {
-  return (
-    <GlassCardView style={[styles.notifCard, !item.read && { borderColor: item.color + '40' }]}>
-      <View style={styles.notifRow}>
-        <View style={[styles.notifIconWrap, { backgroundColor: item.color + '20' }]}>
-          <Text style={{ fontSize: Typography.lg }}>{item.icon}</Text>
-        </View>
-        <View style={styles.notifContent}>
-          <View style={styles.notifTitleRow}>
-            <Text style={[styles.notifTitle, !item.read && { fontWeight: Typography.bold }]}>{item.title}</Text>
-            {!item.read && <View style={[styles.unreadDot, { backgroundColor: item.color }]} />}
-          </View>
-          <Text style={styles.notifSub}>{item.subtitle}</Text>
-          <Text style={styles.notifTime}>{item.time}</Text>
-        </View>
-      </View>
-    </GlassCardView>
-  );
+function formatTimeAgo(timestamp: number): string {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 10) return 'Just now';
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  const weeks = Math.floor(days / 7);
+  return `${weeks}w ago`;
 }
 
-function ToggleReminder({
-  icon,
-  label,
-  sub,
-  value,
-  onValueChange,
-}: {
-  icon: string;
-  label: string;
-  sub: string;
-  value: boolean;
-  onValueChange: (v: boolean) => void;
-}) {
+function getNotificationColor(title: string): string {
+  const lower = title.toLowerCase();
+  if (lower.includes('medication') || lower.includes('medicine') || lower.includes('dose')) return Colors.teal;
+  if (lower.includes('appointment') || lower.includes('doctor')) return Colors.pink;
+  if (lower.includes('vital') || lower.includes('heart') || lower.includes('bp')) return Colors.amber;
+  if (lower.includes('workout') || lower.includes('exercise')) return Colors.purple;
+  if (lower.includes('sleep')) return Colors.blue;
+  if (lower.includes('water') || lower.includes('hydration')) return Colors.blue;
+  if (lower.includes('report') || lower.includes('result')) return Colors.amber;
+  return Colors.teal;
+}
+
+function getNotificationIcon(title: string): string {
+  const lower = title.toLowerCase();
+  if (lower.includes('medication') || lower.includes('medicine') || lower.includes('dose')) return '💊';
+  if (lower.includes('appointment') || lower.includes('doctor')) return '🏥';
+  if (lower.includes('vital') || lower.includes('heart') || lower.includes('bp')) return '🩺';
+  if (lower.includes('workout') || lower.includes('exercise')) return '💪';
+  if (lower.includes('sleep')) return '💤';
+  if (lower.includes('water') || lower.includes('hydration')) return '💧';
+  if (lower.includes('report') || lower.includes('result')) return '📊';
+  return '🔔';
+}
+
+function NotificationCard({ item, onPress }: { item: AppNotification; onPress?: () => void }) {
+  const color = getNotificationColor(item.title);
+  const icon = getNotificationIcon(item.title);
+
   return (
-    <View style={styles.reminderRow}>
-      <View style={[styles.reminderIcon, { backgroundColor: Colors.teal + '20' }]}>
-        <Text style={styles.reminderIconText}>{icon}</Text>
-      </View>
-      <View style={styles.reminderContent}>
-        <Text style={styles.reminderLabel}>{label}</Text>
-        <Text style={styles.reminderSub}>{sub}</Text>
-      </View>
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: Colors.bgCardBorder, true: Colors.teal + '60' }}
-        thumbColor={value ? Colors.teal : Colors.textMuted}
-      />
-    </View>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+      <GlassCardView style={[styles.notifCard, !item.read && { borderColor: color + '40' }]}>
+        <View style={styles.notifRow}>
+          <View style={[styles.notifIconWrap, { backgroundColor: color + '20' }]}>
+            <Text style={{ fontSize: Typography.lg }}>{icon}</Text>
+          </View>
+          <View style={styles.notifContent}>
+            <View style={styles.notifTitleRow}>
+              <Text style={[styles.notifTitle, !item.read && { fontWeight: Typography.bold }]}>{item.title}</Text>
+              {!item.read && <View style={[styles.unreadDot, { backgroundColor: color }]} />}
+            </View>
+            <Text style={styles.notifSub}>{item.body}</Text>
+            <Text style={styles.notifTime}>{formatTimeAgo(item.receivedAt)}</Text>
+          </View>
+        </View>
+      </GlassCardView>
+    </TouchableOpacity>
   );
 }
 
 export default function NotificationsScreen({ onBackPress }: { onBackPress?: () => void }) {
   const { onScroll } = useScrollVisibility();
-  const [activeSection, setActiveSection] = useState<'notifications' | 'reminders'>('notifications');
-  const [toggles, setToggles] = useState(
-    Object.fromEntries(REMINDER_CATEGORIES.map(r => [r.key, r.default])) as Record<string, boolean>,
-  );
+  const { notifications, unreadCount, markAsRead, markAllRead, addNotification } = useNotifications();
+  const [now, setNow] = useState(Date.now());
 
-  const setToggle = (key: string, value: boolean) =>
-    setToggles(prev => ({ ...prev, [key]: value }));
+  // Re-render every 30s to update "time ago" labels
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const unreadCount = NOTIFICATIONS.filter(n => !n.read).length;
+  const handleTestNotify = useCallback(async () => {
+    await notifee.requestPermission();
+    await notifee.displayNotification({
+      title: 'Test Notification',
+      body: 'This is a test notification',
+      android: {
+        channelId: 'default',
+        smallIcon: 'ic_launcher',
+        importance: AndroidImportance.HIGH,
+      },
+    });
+    addNotification({ title: 'Test Notification', body: 'This is a test notification' });
+  }, [addNotification]);
+
+  const today = notifications.filter(n => (Date.now() - n.receivedAt) < 86400000);
+  const earlier = notifications.filter(n => (Date.now() - n.receivedAt) >= 86400000);
 
   return (
     <View style={styles.root}>
@@ -179,145 +122,63 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
             <View style={styles.backPlaceholder} />
           )}
           <Text style={styles.pageTitle}>Notifications</Text>
-          {unreadCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{unreadCount}</Text>
-            </View>
-          )}
-          <View style={{ flex: 1 }} />
-          <TouchableOpacity style={styles.markAllBtn} activeOpacity={0.7}>
-            <Text style={styles.markAllText}>Mark all read</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Section Tabs */}
-        <View style={styles.tabRow}>
-          <TouchableOpacity
-            style={[styles.tabBtn, activeSection === 'notifications' && styles.tabBtnActive]}
-            onPress={() => setActiveSection('notifications')}
-            activeOpacity={0.7}>
-            <Text style={[styles.tabText, activeSection === 'notifications' && styles.tabTextActive]}>
-              Notifications
-            </Text>
+          <View style={styles.topRight}>
+            <TouchableOpacity onPress={handleTestNotify} style={styles.testBtn} activeOpacity={0.7}>
+              <Text style={styles.testBtnText}>Test Notify</Text>
+            </TouchableOpacity>
             {unreadCount > 0 && (
-              <View style={[styles.tabBadge, activeSection === 'notifications' && styles.tabBadgeActive]}>
-                <Text style={[styles.tabBadgeText, activeSection === 'notifications' && styles.tabBadgeTextActive]}>
-                  {unreadCount}
-                </Text>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{unreadCount}</Text>
               </View>
             )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tabBtn, activeSection === 'reminders' && styles.tabBtnActive]}
-            onPress={() => setActiveSection('reminders')}
-            activeOpacity={0.7}>
-            <Text style={[styles.tabText, activeSection === 'reminders' && styles.tabTextActive]}>
-              Reminders
-            </Text>
-          </TouchableOpacity>
+          </View>
         </View>
 
-        {activeSection === 'notifications' ? (
-          <>
-            {/* Today */}
-            <SectionHeader title="Today" />
-            {NOTIFICATIONS.filter(n => n.time.includes('ago')).map(item => (
-              <NotificationCard key={item.id} item={item} />
-            ))}
-
-            {/* Earlier */}
-            <SectionHeader title="Earlier" />
-            {NOTIFICATIONS.filter(n => !n.time.includes('ago')).map(item => (
-              <NotificationCard key={item.id} item={item} />
-            ))}
-
-            <View style={{ height: 100 }} />
-          </>
+        {notifications.length === 0 ? (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIconWrap}>
+              <Bell size={32} color={Colors.textMuted} strokeWidth={1.5} />
+            </View>
+            <Text style={styles.emptyTitle}>No notifications yet</Text>
+            <Text style={styles.emptySub}>Tap "Test Notify" to send a test notification</Text>
+          </View>
         ) : (
           <>
-            {/* Reminder Settings */}
-            <GlassCardView style={styles.quietHoursCard} accentColor={Colors.purple}>
-              <View style={styles.quietRow}>
-                <View style={[styles.quietIcon, { backgroundColor: Colors.purple + '20' }]}>
-                  <Text style={{ fontSize: Typography.lg }}>🌙</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.quietTitle}>Quiet Hours</Text>
-                  <Text style={styles.quietSub}>10:00 PM — 7:00 AM</Text>
-                </View>
-                <Switch
-                  value={true}
-                  trackColor={{ false: Colors.bgCardBorder, true: Colors.purple + '60' }}
-                  thumbColor={Colors.purple}
-                />
-              </View>
-            </GlassCardView>
-
-            <SectionHeader title="Reminder Categories" subtitle="Choose what you'd like to be reminded about" />
-            <GlassCardView style={styles.reminderCard}>
-              {REMINDER_CATEGORIES.map((item, i) => (
-                <View key={item.key}>
-                  <ToggleReminder
-                    icon={item.icon}
-                    label={item.label}
-                    sub={item.sub}
-                    value={toggles[item.key]}
-                    onValueChange={v => setToggle(item.key, v)}
+            {today.length > 0 && (
+              <>
+                <SectionHeader title="Today" />
+                {today.map(item => (
+                  <NotificationCard
+                    key={item.id}
+                    item={item}
+                    onPress={() => markAsRead(item.id)}
                   />
-                  {i < REMINDER_CATEGORIES.length - 1 && <View style={styles.divider} />}
-                </View>
-              ))}
-            </GlassCardView>
+                ))}
+              </>
+            )}
 
-            <SectionHeader title="Upcoming Reminders" />
-            <GlassCardView style={styles.upcomingCard}>
-              <View style={styles.upcomingRow}>
-                <View style={[styles.upcomingIcon, { backgroundColor: Colors.pink + '20' }]}>
-                   <Text style={{ fontSize: Typography.md }}>🏥</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.upcomingTitle}>Dr. Priya Sharma</Text>
-                  <Text style={styles.upcomingSub}>Tomorrow · 10:30 AM</Text>
-                </View>
-                <View style={[styles.upcomingBadge, { backgroundColor: Colors.teal + '20' }]}>
-                  <Text style={[styles.upcomingBadgeText, { color: Colors.teal }]}>Reminder set</Text>
-                </View>
-              </View>
-            </GlassCardView>
-
-            <GlassCardView style={styles.upcomingCard}>
-              <View style={styles.upcomingRow}>
-                <View style={[styles.upcomingIcon, { backgroundColor: Colors.teal + '20' }]}>
-                   <Text style={{ fontSize: Typography.md }}>💊</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.upcomingTitle}>Metformin 500mg</Text>
-                  <Text style={styles.upcomingSub}>Daily · 8:00 PM</Text>
-                </View>
-                <View style={[styles.upcomingBadge, { backgroundColor: Colors.amber + '20' }]}>
-                  <Text style={[styles.upcomingBadgeText, { color: Colors.amber }]}>Recurring</Text>
-                </View>
-              </View>
-            </GlassCardView>
-
-            <GlassCardView style={styles.upcomingCard}>
-              <View style={styles.upcomingRow}>
-                <View style={[styles.upcomingIcon, { backgroundColor: Colors.amber + '20' }]}>
-                   <Text style={{ fontSize: Typography.md }}>🧪</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.upcomingTitle}>Blood Lab Panel</Text>
-                  <Text style={styles.upcomingSub}>Jun 20 · 8:00 AM · Fasting required</Text>
-                </View>
-                <View style={[styles.upcomingBadge, { backgroundColor: Colors.purple + '20' }]}>
-                  <Text style={[styles.upcomingBadgeText, { color: Colors.purple }]}>Prep needed</Text>
-                </View>
-              </View>
-            </GlassCardView>
-
-            <View style={{ height: 100 }} />
+            {earlier.length > 0 && (
+              <>
+                <SectionHeader title="Earlier" />
+                {earlier.map(item => (
+                  <NotificationCard
+                    key={item.id}
+                    item={item}
+                    onPress={() => markAsRead(item.id)}
+                  />
+                ))}
+              </>
+            )}
           </>
         )}
+
+        {notifications.length > 0 && unreadCount > 0 && (
+          <TouchableOpacity style={styles.markAllBtn} onPress={markAllRead} activeOpacity={0.7}>
+            <Text style={styles.markAllText}>Mark all read</Text>
+          </TouchableOpacity>
+        )}
+
+        <View style={{ height: 100 }} />
       </ScrollView>
     </View>
   );
@@ -333,7 +194,6 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: Spacing.lg,
   },
   backBtn: {
@@ -347,11 +207,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backPlaceholder: { width: 40 },
-  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
   pageTitle: {
+    flex: 1,
     fontSize: Typography.lg,
     fontWeight: Typography.bold,
     color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  topRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
   badge: {
     marginLeft: Spacing.sm,
@@ -367,72 +233,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.bg,
-  },
-  markAllBtn: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.teal + '20',
-    borderWidth: 1,
-    borderColor: Colors.teal + '50',
-  },
-  markAllText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.teal,
-  },
-
-  tabRow: {
-    flexDirection: 'row',
-    backgroundColor: Colors.bgCard,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    padding: 3,
-    marginBottom: Spacing.xl,
-  },
-  tabBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.sm + 2,
-    borderRadius: Radius.sm + 2,
-    gap: Spacing.xs,
-  },
-  tabBtnActive: {
-    backgroundColor: Colors.teal + '20',
-    borderWidth: 1,
-    borderColor: Colors.teal + '50',
-  },
-  tabText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.medium,
-    color: Colors.textSecondary,
-  },
-  tabTextActive: {
-    color: Colors.teal,
-    fontWeight: Typography.semiBold,
-  },
-  tabBadge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: Colors.bgCardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 5,
-  },
-  tabBadgeActive: {
-    backgroundColor: Colors.pink + '30',
-  },
-  tabBadgeText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.textSecondary,
-  },
-  tabBadgeTextActive: {
-    color: Colors.pink,
   },
 
   notifCard: {
@@ -481,101 +281,58 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
 
-  quietHoursCard: {
-    padding: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
-  quietRow: {
-    flexDirection: 'row',
+  emptyState: {
     alignItems: 'center',
-    gap: Spacing.md,
+    paddingVertical: Spacing.xxxl,
   },
-  quietIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.md,
+  emptyIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.bgCardBorder,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: Spacing.lg,
   },
-  quietTitle: {
+  emptyTitle: {
     fontSize: Typography.base,
     fontWeight: Typography.semiBold,
     color: Colors.textPrimary,
+    marginBottom: Spacing.xs,
   },
-  quietSub: {
-    fontSize: Typography.xs,
+  emptySub: {
+    fontSize: Typography.sm,
     color: Colors.textSecondary,
-    marginTop: 2,
+    textAlign: 'center',
   },
 
-  reminderCard: {
-    paddingVertical: Spacing.xs,
-    marginBottom: Spacing.xl,
-  },
-  reminderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-  },
-  reminderIcon: {
-    width: 40,
-    height: 40,
+  testBtn: {
+    backgroundColor: Colors.teal + '20',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginLeft: Spacing.md,
   },
-  reminderIconText: { fontSize: Typography.md },
-  reminderContent: { flex: 1, marginLeft: Spacing.md },
-  reminderLabel: {
-    fontSize: Typography.base,
+  testBtnText: {
+    fontSize: Typography.sm,
+    color: Colors.teal,
     fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
   },
-  reminderSub: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.divider,
-    marginLeft: 96,
-  },
-
-  upcomingCard: {
-    padding: Spacing.base,
+  markAllBtn: {
+    marginTop: Spacing.lg,
     marginBottom: Spacing.sm,
-  },
-  upcomingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  upcomingIcon: {
-    width: 40,
-    height: 40,
+    paddingVertical: Spacing.md,
     borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.teal + '40',
+    backgroundColor: Colors.teal + '10',
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  upcomingTitle: {
+  markAllText: {
     fontSize: Typography.sm,
     fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-  },
-  upcomingSub: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  upcomingBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-  },
-  upcomingBadgeText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
+    color: Colors.teal,
   },
 });
