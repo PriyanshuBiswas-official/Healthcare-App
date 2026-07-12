@@ -30,6 +30,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg';
 import { launchCamera } from 'react-native-image-picker';
 import Voice from '@dev-amirzubair/react-native-voice';
+import { Search, Mic, Camera, Check } from 'lucide-react-native';
 import { TabName } from '../../navigation/TabBar';
 import { SleepTrackerSection, VitalsDashboardSection } from '../health/HealthCommonSections';
 import { getSleepLogs, getWeightLogs, saveWeightLog } from '../../services/healthService';
@@ -59,7 +60,7 @@ type TimelineEvent = {
 };
 
 const DEFAULT_TIMELINE: TimelineEvent[] = [
-  { id: '1', time: '08:00 AM', title: 'Medication', sub: 'Vitamin D3 1000 IU', icon: '💊', color: Colors.purple, rightText: '✓ Taken', rightType: 'taken', type: 'medication', status: 'completed' },
+  { id: '1', time: '08:00 AM', title: 'Medication', sub: 'Vitamin D3 1000 IU', icon: '💊', color: Colors.purple, rightText: 'Taken', rightType: 'taken', type: 'medication', status: 'completed' },
   { id: '2', time: '09:15 AM', title: 'Water', sub: '400 ml recorded', icon: '💧', color: Colors.blue, rightText: '400 ml', rightType: 'value', type: 'water', status: 'completed' },
   { id: '3', time: '10:00 AM', title: 'Breakfast', sub: 'Oats with fruits, Almonds', icon: '🍽️', color: Colors.amber, rightText: '450 kcal', rightType: 'value', type: 'meal', status: 'completed' },
   { id: '4', time: '12:00 PM', title: 'Steps', sub: '2,350 steps', icon: '👟', color: Colors.success, rightText: '2,350', rightType: 'value', type: 'steps', status: 'completed' },
@@ -651,15 +652,15 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           <View style={styles.searchBarContainer}>
             <View style={styles.searchBar}>
               <TouchableOpacity style={styles.searchBarInput} activeOpacity={0.8} onPress={handleSearchPress}>
-                <Text style={styles.searchIcon}>🔍</Text>
+                <Search size={18} color={Colors.white + '60'} strokeWidth={2} />
                 <Text style={styles.searchPlaceholder}>Ask anything about your health...</Text>
               </TouchableOpacity>
               <View style={styles.searchActions}>
                 <TouchableOpacity style={styles.searchActionBtn} onPress={handleVoicePress}>
-                  <Text style={[styles.searchActionIcon, isListening && { opacity: 0.6 }]}>{isListening ? '🔴' : '🎤'}</Text>
+                  <Mic size={18} color={isListening ? Colors.pink : Colors.white + '60'} strokeWidth={2} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.searchActionBtn} onPress={handleCameraPress}>
-                  <Text style={styles.searchActionIcon}>📷</Text>
+                  <Camera size={18} color={Colors.white + '60'} strokeWidth={2} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -924,7 +925,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                 rightBadge = (
                   <TouchableOpacity onPress={() => toggleTimelineEventStatus(item.id)}>
                     <View style={styles.badgeTaken}>
-                      <Text style={styles.badgeTakenText}>{item.rightText || '✓ Done'}</Text>
+                      <Text style={styles.badgeTakenText}>{item.rightText || 'Done'}</Text>
                     </View>
                   </TouchableOpacity>
                 );
@@ -1112,7 +1113,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                 }}
                 activeOpacity={0.7}
               >
-                {med.taken && <Text style={styles.medCheckIcon}>✓</Text>}
+                {med.taken && <Check size={14} color={Colors.bg} strokeWidth={3} />}
               </TouchableOpacity>
               <View style={styles.medInfo}>
                 <Text style={styles.medName}>{med.name}</Text>
@@ -1513,9 +1514,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     gap: Spacing.sm,
   },
-  searchIcon: {
-    fontSize: Typography.base,
-  },
   searchPlaceholder: {
     flex: 1,
     fontSize: Typography.sm,
@@ -1529,9 +1527,6 @@ const styles = StyleSheet.create({
   },
   searchActionBtn: {
     padding: Spacing.sm,
-  },
-  searchActionIcon: {
-    fontSize: Typography.base,
   },
 
   // ── Integrated Score Ring + Overview ──
@@ -2011,11 +2006,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.md,
-  },
-  medCheckIcon: {
-    color: Colors.bg,
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
   },
   medInfo: {
     flex: 1,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import { ArrowLeft, Bell } from 'lucide-react-native';
-import notifee, { AndroidImportance } from '@notifee/react-native';
+
 import { GlassCardView, SectionHeader } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useNotifications, AppNotification } from '../../providers/NotificationContext';
@@ -79,7 +79,7 @@ function NotificationCard({ item, onPress }: { item: AppNotification; onPress?: 
 
 export default function NotificationsScreen({ onBackPress }: { onBackPress?: () => void }) {
   const { onScroll } = useScrollVisibility();
-  const { notifications, unreadCount, markAsRead, markAllRead, addNotification } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
   const [now, setNow] = useState(Date.now());
 
   // Re-render every 30s to update "time ago" labels
@@ -88,19 +88,6 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
     return () => clearInterval(interval);
   }, []);
 
-  const handleTestNotify = useCallback(async () => {
-    await notifee.requestPermission();
-    await notifee.displayNotification({
-      title: 'Test Notification',
-      body: 'This is a test notification',
-      android: {
-        channelId: 'default',
-        smallIcon: 'ic_launcher',
-        importance: AndroidImportance.HIGH,
-      },
-    });
-    addNotification({ title: 'Test Notification', body: 'This is a test notification' });
-  }, [addNotification]);
 
   const today = notifications.filter(n => (Date.now() - n.receivedAt) < 86400000);
   const earlier = notifications.filter(n => (Date.now() - n.receivedAt) >= 86400000);
@@ -123,9 +110,6 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
           )}
           <Text style={styles.pageTitle}>Notifications</Text>
           <View style={styles.topRight}>
-            <TouchableOpacity onPress={handleTestNotify} style={styles.testBtn} activeOpacity={0.7}>
-              <Text style={styles.testBtnText}>Test Notify</Text>
-            </TouchableOpacity>
             {unreadCount > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{unreadCount}</Text>
@@ -208,11 +192,13 @@ const styles = StyleSheet.create({
   },
   backPlaceholder: { width: 40 },
   pageTitle: {
-    flex: 1,
     fontSize: Typography.lg,
     fontWeight: Typography.bold,
     color: Colors.textPrimary,
     textAlign: 'center',
+    position: 'absolute',
+    left: 0,
+    right: 0,
   },
   topRight: {
     flexDirection: 'row',
@@ -308,18 +294,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  testBtn: {
-    backgroundColor: Colors.teal + '20',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
-    marginLeft: Spacing.md,
-  },
-  testBtnText: {
-    fontSize: Typography.sm,
-    color: Colors.teal,
-    fontWeight: Typography.semiBold,
-  },
+
   markAllBtn: {
     marginTop: Spacing.lg,
     marginBottom: Spacing.sm,

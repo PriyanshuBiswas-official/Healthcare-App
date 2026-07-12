@@ -390,7 +390,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               </TouchableOpacity>
             )}
 
-            {/* AI Nutrition Insight */}
+            {/* AI Nutrition Insight 
             <GlassCardView style={styles.aiCard} accentColor={Colors.amber}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm }}>
                 <View style={[styles.iconWrapSm, { backgroundColor: Colors.amber + '20' }]}>
@@ -402,6 +402,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                 Your protein intake is 32% below your daily goal. Adding a protein shake or an egg-white omelette at dinner could close the gap. Fiber is also trending low this week — consider adding spinach or flaxseed to your meals.
               </Text>
             </GlassCardView>
+            */}
 
             {/* Calorie Ring Card */}
             <GlassCardView style={styles.calorieCard}>
@@ -533,36 +534,36 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                     key={cat.key}
                     onPress={() => openMealModal(cat.key)}
                     style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.sm }, pressed && { opacity: 0.5 }]}>
-                      <View style={[styles.iconWrapSm, { backgroundColor: hasMeals ? cat.color + '20' : Colors.bgCardBorder, width: 44, height: 44, borderRadius: Radius.md }]}>
-                        <Text style={{ fontSize: Typography.xl, opacity: hasMeals ? 1 : 0.5 }}>{cat.icon}</Text>
-                      </View>
-                      <View style={{ flex: 1, marginLeft: Spacing.md }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: hasMeals ? Colors.textPrimary : Colors.textSecondary }}>{cat.name}</Text>
-                          {hasMeals && (
-                            <View style={{ backgroundColor: Colors.teal + '30', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, marginLeft: Spacing.sm }}>
-                              <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.bold }}>Logged</Text>
-                            </View>
-                          )}
-                        </View>
-                        <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 4 }} numberOfLines={1}>
-                          {hasMeals ? foodNames : 'Not logged yet - tap to log'}
-                        </Text>
-                      </View>
-                      <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
-                        {hasMeals ? (
-                          <>
-                            <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary }}>{totalCals}</Text>
-                            <Text style={{ fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2 }}>kcal · {timeStr}</Text>
-                          </>
-                        ) : (
-                          <View style={{ paddingHorizontal: Spacing.md, paddingVertical: 6, backgroundColor: Colors.bgCardBorder, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={{ fontSize: Typography.xs, color: Colors.textPrimary, fontWeight: Typography.bold, marginRight: 4 }}>Log</Text>
-                            <Text style={{ fontSize: Typography.sm, color: Colors.textPrimary }}>↗</Text>
+                    <View style={[styles.iconWrapSm, { backgroundColor: hasMeals ? cat.color + '20' : Colors.bgCardBorder, width: 44, height: 44, borderRadius: Radius.md }]}>
+                      <Text style={{ fontSize: Typography.xl, opacity: hasMeals ? 1 : 0.5 }}>{cat.icon}</Text>
+                    </View>
+                    <View style={{ flex: 1, marginLeft: Spacing.md }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: hasMeals ? Colors.textPrimary : Colors.textSecondary }}>{cat.name}</Text>
+                        {hasMeals && (
+                          <View style={{ backgroundColor: Colors.teal + '30', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, marginLeft: Spacing.sm }}>
+                            <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.bold }}>Logged</Text>
                           </View>
                         )}
                       </View>
-                    </Pressable>
+                      <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 4 }} numberOfLines={1}>
+                        {hasMeals ? foodNames : 'Not logged yet - tap to log'}
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+                      {hasMeals ? (
+                        <>
+                          <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary }}>{totalCals}</Text>
+                          <Text style={{ fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2 }}>kcal · {timeStr}</Text>
+                        </>
+                      ) : (
+                        <View style={{ paddingHorizontal: Spacing.md, paddingVertical: 6, backgroundColor: Colors.bgCardBorder, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center' }}>
+                          <Text style={{ fontSize: Typography.xs, color: Colors.textPrimary, fontWeight: Typography.bold, marginRight: 4 }}>Log</Text>
+                          <Text style={{ fontSize: Typography.sm, color: Colors.textPrimary }}>↗</Text>
+                        </View>
+                      )}
+                    </View>
+                  </Pressable>
                 );
               })}
             </GlassCardView>
@@ -687,85 +688,85 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               <View style={styles.modalHandle} />
               <Text style={styles.modalTitle}>Log Meal</Text>
 
-            {/* Meal type selector */}
-            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.base }}>
-              {MEAL_TYPE_OPTIONS.map(type => (
-                <TouchableOpacity
-                  key={type}
-                  onPress={() => setModalMealType(type)}
-                  style={{
-                    flex: 1,
-                    paddingVertical: Spacing.sm,
-                    borderRadius: Radius.md,
-                    alignItems: 'center',
-                    backgroundColor: modalMealType === type ? Colors.teal + '20' : Colors.bgCardBorder,
-                    borderWidth: modalMealType === type ? 1 : 0,
-                    borderColor: Colors.teal,
-                  }}>
-                  <Text style={{ fontSize: Typography.xs, color: modalMealType === type ? Colors.teal : Colors.textSecondary, fontWeight: Typography.bold, textTransform: 'capitalize' }}>{type}</Text>
+              {/* Meal type selector */}
+              <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.base }}>
+                {MEAL_TYPE_OPTIONS.map(type => (
+                  <TouchableOpacity
+                    key={type}
+                    onPress={() => setModalMealType(type)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: Spacing.sm,
+                      borderRadius: Radius.md,
+                      alignItems: 'center',
+                      backgroundColor: modalMealType === type ? Colors.teal + '20' : Colors.bgCardBorder,
+                      borderWidth: modalMealType === type ? 1 : 0,
+                      borderColor: Colors.teal,
+                    }}>
+                    <Text style={{ fontSize: Typography.xs, color: modalMealType === type ? Colors.teal : Colors.textSecondary, fontWeight: Typography.bold, textTransform: 'capitalize' }}>{type}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Food name */}
+              <Text style={styles.modalLabel}>Food name *</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={modalFood}
+                onChangeText={setModalFood}
+                placeholder="e.g. Grilled chicken salad"
+                placeholderTextColor={Colors.textMuted}
+              />
+
+              {/* Calories */}
+              <Text style={styles.modalLabel}>Calories (kcal)</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={modalCalories}
+                onChangeText={setModalCalories}
+                keyboardType="number-pad"
+                placeholder="0"
+                placeholderTextColor={Colors.textMuted}
+              />
+
+              {/* Macros row */}
+              <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalLabel}>Protein (g)</Text>
+                  <TextInput style={styles.modalInput} value={modalProtein} onChangeText={setModalProtein} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalLabel}>Carbs (g)</Text>
+                  <TextInput style={styles.modalInput} value={modalCarbs} onChangeText={setModalCarbs} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalLabel}>Fat (g)</Text>
+                  <TextInput style={styles.modalInput} value={modalFat} onChangeText={setModalFat} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalLabel}>Fiber (g)</Text>
+                  <TextInput style={styles.modalInput} value={modalFiber} onChangeText={setModalFiber} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
+                </View>
+              </View>
+
+              {/* Actions */}
+              <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
+                <TouchableOpacity onPress={() => setModalVisible(false)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
+                  <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Food name */}
-            <Text style={styles.modalLabel}>Food name *</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={modalFood}
-              onChangeText={setModalFood}
-              placeholder="e.g. Grilled chicken salad"
-              placeholderTextColor={Colors.textMuted}
-            />
-
-            {/* Calories */}
-            <Text style={styles.modalLabel}>Calories (kcal)</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={modalCalories}
-              onChangeText={setModalCalories}
-              keyboardType="number-pad"
-              placeholder="0"
-              placeholderTextColor={Colors.textMuted}
-            />
-
-            {/* Macros row */}
-            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalLabel}>Protein (g)</Text>
-                <TextInput style={styles.modalInput} value={modalProtein} onChangeText={setModalProtein} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
+                <TouchableOpacity
+                  onPress={handleSaveMeal}
+                  disabled={modalSaving}
+                  style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.teal, opacity: modalSaving ? 0.6 : 1 }}>
+                  {modalSaving ? (
+                    <ActivityIndicator size="small" color={Colors.bg} />
+                  ) : (
+                    <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Save Meal</Text>
+                  )}
+                </TouchableOpacity>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalLabel}>Carbs (g)</Text>
-                <TextInput style={styles.modalInput} value={modalCarbs} onChangeText={setModalCarbs} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
-              </View>
-            </View>
-            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalLabel}>Fat (g)</Text>
-                <TextInput style={styles.modalInput} value={modalFat} onChangeText={setModalFat} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalLabel}>Fiber (g)</Text>
-                <TextInput style={styles.modalInput} value={modalFiber} onChangeText={setModalFiber} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
-              </View>
-            </View>
-
-            {/* Actions */}
-            <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleSaveMeal}
-                disabled={modalSaving}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.teal, opacity: modalSaving ? 0.6 : 1 }}>
-                {modalSaving ? (
-                  <ActivityIndicator size="small" color={Colors.bg} />
-                ) : (
-                  <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Save Meal</Text>
-                )}
-              </TouchableOpacity>
-            </View>
             </KeyboardAvoidingView>
           </TouchableOpacity>
         </TouchableOpacity>

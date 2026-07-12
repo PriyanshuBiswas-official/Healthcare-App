@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
+import notifee, { EventType } from '@notifee/react-native';
 
 export type AppNotification = {
   id: string;
@@ -38,14 +38,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const idCounter = useRef(0);
 
-  // Initialize notifee channel
-  useEffect(() => {
-    notifee.createChannel({
-      id: 'default',
-      name: 'Default',
-      importance: AndroidImportance.HIGH,
-    });
-  }, []);
 
   // Listen for foreground notification events (only PRESS — DELIVERED is handled by explicit addNotification)
   useEffect(() => {
