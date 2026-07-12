@@ -152,7 +152,7 @@ function ToggleRow({
   );
 }
 
-export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBackPress?: () => void; onCompleteProfile?: () => void }) {
+export default function ProfileScreen({ onBackPress, onCompleteProfile, initialSection }: { onBackPress?: () => void; onCompleteProfile?: () => void; initialSection?: string | null }) {
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion } = useAuth();
   const { hideVitals, setHideVitals, hideCommunitySpotlight, setHideCommunitySpotlight } = usePreferences();
@@ -160,7 +160,16 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
     Object.fromEntries(PREFERENCES.map(p => [p.key, p.default])) as Record<string, boolean>,
   );
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
-  const [activeSection, setActiveSection] = useState<HealthSection | null>(null);
+  const [activeSection, setActiveSection] = useState<HealthSection | null>(
+    initialSection as HealthSection | null
+  );
+
+  // Handle initialSection changes (from notification taps)
+  useEffect(() => {
+    if (initialSection) {
+      setActiveSection(initialSection as HealthSection);
+    }
+  }, [initialSection]);
 
   const fetchProfile = useCallback(async () => {
     if (!session?.access_token) return;

@@ -5,7 +5,7 @@ export type AppNotification = {
   id: string;
   title: string;
   body: string;
-  receivedAt: number; // timestamp ms
+  receivedAt: number;
   read: boolean;
   data?: Record<string, unknown>;
 };
@@ -18,6 +18,8 @@ type NotificationContextType = {
   markAllRead: () => void;
   removeNotification: (id: string) => void;
   clearAll: () => void;
+  onNotificationTap: ((screen: string, data?: Record<string, unknown>) => void) | null;
+  setOnNotificationTap: (handler: (screen: string, data?: Record<string, unknown>) => void) => void;
 };
 
 const NotificationContext = createContext<NotificationContextType>({
@@ -28,18 +30,37 @@ const NotificationContext = createContext<NotificationContextType>({
   markAllRead: () => {},
   removeNotification: () => {},
   clearAll: () => {},
+  onNotificationTap: null,
+  setOnNotificationTap: () => {},
 });
 
 export function useNotifications() {
   return useContext(NotificationContext);
 }
 
+/**
+ * Maps notification screen IDs to app tab/screen names for navigation.
+ */
+function mapScreenToTab(screen: string): string {
+  const screenMap: Record<string, string> = {
+    medication: 'medications',
+    water: 'reminders-water',
+    workout: 'reminders-workouts',
+    nutrition: 'reminders-water',
+    sleep: 'reminders-sleep',
+    health: 'reminders-health',
+    appointment: 'reminders-appointments',
+    general: 'Notifications',
+  };
+  return screenMap[screen] || 'Notifications';
+}
+
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const idCounter = useRef(0);
+  const tapHandlerRef = useRef<((screen: string, data?: Record<string, unknown>) => void) | null>(null);
 
-
-  // Listen for foreground notification events (only PRESS — DELIVERED is handled by explicit addNotification)
+  // Listen for foreground notification events
   useEffect(() => {
     const unsubscribe = notifee.onForegroundEvent(({ type, detail }) => {
       if (type === EventType.PRESS) {
@@ -50,11 +71,30 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             body: notification.body || '',
             data: notification.data as Record<string, unknown> | undefined,
           });
+
+          // Route to the correct screen
+          const screen = (notification.data?.screen as string) || 'general';
+          const mappedScreen = mapScreenToTab(screen);
+          tapHandlerRef.current?.(mappedScreen, notification.data as Record<string, unknown> | undefined);
         }
       }
     });
 
     return () => unsubscribe();
+  }, []);
+
+  // Handle background/quit state notification opens
+  useEffect(() => {
+    notifee.getInitialNotification().then((notification) => {
+      if (notification?.notification?.data) {
+        const screen = (notification.notification.data.screen as string) || 'general';
+        const mappedScreen = mapScreenToTab(screen);
+        // Delay to ensure the app is fully rendered
+        setTimeout(() => {
+          tapHandlerRef.current?.(mappedScreen, notification.notification!.data as Record<string, unknown> | undefined);
+        }, 1000);
+      }
+    });
   }, []);
 
   const addNotification = useCallback((n: Omit<AppNotification, 'id' | 'receivedAt' | 'read'>): string => {
@@ -86,6 +126,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setNotifications([]);
   }, []);
 
+  const setOnNotificationTap = useCallback((handler: (screen: string, data?: Record<string, unknown>) => void) => {
+    tapHandlerRef.current = handler;
+  }, []);
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
@@ -98,6 +142,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         markAllRead,
         removeNotification,
         clearAll,
+        onNotificationTap: tapHandlerRef.current,
+        setOnNotificationTap,
       }}>
       {children}
     </NotificationContext.Provider>

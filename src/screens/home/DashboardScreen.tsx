@@ -1185,7 +1185,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           </TouchableOpacity>
         </GlassCardView>
 
-        {/* SECTION: HEALTH AGE CARD */}
+        {/* SECTION: HEALTH AGE CARD
         <SectionHeader title="Biological Age" />
         <GlassCardView style={styles.ageCard} accentColor={Colors.teal}>
           <View style={styles.ageRow}>
@@ -1198,7 +1198,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               <Text style={styles.ageSub}>Your biological health indicators (sleep, heart rate, hydration) estimate your health age to be 21, compared to your chronological age of 24.</Text>
             </View>
           </View>
-        </GlassCardView>
+        </GlassCardView> */}
 
         {/* SECTION: SMALL CARD WEEKLY TRENDS */}
         <SectionHeader title="Weekly Trends (7d Averages)" />
@@ -1216,14 +1216,14 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
         {/* SECTION: COMMUNITY PREVIEW */}
         {!hideCommunitySpotlight && (<>
-        <SectionHeader title="Community Spotlight" action="Join Groups" />
-        <GlassCardView style={styles.communityCard}>
-          <View style={styles.communityPost}>
-            <Text style={styles.communityPostAuthor}>Jane Cooper shared a post in running group:</Text>
-            <Text style={styles.communityPostText}>"Just completed the morning 5k. Lungs feel great, recovery speed is getting better! 🏃‍♀️✨"</Text>
-            <Text style={styles.communityPostLikes}>❤️ 24 likes  ·  💬 8 comments</Text>
-          </View>
-        </GlassCardView>
+          <SectionHeader title="Community Spotlight" action="Join Groups" />
+          <GlassCardView style={styles.communityCard}>
+            <View style={styles.communityPost}>
+              <Text style={styles.communityPostAuthor}>Jane Cooper shared a post in running group:</Text>
+              <Text style={styles.communityPostText}>"Just completed the morning 5k. Lungs feel great, recovery speed is getting better! 🏃‍♀️✨"</Text>
+              <Text style={styles.communityPostLikes}>❤️ 24 likes  ·  💬 8 comments</Text>
+            </View>
+          </GlassCardView>
         </>)}
 
         <View style={{ height: 100 }} />

@@ -16,7 +16,8 @@ import HealthLogScreen, { HealthLogDraft } from './src/screens/health/HealthLogS
 import PartnerHealthReportScreen from './src/screens/relationships/PartnerHealthReportScreen';
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 import { PreferencesProvider } from './src/providers/PreferencesContext';
-import { NotificationProvider } from './src/providers/NotificationContext';
+import { NotificationProvider, useNotifications } from './src/providers/NotificationContext';
+import { ReminderProvider } from './src/providers/ReminderContext';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -41,6 +42,7 @@ type AppState = {
   aiOrigin: TabName | null;
   aiInitialQuery: string;
   showProfileSetup: boolean;
+  profileSection: string | null;
   workoutLogExercise: any;
   lastHealthLog: HealthLogDraft | null;
 };
@@ -48,7 +50,7 @@ type AppState = {
 type AppAction =
   | { type: 'SWITCH_TAB'; tab: TabName }
   | { type: 'OPEN_AI'; from?: TabName; startInChat?: boolean; initialQuery?: string }
-  | { type: 'OPEN_PROFILE' }
+  | { type: 'OPEN_PROFILE'; section?: string }
   | { type: 'OPEN_NOTIFICATIONS' }
   | { type: 'OPEN_PROFILE_SETUP' }
   | { type: 'CLOSE_PROFILE_SETUP' }
@@ -67,6 +69,7 @@ const INITIAL_STATE: AppState = {
   aiOrigin: null,
   aiInitialQuery: '',
   showProfileSetup: false,
+  profileSection: null,
   workoutLogExercise: null,
   lastHealthLog: null,
 };
@@ -87,7 +90,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       };
 
     case 'OPEN_PROFILE':
-      return { ...state, previousTab: state.activeTab, activeTab: 'Profile' };
+      return { ...state, previousTab: state.activeTab, activeTab: 'Profile', profileSection: (action as any).section || null };
 
     case 'OPEN_NOTIFICATIONS':
       return { ...state, previousTab: state.activeTab, activeTab: 'Notifications' };
@@ -119,7 +122,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, previousTab: state.activeTab, activeTab: 'PartnerReport' };
 
     case 'CLOSE_OVERLAY':
-      return { ...state, activeTab: state.previousTab };
+      return { ...state, activeTab: state.previousTab, profileSection: null };
 
     case 'SAVE_HEALTH_LOG':
       return { ...state, activeTab: state.previousTab, lastHealthLog: action.log };
@@ -168,6 +171,41 @@ function AppShell() {
   const closeHealthLog = useCallback(() => dispatch({ type: 'CLOSE_HEALTH_LOG' }), []);
   const closeWorkoutLog = useCallback(() => dispatch({ type: 'CLOSE_WORKOUT_LOG' }), []);
   const openPartnerReport = useCallback((partnerId: string) => dispatch({ type: 'OPEN_PARTNER_REPORT', partnerId }), []);
+
+  // ── Notification tap handler ──────────────────────────────────
+  const { setOnNotificationTap } = useNotifications();
+
+  useEffect(() => {
+    setOnNotificationTap((screen: string, _data?: Record<string, unknown>) => {
+      // Map reminder sub-screens to profile sections
+      const reminderScreens: Record<string, string> = {
+        'medications': 'medications',
+        'reminders-water': 'reminders-water',
+        'reminders-workouts': 'reminders-workouts',
+        'reminders-appointments': 'reminders-appointments',
+        'reminders-sleep': 'reminders-sleep',
+        'reminders-health': 'reminders-health',
+      };
+      if (reminderScreens[screen]) {
+        dispatch({ type: 'OPEN_PROFILE', section: reminderScreens[screen] });
+        return;
+      }
+      // Map other screens
+      const screenToTab: Record<string, TabName> = {
+        'Home': 'Home',
+        'Health': 'Health',
+        'AI': 'AI',
+        'Activity': 'Activity',
+        'Diet': 'Diet',
+        'Profile': 'Profile',
+        'Notifications': 'Notifications',
+      };
+      const tab = screenToTab[screen];
+      if (tab) {
+        dispatch({ type: 'SWITCH_TAB', tab });
+      }
+    });
+  }, [setOnNotificationTap]);
 
   const openAI = useCallback((fromTab?: TabName, startInChat = true, initialQuery?: string) => {
     tabHistory.current.push('AI');
@@ -332,6 +370,7 @@ function AppShell() {
               <MemoizedProfileScreen
                 onBackPress={closeProfile}
                 onCompleteProfile={openProfileSetup}
+                initialSection={state.profileSection}
               />
             )}
           </View>
@@ -425,7 +464,8 @@ export default function App() {
     <SafeAreaProvider>
       <AuthProvider>
         <NotificationProvider>
-          <PreferencesProvider>
+          <ReminderProvider>
+            <PreferencesProvider>
           <View style={styles.root}>
           <StatusBar
             barStyle="light-content"
@@ -437,6 +477,7 @@ export default function App() {
             </SafeAreaView>
           </View>
           </PreferencesProvider>
+          </ReminderProvider>
         </NotificationProvider>
       </AuthProvider>
     </SafeAreaProvider>
