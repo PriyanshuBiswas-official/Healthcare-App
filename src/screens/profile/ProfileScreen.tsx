@@ -12,9 +12,10 @@ import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/them
 import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView, SectionHeader, ProgressBar } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../providers/AuthProvider';
+import { supabase } from '../../lib/supabase';
 import { usePreferences } from '../../providers/PreferencesContext';
+import { useTheme } from '../../providers/ThemeProvider';
 import { API_BASE_URL } from '../../config/api';
 import PersonalInfoScreen from './PersonalInfoScreen';
 import MedicalHistoryScreen from './MedicalHistoryScreen';
@@ -156,6 +157,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion } = useAuth();
   const { hideVitals, setHideVitals, hideCommunitySpotlight, setHideCommunitySpotlight } = usePreferences();
+  const { systemSync, setSystemSync, themeName, setThemeName } = useTheme();
   const [toggles, setToggles] = useState(
     Object.fromEntries(PREFERENCES.map(p => [p.key, p.default])) as Record<string, boolean>,
   );
@@ -427,6 +429,26 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
               {i < PREFERENCES.length - 1 && <View style={styles.divider} />}
             </View>
           ))}
+          <View style={styles.divider} />
+          <ToggleRow
+            icon="🎨"
+            label="System Theme Sync"
+            sub="Match device dark/light mode"
+            value={systemSync}
+            onValueChange={setSystemSync}
+          />
+          {!systemSync && (
+            <>
+              <View style={styles.divider} />
+              <ToggleRow
+                icon="🌗"
+                label="Dark Theme"
+                sub="Use dark appearance manually"
+                value={themeName === 'dark'}
+                onValueChange={v => setThemeName(v ? 'dark' : 'light')}
+              />
+            </>
+          )}
           <View style={styles.divider} />
           <ToggleRow
             icon="❤️"
