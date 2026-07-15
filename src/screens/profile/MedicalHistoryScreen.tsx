@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
@@ -118,7 +119,7 @@ export default function MedicalHistoryScreen({ onBack, onSaved }: Props) {
     <View style={styles.root}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <Text style={styles.backIcon}>←</Text>
+          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Medical History</Text>
         <TouchableOpacity
@@ -218,7 +219,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backIcon: { fontSize: 20, color: Colors.textPrimary },
+  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
   pageTitle: {
     fontSize: Typography.lg,
     fontWeight: Typography.bold,
@@ -275,7 +276,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
-  emptyIcon: { fontSize: 32, marginBottom: Spacing.md },
+  emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
   emptyText: {
     fontSize: Typography.base,
     fontWeight: Typography.semiBold,

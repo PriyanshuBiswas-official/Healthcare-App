@@ -15,12 +15,12 @@ const ScrollVisibilityContext = createContext<ScrollContextType>({
 
 export const ScrollVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [visible, setVisible] = useState(true);
-  const forceHiddenRef = useRef(false);
+  const [forceHidden, setForceHiddenState] = useState(false);
   const lastY = useRef(0);
   const lastToggle = useRef<number>(0);
 
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (forceHiddenRef.current) return;
+    if (forceHidden) return;
     const y = e.nativeEvent.contentOffset.y;
     const dy = y - lastY.current;
     lastY.current = y;
@@ -43,12 +43,12 @@ export const ScrollVisibilityProvider: React.FC<{ children: React.ReactNode }> =
   }, []);
 
   const setForceHidden = useCallback((hidden: boolean) => {
-    forceHiddenRef.current = hidden;
+    setForceHiddenState(hidden);
   }, []);
 
   const value = useMemo(
-    () => ({ visible: forceHiddenRef.current ? false : visible, onScroll, setForceHidden }),
-    [visible, onScroll, setForceHidden],
+    () => ({ visible: forceHidden ? false : visible, onScroll, setForceHidden }),
+    [visible, forceHidden, onScroll, setForceHidden],
   );
 
   return (

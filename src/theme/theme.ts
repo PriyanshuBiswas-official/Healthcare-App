@@ -6,6 +6,11 @@ export const Colors = {
   bgCardSolid: '#141522',
   bgCardBorder: 'rgba(255,255,255,0.10)',
 
+  // Auth / inputs
+  bgAuth: '#09090B',
+  bgInput: '#18181B',
+  inputBorder: '#27272A',
+
   // Accents
   teal: '#00E5CC',
   tealDim: 'rgba(0,229,204,0.15)',
@@ -18,39 +23,77 @@ export const Colors = {
   amberGlow: 'rgba(255,179,71,0.35)',
   purple: '#A78BFA',
   purpleDim: 'rgba(167,139,250,0.15)',
+  blue: '#3B82F6',
+  blueDim: 'rgba(59,130,246,0.15)',
+
+  // Cycle phase
+  follicular: '#7EC8E3',
 
   // Text
   text: '#F0F4FF',
   textPrimary: '#F0F4FF',
   textSecondary: '#8B92B4',
   textMuted: '#4A5070',
+  textPlaceholder: '#52525B',
+  textInputLabel: '#E4E4E7',
+  textHint: '#A1A1AA',
+
+  // Modals / overlays
+  overlay: 'rgba(0,0,0,0.5)',
+  overlayHeavy: 'rgba(0,0,0,0.72)',
+  modalBg: '#111322',
+
+  // Tab bar
+  tabBarBg: 'rgba(12,16,30,0.92)',
+
+  // Surfaces
+  chipBg: 'rgba(255,255,255,0.06)',
+  chipBorder: 'rgba(255,255,255,0.14)',
+  chartBg: '#16182C',
+  tooltipBg: 'rgba(255,255,255,0.04)',
+  listItemBg: 'rgba(255,255,255,0.07)',
 
   // Utility
   white: '#FFFFFF',
+  black: '#000000',
   danger: '#FF5E5E',
   success: '#00E5A0',
   divider: 'rgba(255,255,255,0.07)',
+  shadowColor: '#000',
 };
 
 export const Typography = {
-  // Sizes
-  xs: 11,
+  // ── Font Sizes ──
+  micro: 8,
+  xs: 10,
   sm: 13,
   base: 15,
   md: 17,
   lg: 20,
   xl: 24,
   xxl: 30,
-  display: 38,
+  display: 36,
 
-  // Weights
+  // ── Font Weights ──
   regular: '400' as const,
   medium: '500' as const,
   semiBold: '600' as const,
   bold: '700' as const,
   extraBold: '800' as const,
 
-  // Families
+  // ── Line Heights ──
+  lhTight: 1.1,
+  lhSnug: 1.25,
+  lhNormal: 1.4,
+  lhRelaxed: 1.6,
+
+  // ── Letter Spacing ──
+  lsTight: -0.5,
+  lsNormal: 0,
+  lsWide: 0.4,
+  lsWider: 0.8,
+
+  // ── Font Family ──
   fontFamily: 'System',
 };
 
@@ -96,7 +139,7 @@ export const Shadows = {
     elevation: 8,
   },
   card: {
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 20,

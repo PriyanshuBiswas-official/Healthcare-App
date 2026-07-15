@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
@@ -120,7 +121,7 @@ export default function AllergiesScreen({ onBack, onSaved }: Props) {
     <View style={styles.root}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <Text style={styles.backIcon}>←</Text>
+          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Allergies</Text>
         <TouchableOpacity
@@ -264,7 +265,7 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: Radius.md, backgroundColor: Colors.bgCard,
     borderWidth: 1, borderColor: Colors.bgCardBorder, alignItems: 'center', justifyContent: 'center',
   },
-  backIcon: { fontSize: 20, color: Colors.textPrimary },
+  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
   pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
   editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
   editBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.danger },
@@ -277,7 +278,7 @@ const styles = StyleSheet.create({
   },
   noAllergyCardSelected: { backgroundColor: Colors.danger + '15', borderColor: Colors.danger + '40' },
   noAllergyLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  noAllergyIcon: { fontSize: 20, marginRight: Spacing.md },
+  noAllergyIcon: { fontSize: Typography.lg, marginRight: Spacing.md },
   noAllergyTitle: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
   noAllergySub: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 },
   check: {
@@ -294,7 +295,7 @@ const styles = StyleSheet.create({
     paddingLeft: Spacing.md, paddingVertical: Spacing.xs + 2,
   },
   tagText: { fontSize: Typography.sm, fontWeight: Typography.medium, color: Colors.danger },
-  tagRemove: { fontSize: 12, color: Colors.danger, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
+  tagRemove: { fontSize: Typography.sm, color: Colors.danger, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   chip: {
     paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm + 2,
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
   },
   customAddBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.danger },
   emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
-  emptyIcon: { fontSize: 32, marginBottom: Spacing.md },
+  emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
   emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
   emptySub: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: Spacing.xs },
   allergyRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },

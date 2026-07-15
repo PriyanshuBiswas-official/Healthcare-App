@@ -16,6 +16,8 @@ import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { TabName } from '../../navigation/TabBar';
 import AIChatView, { useChatState } from './AIChatView';
 import { useAuth } from '../../providers/AuthProvider';
+import { useNotifications } from '../../providers/NotificationContext';
+import { ArrowLeft } from 'lucide-react-native';
 
 const APPOINTMENT_SLOTS = [
   { time: '10:00 AM', date: 'Thu, Jun 12', doctor: 'Dr. Priya Sharma', spec: 'Gynecologist', available: true },
@@ -24,9 +26,10 @@ const APPOINTMENT_SLOTS = [
   { time: '4:00 PM', date: 'Fri, Jun 13', doctor: 'Dr. Arun Pillai', spec: 'Nutritionist', available: true },
 ];
 
-export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, startInChat, originTab, navigateToTab, isTabActive }: { onProfilePress?: () => void; onNotificationsPress?: () => void; startInChat?: boolean; originTab?: TabName; navigateToTab?: (tab: TabName) => void; isTabActive?: boolean }) {
+export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, startInChat, initialQuery, originTab, navigateToTab, isTabActive }: { onProfilePress?: () => void; onNotificationsPress?: () => void; startInChat?: boolean; initialQuery?: string; originTab?: TabName; navigateToTab?: (tab: TabName) => void; isTabActive?: boolean }) {
   const { messages, input, setInput, sendMessage, scrollRef } = useChatState();
   const { user } = useAuth();
+  const { unreadCount } = useNotifications();
   const [bookedSlot, setBookedSlot] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'chat'>('overview');
   const [isBookingExpanded, setIsBookingExpanded] = useState(false);
@@ -88,7 +91,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
               else setActiveTab('overview');
             }}
             style={styles.backBtn}>
-            <Text style={styles.backIcon}>←</Text>
+            <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
           </TouchableOpacity>
         )}
         
@@ -108,7 +111,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
         )}
         
         <View style={styles.headerActions}>
-          <NotificationIconButton onPress={onNotificationsPress} />
+          <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
           <ProfileAvatarButton
             onPress={onProfilePress}
             userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
@@ -125,7 +128,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
             <GlassCardView style={styles.summaryCard} accentColor={Colors.purple}>
                <View style={styles.summaryHeader}>
                  <Text style={styles.summaryTitle}>AI Health Summary</Text>
-                 <View style={styles.aiBadgeIcon}><Text style={{fontSize: 14, color: Colors.purple}}>✦</Text></View>
+                  <View style={styles.aiBadgeIcon}><Text style={{fontSize: Typography.sm, color: Colors.purple}}>✦</Text></View>
                </View>
                <Text style={styles.summaryText}>Your vitals are stable. Based on your activity patterns, prioritizing sleep tonight will optimize your recovery.</Text>
             </GlassCardView>
@@ -143,7 +146,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
             <GlassCardView style={styles.cardItem}>
                <View style={styles.row}>
                   <View style={[styles.iconWrap, { backgroundColor: Colors.purple + '20' }]}>
-                     <Text style={{fontSize: 20}}>🩺</Text>
+                     <Text style={{fontSize: Typography.xl}}>🩺</Text>
                   </View>
                   <View style={{flex: 1}}>
                      <Text style={styles.itemTitle}>Cardiology checkup</Text>
@@ -160,7 +163,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
             <GlassCardView style={styles.cardItem}>
                <View style={styles.row}>
                   <View style={[styles.iconWrap, { backgroundColor: Colors.teal + '20' }]}>
-                     <Text style={{fontSize: 20}}>🧪</Text>
+                     <Text style={{fontSize: Typography.xl}}>🧪</Text>
                   </View>
                   <View style={{flex: 1}}>
                      <Text style={styles.itemTitle}>Blood lab panel</Text>
@@ -176,7 +179,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
             <GlassCardView style={styles.cardItem}>
                <View style={styles.row}>
                   <View style={[styles.iconWrap, { backgroundColor: Colors.amber + '20' }]}>
-                     <Text style={{fontSize: 20}}>🧠</Text>
+                     <Text style={{fontSize: Typography.xl}}>🧠</Text>
                   </View>
                   <View style={{flex: 1}}>
                      <Text style={styles.itemTitle}>Neurology consult</Text>
@@ -243,7 +246,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
                 ))}
                 {bookedSlot && (
                   <GlassCardView style={styles.confirmedCard} accentColor={Colors.teal}>
-                    <Text style={{ fontSize: 24, textAlign: 'center' }}>✅</Text>
+                    <Text style={{ fontSize: Typography.xl, textAlign: 'center' }}>✅</Text>
                     <Text style={styles.confirmedTitle}>Appointment Confirmed!</Text>
                     <Text style={styles.confirmedSub}>A reminder has been set 1 hour before. Your health records will be shared securely with the doctor.</Text>
                   </GlassCardView>
@@ -347,6 +350,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
           setInput={setInput}
           sendMessage={sendMessage}
           scrollRef={scrollRef}
+          initialQuery={initialQuery}
         />
       )}
     </KeyboardAvoidingView>
@@ -368,7 +372,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.xs,
   },
   backIcon: {
-    fontSize: 24,
+    fontSize: Typography.xl,
     color: Colors.textPrimary,
   },
   headerTextWrap: {
@@ -463,7 +467,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   itemMeta: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     color: Colors.textSecondary,
     marginTop: 4,
   },
@@ -472,7 +476,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
   },
   badgeAIText: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
   },
   badgeTime: {
@@ -481,7 +485,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   badgeTimeText: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.semiBold,
   },
 
@@ -542,13 +546,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   toolSub: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     color: Colors.textSecondary,
     marginBottom: Spacing.sm,
     height: 45,
   },
   toolActionText: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.medium,
     color: Colors.textPrimary,
     marginBottom: 8,
@@ -567,7 +571,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgCardBorder,
   },
   toolTagText: {
-    fontSize: 8,
+    fontSize: Typography.micro,
     color: Colors.textSecondary,
   },
   toolFlexRow: {
@@ -577,7 +581,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   toolMetaText: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     color: Colors.textSecondary,
   },
   progressBar: {
@@ -597,7 +601,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   medText: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     color: Colors.textPrimary,
   },
   chartBars: {

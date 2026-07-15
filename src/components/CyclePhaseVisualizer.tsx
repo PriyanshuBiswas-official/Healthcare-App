@@ -8,14 +8,13 @@ import {
   Dimensions,
 } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop, Circle } from 'react-native-svg';
-import { GlassCardView } from './SharedComponents';
 import { Colors, Radius, Spacing, Typography } from '../theme/theme';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Layout constants
 // ─────────────────────────────────────────────────────────────────────────────
 const COL_WIDTH = 32;   // column width for each day
-const CURVE_H = 180;  // height of the hormone curve chart
+const CURVE_H = 240;  // height of the hormone curve chart
 const LINE_W = 2.0;  // line stroke thickness
 const DOT_R = 3;    // normal dot radius at each data point
 const DOT_R_SEL = 5.5;  // dot radius when that day is selected
@@ -59,7 +58,7 @@ export interface CyclePhaseVisualizerProps {
 // Hormone config
 // ─────────────────────────────────────────────────────────────────────────────
 const HORMONES: { key: HormoneKey; label: string; color: string }[] = [
-  { key: 'fsh', label: 'FSH', color: '#7EC8E3' },
+  { key: 'fsh', label: 'FSH', color: Colors.follicular },
   { key: 'lh', label: 'LH', color: Colors.purple },
   { key: 'estrogen', label: 'Estrogen', color: Colors.pink },
   { key: 'progesterone', label: 'Progesterone', color: Colors.success },
@@ -177,7 +176,7 @@ function getPhase(
   }
   if (day < ovStart) {
     return {
-      name: 'Follicular', color: '#7EC8E3',
+      name: 'Follicular', color: Colors.follicular,
       description: 'FSH stimulates follicle growth. Rising estrogen boosts energy, focus, and mood.',
     };
   }
@@ -247,7 +246,7 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
 
   const phaseBands = [
     { label: 'Menstruation', start: 0, end: menEnd, color: Colors.pink },
-    { label: 'Follicular', start: menEnd, end: ovStart, color: '#7EC8E3' },
+    { label: 'Follicular', start: menEnd, end: ovStart, color: Colors.follicular },
     { label: 'Ovulation', start: ovStart, end: ovEnd, color: Colors.amber },
     { label: 'Luteal', start: ovEnd, end: cycleLength, color: Colors.purple },
   ];
@@ -288,7 +287,7 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <GlassCardView style={cv.card}>
+    <View style={cv.card}>
 
       {/* ── Legend pills ───────────────────────────────────────────────────── */}
       <View style={cv.legendRow}>
@@ -337,7 +336,6 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
                   {
                     left: (band.start / cycleLength) * totalWidth,
                     width: ((band.end - band.start) / cycleLength) * totalWidth,
-                    backgroundColor: band.color + '14',
                     borderRightColor: band.color + '35',
                   },
                 ]}
@@ -375,7 +373,7 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
                           cy={dot.y}
                           r={DOT_R_SEL}
                           fill={h.color}
-                          stroke="#ffffff"
+                          stroke={Colors.white}
                           strokeWidth={1.5}
                         />
                       );
@@ -401,9 +399,9 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
                       left: i * COL_WIDTH,
                       width: COL_WIDTH,
                       backgroundColor: isSelected
-                        ? 'rgba(255,255,255,0.07)'
+                        ? Colors.listItemBg
                         : isCurrent
-                          ? 'rgba(255,255,255,0.03)'
+                          ? Colors.tooltipBg
                           : 'transparent',
                     },
                   ]}
@@ -551,7 +549,7 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
         </View>
       </View>
 
-    </GlassCardView>
+    </View>
   );
 };
 
@@ -562,8 +560,8 @@ const cv = StyleSheet.create({
   card: {
     paddingTop: Spacing.sm,
     paddingBottom: Spacing.sm,
-    paddingLeft: Spacing.sm,
-    paddingRight: Spacing.sm,
+    paddingLeft: 0,
+    paddingRight: 0,
     marginBottom: Spacing.base,
     overflow: 'hidden',
   },
@@ -573,7 +571,7 @@ const cv = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.xs,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
   },
   legendPill: {
     flexDirection: 'row',
@@ -590,7 +588,7 @@ const cv = StyleSheet.create({
     borderRadius: 2,
   },
   legendLabel: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.semiBold,
   },
 
@@ -634,7 +632,7 @@ const cv = StyleSheet.create({
     alignItems: 'center',
   },
   needleBubbleText: {
-    fontSize: 8,
+    fontSize: Typography.micro,
     color: Colors.amber,
     fontWeight: Typography.bold,
   },
@@ -663,13 +661,13 @@ const cv = StyleSheet.create({
     backgroundColor: Colors.bgCardBorder,
   },
   dayLabelDate: {
-    fontSize: 12,
+    fontSize: Typography.sm,
     color: Colors.textPrimary,
     fontWeight: Typography.semiBold,
     textAlign: 'center',
   },
   dayLabelAbbr: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     color: Colors.textMuted,
     textAlign: 'center',
   },
@@ -690,18 +688,19 @@ const cv = StyleSheet.create({
     paddingVertical: 2,
   },
   phaseLabelText: {
-    fontSize: 12,
+    fontSize: Typography.sm,
     fontWeight: Typography.bold,
     textAlign: 'center',
   },
 
   // ── Tooltip ───────────────────────────────────────────────────────────────
   tooltip: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: Colors.tooltipBg,
     borderWidth: 1,
     borderRadius: Radius.md,
-    padding: Spacing.sm,
-    marginTop: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.base,
+    marginTop: Spacing.md,
     marginBottom: Spacing.sm,
   },
   tooltipHeader: {
@@ -752,7 +751,7 @@ const cv = StyleSheet.create({
     fontWeight: Typography.bold,
   },
   tooltipHormoneKey: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     color: Colors.textMuted,
     marginTop: 1,
   },
@@ -774,7 +773,7 @@ const cv = StyleSheet.create({
     fontWeight: Typography.extraBold,
   },
   countdownLbl: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     color: Colors.textMuted,
     textAlign: 'center',
     marginTop: 1,

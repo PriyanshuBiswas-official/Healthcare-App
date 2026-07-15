@@ -16,6 +16,7 @@ import {
   NotificationIconButton,
 } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
+import { useNotifications } from '../../providers/NotificationContext';
 import {
   InnerTabBar,
   HormoneRangeBar,
@@ -27,6 +28,7 @@ import {
   AIHealthInsightsSection,
 } from './HealthCommonSections';
 import { useAuth } from '../../providers/AuthProvider';
+import { usePreferences } from '../../providers/PreferencesContext';
 import { getSleepLogs, getMoodLogs } from '../../services/healthService';
 import type { SleepLog, MoodLog } from '../../types/health';
 
@@ -43,13 +45,15 @@ export default function HealthScreenMale({
 }) {
   const { onScroll } = useScrollVisibility();
   const { user } = useAuth();
+  const { hideVitals } = usePreferences();
+  const { unreadCount } = useNotifications();
   const [activeTab, setActiveTab] = useState('Overview');
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
   const [moodLogs, setMoodLogs] = useState<MoodLog[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  const TABS = ['Overview', 'Hormones', 'Vitals'];
+  const TABS = hideVitals ? ['Overview', 'Hormones'] : ['Overview', 'Hormones', 'Vitals'];
 
   const { session } = useAuth();
 
@@ -94,7 +98,7 @@ export default function HealthScreenMale({
         <View style={s.header}>
           <Text style={s.title}>Your Health</Text>
           <View style={s.headerActions}>
-            <NotificationIconButton onPress={onNotificationsPress} />
+            <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
             <ProfileAvatarButton
               onPress={onProfilePress}
               userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
@@ -293,8 +297,8 @@ const s = StyleSheet.create({
   gaugeWrap: { width: 100, height: 100, justifyContent: 'center', alignItems: 'center', position: 'relative' },
   gaugeTrack: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 8, borderColor: Colors.bgCardBorder, borderBottomColor: 'transparent', transform: [{ rotate: '-45deg' }] },
   gaugeFill: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 8, borderColor: Colors.teal, borderBottomColor: 'transparent', borderRightColor: 'transparent', transform: [{ rotate: '-45deg' }] },
-  gaugeScore: { fontSize: 32, fontWeight: Typography.extraBold, color: Colors.textPrimary },
-  gaugeTotal: { fontSize: 10, color: Colors.textMuted, marginTop: -4 },
+  gaugeScore: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary },
+  gaugeTotal: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: -4 },
 
   scoreInfoWrap: { flex: 1, marginLeft: Spacing.lg },
   scoreTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
@@ -308,10 +312,10 @@ const s = StyleSheet.create({
   quickStatsRow: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: Colors.divider, paddingTop: Spacing.md },
   qStatBox: { alignItems: 'center' },
   qStatVal: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
-  qStatLbl: { fontSize: 10, color: Colors.textMuted },
+  qStatLbl: { fontSize: Typography.xs, color: Colors.textMuted },
 
   rowGrid: { flexDirection: 'row', marginBottom: Spacing.xl },
-  cardMiniLabel: { fontSize: 10, color: Colors.textMuted, textTransform: 'uppercase', marginBottom: 4 },
+  cardMiniLabel: { fontSize: Typography.xs, color: Colors.textMuted, textTransform: 'uppercase', marginBottom: 4 },
   cardBigVal: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary },
   cardUnit: { fontSize: Typography.sm, fontWeight: Typography.medium, color: Colors.textSecondary },
   cardSubVal: { fontSize: Typography.xs, color: Colors.success, marginTop: 4, fontWeight: Typography.medium },
@@ -323,9 +327,9 @@ const s = StyleSheet.create({
 
   tBarContainer: { marginBottom: Spacing.xl, marginTop: Spacing.sm },
   tBarLabels: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 6 },
-  tBarEdge: { fontSize: 10, color: Colors.textMuted },
+  tBarEdge: { fontSize: Typography.xs, color: Colors.textMuted },
   tBarCenterVal: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.teal },
-  tBarCenterSub: { fontSize: 10, color: Colors.teal },
+  tBarCenterSub: { fontSize: Typography.xs, color: Colors.teal },
   tBarTrack: { height: 12, backgroundColor: Colors.bgCardBorder, borderRadius: 6, position: 'relative' },
   tBarFill: { position: 'absolute', left: '15%', right: '15%', height: '100%', backgroundColor: Colors.teal + '40', borderRadius: 6 },
   tBarMarker: { position: 'absolute', left: '55%', top: -4, width: 20, height: 20, borderRadius: 10, backgroundColor: Colors.teal, borderWidth: 3, borderColor: Colors.bg },

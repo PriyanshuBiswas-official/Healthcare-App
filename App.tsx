@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useReducer, useCallback } from 'react';
-import { View, StatusBar, StyleSheet, SafeAreaView, BackHandler, ActivityIndicator } from 'react-native';
+import { View, StatusBar, StyleSheet, SafeAreaView, BackHandler } from 'react-native';
 import { Colors } from './src/theme/theme';
 import TabBar, { TabName } from './src/navigation/TabBar';
 import { ScrollVisibilityProvider, useScrollVisibility } from './src/navigation/ScrollVisibilityContext';
@@ -13,16 +13,25 @@ import NotificationsScreen from './src/screens/notifications/NotificationsScreen
 import ProfileSetupScreen from './src/screens/profile/ProfileSetupScreen';
 import WorkoutLogScreen from './src/screens/fitness/WorkoutLogScreen';
 import HealthLogScreen, { HealthLogDraft } from './src/screens/health/HealthLogScreen';
+import PartnerHealthReportScreen from './src/screens/relationships/PartnerHealthReportScreen';
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
+import { PreferencesProvider } from './src/providers/PreferencesContext';
+import { NotificationProvider, useNotifications } from './src/providers/NotificationContext';
+import { ReminderProvider } from './src/providers/ReminderContext';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import OnboardingScreen from './src/screens/auth/OnboardingScreen';
 import { AuthStack } from './src/navigation/AuthStack';
+import LoadingScreen from './src/components/LoadingScreen';
+import ErrorScreen from './src/screens/error/ErrorScreen';
+import ErrorBoundary from './src/components/ErrorBoundary';
+import { NetworkProvider } from './src/services/networkService';
+import OfflineBanner from './src/components/OfflineBanner';
 const Stack = createNativeStackNavigator();
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
-const OVERLAY_TABS: TabName[] = ['Profile', 'Notifications', 'WorkoutLog', 'HealthLog'];
+const OVERLAY_TABS: TabName[] = ['Profile', 'Notifications', 'WorkoutLog', 'HealthLog', 'PartnerReport'];
 
 // ── Reducer ──────────────────────────────────────────────────────────
 
@@ -31,15 +40,17 @@ type AppState = {
   previousTab: TabName;
   aiStartInChat: boolean;
   aiOrigin: TabName | null;
+  aiInitialQuery: string;
   showProfileSetup: boolean;
+  profileSection: string | null;
   workoutLogExercise: any;
   lastHealthLog: HealthLogDraft | null;
 };
 
 type AppAction =
   | { type: 'SWITCH_TAB'; tab: TabName }
-  | { type: 'OPEN_AI'; from?: TabName; startInChat?: boolean }
-  | { type: 'OPEN_PROFILE' }
+  | { type: 'OPEN_AI'; from?: TabName; startInChat?: boolean; initialQuery?: string }
+  | { type: 'OPEN_PROFILE'; section?: string }
   | { type: 'OPEN_NOTIFICATIONS' }
   | { type: 'OPEN_PROFILE_SETUP' }
   | { type: 'CLOSE_PROFILE_SETUP' }
@@ -47,6 +58,7 @@ type AppAction =
   | { type: 'CLOSE_WORKOUT_LOG' }
   | { type: 'OPEN_HEALTH_LOG' }
   | { type: 'CLOSE_HEALTH_LOG' }
+  | { type: 'OPEN_PARTNER_REPORT'; partnerId: string }
   | { type: 'CLOSE_OVERLAY' }
   | { type: 'SAVE_HEALTH_LOG'; log: HealthLogDraft };
 
@@ -55,7 +67,9 @@ const INITIAL_STATE: AppState = {
   previousTab: 'Home',
   aiStartInChat: false,
   aiOrigin: null,
+  aiInitialQuery: '',
   showProfileSetup: false,
+  profileSection: null,
   workoutLogExercise: null,
   lastHealthLog: null,
 };
@@ -72,10 +86,11 @@ function appReducer(state: AppState, action: AppAction): AppState {
         activeTab: 'AI',
         aiOrigin: action.from ?? state.activeTab,
         aiStartInChat: action.startInChat ?? false,
+        aiInitialQuery: action.initialQuery ?? '',
       };
 
     case 'OPEN_PROFILE':
-      return { ...state, previousTab: state.activeTab, activeTab: 'Profile' };
+      return { ...state, previousTab: state.activeTab, activeTab: 'Profile', profileSection: (action as any).section || null };
 
     case 'OPEN_NOTIFICATIONS':
       return { ...state, previousTab: state.activeTab, activeTab: 'Notifications' };
@@ -103,8 +118,11 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'CLOSE_HEALTH_LOG':
       return { ...state, activeTab: state.previousTab };
 
+    case 'OPEN_PARTNER_REPORT':
+      return { ...state, previousTab: state.activeTab, activeTab: 'PartnerReport' };
+
     case 'CLOSE_OVERLAY':
-      return { ...state, activeTab: state.previousTab };
+      return { ...state, activeTab: state.previousTab, profileSection: null };
 
     case 'SAVE_HEALTH_LOG':
       return { ...state, activeTab: state.previousTab, lastHealthLog: action.log };
@@ -126,6 +144,7 @@ const MemoizedProfileSetupScreen = React.memo(ProfileSetupScreen);
 const MemoizedNotificationsScreen = React.memo(NotificationsScreen);
 const MemoizedWorkoutLogScreen = React.memo(WorkoutLogScreen);
 const MemoizedHealthLogScreen = React.memo(HealthLogScreen);
+const MemoizedPartnerReportScreen = React.memo(PartnerHealthReportScreen);
 const MemoizedTabBar = React.memo(TabBar);
 
 // ── AppShell ─────────────────────────────────────────────────────────
@@ -146,14 +165,51 @@ function AppShell() {
   const openProfileSetup = useCallback(() => dispatch({ type: 'OPEN_PROFILE_SETUP' }), []);
   const closeProfile = useCallback(() => dispatch({ type: 'CLOSE_OVERLAY' }), []);
   const closeNotifications = useCallback(() => dispatch({ type: 'CLOSE_OVERLAY' }), []);
+  const closePartnerReport = useCallback(() => dispatch({ type: 'CLOSE_OVERLAY' }), []);
   const closeProfileSetup = useCallback(() => dispatch({ type: 'CLOSE_PROFILE_SETUP' }), []);
   const openHealthLog = useCallback(() => dispatch({ type: 'OPEN_HEALTH_LOG' }), []);
   const closeHealthLog = useCallback(() => dispatch({ type: 'CLOSE_HEALTH_LOG' }), []);
   const closeWorkoutLog = useCallback(() => dispatch({ type: 'CLOSE_WORKOUT_LOG' }), []);
+  const openPartnerReport = useCallback((partnerId: string) => dispatch({ type: 'OPEN_PARTNER_REPORT', partnerId }), []);
 
-  const openAI = useCallback((fromTab?: TabName, startInChat = true) => {
+  // ── Notification tap handler ──────────────────────────────────
+  const { setOnNotificationTap } = useNotifications();
+
+  useEffect(() => {
+    setOnNotificationTap((screen: string, _data?: Record<string, unknown>) => {
+      // Map reminder sub-screens to profile sections
+      const reminderScreens: Record<string, string> = {
+        'medications': 'medications',
+        'reminders-water': 'reminders-water',
+        'reminders-workouts': 'reminders-workouts',
+        'reminders-appointments': 'reminders-appointments',
+        'reminders-sleep': 'reminders-sleep',
+        'reminders-health': 'reminders-health',
+      };
+      if (reminderScreens[screen]) {
+        dispatch({ type: 'OPEN_PROFILE', section: reminderScreens[screen] });
+        return;
+      }
+      // Map other screens
+      const screenToTab: Record<string, TabName> = {
+        'Home': 'Home',
+        'Health': 'Health',
+        'AI': 'AI',
+        'Activity': 'Activity',
+        'Diet': 'Diet',
+        'Profile': 'Profile',
+        'Notifications': 'Notifications',
+      };
+      const tab = screenToTab[screen];
+      if (tab) {
+        dispatch({ type: 'SWITCH_TAB', tab });
+      }
+    });
+  }, [setOnNotificationTap]);
+
+  const openAI = useCallback((fromTab?: TabName, startInChat = true, initialQuery?: string) => {
     tabHistory.current.push('AI');
-    dispatch({ type: 'OPEN_AI', from: fromTab, startInChat });
+    dispatch({ type: 'OPEN_AI', from: fromTab, startInChat, initialQuery });
   }, []);
 
   const openWorkoutLog = useCallback((exercise: any) => {
@@ -243,6 +299,7 @@ function AppShell() {
 
   return (
     <>
+      <OfflineBanner />
       <View style={styles.screenContainer}>
         {MAIN_TABS.map(tab => (
           mountedTabs.current.has(tab) && (
@@ -250,44 +307,57 @@ function AppShell() {
               key={tab}
               style={[styles.screenWrapper, state.activeTab !== tab && styles.screenHidden]}>
               {tab === 'Home' && (
-                <MemoizedDashboard
-                  onProfilePress={openProfile}
-                  onNotificationsPress={openNotifications}
-                  onCompleteProfile={openProfileSetup}
-                  navigateToTab={navigateToTab}
-                />
+                <ErrorBoundary>
+                  <MemoizedDashboard
+                    onProfilePress={openProfile}
+                    onNotificationsPress={openNotifications}
+                    onCompleteProfile={openProfileSetup}
+                    navigateToTab={navigateToTab}
+                    onPartnerPress={openPartnerReport}
+                    onOpenAI={openAI}
+                  />
+                </ErrorBoundary>
               )}
               {tab === 'Health' && (
-                <MemoizedHealthScreen
-                  onProfilePress={openProfile}
-                  onNotificationsPress={openNotifications}
-                  onOpenHealthLog={openHealthLog}
-                  lastHealthLog={state.lastHealthLog}
-                />
+                <ErrorBoundary>
+                  <MemoizedHealthScreen
+                    onProfilePress={openProfile}
+                    onNotificationsPress={openNotifications}
+                    onOpenHealthLog={openHealthLog}
+                    lastHealthLog={state.lastHealthLog}
+                  />
+                </ErrorBoundary>
               )}
               {tab === 'AI' && (
-                <MemoizedAIAdvisorScreen
-                  onProfilePress={openProfile}
-                  onNotificationsPress={openNotifications}
-                  startInChat={state.aiStartInChat}
-                  originTab={state.aiOrigin ?? undefined}
-                  navigateToTab={navigateToTab}
-                  isTabActive={state.activeTab === 'AI'}
-                />
+                <ErrorBoundary>
+                  <MemoizedAIAdvisorScreen
+                    onProfilePress={openProfile}
+                    onNotificationsPress={openNotifications}
+                    startInChat={state.aiStartInChat}
+                    initialQuery={state.aiInitialQuery}
+                    originTab={state.aiOrigin ?? undefined}
+                    navigateToTab={navigateToTab}
+                    isTabActive={state.activeTab === 'AI'}
+                  />
+                </ErrorBoundary>
               )}
               {tab === 'Activity' && (
-                <MemoizedFitnessScreen
-                  onProfilePress={openProfile}
-                  onNotificationsPress={openNotifications}
-                  onOpenAI={openAI}
-                  onOpenWorkoutLog={openWorkoutLog}
-                />
+                <ErrorBoundary>
+                  <MemoizedFitnessScreen
+                    onProfilePress={openProfile}
+                    onNotificationsPress={openNotifications}
+                    onOpenAI={openAI}
+                    onOpenWorkoutLog={openWorkoutLog}
+                  />
+                </ErrorBoundary>
               )}
               {tab === 'Diet' && (
-                <MemoizedCalorieScreen
-                  onProfilePress={openProfile}
-                  onNotificationsPress={openNotifications}
-                />
+                <ErrorBoundary>
+                  <MemoizedCalorieScreen
+                    onProfilePress={openProfile}
+                    onNotificationsPress={openNotifications}
+                  />
+                </ErrorBoundary>
               )}
             </View>
           )
@@ -300,6 +370,7 @@ function AppShell() {
               <MemoizedProfileScreen
                 onBackPress={closeProfile}
                 onCompleteProfile={openProfileSetup}
+                initialSection={state.profileSection}
               />
             )}
           </View>
@@ -319,6 +390,11 @@ function AppShell() {
             <MemoizedHealthLogScreen onBack={closeHealthLog} onSave={saveHealthLog} token={session?.access_token} />
           </View>
         )}
+        {state.activeTab === 'PartnerReport' && (
+          <View style={styles.screenWrapper}>
+            <MemoizedPartnerReportScreen onBack={closePartnerReport} />
+          </View>
+        )}
       </View>
 
       <MemoizedTabBar activeTab={state.activeTab} onTabChange={handleTabChange} />
@@ -329,13 +405,30 @@ function AppShell() {
 // ── Root Component ───────────────────────────────────────────────────
 
 const RootComponent = () => {
-  const { session, isLoading, hasProfile } = useAuth();
+  const { session, isLoading, hasProfile, networkError, maintenanceData, retryAfterNetworkError } = useAuth();
 
   if (isLoading || (session?.user && hasProfile === null)) {
+    return <LoadingScreen />;
+  }
+
+  if (networkError) {
     return (
-      <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
+      <ErrorScreen
+        type="no-internet"
+        onRetry={retryAfterNetworkError}
+        onGoHome={retryAfterNetworkError}
+      />
+    );
+  }
+
+  if (maintenanceData) {
+    return (
+      <ErrorScreen
+        type="maintenance"
+        title={maintenanceData.title}
+        message={maintenanceData.message}
+        estimatedReturn={maintenanceData.estimatedReturn}
+      />
     );
   }
 
@@ -358,9 +451,11 @@ const RootComponent = () => {
   }
 
   return (
-    <ScrollVisibilityProvider>
-      <AppShell />
-    </ScrollVisibilityProvider>
+    <NetworkProvider>
+      <ScrollVisibilityProvider>
+        <AppShell />
+      </ScrollVisibilityProvider>
+    </NetworkProvider>
   );
 };
 
@@ -368,16 +463,22 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <View style={styles.root}>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor={Colors.bgHero}
-          translucent={false}
-        />
-          <SafeAreaView style={styles.safeArea}>
-            <RootComponent />
-          </SafeAreaView>
-        </View>
+        <NotificationProvider>
+          <ReminderProvider>
+            <PreferencesProvider>
+          <View style={styles.root}>
+          <StatusBar
+            barStyle="light-content"
+            backgroundColor={Colors.bgHero}
+            translucent={false}
+          />
+            <SafeAreaView style={styles.safeArea}>
+              <RootComponent />
+            </SafeAreaView>
+          </View>
+          </PreferencesProvider>
+          </ReminderProvider>
+        </NotificationProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

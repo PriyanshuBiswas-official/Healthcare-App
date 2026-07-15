@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { GoogleSignin } from '../../lib/googleSignin';
 import { API_BASE_URL } from '../../config/api';
 import { useAuth } from '../../providers/AuthProvider';
+import { Colors, Typography } from '../../theme/theme';
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -158,7 +159,7 @@ const SignupScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Enter your email"
-            placeholderTextColor="#52525B"
+            placeholderTextColor={Colors.textPlaceholder}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -171,7 +172,7 @@ const SignupScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Enter your password"
-            placeholderTextColor="#52525B"
+            placeholderTextColor={Colors.textPlaceholder}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -210,49 +211,49 @@ const SignupScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#09090B' },
+  container: { flex: 1, backgroundColor: Colors.bgAuth },
   content: { flex: 1, padding: 24, justifyContent: 'center' },
-  title: { fontSize: 28, fontWeight: '700', marginBottom: 32, textAlign: 'center', color: '#FFFFFF', letterSpacing: -0.5 },
+  title: { fontSize: Typography.xxl, fontWeight: Typography.bold, marginBottom: 32, textAlign: 'center', color: Colors.white, letterSpacing: Typography.lsTight },
   inputContainer: { marginBottom: 20 },
-  inputLabel: { fontSize: 14, fontWeight: '500', color: '#E4E4E7', marginBottom: 8, marginLeft: 2 },
+  inputLabel: { fontSize: Typography.xs, fontWeight: Typography.medium, color: Colors.textInputLabel, marginBottom: 8, marginLeft: 2 },
   input: {
     borderWidth: 1,
-    borderColor: '#27272A',
+    borderColor: Colors.inputBorder,
     padding: 16,
     borderRadius: 12,
-    fontSize: 16,
-    color: '#FFFFFF',
-    backgroundColor: '#18181B',
+    fontSize: Typography.base,
+    color: Colors.white,
+    backgroundColor: Colors.bgInput,
   },
-  hintText: { fontSize: 13, color: '#A1A1AA', marginTop: 6, marginLeft: 2 },
+  hintText: { fontSize: Typography.sm, color: Colors.textHint, marginTop: 6, marginLeft: 2 },
   button: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: Colors.blue,
     paddingVertical: 18,
     borderRadius: 16,
     alignItems: 'center',
     marginTop: 16,
-    shadowColor: '#3B82F6',
+    shadowColor: Colors.blue,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
   },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  buttonText: { color: Colors.white, fontSize: Typography.base, fontWeight: Typography.semiBold },
   linkButton: { marginTop: 24, alignItems: 'center' },
-  linkText: { color: '#A1A1AA', fontSize: 15, fontWeight: '500' },
+  linkText: { color: Colors.textHint, fontSize: Typography.base, fontWeight: Typography.medium },
   dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 32 },
-  divider: { flex: 1, height: 1, backgroundColor: '#27272A' },
-  dividerText: { marginHorizontal: 16, color: '#52525B', fontSize: 14, fontWeight: '500' },
+  divider: { flex: 1, height: 1, backgroundColor: Colors.inputBorder },
+  dividerText: { marginHorizontal: 16, color: Colors.textPlaceholder, fontSize: Typography.xs, fontWeight: Typography.medium },
   socialContainer: { gap: 12 },
   socialButton: {
     borderWidth: 1,
-    borderColor: '#27272A',
-    backgroundColor: '#18181B',
+    borderColor: Colors.inputBorder,
+    backgroundColor: Colors.bgInput,
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: 'center',
   },
-  socialButtonText: { fontSize: 16, color: '#E4E4E7', fontWeight: '500' },
+  socialButtonText: { fontSize: Typography.base, color: Colors.textInputLabel, fontWeight: Typography.medium },
 });
 
 export default SignupScreen;

@@ -9,18 +9,25 @@ import {
   Image,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView, SectionHeader, ProgressBar } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../providers/AuthProvider';
+import { usePreferences } from '../../providers/PreferencesContext';
 import { API_BASE_URL } from '../../config/api';
 import PersonalInfoScreen from './PersonalInfoScreen';
 import MedicalHistoryScreen from './MedicalHistoryScreen';
 import MedicationsScreen from './MedicationsScreen';
 import AllergiesScreen from './AllergiesScreen';
 import EmergencyContactsScreen from './EmergencyContactsScreen';
+import WaterRemindersScreen from './WaterRemindersScreen';
+import WorkoutsRemindersScreen from './WorkoutsRemindersScreen';
+import AppointmentsRemindersScreen from './AppointmentsRemindersScreen';
+import SleepRemindersScreen from './SleepRemindersScreen';
+import HealthRemindersScreen from './HealthRemindersScreen';
 
-type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency';
+type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency' | 'reminders-water' | 'reminders-workouts' | 'reminders-appointments' | 'reminders-sleep' | 'reminders-health';
 
 type MenuItem = {
   icon: string;
@@ -66,6 +73,15 @@ function getHealthProfile(profileData: ProfileData | null): MenuItem[] {
 const CONNECTED_DEVICES: MenuItem[] = [
   { icon: '⌚', label: 'Apple Watch', sub: 'Synced · Last: 2 min ago', color: Colors.teal, badge: 'On' },
   { icon: '📱', label: 'Health Connect', sub: 'Steps, sleep, heart rate', color: Colors.pink },
+];
+
+const REMINDER_ITEMS: MenuItem[] = [
+  { icon: '💊', label: 'Medications', sub: 'Manage medication reminders', color: Colors.amber },
+  { icon: '💧', label: 'Water Reminders', sub: 'Hydration intake alerts', color: Colors.blue },
+  { icon: '💪', label: 'Workouts', sub: 'Exercise schedule & reminders', color: Colors.pink },
+  { icon: '🏥', label: 'Appointments', sub: 'Upcoming visits & alerts', color: Colors.teal },
+  { icon: '🌙', label: 'Sleep', sub: 'Bedtime & wake reminders', color: Colors.purple },
+  { icon: '❤️', label: 'Health', sub: 'General health reminders', color: Colors.danger },
 ];
 
 const PREFERENCES = [
@@ -136,14 +152,24 @@ function ToggleRow({
   );
 }
 
-export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBackPress?: () => void; onCompleteProfile?: () => void }) {
+export default function ProfileScreen({ onBackPress, onCompleteProfile, initialSection }: { onBackPress?: () => void; onCompleteProfile?: () => void; initialSection?: string | null }) {
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion } = useAuth();
+  const { hideVitals, setHideVitals, hideCommunitySpotlight, setHideCommunitySpotlight } = usePreferences();
   const [toggles, setToggles] = useState(
     Object.fromEntries(PREFERENCES.map(p => [p.key, p.default])) as Record<string, boolean>,
   );
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
-  const [activeSection, setActiveSection] = useState<HealthSection | null>(null);
+  const [activeSection, setActiveSection] = useState<HealthSection | null>(
+    initialSection as HealthSection | null
+  );
+
+  // Handle initialSection changes (from notification taps)
+  useEffect(() => {
+    if (initialSection) {
+      setActiveSection(initialSection as HealthSection);
+    }
+  }, [initialSection]);
 
   const fetchProfile = useCallback(async () => {
     if (!session?.access_token) return;
@@ -222,6 +248,36 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
               onBack={() => setActiveSection(null)}
             />
           )}
+          {activeSection === 'reminders-water' && (
+            <WaterRemindersScreen
+              onBack={() => setActiveSection(null)}
+              onSaved={fetchProfile}
+            />
+          )}
+          {activeSection === 'reminders-workouts' && (
+            <WorkoutsRemindersScreen
+              onBack={() => setActiveSection(null)}
+              onSaved={fetchProfile}
+            />
+          )}
+          {activeSection === 'reminders-appointments' && (
+            <AppointmentsRemindersScreen
+              onBack={() => setActiveSection(null)}
+              onSaved={fetchProfile}
+            />
+          )}
+          {activeSection === 'reminders-sleep' && (
+            <SleepRemindersScreen
+              onBack={() => setActiveSection(null)}
+              onSaved={fetchProfile}
+            />
+          )}
+          {activeSection === 'reminders-health' && (
+            <HealthRemindersScreen
+              onBack={() => setActiveSection(null)}
+              onSaved={fetchProfile}
+            />
+          )}
         </>
       ) : (
       <ScrollView
@@ -232,7 +288,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
         <View style={styles.topBar}>
           {onBackPress ? (
             <TouchableOpacity style={styles.backBtn} onPress={onBackPress} activeOpacity={0.7}>
-              <Text style={styles.backIcon}>←</Text>
+              <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
             </TouchableOpacity>
           ) : (
             <View style={styles.backPlaceholder} />
@@ -324,6 +380,29 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
           ))}
         </GlassCardView>
 
+        <SectionHeader title="Reminders" subtitle="Manage your daily reminders" />
+        <GlassCardView style={styles.menuCard}>
+          {REMINDER_ITEMS.map((item, i) => (
+            <View key={item.label}>
+              <MenuRow
+                item={item}
+                onPress={() => {
+                  const sectionMap: Record<string, HealthSection> = {
+                    'Medications': 'medications',
+                    'Water Reminders': 'reminders-water',
+                    'Workouts': 'reminders-workouts',
+                    'Appointments': 'reminders-appointments',
+                    'Sleep': 'reminders-sleep',
+                    'Health': 'reminders-health',
+                  };
+                  setActiveSection(sectionMap[item.label] || null);
+                }}
+              />
+              {i < REMINDER_ITEMS.length - 1 && <View style={styles.divider} />}
+            </View>
+          ))}
+        </GlassCardView>
+
         <SectionHeader title="Connected Devices" subtitle="Sync wearables & health data" />
         <GlassCardView style={styles.menuCard}>
           {CONNECTED_DEVICES.map((item, i) => (
@@ -348,6 +427,22 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile }: { onBa
               {i < PREFERENCES.length - 1 && <View style={styles.divider} />}
             </View>
           ))}
+          <View style={styles.divider} />
+          <ToggleRow
+            icon="❤️"
+            label="Hide Vitals"
+            sub="Remove vitals from all health pages"
+            value={hideVitals}
+            onValueChange={setHideVitals}
+          />
+          <View style={styles.divider} />
+          <ToggleRow
+            icon="👥"
+            label="Hide Community Spotlight"
+            sub="Remove community posts from dashboard"
+            value={hideCommunitySpotlight}
+            onValueChange={setHideCommunitySpotlight}
+          />
         </GlassCardView>
 
         <SectionHeader title="Support" />
@@ -396,7 +491,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backPlaceholder: { width: 40 },
-  backIcon: { fontSize: 20, color: Colors.textPrimary },
+  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
   pageTitle: {
     fontSize: Typography.lg,
     fontWeight: Typography.bold,
@@ -449,7 +544,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.xs,
     fontWeight: Typography.semiBold,
     color: Colors.teal,
-    letterSpacing: 0.3,
+    letterSpacing: Typography.lsWide,
   },
   profileMeta: {
     flexDirection: 'row',
@@ -504,7 +599,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   completeCardIcon: {
-    fontSize: 22,
+    fontSize: Typography.xl,
     marginRight: Spacing.md,
   },
   completeCardTextWrap: {
@@ -545,7 +640,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuIconText: { fontSize: 18 },
+  menuIconText: { fontSize: Typography.md },
   menuContent: { flex: 1, marginLeft: Spacing.md },
   menuLabel: {
     fontSize: Typography.base,
@@ -558,7 +653,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   chevron: {
-    fontSize: 22,
+    fontSize: Typography.xl,
     color: Colors.textMuted,
     fontWeight: Typography.medium,
     marginLeft: Spacing.sm,
@@ -589,7 +684,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.danger + '40',
     marginBottom: Spacing.lg,
   },
-  logoutIcon: { fontSize: 16, marginRight: Spacing.sm },
+  logoutIcon: { fontSize: Typography.base, marginRight: Spacing.sm },
   logoutText: {
     fontSize: Typography.base,
     fontWeight: Typography.bold,

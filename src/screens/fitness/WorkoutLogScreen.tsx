@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { ArrowLeft } from 'lucide-react-native';
 import { useAuth } from '../../providers/AuthProvider';
 import * as activityService from '../../services/activityService';
 import { WorkoutSet } from '../../types/activity';
@@ -174,7 +175,7 @@ export default function WorkoutLogScreen({
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backBtn} activeOpacity={0.7}>
-          <Text style={{ fontSize: 24, color: Colors.text }}>←</Text>
+          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{exercise.exercise_name}</Text>
@@ -474,7 +475,7 @@ const styles = StyleSheet.create({
   },
   setValueText: { fontSize: Typography.sm, color: Colors.textPrimary },
   editBtn: { padding: Spacing.xs },
-  editBtnText: { fontSize: 14 },
+  editBtnText: { fontSize: Typography.sm },
   editSaveBtn: {
     backgroundColor: Colors.teal,
     borderRadius: Radius.sm,
@@ -484,7 +485,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 4,
   },
-  editSaveBtnText: { color: Colors.bg, fontSize: 14, fontWeight: Typography.bold },
+  editSaveBtnText: { color: Colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold },
   editCancelBtn: {
     backgroundColor: Colors.bgCardBorder,
     borderRadius: Radius.sm,
@@ -493,7 +494,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  editCancelBtnText: { color: Colors.textSecondary, fontSize: 14 },
+  editCancelBtnText: { color: Colors.textSecondary, fontSize: Typography.sm },
   timerSection: {
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,

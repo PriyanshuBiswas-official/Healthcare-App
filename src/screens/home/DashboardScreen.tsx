@@ -12,27 +12,62 @@ import {
   ActivityIndicator,
   RefreshControl,
   StatusBar,
-  PanResponder,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Alert,
+  PermissionsAndroid,
+  Platform,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
 import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import ProfileCompletionBanner from '../../components/ProfileCompletionBanner';
+import HealthCalendar from '../../components/HealthCalendar';
 import { useAuth } from '../../providers/AuthProvider';
+import { usePreferences } from '../../providers/PreferencesContext';
+import { useNotifications } from '../../providers/NotificationContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg';
+import { launchCamera } from 'react-native-image-picker';
+import Voice from '@dev-amirzubair/react-native-voice';
+import { Search, Mic, Camera, Check } from 'lucide-react-native';
+import { TabName } from '../../navigation/TabBar';
 import { SleepTrackerSection, VitalsDashboardSection } from '../health/HealthCommonSections';
 import { getSleepLogs, getWeightLogs, saveWeightLog } from '../../services/healthService';
-import { getMealsForDate, getWaterForDate, getCalorieGoal, logMeal, logWater, getWaterChallenge } from '../../services/dietService';
-import { getTodaySummary, getActivityGoal } from '../../services/activityService';
+import { getMealsForDate, getWaterForDate, getCalorieGoal, logMeal, logWater, getWaterChallenge, getWeeklyTrend } from '../../services/dietService';
+import { getTodaySummary, getActivityGoal, getWeeklyStats } from '../../services/activityService';
 import type { SleepLog, WeightEntry } from '../../types/health';
-import type { DayMealsResponse, DayWaterResponse, NutritionGoal, MealType, WaterChallenge } from '../../types/diet';
-import type { ActivitySummary, ActivityGoal } from '../../types/activity';
-import type { TabName } from '../../navigation/TabBar';
+import type { DayMealsResponse, DayWaterResponse, NutritionGoal, MealType, WaterChallenge, WeeklyTrendDay } from '../../types/diet';
+import type { ActivitySummary, ActivityGoal, WeeklyData } from '../../types/activity';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+
+// ── Health Timeline Types ──
+type TimelineEventStatus = 'pending' | 'completed' | 'skipped' | 'stopped';
+type TimelineEventType = 'medication' | 'water' | 'meal' | 'steps' | 'workout' | 'sleep' | 'custom';
+
+type TimelineEvent = {
+  id: string;
+  time: string;
+  title: string;
+  sub: string;
+  icon: string;
+  color: string;
+  rightText: string;
+  rightType: 'taken' | 'value' | 'countdown' | 'upcoming';
+  type: TimelineEventType;
+  status: TimelineEventStatus;
+};
+
+const DEFAULT_TIMELINE: TimelineEvent[] = [
+  { id: '1', time: '08:00 AM', title: 'Medication', sub: 'Vitamin D3 1000 IU', icon: '💊', color: Colors.purple, rightText: 'Taken', rightType: 'taken', type: 'medication', status: 'completed' },
+  { id: '2', time: '09:15 AM', title: 'Water', sub: '400 ml recorded', icon: '💧', color: Colors.blue, rightText: '400 ml', rightType: 'value', type: 'water', status: 'completed' },
+  { id: '3', time: '10:00 AM', title: 'Breakfast', sub: 'Oats with fruits, Almonds', icon: '🍽️', color: Colors.amber, rightText: '450 kcal', rightType: 'value', type: 'meal', status: 'completed' },
+  { id: '4', time: '12:00 PM', title: 'Steps', sub: '2,350 steps', icon: '👟', color: Colors.success, rightText: '2,350', rightType: 'value', type: 'steps', status: 'completed' },
+  { id: '5', time: '04:30 PM', title: 'Workout', sub: 'Strength Training', icon: '💪', color: Colors.pink, rightText: '45 min', rightType: 'value', type: 'workout', status: 'pending' },
+  { id: '6', time: '08:00 PM', title: 'Medication (Upcoming)', sub: 'Metformin 500 mg', icon: '💊', color: Colors.amber, rightText: '', rightType: 'countdown', type: 'medication', status: 'pending' },
+  { id: '7', time: '10:30 PM', title: 'Sleep Goal', sub: 'Target: 8 hrs', icon: '🌙', color: Colors.purple, rightText: 'Upcoming', rightType: 'upcoming', type: 'sleep', status: 'pending' },
+];
 
 // Custom SVG Ring for Hero
 const HeroScoreRing = ({ score }: { score: number }) => {
@@ -74,7 +109,7 @@ const HeroScoreRing = ({ score }: { score: number }) => {
         />
       </Svg>
       <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <Text style={{ fontSize: 24, fontWeight: Typography.extraBold, color: Colors.white, lineHeight: 28 }}>{score}</Text>
+        <Text style={{ fontSize: Typography.xl, fontWeight: Typography.extraBold, color: Colors.white, lineHeight: 28 }}>{score}</Text>
         <Text style={{ fontSize: Typography.xs, color: Colors.textMuted }}>/100</Text>
       </View>
     </View>
@@ -120,34 +155,89 @@ const CompactRing = ({ size, progress, color, children }: any) => {
   );
 };
 
-export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void }) {
+export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab, onPartnerPress, onOpenAI }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void; onPartnerPress?: (partnerId: string) => void; onOpenAI?: (fromTab?: TabName, startInChat?: boolean, initialQuery?: string) => void; }) {
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion, gender } = useAuth();
+  const { hideVitals, hideCommunitySpotlight } = usePreferences();
+  const { unreadCount } = useNotifications();
   const insets = useSafeAreaInsets();
-  
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const heroHeightRef = useRef(0);
-  
+
   const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date>(new Date());
   const [calendarCurrentMonth, setCalendarCurrentMonth] = useState<Date>(new Date());
   const [calendarExpanded, setCalendarExpanded] = useState<boolean>(true);
+  const [showAllMeds, setShowAllMeds] = useState<boolean>(false);
+  const [isListening, setIsListening] = useState(false);
 
-  // Swipe gesture to change months
-  const calendarSwipe = useRef({ startX: 0 }).current;
-  const calendarPanResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 20 && Math.abs(g.dx) > Math.abs(g.dy),
-      onPanResponderGrant: (_, g) => { calendarSwipe.startX = g.x0; },
-      onPanResponderRelease: (_, g) => {
-        const dx = g.dx;
-        if (Math.abs(dx) > 50) {
-          const direction = dx < 0 ? 1 : -1;
-          setCalendarCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + direction, 1));
+  const handleSearchPress = useCallback(() => {
+    onOpenAI?.('Home', true, '');
+  }, [onOpenAI]);
+
+  const handleVoicePress = useCallback(async () => {
+    if (isListening) {
+      Voice.stop();
+      setIsListening(false);
+      return;
+    }
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          { title: 'Microphone Permission', message: 'App needs access to your microphone for voice search', buttonPositive: 'OK' },
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) return;
+      }
+      Voice.onSpeechResults = (e: any) => {
+        const text = e.value?.[0];
+        setIsListening(false);
+        if (text) {
+          onOpenAI?.('Home', true, text);
         }
-      },
-    })
-  ).current;
+      };
+      Voice.onSpeechError = () => setIsListening(false);
+      await Voice.start('en-US');
+      setIsListening(true);
+    } catch (e) {
+      console.warn('[Voice] start error:', e);
+      setIsListening(false);
+    }
+  }, [isListening, onOpenAI]);
+
+  const handleCameraPress = useCallback(async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          { title: 'Camera Permission', message: 'App needs access to your camera', buttonPositive: 'OK' },
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) return;
+      }
+      const result = await launchCamera({ mediaType: 'photo', quality: 0.8, saveToPhotos: false });
+      if (result.didCancel) return;
+      if (result.errorCode) {
+        Alert.alert('Camera Error', result.errorMessage || 'Could not open camera');
+        return;
+      }
+      if (result.assets?.[0]) {
+        onOpenAI?.('Home', true, 'Analyze this health image');
+      }
+    } catch (e: any) {
+      Alert.alert('Camera Error', e.message || 'Could not open camera');
+    }
+  }, [onOpenAI]);
+
+  const [medicationsData, setMedicationsData] = useState([
+    { name: 'Paracetamol', dose: '500 mg', time: '08:00 AM', taken: true, color: Colors.purple, purpose: 'Fever' },
+    { name: 'Metformin', dose: '500 mg', time: '08:00 PM', taken: false, color: Colors.amber, purpose: 'Sugar' },
+    { name: 'Vitamin D3', dose: '1000 IU', time: '09:00 AM', taken: true, color: Colors.blue, purpose: 'Vitamin' },
+    { name: 'Cetirizine', dose: '10 mg', time: '08:00 AM', taken: false, color: Colors.pink, purpose: 'Allergy' },
+    { name: 'Omeprazole', dose: '20 mg', time: '07:00 AM', taken: true, color: Colors.teal, purpose: 'Acidity' },
+    { name: 'Amlodipine', dose: '5 mg', time: '08:00 AM', taken: false, color: Colors.success, purpose: 'BP' },
+    { name: 'Atorvastatin', dose: '10 mg', time: '09:00 PM', taken: false, color: Colors.textSecondary, purpose: 'Cholesterol' },
+  ]);
 
   // Dynamic status bar color on scroll
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -159,53 +249,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       StatusBar.setBackgroundColor(Colors.bgHero, false);
     }
   }, [onScroll]);
-
-  const getDaysInMonth = useCallback((date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDayIndex = new Date(year, month, 1).getDay();
-    const numDays = new Date(year, month + 1, 0).getDate();
-    
-    const days = [];
-    const prevNumDays = new Date(year, month, 0).getDate();
-    
-    for (let i = firstDayIndex - 1; i >= 0; i--) {
-      days.push({
-        date: new Date(year, month - 1, prevNumDays - i),
-        isCurrentMonth: false,
-      });
-    }
-    for (let i = 1; i <= numDays; i++) {
-      days.push({
-        date: new Date(year, month, i),
-        isCurrentMonth: true,
-      });
-    }
-    const remaining = 7 - (days.length % 7);
-    if (remaining < 7) {
-      for (let i = 1; i <= remaining; i++) {
-        days.push({
-          date: new Date(year, month + 1, i),
-          isCurrentMonth: false,
-        });
-      }
-    }
-    return days;
-  }, []);
-
-  const getWeekDays = useCallback((date: Date) => {
-    const currentDay = date.getDay();
-    const sunday = new Date(date.getFullYear(), date.getMonth(), date.getDate() - currentDay);
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() + i);
-      days.push({
-        date: d,
-        isCurrentMonth: d.getMonth() === date.getMonth(),
-      });
-    }
-    return days;
-  }, []);
 
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
@@ -219,9 +262,20 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null);
   const [activityGoal, setActivityGoal] = useState<ActivityGoal | null>(null);
   const [waterChallenge, setWaterChallenge] = useState<WaterChallenge | null>(null);
+  const [weeklyTrend, setWeeklyTrend] = useState<WeeklyTrendDay[]>([]);
+  const [weeklyActivity, setWeeklyActivity] = useState<WeeklyData | null>(null);
   const [showMealModal, setShowMealModal] = useState(false);
   const [showWaterModal, setShowWaterModal] = useState(false);
   const [showMedModal, setShowMedModal] = useState(false);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>(DEFAULT_TIMELINE);
+  const [timelineEditing, setTimelineEditing] = useState(false);
+  const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [draggedEventId, setDraggedEventId] = useState<string | null>(null);
+  const [dragY, setDragY] = useState(new Animated.Value(0));
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventTime, setNewEventTime] = useState('');
+  const [newEventSub, setNewEventSub] = useState('');
+  const [newEventType, setNewEventType] = useState<TimelineEventType>('custom');
   const [mealFood, setMealFood] = useState('');
   const [mealCalories, setMealCalories] = useState('');
   const [mealProtein, setMealProtein] = useState('');
@@ -245,6 +299,12 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     return () => clearInterval(interval);
   }, [fadeAnim, slideAnim]);
 
+  useEffect(() => {
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  }, []);
+
   const loadData = () => {
     if (session?.access_token) {
       const today = new Date().toISOString().split('T')[0];
@@ -252,7 +312,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getSleepLogs(session.access_token)
         .then(setSleepLogs)
         .catch(err => console.warn('Failed to load sleep logs on Dashboard:', err));
-        
+
       getWeightLogs(session.access_token)
         .then(setWeightLogs)
         .catch(err => console.warn('Failed to load weight logs on Dashboard:', err));
@@ -280,6 +340,14 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getWaterChallenge(session.access_token, 5)
         .then(setWaterChallenge)
         .catch(err => console.warn('Failed to load water challenge on Dashboard:', err));
+
+      getWeeklyTrend(session.access_token)
+        .then(setWeeklyTrend)
+        .catch(err => console.warn('Failed to load weekly trend on Dashboard:', err));
+
+      getWeeklyStats(session.access_token, today)
+        .then(setWeeklyActivity)
+        .catch(err => console.warn('Failed to load weekly stats on Dashboard:', err));
     }
   };
 
@@ -296,6 +364,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getTodaySummary(session.access_token, today).then(setActivitySummary),
       getActivityGoal(session.access_token).then(setActivityGoal),
       getWaterChallenge(session.access_token, 5).then(setWaterChallenge),
+      getWeeklyTrend(session.access_token).then(setWeeklyTrend),
+      getWeeklyStats(session.access_token, today).then(setWeeklyActivity),
     ]);
     setRefreshing(false);
   }, [session?.access_token]);
@@ -375,6 +445,63 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     }
   };
 
+  // ── Timeline Helpers ──
+  const toggleTimelineEventStatus = (id: string) => {
+    setTimelineEvents(prev => prev.map(evt => {
+      if (evt.id !== id) return evt;
+      const newStatus: TimelineEventStatus = evt.status === 'completed' ? 'skipped' : 'completed';
+      return { ...evt, status: newStatus };
+    }));
+  };
+
+  const removeTimelineEvent = (id: string) => {
+    setTimelineEvents(prev => prev.filter(evt => evt.id !== id));
+  };
+
+  const addTimelineEvent = () => {
+    if (!newEventTitle.trim()) return;
+    const typeConfig: Record<TimelineEventType, { icon: string; color: string; rightType: TimelineEvent['rightType'] }> = {
+      medication: { icon: '💊', color: Colors.purple, rightType: 'upcoming' },
+      water: { icon: '💧', color: Colors.blue, rightType: 'value' },
+      meal: { icon: '🍽️', color: Colors.amber, rightType: 'value' },
+      steps: { icon: '👟', color: Colors.success, rightType: 'value' },
+      workout: { icon: '💪', color: Colors.pink, rightType: 'value' },
+      sleep: { icon: '🌙', color: Colors.purple, rightType: 'upcoming' },
+      custom: { icon: '📌', color: Colors.teal, rightType: 'upcoming' },
+    };
+    const cfg = typeConfig[newEventType];
+    const newEvent: TimelineEvent = {
+      id: Date.now().toString(),
+      time: newEventTime.trim() || 'Now',
+      title: newEventTitle.trim(),
+      sub: newEventSub.trim() || '',
+      icon: cfg.icon,
+      color: cfg.color,
+      rightText: '',
+      rightType: cfg.rightType,
+      type: newEventType,
+      status: 'pending',
+    };
+    setTimelineEvents(prev => [...prev, newEvent]);
+    setNewEventTitle('');
+    setNewEventTime('');
+    setNewEventSub('');
+    setNewEventType('custom');
+    setShowAddEventModal(false);
+  };
+
+  const moveTimelineEvent = (id: string, direction: 'up' | 'down') => {
+    setTimelineEvents(prev => {
+      const idx = prev.findIndex(e => e.id === id);
+      if (idx === -1) return prev;
+      const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (newIdx < 0 || newIdx >= prev.length) return prev;
+      const updated = [...prev];
+      [updated[idx], updated[newIdx]] = [updated[newIdx], updated[idx]];
+      return updated;
+    });
+  };
+
   // Rendering weight trend sparkline
   const sparklineElement = useMemo(() => {
     if (weightLogs.length < 2) {
@@ -388,7 +515,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     const width = SCREEN_WIDTH - 64;
     const height = 80;
     const padding = 10;
-    
+
     const weights = weightLogs.map(w => w.weight_kg);
     const minW = Math.min(...weights) - 1;
     const maxW = Math.max(...weights) + 1;
@@ -426,6 +553,73 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     );
   }, [weightLogs]);
 
+  // Compute weekly trends from real data
+  const weeklyTrendsData = useMemo(() => {
+    const now = new Date();
+    const result: { metric: string; value: string; change: string; color: string }[] = [];
+
+    // Calories — from getWeeklyTrend API
+    if (weeklyTrend.length > 0) {
+      const totalCals = weeklyTrend.reduce((s, d) => s + d.val, 0);
+      const avgCals = Math.round(totalCals / weeklyTrend.length);
+      const firstHalf = weeklyTrend.slice(0, 3);
+      const secondHalf = weeklyTrend.slice(-3);
+      const avgFirst = firstHalf.reduce((s, d) => s + d.val, 0) / firstHalf.length;
+      const avgSecond = secondHalf.reduce((s, d) => s + d.val, 0) / secondHalf.length;
+      const calPct = avgFirst > 0 ? Math.round(((avgSecond - avgFirst) / avgFirst) * 100) : 0;
+      const calSign = calPct > 0 ? '↑' : '↓';
+      result.push({ metric: 'Calories', value: `${avgCals.toLocaleString()} kcal`, change: `${calSign} ${Math.abs(calPct)}%`, color: Colors.teal });
+    }
+
+    // Weight — from weightLogs
+    if (weightLogs.length > 0) {
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const fourteenDaysAgo = new Date(now);
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+      const thisWeek = weightLogs.filter(w => new Date(w.date) >= sevenDaysAgo);
+      const lastWeek = weightLogs.filter(w => new Date(w.date) >= fourteenDaysAgo && new Date(w.date) < sevenDaysAgo);
+      const avgThis = thisWeek.length > 0 ? thisWeek.reduce((s, w) => s + w.weight_kg, 0) / thisWeek.length : 0;
+      const avgLast = lastWeek.length > 0 ? lastWeek.reduce((s, w) => s + w.weight_kg, 0) / lastWeek.length : 0;
+      const weightDiff = avgLast > 0 ? (avgThis - avgLast).toFixed(1) : '0';
+      const weightSign = Number(weightDiff) > 0 ? '↑' : '↓';
+      result.push({ metric: 'Weight', value: `${avgThis.toFixed(1)} kg`, change: `${weightSign} ${Math.abs(Number(weightDiff))}kg`, color: Colors.pink });
+    }
+
+    // Steps — from getWeeklyStats API
+    if (weeklyActivity?.days && weeklyActivity.days.length > 0) {
+      const totalSteps = weeklyActivity.days.reduce((s, d) => s + d.steps, 0);
+      const avgSteps = Math.round(totalSteps / weeklyActivity.days.length);
+      const firstHalf = weeklyActivity.days.slice(0, 3);
+      const secondHalf = weeklyActivity.days.slice(-3);
+      const avgFirst = firstHalf.reduce((s, d) => s + d.steps, 0) / firstHalf.length;
+      const avgSecond = secondHalf.reduce((s, d) => s + d.steps, 0) / secondHalf.length;
+      const stepsPct = avgFirst > 0 ? Math.round(((avgSecond - avgFirst) / avgFirst) * 100) : 0;
+      const stepsSign = stepsPct > 0 ? '↑' : '↓';
+      result.push({ metric: 'Steps', value: `${avgSteps.toLocaleString()} steps`, change: `${stepsSign} ${Math.abs(stepsPct)}%`, color: Colors.amber });
+    }
+
+    // Sleep — from sleepLogs
+    if (sleepLogs.length > 0) {
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const fourteenDaysAgo = new Date(now);
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+      const thisWeek = sleepLogs.filter(s => new Date(s.date) >= sevenDaysAgo);
+      const lastWeek = sleepLogs.filter(s => new Date(s.date) >= fourteenDaysAgo && new Date(s.date) < sevenDaysAgo);
+      const avgThis = thisWeek.length > 0 ? thisWeek.reduce((s, l) => s + l.sleep_hr, 0) / thisWeek.length : 0;
+      const avgLast = lastWeek.length > 0 ? lastWeek.reduce((s, l) => s + l.sleep_hr, 0) / lastWeek.length : 0;
+      const sleepPct = avgLast > 0 ? Math.round(((avgThis - avgLast) / avgLast) * 100) : 0;
+      const sleepSign = sleepPct > 0 ? '↑' : '↓';
+      result.push({ metric: 'Sleep', value: `${avgThis.toFixed(1)} hrs`, change: `${sleepSign} ${Math.abs(sleepPct)}%`, color: Colors.purple });
+    }
+
+    // Hydration — placeholder until backend endpoint exists
+    result.push({ metric: 'Hydration', value: '— L', change: '—', color: Colors.blue });
+
+    return result;
+  }, [weeklyTrend, weightLogs, weeklyActivity, sleepLogs]);
+
   return (
     <View style={styles.root}>
       {/* ─── SCROLLABLE CONTENT ─── */}
@@ -445,12 +639,30 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               </Text>
             </View>
             <View style={styles.heroTopBarActions}>
-              <NotificationIconButton onPress={onNotificationsPress} />
+              <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
               <ProfileAvatarButton
                 onPress={onProfilePress}
                 userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
                 avatarUrl={user?.user_metadata?.avatar_url}
               />
+            </View>
+          </View>
+
+          {/* ── Search Bar ── */}
+          <View style={styles.searchBarContainer}>
+            <View style={styles.searchBar}>
+              <TouchableOpacity style={styles.searchBarInput} activeOpacity={0.8} onPress={handleSearchPress}>
+                <Search size={18} color={Colors.white + '60'} strokeWidth={2} />
+                <Text style={styles.searchPlaceholder}>Ask anything about your health...</Text>
+              </TouchableOpacity>
+              <View style={styles.searchActions}>
+                <TouchableOpacity style={styles.searchActionBtn} onPress={handleVoicePress}>
+                  <Mic size={18} color={isListening ? Colors.pink : Colors.white + '60'} strokeWidth={2} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.searchActionBtn} onPress={handleCameraPress}>
+                  <Camera size={18} color={Colors.white + '60'} strokeWidth={2} />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
@@ -485,8 +697,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             <View style={styles.heroAiTagRow}>
               {[
                 { label: '● Vitals stable', color: Colors.success },
-                { label: '● Sleep +12%',    color: Colors.purple },
-                { label: '● Rest advised',  color: Colors.amber },
+                { label: '● Sleep +12%', color: Colors.purple },
+                { label: '● Rest advised', color: Colors.amber },
               ].map((tag, i) => (
                 <View key={i} style={[styles.heroAiTag, { backgroundColor: tag.color + '15', borderColor: tag.color + '40' }]}>
                   <Text style={[styles.heroAiTagText, { color: tag.color }]}>{tag.label}</Text>
@@ -507,173 +719,57 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
 
 
-        {/* SECTION: COLLAPSIBLE MONTHLY CALENDAR */}
-        <TouchableOpacity style={styles.calendarSectionHeader} onPress={() => setCalendarExpanded(!calendarExpanded)} activeOpacity={0.7}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.sectionTitle}>Health Calendar</Text>
-            <Text style={styles.sectionSubtitle}>Your schedule at a glance</Text>
-          </View>
-          <View style={styles.calendarTogglePill}>
-            <Text style={styles.calendarToggleLabel}>{calendarExpanded ? 'Week' : 'Month'}</Text>
-            <Text style={styles.calendarToggleChevron}>{calendarExpanded ? '▾' : '▴'}</Text>
-          </View>
-        </TouchableOpacity>
-        {(() => {
-          const isSameDay = (d1: Date, d2: Date) => 
-            d1.getFullYear() === d2.getFullYear() &&
-            d1.getMonth() === d2.getMonth() &&
-            d1.getDate() === d2.getDate();
-
-          const today = new Date();
-          const displayedDays = calendarExpanded 
-            ? getDaysInMonth(calendarCurrentMonth) 
-            : getWeekDays(calendarSelectedDate);
-
-          const monthYearString = calendarCurrentMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-
-          const getEventsForDate = (date: Date, isCurrentMonth: boolean) => {
-            // Hide event indicators/agendas for padding days from other months when expanded
-            if (calendarExpanded && !isCurrentMonth) {
-              return [];
-            }
-
-            const list = [];
-            const dayNum = date.getDate();
-            const monthNum = date.getMonth();
-            const dayOfWeek = date.getDay();
-
-            // Period prediction (predicted cycle: 12th to 16th of current month)
-            if (gender === 'female' && dayNum >= 12 && dayNum <= 16) {
-              list.push({ type: 'period', icon: '🩸', label: 'Menstrual Period Day' });
-            }
-
-            // Doctor visit mock
-            if (dayNum === 7 || (dayNum === 12 && monthNum === 4)) {
-              list.push({ type: 'appointment', icon: '👨‍⚕️', label: 'Doctor Appointment: Dr. Sharma at 04:30 PM' });
-            } else if (dayNum === 22) {
-              list.push({ type: 'appointment', icon: '🦷', label: 'Dentist Checkup at 10:00 AM' });
-            }
-
-            // Workout split schedule
-            if (dayOfWeek === 1 || dayOfWeek === 4) {
-              list.push({ type: 'workout', icon: '💪', label: 'Workout: Push Day Split' });
-            } else if (dayOfWeek === 2 || dayOfWeek === 5) {
-              list.push({ type: 'workout', icon: '🏃‍♂️', label: 'Workout: Pull Day Split' });
-            } else if (dayOfWeek === 3 || dayOfWeek === 6) {
-              list.push({ type: 'workout', icon: '🦵', label: 'Workout: Legs Day Split' });
-            } else {
-              list.push({ type: 'workout', icon: '🧘', label: 'Active Recovery & Stretching' });
-            }
-
-            // Med schedule
-            list.push({ type: 'medication', icon: '💊', label: 'Vitamin D3 (08:00 AM) & Metformin (08:00 PM)' });
-
-            return list;
-          };
-
-          const selectedEvents = getEventsForDate(calendarSelectedDate, true);
-
-          return (
-            <View style={styles.calendarContainer}>
-              {/* Swipeable area */}
-              <View {...calendarPanResponder.panHandlers}>
-                <View style={styles.calendarHeader}>
-                  <View>
-                    <Text style={styles.calendarMonthYear}>
-                      {calendarCurrentMonth.toLocaleString('en-US', { month: 'long' })}
-                    </Text>
-                    <Text style={styles.calendarYearSub}>
-                      {calendarCurrentMonth.getFullYear()}
-                    </Text>
+        {/* SECTION: RELATIONSHIPS */}
+        <SectionHeader title="Active Relationships" subtitle="Shared health & activity" />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.relationshipsScroll}>
+          {[
+            { id: '1', name: 'Sarah M.', relation: 'Partner', avatar: 'https://i.pravatar.cc/150?u=sarah', status: 'online' },
+            { id: '2', name: 'Dr. Smith', relation: 'Doctor', avatar: 'https://i.pravatar.cc/150?u=drsmith', status: 'offline' },
+            { id: '3', name: 'Mike T.', relation: 'Coach', avatar: 'https://i.pravatar.cc/150?u=mike', status: 'online' },
+            { id: 'add', name: 'Add New', relation: 'Invite', avatar: '', status: 'none' },
+          ].map((partner, idx) => (
+            <TouchableOpacity
+              key={idx}
+              style={styles.partnerCard}
+              onPress={() => {
+                if (partner.id === 'add') {
+                  // handle invite logic
+                } else if (onPartnerPress) {
+                  onPartnerPress(partner.id);
+                }
+              }}
+            >
+              <View style={styles.partnerAvatarContainer}>
+                {partner.avatar ? (
+                  <View style={styles.partnerAvatarImagePlaceholder}>
+                    {/* Placeholder for actual image since Image is not imported */}
+                    <Text style={styles.partnerInitials}>{partner.name.substring(0, 1)}</Text>
                   </View>
-
-                  {calendarExpanded && (
-                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                      <TouchableOpacity
-                        style={styles.calendarNavBtn}
-                        onPress={() => {
-                          const prev = new Date(calendarCurrentMonth.getFullYear(), calendarCurrentMonth.getMonth() - 1, 1);
-                          setCalendarCurrentMonth(prev);
-                        }}
-                      >
-                        <Text style={styles.calendarNavBtnText}>‹</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.calendarNavBtn}
-                        onPress={() => {
-                          const next = new Date(calendarCurrentMonth.getFullYear(), calendarCurrentMonth.getMonth() + 1, 1);
-                          setCalendarCurrentMonth(next);
-                        }}
-                      >
-                        <Text style={styles.calendarNavBtnText}>›</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-
-              <View style={styles.calendarWeekdayRow}>
-                {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((day, idx) => (
-                  <Text key={idx} style={styles.calendarWeekdayText}>{day}</Text>
-                ))}
+                ) : (
+                  <View style={[styles.partnerAvatarImagePlaceholder, { backgroundColor: Colors.teal + '20', borderWidth: 1, borderColor: Colors.teal + '50', borderStyle: 'dashed' }]}>
+                    <Text style={{ fontSize: 20, color: Colors.teal }}>+</Text>
+                  </View>
+                )}
+                {partner.status !== 'none' && (
+                  <View style={[styles.partnerStatusDot, { backgroundColor: partner.status === 'online' ? Colors.success : Colors.textMuted }]} />
+                )}
               </View>
+              <Text style={styles.partnerName} numberOfLines={1}>{partner.name}</Text>
+              <Text style={styles.partnerRelation}>{partner.relation}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
-              <View style={styles.calendarGrid}>
-                {displayedDays.map((item, idx) => {
-                  const isSelected = isSameDay(item.date, calendarSelectedDate);
-                  const isTodayDate = isSameDay(item.date, today);
-                  const dayEvents = getEventsForDate(item.date, item.isCurrentMonth);
-
-                  return (
-                    <TouchableOpacity 
-                      key={idx} 
-                      style={styles.calendarDayCell}
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        setCalendarSelectedDate(item.date);
-                        if (item.date.getMonth() !== calendarCurrentMonth.getMonth()) {
-                          setCalendarCurrentMonth(new Date(item.date.getFullYear(), item.date.getMonth(), 1));
-                        }
-                      }}
-                    >
-                      <View style={[
-                        styles.calendarDayCircle,
-                        isTodayDate && styles.calendarTodayCircle,
-                        isSelected && styles.calendarSelectedCircle,
-                      ]}>
-                        <Text style={[
-                          styles.calendarDayNumber,
-                          !item.isCurrentMonth && styles.calendarOtherMonthNumber,
-                          isSelected && styles.calendarSelectedNumber,
-                        ]}>
-                          {item.date.getDate()}
-                        </Text>
-
-                        {item.isCurrentMonth && (
-                          <View style={styles.calendarIndicatorContainer}>
-                            {dayEvents.slice(0, 3).map((evt, eIdx) => {
-                              let dotColor = Colors.teal;
-                              if (evt.type === 'period') dotColor = Colors.pink;
-                              else if (evt.type === 'appointment') dotColor = '#3b82f6';
-                              else if (evt.type === 'medication') dotColor = Colors.amber;
-                              
-                              return (
-                                <View 
-                                  key={eIdx} 
-                                  style={[styles.calendarDot, { backgroundColor: dotColor }]} 
-                                />
-                              );
-                            })}
-                          </View>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              </View>
-            </View>
-          );
-        })()}
+        {/* SECTION: COLLAPSIBLE MONTHLY CALENDAR */}
+        <HealthCalendar
+          selectedDate={calendarSelectedDate}
+          currentMonth={calendarCurrentMonth}
+          expanded={calendarExpanded}
+          gender={gender ?? 'female'}
+          onDateSelect={setCalendarSelectedDate}
+          onMonthChange={setCalendarCurrentMonth}
+          onToggleExpand={() => setCalendarExpanded(!calendarExpanded)}
+        />
 
         {/* SECTION: TODAY'S AGENDA */}
         <SectionHeader
@@ -714,10 +810,10 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             agendaEvents.push({ icon: '💊', label: 'Metformin 500 mg', time: '08:00 PM', type: 'medication' });
 
             const typeConfig: Record<string, { accentColor: string; badge: string }> = {
-              period:      { accentColor: Colors.pink,   badge: 'Period' },
-              appointment: { accentColor: '#3b82f6',     badge: 'Appointment' },
-              workout:     { accentColor: Colors.teal,   badge: 'Workout' },
-              medication:  { accentColor: Colors.textMuted, badge: 'Medication' },
+              period: { accentColor: Colors.pink, badge: 'Period' },
+              appointment: { accentColor: Colors.blue, badge: 'Appointment' },
+              workout: { accentColor: Colors.teal, badge: 'Workout' },
+              medication: { accentColor: Colors.textMuted, badge: 'Medication' },
             };
 
             if (agendaEvents.length === 0) {
@@ -760,7 +856,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionScroll}>
           {[
             { icon: '🍽️', label: 'Log Meal', desc: 'Record calories', color: Colors.amber, onPress: () => setShowMealModal(true) },
-            { icon: '💧', label: 'Log Water', desc: 'Add a glass', color: '#3b82f6', onPress: () => setShowWaterModal(true) },
+            { icon: '💧', label: 'Log Water', desc: 'Add a glass', color: Colors.blue, onPress: () => setShowWaterModal(true) },
             { icon: '💪', label: 'Log Workout', desc: 'Track activity', color: Colors.purple, onPress: () => navigateToTab?.('Activity') },
             { icon: '💊', label: 'Medicine', desc: 'Check dose', color: Colors.pink, onPress: () => setShowMedModal(true) },
             { icon: '⚖️', label: 'Log Weight', desc: 'Record metric', color: Colors.teal, onPress: () => setShowWeightModal(true) },
@@ -779,61 +875,145 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         </ScrollView>
 
         {/* SECTION: DAILY HEALTH TIMELINE */}
-        <SectionHeader title="Health Timeline" subtitle="Your day at a glance" action="View All" />
-        <View style={styles.newTimelineContainer}>
-          <View style={styles.newTimelineLine} />
-          {[
-            { time: '08:00 AM', title: 'Medication', sub: 'Vitamin D3 1000 IU', icon: '💊', color: Colors.purple, rightText: '✓ Taken', rightType: 'taken' },
-            { time: '09:15 AM', title: 'Water', sub: '400 ml recorded', icon: '💧', color: '#3b82f6', rightText: '400 ml', rightType: 'value' },
-            { time: '10:00 AM', title: 'Breakfast', sub: 'Oats with fruits, Almonds', icon: '🍽️', color: Colors.amber, rightText: '450 kcal', rightType: 'value' },
-            { time: '12:00 PM', title: 'Steps', sub: '2,350 steps', icon: '👟', color: Colors.success, rightText: '2,350', rightType: 'value' },
-            { time: '04:30 PM', title: 'Workout', sub: 'Strength Training', icon: '💪', color: Colors.pink, rightText: '45 min', rightType: 'value' },
-            { time: '08:00 PM', title: 'Medication (Upcoming)', sub: 'Metformin 500 mg', icon: '💊', color: Colors.amber, rightText: `${getNextDoseHours(20)}h ${60 - new Date().getMinutes()}m`, rightType: 'countdown' },
-            { time: '10:30 PM', title: 'Sleep Goal', sub: 'Target: 8 hrs', icon: '🌙', color: Colors.purple, rightText: 'Upcoming', rightType: 'upcoming' },
-          ].map((item, index) => (
-            <View key={index} style={styles.newTimelineRow}>
-              {/* Left circular icon */}
-              <View style={[styles.newTimelineIconBg, { backgroundColor: item.color + '15', borderColor: item.color + '30' }]}>
-                <Text style={styles.newTimelineCardIcon}>{item.icon}</Text>
-              </View>
-              
-              {/* Vertical line node */}
-              <View style={styles.newTimelineNodeContainer}>
-                <View style={[styles.newTimelineNode, { backgroundColor: item.color }]} />
-              </View>
+        <SectionHeader
+          title="Health Timeline"
+          subtitle={timelineEditing ? 'Tap arrows to reorder, ✕ to remove' : 'Your day at a glance'}
+          action={timelineEditing ? 'Done' : 'Edit'}
+          onAction={() => setTimelineEditing(!timelineEditing)}
+        />
 
-              {/* Content */}
-              <View style={styles.newTimelineContent}>
-                <Text style={[styles.newTimelineTime, { color: item.color }]}>{item.time}</Text>
-                <Text style={styles.newTimelineTitle}>{item.title}</Text>
-                <Text style={styles.newTimelineSub}>{item.sub}</Text>
-              </View>
+        {timelineEvents.length === 0 && !timelineEditing ? (
+          <GlassCardView style={{ padding: Spacing.xl, marginBottom: Spacing.xl, alignItems: 'center' }}>
+            <Text style={{ fontSize: 40, marginBottom: Spacing.md }}>📅</Text>
+            <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: Spacing.xs }}>
+              No Health Timeline
+            </Text>
+            <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.lg, lineHeight: 20 }}>
+              Set up your daily health timeline to track medications, workouts, meals, and more.
+            </Text>
+            <TouchableOpacity
+              style={{ backgroundColor: Colors.teal + '20', borderWidth: 1, borderColor: Colors.teal + '50', borderRadius: Radius.md, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md }}
+              onPress={() => setTimelineEvents(DEFAULT_TIMELINE)}
+              activeOpacity={0.7}>
+              <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.teal }}>Setup Timeline →</Text>
+            </TouchableOpacity>
+          </GlassCardView>
+        ) : (
+          <View style={styles.newTimelineContainer}>
+            <View style={styles.newTimelineLine} />
+            {timelineEvents.map((item, index) => {
+              const isSkipped = item.status === 'skipped';
+              const isStopped = item.status === 'stopped';
+              const isCompleted = item.status === 'completed';
 
-              {/* Right side Badge */}
-              <View style={styles.newTimelineRight}>
-                {item.rightType === 'taken' && (
-                  <View style={styles.badgeTaken}>
-                    <Text style={styles.badgeTakenText}>{item.rightText}</Text>
+              let rightBadge;
+              if (isStopped) {
+                rightBadge = (
+                  <View style={styles.badgeStopped}>
+                    <Text style={styles.badgeStoppedText}>Stopped</Text>
                   </View>
-                )}
-                {item.rightType === 'value' && (
-                  <Text style={[styles.badgeValueText, { color: item.color }]}>{item.rightText}</Text>
-                )}
-                {item.rightType === 'countdown' && (
-                  <View style={styles.badgeCountdown}>
-                    <Text style={styles.badgeCountdownText}>🕒 {item.rightText}</Text>
+                );
+              } else if (isSkipped) {
+                rightBadge = (
+                  <TouchableOpacity onPress={() => toggleTimelineEventStatus(item.id)}>
+                    <View style={styles.badgeSkipped}>
+                      <Text style={styles.badgeSkippedText}>Skipped</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              } else if (isCompleted) {
+                rightBadge = (
+                  <TouchableOpacity onPress={() => toggleTimelineEventStatus(item.id)}>
+                    <View style={styles.badgeTaken}>
+                      <Text style={styles.badgeTakenText}>{item.rightText || 'Done'}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              } else {
+                rightBadge = (
+                  <TouchableOpacity onPress={() => toggleTimelineEventStatus(item.id)}>
+                    {item.rightType === 'value' && (
+                      <Text style={[styles.badgeValueText, { color: item.color }]}>{item.rightText}</Text>
+                    )}
+                    {item.rightType === 'countdown' && (
+                      <View style={styles.badgeCountdown}>
+                        <Text style={styles.badgeCountdownText}>🕒 {item.rightText || `${getNextDoseHours(20)}h`}</Text>
+                      </View>
+                    )}
+                    {item.rightType === 'upcoming' && (
+                      <View style={styles.badgeUpcoming}>
+                        <Text style={styles.badgeUpcomingText}>{item.rightText || 'Upcoming'}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              }
+
+              return (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.newTimelineRow,
+                    isStopped && { opacity: 0.4 },
+                    isSkipped && { opacity: 0.6 },
+                    isCompleted && {},
+                  ]}
+                >
+                  {timelineEditing && (
+                    <TouchableOpacity
+                      style={styles.timelineDragHandle}
+                      onPress={() => moveTimelineEvent(item.id, 'up')}
+                      onLongPress={() => {
+                        if (index > 0) moveTimelineEvent(item.id, 'up');
+                      }}
+                      activeOpacity={0.6}>
+                      <Text style={{ color: Colors.textMuted, fontSize: Typography.sm }}>☰</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  <View style={[styles.newTimelineIconBg, { backgroundColor: item.color + '15', borderColor: item.color + '30' }]}>
+                    <Text style={styles.newTimelineCardIcon}>{item.icon}</Text>
                   </View>
-                )}
-                {item.rightType === 'upcoming' && (
-                  <View style={styles.badgeUpcoming}>
-                    <Text style={styles.badgeUpcomingText}>{item.rightText}</Text>
+
+                  <View style={styles.newTimelineNodeContainer}>
+                    <View style={[styles.newTimelineNode, { backgroundColor: item.color }]} />
                   </View>
-                )}
-                <Text style={styles.newTimelineChevron}>❯</Text>
-              </View>
-            </View>
-          ))}
-        </View>
+
+                  <View style={styles.newTimelineContent}>
+                    <Text style={[styles.newTimelineTime, { color: item.color, textDecorationLine: isStopped || isSkipped ? 'line-through' : 'none' }]}>{item.time}</Text>
+                    <Text style={[styles.newTimelineTitle, isStopped && { textDecorationLine: 'line-through' }]}>
+                      {isStopped ? '[Stopped] ' : isSkipped ? '[Skipped] ' : ''}{item.title}
+                    </Text>
+                    <Text style={styles.newTimelineSub}>{item.sub}</Text>
+                  </View>
+
+                  <View style={styles.newTimelineRight}>
+                    {rightBadge}
+                    <Text style={styles.newTimelineChevron}>❯</Text>
+                  </View>
+
+                  {timelineEditing && (
+                    <TouchableOpacity
+                      style={styles.timelineDeleteBtn}
+                      onPress={() => removeTimelineEvent(item.id)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                      <Text style={{ color: Colors.danger, fontSize: Typography.md }}>✕</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })}
+
+            {timelineEditing && (
+              <TouchableOpacity
+                style={styles.timelineAddBtn}
+                onPress={() => setShowAddEventModal(true)}
+                activeOpacity={0.7}>
+                <Text style={styles.timelineAddBtnText}>+ Add Event</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* SECTION: TODAY'S PROGRESS */}
         <SectionHeader title="Today's Progress" />
@@ -869,15 +1049,15 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                     <Text style={[styles.progressPct, { color: Colors.amber }]}>{Math.round(calPct * 100)}%</Text>
                   </GlassCardView>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Diet')}>
                   <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
                     <Text style={styles.progressCardTitle}>💧 Water</Text>
-                    <CompactRing size={82} progress={waterPct} color="#3b82f6">
+                    <CompactRing size={82} progress={waterPct} color={Colors.blue}>
                       <Text style={styles.progressVal}>{consumedWater.toLocaleString()}</Text>
                       <Text style={styles.progressSub}>/ {waterTarget.toLocaleString()} ml</Text>
                     </CompactRing>
-                    <Text style={[styles.progressPct, { color: '#3b82f6' }]}>{Math.round(waterPct * 100)}%</Text>
+                    <Text style={[styles.progressPct, { color: Colors.blue }]}>{Math.round(waterPct * 100)}%</Text>
                   </GlassCardView>
                 </TouchableOpacity>
 
@@ -907,29 +1087,56 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           })()}
         </View>
 
-        {/* SECTION: TODAY'S MEDICATIONS */}
-        <SectionHeader title="Today's Medications" action="View All →" />
-        <GlassCardView style={styles.medsCard}>
-          <View style={styles.medRow}>
-            <View style={styles.medIconCheck}><Text style={{ color: Colors.bg, fontSize: 10, fontWeight: 'bold' }}>✓</Text></View>
-            <View style={styles.medInfo}>
-              <Text style={styles.medName}>Vitamin D3</Text>
-              <Text style={styles.medDose}>1000 IU · Done</Text>
+        {/* SECTION: WEEKLY CHALLENGE */}
+        <SectionHeader title="Weekly Challenge" />
+        <GlassCardView style={styles.challengeCard} accentColor={Colors.amber}>
+          <Text style={styles.challengeTitle}>💧 Hydration Hero</Text>
+          <Text style={styles.challengeDesc}>Drink 2.5L water for 5 days in a row.</Text>
+          <View style={{ marginTop: Spacing.sm }}>
+            <ProgressBar progress={waterChallenge?.progress ?? 0} color={Colors.amber} height={8} />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+              <Text style={styles.challengeProgressText}>{waterChallenge?.daysComplete ?? 0} / {waterChallenge?.totalDays ?? 5} days complete</Text>
+              <Text style={styles.challengeStreakText}>🔥 {waterChallenge?.streak ?? 0}d streak</Text>
             </View>
-            <Text style={styles.medTime}>08:00 AM</Text>
           </View>
-          <View style={[styles.medRow, { borderBottomWidth: 0, marginBottom: Spacing.md }]}>
-            <View style={styles.medIconPending} />
-            <View style={styles.medInfo}>
-              <Text style={styles.medName}>Metformin</Text>
-              <Text style={styles.medDose}>500 mg · Next dose in {getNextDoseHours(20)} hrs</Text>
-            </View>
-            <Text style={styles.medTime}>08:00 PM</Text>
-          </View>
-          <TouchableOpacity style={styles.medActionBtn}>
-            <Text style={styles.medActionText}>✓ Mark All as Taken</Text>
-          </TouchableOpacity>
         </GlassCardView>
+
+        {/* SECTION: TODAY'S MEDICATIONS */}
+        <SectionHeader title="Today's Medications" />
+        <View style={styles.medList}>
+          {medicationsData.slice(0, showAllMeds ? medicationsData.length : 5).map((med, index) => (
+            <View key={index} style={[styles.medItem, index < Math.min(5, medicationsData.length) - 1 && styles.medItemBorder]}>
+              <TouchableOpacity
+                style={[styles.medCheck, med.taken && { backgroundColor: Colors.success, borderColor: Colors.success }]}
+                onPress={() => {
+                  setMedicationsData(prev => prev.map((m, i) => i === index ? { ...m, taken: !m.taken } : m));
+                }}
+                activeOpacity={0.7}
+              >
+                {med.taken && <Check size={14} color={Colors.bg} strokeWidth={3} />}
+              </TouchableOpacity>
+              <View style={styles.medInfo}>
+                <Text style={styles.medName}>{med.name}</Text>
+                <View style={[styles.medPurposeBadge, { backgroundColor: med.color + '18', borderColor: med.color + '40' }]}>
+                  <Text style={[styles.medPurposeText, { color: med.color }]}>{med.purpose}</Text>
+                </View>
+                <Text style={styles.medDose}>{med.dose} · {med.time}</Text>
+              </View>
+              <View style={[styles.medIndicator, { backgroundColor: med.color }]} />
+            </View>
+          ))}
+        </View>
+        {medicationsData.length > 5 && (
+          <TouchableOpacity
+            style={styles.medShowAllBtn}
+            onPress={() => setShowAllMeds(!showAllMeds)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.medShowAllText}>
+              {showAllMeds ? 'Show Less' : `Show All ${medicationsData.length} Medications`}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* SECTION: WEIGHT TRACKING */}
         <SectionHeader title="Weight Progress" action="Log Weight" onAction={() => setShowWeightModal(true)} />
@@ -943,7 +1150,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             </View>
             {weightLogs.length > 1 && (
               <View style={[styles.weightTrendBadge, { backgroundColor: Colors.success + '15' }]}>
-                <Text style={{ color: Colors.success, fontSize: Typography.xs, fontWeight: 'bold' }}>
+                <Text style={{ color: Colors.success, fontSize: Typography.xs, fontWeight: Typography.bold }}>
                   {weightLogs[weightLogs.length - 1].weight_kg - weightLogs[0].weight_kg <= 0 ? '↓' : '↑'}{' '}
                   {Math.abs(weightLogs[weightLogs.length - 1].weight_kg - weightLogs[0].weight_kg).toFixed(1)} kg
                 </Text>
@@ -954,7 +1161,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         </GlassCardView>
 
         {/* SECTION: TODAY'S VITALS */}
-        <VitalsDashboardSection />
+        {!hideVitals && <VitalsDashboardSection />}
 
         {/* SECTION: SLEEP TRACKER */}
         <SleepTrackerSection sleepLogs={sleepLogs} />
@@ -963,7 +1170,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         <SectionHeader title="Next Appointment" />
         <GlassCardView style={styles.aptCard}>
           <View style={styles.aptRow}>
-            <View style={styles.aptAvatar}><Text style={{ fontSize: 24 }}>👨‍⚕️</Text></View>
+            <View style={styles.aptAvatar}><Text style={{ fontSize: Typography.xl }}>👨‍⚕️</Text></View>
             <View style={styles.aptInfo}>
               <Text style={styles.aptName}>Dr. Sharma</Text>
               <Text style={styles.aptSpec}>General Physician</Text>
@@ -978,7 +1185,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           </TouchableOpacity>
         </GlassCardView>
 
-        {/* SECTION: HEALTH AGE CARD */}
+        {/* SECTION: HEALTH AGE CARD
         <SectionHeader title="Biological Age" />
         <GlassCardView style={styles.ageCard} accentColor={Colors.teal}>
           <View style={styles.ageRow}>
@@ -991,53 +1198,16 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               <Text style={styles.ageSub}>Your biological health indicators (sleep, heart rate, hydration) estimate your health age to be 21, compared to your chronological age of 24.</Text>
             </View>
           </View>
-        </GlassCardView>
-
-        {/* SECTION: WEEKLY CHALLENGE */}
-        <SectionHeader title="Weekly Challenge" />
-        <GlassCardView style={styles.challengeCard} accentColor={Colors.amber}>
-          <Text style={styles.challengeTitle}>💧 Hydration Hero</Text>
-          <Text style={styles.challengeDesc}>Drink 2.5L water for 5 days in a row.</Text>
-          <View style={{ marginTop: Spacing.sm }}>
-            <ProgressBar progress={waterChallenge?.progress ?? 0} color={Colors.amber} height={8} />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-              <Text style={styles.challengeProgressText}>{waterChallenge?.daysComplete ?? 0} / {waterChallenge?.totalDays ?? 5} days complete</Text>
-              <Text style={styles.challengeStreakText}>🔥 {waterChallenge?.streak ?? 0}d streak</Text>
-            </View>
-          </View>
-        </GlassCardView>
-        {/* SECTION: AI HEALTH ASSISTANT */}
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <View style={styles.aiBanner}>
-            <View style={styles.aiBannerLeft}>
-              <View style={styles.aiBannerIconWrap}>
-                <Text style={styles.aiBannerIcon}>🤖</Text>
-              </View>
-              <View style={{ flex: 1, marginLeft: Spacing.md }}>
-                <Text style={styles.aiBannerTitle}>AI Health Assistant</Text>
-                <Text style={styles.aiBannerSub}>Ask anything about nutrition, workouts, medications & more.</Text>
-              </View>
-            </View>
-            <TouchableOpacity style={styles.aiBannerBtn}>
-              <Text style={styles.aiBannerBtnText}>✦ Ask AI</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
+        </GlassCardView> */}
 
         {/* SECTION: SMALL CARD WEEKLY TRENDS */}
         <SectionHeader title="Weekly Trends (7d Averages)" />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.trendsScroll}>
-          {[
-            { metric: 'Calories', value: '1,920 kcal', change: '↓ 4%', color: Colors.teal },
-            { metric: 'Weight', value: '62.4 kg', change: '↓ 0.2kg', color: Colors.pink },
-            { metric: 'Steps', value: '7,450 steps', change: '↑ 12%', color: Colors.amber },
-            { metric: 'Sleep', value: '7.2 hrs', change: '↑ 8%', color: Colors.purple },
-            { metric: 'Hydration', value: '1.8 Litres', change: '↓ 2%', color: '#3b82f6' },
-          ].map((item, index) => (
+          {weeklyTrendsData.map((item, index) => (
             <GlassCardView key={index} style={styles.trendMetricCard}>
               <Text style={styles.trendMetricName}>{item.metric}</Text>
               <Text style={styles.trendMetricValue}>{item.value}</Text>
-              <Text style={[styles.trendMetricChange, { color: item.change.includes('↑') ? Colors.success : Colors.danger }]}>
+              <Text style={[styles.trendMetricChange, { color: item.change.includes('0%') ? Colors.textPrimary : item.change.includes('↑') ? Colors.success : Colors.danger }]}>
                 {item.change}
               </Text>
             </GlassCardView>
@@ -1045,14 +1215,16 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         </ScrollView>
 
         {/* SECTION: COMMUNITY PREVIEW */}
-        <SectionHeader title="Community Spotlight" action="Join Groups" />
-        <GlassCardView style={styles.communityCard}>
-          <View style={styles.communityPost}>
-            <Text style={styles.communityPostAuthor}>Jane Cooper shared a post in running group:</Text>
-            <Text style={styles.communityPostText}>"Just completed the morning 5k. Lungs feel great, recovery speed is getting better! 🏃‍♀️✨"</Text>
-            <Text style={styles.communityPostLikes}>❤️ 24 likes  ·  💬 8 comments</Text>
-          </View>
-        </GlassCardView>
+        {!hideCommunitySpotlight && (<>
+          <SectionHeader title="Community Spotlight" action="Join Groups" />
+          <GlassCardView style={styles.communityCard}>
+            <View style={styles.communityPost}>
+              <Text style={styles.communityPostAuthor}>Jane Cooper shared a post in running group:</Text>
+              <Text style={styles.communityPostText}>"Just completed the morning 5k. Lungs feel great, recovery speed is getting better! 🏃‍♀️✨"</Text>
+              <Text style={styles.communityPostLikes}>❤️ 24 likes  ·  💬 8 comments</Text>
+            </View>
+          </GlassCardView>
+        </>)}
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -1060,7 +1232,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       {/* WEIGHT LOG MODAL */}
       <Modal visible={showWeightModal} transparent animationType="slide">
         <TouchableOpacity activeOpacity={1} onPress={() => setShowWeightModal(false)} style={styles.modalBg}>
-          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ alignSelf: 'stretch' }}>
+          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{ alignSelf: 'stretch' }}>
             <GlassCardView style={styles.modalContainer}>
               <Text style={styles.modalTitle}>Log Weight</Text>
               <Text style={styles.modalSub}>Enter your current weight in kg</Text>
@@ -1087,7 +1259,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       {/* MEAL LOG MODAL */}
       <Modal visible={showMealModal} transparent animationType="slide">
         <TouchableOpacity activeOpacity={1} onPress={() => setShowMealModal(false)} style={styles.modalBg}>
-          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ alignSelf: 'stretch' }}>
+          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{ alignSelf: 'stretch' }}>
             <GlassCardView style={styles.modalContainer}>
               <Text style={styles.modalTitle}>Log Meal</Text>
               <Text style={styles.modalSub}>Record what you ate</Text>
@@ -1139,7 +1311,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       {/* WATER LOG MODAL */}
       <Modal visible={showWaterModal} transparent animationType="slide">
         <TouchableOpacity activeOpacity={1} onPress={() => setShowWaterModal(false)} style={styles.modalBg}>
-          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ alignSelf: 'stretch' }}>
+          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{ alignSelf: 'stretch' }}>
             <GlassCardView style={styles.modalContainer}>
               <Text style={styles.modalTitle}>Log Water</Text>
               <Text style={styles.modalSub}>How much water did you drink?</Text>
@@ -1154,11 +1326,11 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                       paddingVertical: Spacing.sm,
                       borderRadius: Radius.md,
                       alignItems: 'center',
-                      backgroundColor: waterAmount === String(amount) ? '#3b82f6' + '20' : Colors.bgCardBorder,
+                      backgroundColor: waterAmount === String(amount) ? Colors.blue + '20' : Colors.bgCardBorder,
                       borderWidth: waterAmount === String(amount) ? 1 : 0,
-                      borderColor: '#3b82f6',
+                      borderColor: Colors.blue,
                     }}>
-                    <Text style={{ fontSize: Typography.xs, color: waterAmount === String(amount) ? '#3b82f6' : Colors.textSecondary, fontWeight: Typography.bold }}>{amount}</Text>
+                    <Text style={{ fontSize: Typography.xs, color: waterAmount === String(amount) ? Colors.blue : Colors.textSecondary, fontWeight: Typography.bold }}>{amount}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -1169,7 +1341,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                 <TouchableOpacity style={styles.modalCancel} onPress={() => setShowWaterModal(false)}>
                   <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.modalSave, { backgroundColor: '#3b82f6' }]} onPress={handleSaveWater} disabled={modalSaving}>
+                <TouchableOpacity style={[styles.modalSave, { backgroundColor: Colors.blue }]} onPress={handleSaveWater} disabled={modalSaving}>
                   {modalSaving ? <ActivityIndicator size="small" color={Colors.bg} /> : <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Save</Text>}
                 </TouchableOpacity>
               </View>
@@ -1181,7 +1353,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       {/* MEDICINE MODAL */}
       <Modal visible={showMedModal} transparent animationType="slide">
         <TouchableOpacity activeOpacity={1} onPress={() => setShowMedModal(false)} style={styles.modalBg}>
-          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ alignSelf: 'stretch' }}>
+          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{ alignSelf: 'stretch' }}>
             <GlassCardView style={styles.modalContainer}>
               <Text style={styles.modalTitle}>Log Medicine</Text>
               <Text style={styles.modalSub}>Track your medication intake</Text>
@@ -1196,6 +1368,72 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               <View style={styles.modalActions}>
                 <TouchableOpacity style={styles.modalCancel} onPress={() => setShowMedModal(false)}>
                   <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </GlassCardView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ADD TIMELINE EVENT MODAL */}
+      <Modal visible={showAddEventModal} transparent animationType="slide">
+        <TouchableOpacity activeOpacity={1} onPress={() => setShowAddEventModal(false)} style={styles.modalBg}>
+          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{ alignSelf: 'stretch' }}>
+            <GlassCardView style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Add Timeline Event</Text>
+              <Text style={styles.modalSub}>Add an event to your health timeline</Text>
+
+              <TextInput
+                style={[styles.modalInput, { width: '100%' }]}
+                value={newEventTitle}
+                onChangeText={setNewEventTitle}
+                placeholder="Event title *"
+                placeholderTextColor={Colors.textMuted}
+              />
+              <TextInput
+                style={[styles.modalInput, { width: '100%' }]}
+                value={newEventTime}
+                onChangeText={setNewEventTime}
+                placeholder="Time (e.g. 03:00 PM)"
+                placeholderTextColor={Colors.textMuted}
+              />
+              <TextInput
+                style={[styles.modalInput, { width: '100%' }]}
+                value={newEventSub}
+                onChangeText={setNewEventSub}
+                placeholder="Description (optional)"
+                placeholderTextColor={Colors.textMuted}
+              />
+
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md, alignSelf: 'stretch' }}>
+                {(['medication', 'water', 'meal', 'steps', 'workout', 'sleep', 'custom'] as TimelineEventType[]).map(type => {
+                  const typeLabels: Record<TimelineEventType, string> = {
+                    medication: '💊 Meds', water: '💧 Water', meal: '🍽️ Meal', steps: '👟 Steps', workout: '💪 Workout', sleep: '🌙 Sleep', custom: '📌 Custom',
+                  };
+                  return (
+                    <TouchableOpacity
+                      key={type}
+                      onPress={() => setNewEventType(type)}
+                      style={{
+                        paddingHorizontal: Spacing.sm + 2,
+                        paddingVertical: Spacing.sm,
+                        borderRadius: Radius.sm,
+                        backgroundColor: newEventType === type ? Colors.teal + '20' : Colors.bgCardBorder,
+                        borderWidth: newEventType === type ? 1 : 0,
+                        borderColor: Colors.teal,
+                      }}>
+                      <Text style={{ fontSize: Typography.xs, color: newEventType === type ? Colors.teal : Colors.textSecondary, fontWeight: Typography.bold }}>{typeLabels[type]}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalCancel} onPress={() => setShowAddEventModal(false)}>
+                  <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalSave} onPress={addTimelineEvent}>
+                  <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Add</Text>
                 </TouchableOpacity>
               </View>
             </GlassCardView>
@@ -1219,7 +1457,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: Radius.xl,
     paddingBottom: Spacing.base,
     // Shadow underneath the hero
-    shadowColor: '#000',
+    shadowColor: Colors.shadowColor,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 16,
@@ -1239,7 +1477,7 @@ const styles = StyleSheet.create({
     color: Colors.teal + 'AA',
     fontWeight: Typography.medium,
     marginBottom: 2,
-    letterSpacing: 0.5,
+    letterSpacing: Typography.lsWide,
   },
   heroGreeting: {
     fontSize: Typography.xl,
@@ -1252,6 +1490,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.sm,
     marginTop: Spacing.xs,
+  },
+
+  // ── Search Bar ──
+  searchBarContainer: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.md,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white + '12',
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.white + '15',
+  },
+  searchBarInput: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    gap: Spacing.sm,
+  },
+  searchPlaceholder: {
+    flex: 1,
+    fontSize: Typography.sm,
+    color: Colors.white + '60',
+  },
+  searchActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingRight: Spacing.sm,
+  },
+  searchActionBtn: {
+    padding: Spacing.sm,
   },
 
   // ── Integrated Score Ring + Overview ──
@@ -1320,14 +1595,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   heroAiSparkle: {
-    fontSize: 12,
+    fontSize: Typography.sm,
     color: Colors.purple,
   },
   heroAiTitle: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.purple,
-    letterSpacing: 1,
+    letterSpacing: Typography.lsWider,
   },
   heroAiChatBtn: {
     paddingHorizontal: 8,
@@ -1338,7 +1613,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.purple + '44',
   },
   heroAiChatText: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.purple,
   },
@@ -1360,7 +1635,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
   },
   heroAiTagText: {
-    fontSize: 8,
+    fontSize: Typography.micro,
     fontWeight: Typography.bold,
   },
   aiSummaryBox: {
@@ -1383,14 +1658,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   aiSummarySparkle: {
-    fontSize: 14,
+    fontSize: Typography.sm,
     color: Colors.purple,
   },
   aiSummaryTitle: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.purple,
-    letterSpacing: 1,
+    letterSpacing: Typography.lsWider,
   },
   aiSummaryChatBtn: {
     paddingHorizontal: 8,
@@ -1401,7 +1676,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.purple + '44',
   },
   aiSummaryChatText: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.purple,
   },
@@ -1423,7 +1698,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
   },
   aiSummaryTagText: {
-    fontSize: 8,
+    fontSize: Typography.micro,
     fontWeight: Typography.bold,
   },
 
@@ -1440,12 +1715,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
     gap: Spacing.xs,
   },
-  alertIcon: { fontSize: 16 },
+  alertIcon: { fontSize: Typography.md },
   alertTitle: {
     fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.danger,
-    letterSpacing: 1,
+    letterSpacing: Typography.lsWider,
   },
   alertText: {
     fontSize: Typography.sm,
@@ -1483,7 +1758,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   newTimelineCardIcon: {
-    fontSize: 18,
+    fontSize: Typography.lg,
   },
   newTimelineNodeContainer: {
     width: 36,
@@ -1502,7 +1777,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   newTimelineTime: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     marginBottom: 2,
   },
@@ -1512,7 +1787,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   newTimelineSub: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     color: Colors.textMuted,
   },
   newTimelineRight: {
@@ -1529,7 +1804,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
   },
   badgeTakenText: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.success,
   },
@@ -1546,7 +1821,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
   },
   badgeCountdownText: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.amber,
   },
@@ -1559,7 +1834,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
   },
   badgeUpcomingText: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.purple,
   },
@@ -1567,6 +1842,64 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     fontSize: Typography.xs,
     marginLeft: 4,
+  },
+  timelineDragHandle: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.xs,
+  },
+  timelineDeleteBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.danger + '15',
+    borderWidth: 1,
+    borderColor: Colors.danger + '30',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: Spacing.xs,
+  },
+  timelineAddBtn: {
+    backgroundColor: Colors.teal + '15',
+    borderWidth: 1,
+    borderColor: Colors.teal + '40',
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    marginTop: Spacing.md,
+  },
+  timelineAddBtnText: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.bold,
+    color: Colors.teal,
+  },
+  badgeStopped: {
+    backgroundColor: Colors.danger + '15',
+    borderColor: Colors.danger + '33',
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
+  badgeStoppedText: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.bold,
+    color: Colors.danger,
+  },
+  badgeSkipped: {
+    backgroundColor: Colors.amber + '15',
+    borderColor: Colors.amber + '33',
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
+  badgeSkippedText: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.bold,
+    color: Colors.amber,
   },
 
   // QUICK ACTIONS REDESIGNED
@@ -1577,10 +1910,10 @@ const styles = StyleSheet.create({
   quickActionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#16182C',
+    backgroundColor: Colors.chartBg,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: Colors.chipBg,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     width: 175,
@@ -1596,7 +1929,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.sm,
   },
   quickActionIcon: {
-    fontSize: 16,
+    fontSize: Typography.base,
   },
   quickActionTextContent: {
     flex: 1,
@@ -1607,13 +1940,13 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   quickActionDesc: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     color: Colors.textMuted,
     marginTop: 1,
   },
   quickActionPlus: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: Typography.base,
+    fontWeight: Typography.bold,
     marginLeft: 4,
   },
 
@@ -1641,7 +1974,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   progressSub: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     color: Colors.textMuted,
   },
   progressPct: {
@@ -1650,34 +1983,28 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
 
-  // MEDS CARD
-  medsCard: {
-    padding: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
-  medRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-    paddingBottom: Spacing.sm,
+  // MEDS LIST
+  medList: {
     marginBottom: Spacing.sm,
   },
-  medIconCheck: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: Colors.success,
+  medItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xs,
   },
-  medIconPending: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+  medItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.divider,
+  },
+  medCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: Colors.textMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: Spacing.md,
   },
   medInfo: {
@@ -1685,29 +2012,40 @@ const styles = StyleSheet.create({
   },
   medName: {
     fontSize: Typography.sm,
-    color: Colors.textPrimary,
     fontWeight: Typography.semiBold,
+    color: Colors.textPrimary,
+  },
+  medPurposeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+    marginTop: 3,
+    marginBottom: 2,
+  },
+  medPurposeText: {
+    fontSize: 10,
+    fontWeight: Typography.bold,
   },
   medDose: {
     fontSize: Typography.xs,
     color: Colors.textMuted,
+    marginTop: 2,
   },
-  medTime: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
+  medIndicator: {
+    width: 4,
+    height: 28,
+    borderRadius: 2,
   },
-  medActionBtn: {
-    backgroundColor: Colors.success + '22',
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
+  medShowAllBtn: {
+    paddingVertical: Spacing.md,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.success + '55',
   },
-  medActionText: {
-    color: Colors.success,
-    fontWeight: Typography.bold,
+  medShowAllText: {
     fontSize: Typography.sm,
+    fontWeight: Typography.bold,
+    color: Colors.teal,
   },
 
   // WEIGHT CARD
@@ -1778,7 +2116,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   aptTimeIcon: {
-    fontSize: 12,
+    fontSize: Typography.sm,
     marginRight: 4,
   },
   aptTimeText: {
@@ -1824,7 +2162,7 @@ const styles = StyleSheet.create({
     color: Colors.teal,
   },
   ageLabel: {
-    fontSize: 8,
+    fontSize: Typography.micro,
     color: Colors.teal,
   },
   ageInfo: {
@@ -1874,7 +2212,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   communityPost: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    backgroundColor: Colors.bgCard,
     padding: Spacing.md,
     borderRadius: Radius.md,
   },
@@ -1891,56 +2229,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   communityPostLikes: {
-    fontSize: 9,
-    color: Colors.textMuted,
-  },
-
-  // AI BANNER
-  aiBanner: {
-    ...GlassCard,
-    padding: Spacing.lg,
-    marginBottom: Spacing.xl,
-    backgroundColor: Colors.purpleDim,
-    borderColor: Colors.purple + '55',
-    borderWidth: 1,
-  },
-  aiBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  aiBannerIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.purple + '33',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  aiBannerIcon: {
-    fontSize: 24,
-  },
-  aiBannerTitle: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-    marginBottom: 2,
-  },
-  aiBannerSub: {
     fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    lineHeight: 16,
-  },
-  aiBannerBtn: {
-    backgroundColor: Colors.purple,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.sm,
-    alignItems: 'center',
-  },
-  aiBannerBtnText: {
-    color: Colors.white,
-    fontWeight: Typography.bold,
-    fontSize: Typography.base,
+    color: Colors.textMuted,
   },
 
   // WEEKLY TRENDS SCROLL
@@ -1966,14 +2256,14 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   trendMetricChange: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
   },
 
   // MODAL STYLING
   modalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.xl,
@@ -2003,7 +2293,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.bgCardBorder,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: Colors.overlay,
     color: Colors.textPrimary,
     paddingHorizontal: Spacing.md,
     fontSize: Typography.md,
@@ -2034,205 +2324,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.teal,
   },
 
-  // COLLAPSIBLE MONTHLY CALENDAR
-  calendarSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.lg,
-    paddingHorizontal: Spacing.xs,
-  },
-  sectionTitle: {
-    fontSize: Typography.md,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  sectionSubtitle: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  calendarTogglePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: Radius.full,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  calendarToggleLabel: {
-    fontSize: 10,
-    fontWeight: Typography.bold,
-    color: Colors.textSecondary,
-  },
-  calendarToggleChevron: {
-    fontSize: 10,
-    color: Colors.teal,
-  },
-  calendarContainer: {
-    marginBottom: Spacing.xl,
-  },
-  calendarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.xl,
-    paddingHorizontal: Spacing.xs,
-  },
-  calendarMonthYear: {
-    fontSize: 28,
-    fontWeight: Typography.extraBold,
-    color: Colors.textPrimary,
-    letterSpacing: -0.5,
-    lineHeight: 32,
-  },
-  calendarYearSub: {
-    fontSize: Typography.sm,
-    color: Colors.textMuted,
-    fontWeight: Typography.medium,
-    marginTop: 2,
-  },
-  calendarMonthText: {
-    fontSize: Typography.md,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  calendarNavBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  calendarNavBtnText: {
-    color: Colors.textPrimary,
-    fontSize: 18,
-    lineHeight: 20,
-    fontWeight: 'bold',
-  },
-  calendarToggleBtn: {
-    paddingVertical: 5,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: Colors.teal + '44',
-    backgroundColor: Colors.teal + '15',
-  },
-  calendarToggleText: {
-    fontSize: 10,
-    fontWeight: Typography.bold,
-    color: Colors.teal,
-  },
-  calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 4,
-  },
-  calendarWeekdayRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: Spacing.sm,
-    paddingHorizontal: Spacing.xs,
-  },
-  calendarWeekdayText: {
-    width: `${100 / 7}%`,
-    textAlign: 'center',
-    fontSize: 9,
-    fontWeight: Typography.bold,
-    color: Colors.textMuted,
-    letterSpacing: 0.4,
-  },
-  calendarDayCell: {
-    width: `${100 / 7}%`,
-    height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  calendarDayCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: 6,
-  },
-  calendarSelectedCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: Colors.teal + '25',
-    borderWidth: 1.5,
-    borderColor: Colors.teal,
-  },
-  calendarDayNumber: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.textSecondary,
-  },
-  calendarSelectedNumber: {
-    color: Colors.white,
-    fontWeight: Typography.bold,
-  },
-  calendarOtherMonthNumber: {
-    color: Colors.textMuted + '33',
-  },
-  calendarTodayCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    borderWidth: 1.5,
-    borderColor: Colors.purple,
-    backgroundColor: Colors.purple + '12',
-  },
-  calendarIndicatorContainer: {
-    flexDirection: 'row',
-    position: 'absolute',
-    bottom: 6,
-    alignSelf: 'center',
-    gap: 3,
-  },
-  calendarDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-  },
-  calendarSummaryBox: {
-    marginTop: Spacing.xl,
-  },
-  calendarAgendaDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    marginBottom: Spacing.lg,
-    marginHorizontal: Spacing.xs,
-  },
-  calendarSummaryTitle: {
-    fontSize: 10,
-    fontWeight: Typography.bold,
-    color: Colors.textMuted,
-    marginBottom: Spacing.md,
-    letterSpacing: 0.8,
-    paddingHorizontal: Spacing.xs,
-  },
-  calendarEventItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    marginVertical: 3,
-  },
-  calendarEventText: {
-    fontSize: Typography.xs,
-    color: Colors.textPrimary,
-    fontWeight: Typography.medium,
-  },
   agendaCard: {
     padding: Spacing.base,
     marginBottom: Spacing.xl,
@@ -2242,7 +2333,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: Colors.bgCardBorder,
     gap: Spacing.md,
   },
   agendaEventAccentDot: {
@@ -2256,10 +2347,10 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: Colors.bgCardBorder,
   },
   agendaEventIcon: {
-    fontSize: 18,
+    fontSize: Typography.lg,
   },
   agendaEventInfo: {
     flex: 1,
@@ -2278,15 +2369,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: 3,
     borderRadius: Radius.full,
-    backgroundColor: 'rgba(255,255,255,0.09)',
+    backgroundColor: Colors.chipBg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: Colors.chipBorder,
   },
   agendaEventBadgeText: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.semiBold,
     color: Colors.textSecondary,
-    letterSpacing: 0.4,
+    letterSpacing: Typography.lsWide,
   },
   agendaEmpty: {
     alignItems: 'center',
@@ -2294,7 +2385,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   agendaEmptyIcon: {
-    fontSize: 32,
+    fontSize: Typography.xxl,
   },
   agendaEmptyText: {
     fontSize: Typography.base,
@@ -2320,5 +2411,58 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // RELATIONSHIPS
+  relationshipsScroll: {
+    paddingLeft: Spacing.md,
+    paddingRight: Spacing.lg,
+    paddingBottom: Spacing.xl,
+    gap: Spacing.md,
+  },
+  partnerCard: {
+    alignItems: 'center',
+    marginRight: Spacing.sm,
+  },
+  partnerAvatarContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginBottom: Spacing.xs,
+    position: 'relative',
+  },
+  partnerAvatarImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+    backgroundColor: Colors.purpleDim,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  partnerInitials: {
+    fontSize: Typography.lg,
+    color: Colors.white,
+    fontWeight: Typography.bold,
+  },
+  partnerStatusDot: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: Colors.bg,
+  },
+  partnerName: {
+    fontSize: Typography.xs,
+    color: Colors.textPrimary,
+    fontWeight: Typography.semiBold,
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  partnerRelation: {
+    fontSize: 9,
+    color: Colors.textMuted,
+    textAlign: 'center',
   },
 });

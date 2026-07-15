@@ -7,6 +7,8 @@ import {
   TouchableOpacityProps,
   Image,
 } from 'react-native';
+import Svg, { Circle, G } from 'react-native-svg';
+import { Bell } from 'lucide-react-native';
 import { Colors, Radius, Spacing, Typography, GlassCard, Shadows } from '../theme/theme';
 
 // ─── Glass Card ─────────────────────────────────────────────────────────────
@@ -54,7 +56,7 @@ export const NotificationIconButton: React.FC<{ onPress?: () => void; unreadCoun
   unreadCount = 0,
 }) => (
   <TouchableOpacity style={notifIconStyles.btn} onPress={onPress} activeOpacity={0.8}>
-    <Text style={notifIconStyles.bell}>🔔</Text>
+    <Bell size={30} color={Colors.white} strokeWidth={2} />
     {unreadCount > 0 && (
       <View style={notifIconStyles.badge}>
         <Text style={notifIconStyles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -105,6 +107,77 @@ export const StatPill: React.FC<StatPillProps> = React.memo(({ label, value, col
     <Text style={sharedStyles.statLabel}>{label}</Text>
   </View>
 ));
+
+// ─── Activity Rings & Card ───────────────────────────────────────────────────
+export function ActivityRings({ steps, exercise, calories }: { steps: number; exercise: number; calories: number }) {
+  const size = 120;
+  const strokeWidth = 10;
+  const center = size / 2;
+
+  const drawRing = (radius: number, color: string, percentage: number) => {
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (Math.min(percentage, 1) * circumference);
+    return (
+      <G rotation="-90" origin={`${center}, ${center}`}>
+        <Circle cx={center} cy={center} r={radius} stroke={color + '33'} strokeWidth={strokeWidth} fill="none" />
+        <Circle cx={center} cy={center} r={radius} stroke={color} strokeWidth={strokeWidth} fill="none" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" />
+      </G>
+    );
+  };
+
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size}>
+        {drawRing(50, Colors.pink, calories)}
+        {drawRing(36, Colors.teal, steps)}
+        {drawRing(22, Colors.blue, exercise)}
+      </Svg>
+    </View>
+  );
+}
+
+export const ActivityProgressCard = React.memo(({
+  steps, stepsTarget,
+  exercise, exerciseTarget,
+  calories, caloriesTarget
+}: {
+  steps: number; stepsTarget: number;
+  exercise: number; exerciseTarget: number;
+  calories: number; caloriesTarget: number;
+}) => {
+  const stepsPct = stepsTarget > 0 ? steps / stepsTarget : 0;
+  const exercisePct = exerciseTarget > 0 ? exercise / exerciseTarget : 0;
+  const caloriesPct = caloriesTarget > 0 ? calories / caloriesTarget : 0;
+
+  return (
+    <View style={activityCardStyles.activityRow}>
+      <ActivityRings steps={stepsPct} exercise={exercisePct} calories={caloriesPct} />
+      <View style={activityCardStyles.activityLegend}>
+        <View style={activityCardStyles.legendItem}>
+          <View style={[activityCardStyles.legendDot, { backgroundColor: Colors.teal }]} />
+          <View style={activityCardStyles.legendTextWrap}>
+            <Text style={activityCardStyles.legendLabel}>Steps</Text>
+            <Text style={activityCardStyles.legendValue}>{steps.toLocaleString()} <Text style={activityCardStyles.legendTarget}>/ {stepsTarget.toLocaleString()}</Text></Text>
+          </View>
+        </View>
+        <View style={activityCardStyles.legendItem}>
+          <View style={[activityCardStyles.legendDot, { backgroundColor: Colors.blue }]} />
+          <View style={activityCardStyles.legendTextWrap}>
+            <Text style={activityCardStyles.legendLabel}>Active Min</Text>
+            <Text style={activityCardStyles.legendValue}>{exercise.toLocaleString()} <Text style={activityCardStyles.legendTarget}>/ {exerciseTarget.toLocaleString()}</Text></Text>
+          </View>
+        </View>
+        <View style={activityCardStyles.legendItem}>
+          <View style={[activityCardStyles.legendDot, { backgroundColor: Colors.pink }]} />
+          <View style={activityCardStyles.legendTextWrap}>
+            <Text style={activityCardStyles.legendLabel}>Calories</Text>
+            <Text style={activityCardStyles.legendValue}>{calories.toLocaleString()} <Text style={activityCardStyles.legendTarget}>/ {caloriesTarget.toLocaleString()}</Text></Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+});
 
 // ─── Progress Bar ────────────────────────────────────────────────────────────
 interface ProgressBarProps {
@@ -255,7 +328,7 @@ const sharedStyles = StyleSheet.create({
     fontSize: Typography.md,
     fontWeight: Typography.bold,
     color: Colors.textPrimary,
-    letterSpacing: 0.3,
+    letterSpacing: Typography.lsWide,
   },
   sectionSubtitle: {
     fontSize: Typography.sm,
@@ -319,10 +392,10 @@ const ringStyles = StyleSheet.create({
     marginTop: -2,
   },
   label: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     color: Colors.textSecondary,
     marginTop: 2,
-    letterSpacing: 0.5,
+    letterSpacing: Typography.lsWide,
     textTransform: 'uppercase',
   },
   glowDot: {
@@ -354,8 +427,7 @@ const chipStyles = StyleSheet.create({
     fontWeight: Typography.medium,
   },
   icon: {
-    fontSize: 13,
-    marginRight: 4,
+    fontSize: Typography.sm,
   },
 });
 
@@ -385,20 +457,13 @@ const notifIconStyles = StyleSheet.create({
   btn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.purple + '20',
-    borderWidth: 1,
-    borderColor: Colors.purple + '50',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bell: {
-    fontSize: 18,
-  },
   badge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: 1,
+    right: -1,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
@@ -406,13 +471,14 @@ const notifIconStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: Colors.bg,
   },
   badgeText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: Typography.bold,
     color: Colors.bg,
+    lineHeight: 14,
   },
 });
 
@@ -426,13 +492,55 @@ const btnStyles = StyleSheet.create({
     borderRadius: Radius.full,
   },
   icon: {
-    fontSize: 16,
+    fontSize: Typography.base,
     marginRight: Spacing.sm,
   },
   label: {
     fontSize: Typography.base,
     fontWeight: Typography.bold,
     color: Colors.bg,
-    letterSpacing: 0.3,
+    letterSpacing: Typography.lsWide,
+  },
+});
+
+const activityCardStyles = StyleSheet.create({
+  activityCard: {
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  activityLegend: {
+    flex: 1,
+    marginLeft: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: Spacing.sm,
+  },
+  legendTextWrap: {
+    flex: 1,
+  },
+  legendLabel: {
+    fontSize: Typography.xs,
+    color: Colors.textSecondary,
+  },
+  legendValue: {
+    fontSize: Typography.sm,
+    color: Colors.white,
+    fontWeight: Typography.bold,
+  },
+  legendTarget: {
+    color: Colors.textMuted,
+    fontWeight: 'normal',
   },
 });

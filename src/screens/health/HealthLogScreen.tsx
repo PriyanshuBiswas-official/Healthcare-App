@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import { GlassCardView } from '../../components/SharedComponents';
+import { usePreferences } from '../../providers/PreferencesContext';
 import { saveMoodLog } from '../../services/healthService';
 import { savePeriodLog } from '../../services/healthService';
 import { saveDischargeLog } from '../../services/healthService';
@@ -90,6 +91,7 @@ const SEVERITY_OPTIONS = [
 ];
 
 export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScreenProps) {
+  const { hideVitals } = usePreferences();
   const [mood, setMood] = useState('Okay');
   const [energyLevel, setEnergyLevel] = useState('Medium');
   const [stress, setStress] = useState(2);
@@ -537,6 +539,7 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
           </View>
         </GlassCardView>
 
+        {!hideVitals && (
         <GlassCardView style={s.card}>
           <Text style={s.sectionTitle}>Vitals</Text>
           <View style={s.inputRow}>
@@ -563,6 +566,7 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
             </View>
           </View>
         </GlassCardView>
+        )}
 
         <GlassCardView style={s.card}>
           <Text style={s.sectionTitle}>Notes</Text>
@@ -603,7 +607,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: Colors.bgCard,
   },
-  backText: { color: Colors.textPrimary, fontSize: 34, lineHeight: 34 },
+  backText: { color: Colors.textPrimary, fontSize: Typography.display, lineHeight: 34 },
   headerCopy: { flex: 1, marginLeft: Spacing.md },
   title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary },
   subtitle: { fontSize: Typography.sm, color: Colors.textMuted, marginTop: 2 },
@@ -620,8 +624,8 @@ const s = StyleSheet.create({
     backgroundColor: Colors.bgCard,
   },
   moodBtnActive: { borderColor: Colors.pink, backgroundColor: Colors.pink + '18' },
-  moodEmoji: { fontSize: 24, marginBottom: 3 },
-  moodLabel: { fontSize: 9, color: Colors.textMuted, fontWeight: Typography.semiBold },
+  moodEmoji: { fontSize: Typography.xl, marginBottom: 3 },
+  moodLabel: { fontSize: Typography.xs, color: Colors.textMuted, fontWeight: Typography.semiBold },
   moodLabelActive: { color: Colors.pink },
   fieldLabel: { fontSize: Typography.xs, color: Colors.textMuted, fontWeight: Typography.semiBold, marginBottom: Spacing.sm },
   segmentRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg },
@@ -635,7 +639,7 @@ const s = StyleSheet.create({
     backgroundColor: Colors.bgCard,
   },
   segmentActive: { borderColor: Colors.pink, backgroundColor: Colors.pink + '18' },
-  segmentText: { fontSize: 10, color: Colors.textSecondary, fontWeight: Typography.semiBold },
+  segmentText: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: Typography.semiBold },
   segmentTextActive: { color: Colors.pink },
   hintText: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: Spacing.sm, marginBottom: Spacing.md },
   horizontalChips: { gap: Spacing.sm, paddingRight: Spacing.base },
@@ -682,7 +686,7 @@ const s = StyleSheet.create({
     paddingVertical: 4,
   },
   severityChipActive: { borderColor: Colors.pink, backgroundColor: Colors.pink + '18' },
-  severityChipText: { fontSize: 10, color: Colors.textSecondary, fontWeight: Typography.semiBold },
+  severityChipText: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: Typography.semiBold },
   severityChipTextActive: { color: Colors.pink },
   inputRow: { flexDirection: 'row', gap: Spacing.md },
   inputGroup: { flex: 1 },
@@ -705,7 +709,7 @@ const s = StyleSheet.create({
     paddingVertical: 7,
   },
   qualityChipActive: { borderColor: Colors.purple, backgroundColor: Colors.purple + '18' },
-  qualityText: { fontSize: 10, color: Colors.textSecondary, fontWeight: Typography.semiBold },
+  qualityText: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: Typography.semiBold },
   qualityTextActive: { color: Colors.purple },
   notesInput: { minHeight: 110, textAlignVertical: 'top' },
   toggleRow: {

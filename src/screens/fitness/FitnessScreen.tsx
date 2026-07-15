@@ -15,8 +15,10 @@ import {
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius, Shadows } from '../../theme/theme';
-import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../../components/SharedComponents';
+import { ChevronRight } from 'lucide-react-native';
+import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton, ActivityProgressCard } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
+import { useNotifications } from '../../providers/NotificationContext';
 import { TabName } from '../../navigation/TabBar';
 import { useAuth } from '../../providers/AuthProvider';
 import * as activityService from '../../services/activityService';
@@ -107,73 +109,11 @@ function DailyProgressCard({ summary, goal, onLogActivity }: { summary: Activity
           <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>+ Log Activity</Text>
         </TouchableOpacity>
       </View>
-      <View style={styles.ringsRow}>
-        <View style={styles.ringsVisual}>
-          <View style={styles.ringsSvgWrap}>
-            {(() => {
-              const size = 110;
-              const cx = size / 2;
-              const cy = size / 2;
-              const outerR = 46;
-              const midR = 33;
-              const innerR = 21;
-              const outerStroke = 12;
-              const midStroke = 10;
-              const innerStroke = 8;
-
-              const outerCirc = 2 * Math.PI * outerR;
-              const midCirc = 2 * Math.PI * midR;
-              const innerCirc = 2 * Math.PI * innerR;
-              const minDot = 2;
-
-              return (
-                <Svg width={size} height={size}>
-                  <Circle cx={cx} cy={cy} r={outerR} stroke={Colors.pink + '30'} strokeWidth={outerStroke} fill="none" />
-                  <Circle
-                    cx={cx} cy={cy} r={outerR}
-                    stroke={Colors.pink} strokeWidth={outerStroke} fill="none"
-                    strokeDasharray={outerCirc}
-                    strokeDashoffset={outerCirc - Math.max(burnProgress, minDot / outerCirc) * outerCirc}
-                    strokeLinecap="round"
-                    transform={`rotate(-90 ${cx} ${cy})`}
-                  />
-                  <Circle cx={cx} cy={cy} r={midR} stroke={Colors.purple + '30'} strokeWidth={midStroke} fill="none" />
-                  <Circle
-                    cx={cx} cy={cy} r={midR}
-                    stroke={Colors.purple} strokeWidth={midStroke} fill="none"
-                    strokeDasharray={midCirc}
-                    strokeDashoffset={midCirc - Math.max(exerciseProgress, minDot / midCirc) * midCirc}
-                    strokeLinecap="round"
-                    transform={`rotate(-90 ${cx} ${cy})`}
-                  />
-                  <Circle cx={cx} cy={cy} r={innerR} stroke={Colors.teal + '30'} strokeWidth={innerStroke} fill="none" />
-                  <Circle
-                    cx={cx} cy={cy} r={innerR}
-                    stroke={Colors.teal} strokeWidth={innerStroke} fill="none"
-                    strokeDasharray={innerCirc}
-                    strokeDashoffset={innerCirc - Math.max(stepsProgress, minDot / innerCirc) * innerCirc}
-                    strokeLinecap="round"
-                    transform={`rotate(-90 ${cx} ${cy})`}
-                  />
-                </Svg>
-              );
-            })()}
-          </View>
-        </View>
-        <View style={styles.ringsMetrics}>
-          {rings.map(ring => (
-            <View key={ring.label} style={styles.ringMetric}>
-              <View style={styles.ringMetricHeader}>
-                <Text style={[styles.ringMetricLabel, { color: ring.color }]}>{ring.label}</Text>
-                <Text style={styles.ringMetricVal}>
-                  {ring.current.toLocaleString()} / {ring.target > 0 ? ring.target.toLocaleString() : '--'} {ring.unit}
-                </Text>
-              </View>
-              <ProgressBar progress={ring.progress} color={ring.color} height={5} />
-            </View>
-          ))}
-        </View>
-      </View>
+      <ActivityProgressCard 
+        steps={summary?.steps ?? 0} stepsTarget={stepsTarget}
+        exercise={summary?.exercise_minutes ?? 0} exerciseTarget={exerciseTarget}
+        calories={summary?.calories_burned ?? 0} caloriesTarget={burnTarget}
+      />
       <View style={styles.vitalRow}>
         <View style={styles.vitalPill}>
           <Text style={styles.vitalVal}>{summary?.distance ?? 0}</Text>
@@ -221,7 +161,7 @@ function TodaysWorkout({
         <SectionLabel title="TODAY'S WORKOUT" action={dayName?.toUpperCase() || ''} />
         <GlassCardView style={styles.card}>
           <View style={{ paddingVertical: Spacing.lg, alignItems: 'center' }}>
-            <Text style={{ fontSize: 32, marginBottom: Spacing.sm }}>🏋️</Text>
+            <Text style={{ fontSize: Typography.xxl, marginBottom: Spacing.sm }}>🏋️</Text>
             <Text style={{ color: Colors.textSecondary, fontSize: Typography.sm }}>
               {planName ? `No workout planned for ${dayName || 'today'}` : 'No workout plan set up yet'}
             </Text>
@@ -262,7 +202,7 @@ function TodaysWorkout({
           <GlassCardView style={[styles.exerciseCard, isCompleted && { borderColor: Colors.teal + '40', borderWidth: 1 }]}>
             <View style={styles.exerciseHeader}>
               <View style={styles.exerciseIconWrap}>
-                <Text style={{ fontSize: 18 }}>{isCompleted ? '✅' : '💪'}</Text>
+                <Text style={{ fontSize: Typography.md }}>{isCompleted ? '✅' : '💪'}</Text>
               </View>
               <View style={styles.exerciseTitleWrap}>
                 <Text style={styles.exerciseName}>{ex.exercise_name}</Text>
@@ -285,7 +225,7 @@ function TodaysWorkout({
                 <Text style={styles.topSet}>{topWeight}kg top set</Text>
               )}
               <TouchableOpacity onPress={() => onEditExercise(ex)} style={{ padding: Spacing.xs }} activeOpacity={0.6}>
-                <Text style={{ fontSize: 16, color: Colors.textSecondary }}>✏️</Text>
+                <Text style={{ fontSize: Typography.md, color: Colors.textSecondary }}>✏️</Text>
               </TouchableOpacity>
             </View>
             {hasLogged ? (
@@ -321,7 +261,7 @@ function TodaysWorkout({
                 </Text>
                 {ex.last_performance.completed && ex.target_weight && ex.target_weight > ex.last_performance.weight && (
                   <>
-                    <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginHorizontal: 4 }}>→</Text>
+                    <ChevronRight size={14} color={Colors.textSecondary} strokeWidth={2} style={{ marginHorizontal: 2 }} />
                     <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>
                       Try {ex.target_weight}kg
                     </Text>
@@ -329,7 +269,7 @@ function TodaysWorkout({
                 )}
                 {ex.last_performance.completed && (!ex.target_weight || ex.target_weight <= ex.last_performance.weight) && (
                   <>
-                    <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginHorizontal: 4 }}>→</Text>
+                    <ChevronRight size={14} color={Colors.textSecondary} strokeWidth={2} style={{ marginHorizontal: 2 }} />
                     <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>
                       Try {ex.last_performance.weight + 2.5}kg
                     </Text>
@@ -351,7 +291,7 @@ function TodaysWorkout({
           onPress={onAddExercise}
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.md, marginTop: Spacing.xs, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.purple + '50', borderStyle: 'dashed', backgroundColor: Colors.purple + '08' }}
           activeOpacity={0.7}>
-          <Text style={{ fontSize: 18, marginRight: Spacing.xs, color: Colors.purple }}>+</Text>
+          <Text style={{ fontSize: Typography.md, marginRight: Spacing.xs, color: Colors.purple }}>+</Text>
           <Text style={{ fontSize: Typography.sm, color: Colors.purple, fontWeight: Typography.semiBold }}>Add Exercise</Text>
         </TouchableOpacity>
       )}
@@ -438,7 +378,7 @@ function PersonalRecordsCard({ prs }: { prs: PersonalRecord[] }) {
       <GlassCardView style={styles.card}>
         <SectionLabel title="PERSONAL RECORDS" />
         <View style={{ paddingVertical: Spacing.lg, alignItems: 'center' }}>
-          <Text style={{ fontSize: 32, marginBottom: Spacing.sm }}>🏆</Text>
+          <Text style={{ fontSize: Typography.xxl, marginBottom: Spacing.sm }}>🏆</Text>
           <Text style={{ color: Colors.textSecondary, fontSize: Typography.sm }}>No personal records yet</Text>
         </View>
       </GlassCardView>
@@ -499,6 +439,7 @@ function RecoveryCard() {
 export default function FitnessScreen({ onProfilePress, onNotificationsPress, onOpenAI, onOpenWorkoutLog }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void; onOpenWorkoutLog?: (exercise: any) => void }) {
   const { onScroll } = useScrollVisibility();
   const { user, session } = useAuth();
+  const { unreadCount } = useNotifications();
   const [activeSegment, setActiveSegment] = useState<Segment>('Today');
   const [activeFilter, setActiveFilter] = useState('All');
 
@@ -840,7 +781,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
             <Text style={styles.title}>Activity & Gym</Text>
           </View>
           <View style={styles.headerRight}>
-            <NotificationIconButton onPress={onNotificationsPress} />
+            <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
             <ProfileAvatarButton
               onPress={onProfilePress}
               userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
@@ -856,13 +797,13 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           <TouchableOpacity style={styles.setupBanner} activeOpacity={0.8} onPress={openPlanModal}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View style={[styles.setupBannerIcon, { backgroundColor: Colors.purple + '20' }]}>
-                <Text style={{ fontSize: 16 }}>💪</Text>
+                <Text style={{ fontSize: Typography.md }}>💪</Text>
               </View>
               <View style={{ flex: 1, marginLeft: Spacing.md }}>
                 <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textPrimary }}>Set up your workout plan</Text>
                 <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 }}>Create a plan to track exercises, log sets, and monitor your progress</Text>
               </View>
-              <Text style={{ fontSize: 18, color: Colors.textMuted }}>›</Text>
+              <Text style={{ fontSize: Typography.md, color: Colors.textMuted }}>›</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -871,13 +812,13 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           <TouchableOpacity style={styles.setupBanner} activeOpacity={0.8} onPress={() => setGoalSetupVisible(true)}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View style={[styles.setupBannerIcon, { backgroundColor: Colors.teal + '20' }]}>
-                <Text style={{ fontSize: 16 }}>🎯</Text>
+                <Text style={{ fontSize: Typography.md }}>🎯</Text>
               </View>
               <View style={{ flex: 1, marginLeft: Spacing.md }}>
                 <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textPrimary }}>Set your activity goals</Text>
                 <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 }}>Define daily targets for calories burned, exercise minutes, and steps</Text>
               </View>
-              <Text style={{ fontSize: 18, color: Colors.textMuted }}>›</Text>
+              <Text style={{ fontSize: Typography.md, color: Colors.textMuted }}>›</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -1020,7 +961,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                   borderColor: selectedDays.includes(i) ? Colors.purple : Colors.textMuted,
                   backgroundColor: selectedDays.includes(i) ? Colors.purple : 'transparent',
                 }}>
-                  {selectedDays.includes(i) && <Text style={{ fontSize: 12, color: Colors.bg, fontWeight: Typography.bold }}>✓</Text>}
+                  {selectedDays.includes(i) && <Text style={{ fontSize: Typography.xs, color: Colors.bg, fontWeight: Typography.bold }}>✓</Text>}
                 </View>
                 <Text style={{ fontSize: Typography.base, color: Colors.textPrimary, marginLeft: Spacing.md, fontWeight: selectedDays.includes(i) ? Typography.bold : Typography.regular }}>{name}</Text>
               </TouchableOpacity>
@@ -1073,7 +1014,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                         placeholderTextColor={Colors.textMuted}
                       />
                       <TouchableOpacity onPress={() => removeExercise(dayIndex, exIndex)} style={{ padding: 4 }}>
-                        <Text style={{ fontSize: 16, color: Colors.pink }}>✕</Text>
+                        <Text style={{ fontSize: Typography.md, color: Colors.pink }}>✕</Text>
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -1459,16 +1400,16 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   sectionLabel: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.textMuted,
-    letterSpacing: 1.5,
+    letterSpacing: Typography.lsWider,
   },
   sectionAction: {
     fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.purple,
-    letterSpacing: 0.5,
+    letterSpacing: Typography.lsWide,
   },
   ringsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.base },
   ringsVisual: { marginRight: Spacing.lg, width: 110, height: 110 },
@@ -1508,7 +1449,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   vitalLabel: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     color: Colors.textMuted,
     marginTop: 2,
   },
@@ -1536,7 +1477,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     borderWidth: 1,
   },
-  tagText: { fontSize: 9, fontWeight: Typography.bold },
+  tagText: { fontSize: Typography.xs, fontWeight: Typography.bold },
   topSet: {
     fontSize: Typography.xs,
     color: Colors.textSecondary,
@@ -1645,7 +1586,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   aiSendIcon: {
-    fontSize: 18,
+    fontSize: Typography.md,
     color: Colors.bg,
     fontWeight: Typography.bold,
   },
@@ -1661,7 +1602,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   streakBadgeText: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
   },
   chartSubtitle: {
@@ -1751,9 +1692,9 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
   insightLabel: {
-    fontSize: 10,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
-    letterSpacing: 1,
+    letterSpacing: Typography.lsWider,
     marginBottom: 4,
   },
   insightText: {
@@ -1774,10 +1715,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgCard,
   },
   recoveryMiniLabel: {
-    fontSize: 9,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.textMuted,
-    letterSpacing: 1,
+    letterSpacing: Typography.lsWider,
     marginBottom: 6,
   },
   recoveryMiniVal: {
@@ -1785,7 +1726,7 @@ const styles = StyleSheet.create({
     fontWeight: Typography.bold,
   },
   // Modal styles
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: Colors.overlay, justifyContent: 'flex-end' },
   modalContent: {
     backgroundColor: Colors.bgCardSolid,
     borderTopLeftRadius: Radius.xl,
