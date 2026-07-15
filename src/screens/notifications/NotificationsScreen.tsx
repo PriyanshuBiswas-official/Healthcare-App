@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import { ArrowLeft, Bell } from 'lucide-react-native';
@@ -12,6 +13,7 @@ import { ArrowLeft, Bell } from 'lucide-react-native';
 import { GlassCardView, SectionHeader } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useNotifications, AppNotification } from '../../providers/NotificationContext';
+import { sendTestNotification } from '../../services/notificationService';
 
 function formatTimeAgo(timestamp: number): string {
   const seconds = Math.floor((Date.now() - timestamp) / 1000);
@@ -110,6 +112,18 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
           )}
           <Text style={styles.pageTitle}>Notifications</Text>
           <View style={styles.topRight}>
+            <TouchableOpacity
+              style={styles.testBtn}
+              activeOpacity={0.7}
+              onPress={async () => {
+                try {
+                  await sendTestNotification();
+                } catch (e: any) {
+                  Alert.alert('Error', e.message || 'Failed to send test notification');
+                }
+              }}>
+              <Text style={styles.testBtnText}>🔔 Test</Text>
+            </TouchableOpacity>
             {unreadCount > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{unreadCount}</Text>
@@ -307,6 +321,19 @@ const styles = StyleSheet.create({
   },
   markAllText: {
     fontSize: Typography.sm,
+    fontWeight: Typography.semiBold,
+    color: Colors.teal,
+  },
+  testBtn: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 2,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.teal + '20',
+    borderWidth: 1,
+    borderColor: Colors.teal + '40',
+  },
+  testBtnText: {
+    fontSize: Typography.xs,
     fontWeight: Typography.semiBold,
     color: Colors.teal,
   },

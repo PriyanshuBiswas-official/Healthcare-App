@@ -1,37 +1,79 @@
 import notifee, {
   AndroidImportance,
   AndroidVisibility,
+  AndroidStyle,
+  AndroidColor,
   TriggerType,
   RepeatFrequency,
   TimestampTrigger,
   Trigger,
 } from '@notifee/react-native';
+import { Platform } from 'react-native';
 import type { Reminder, ReminderSchedule, NotificationPreferences } from '../types/reminder';
 import { CATEGORY_META } from '../types/reminder';
 
 // ── Channel Setup ──────────────────────────────────────────
 
+// IMPORTANT: Android caches channel settings permanently.
+// If you change sound/vibration/importance here, bump CHANNEL_VERSION
+// so old cached channels are deleted and recreated with the new settings.
+const CHANNEL_VERSION = 'v3';
+
 const CHANNELS = [
   { id: 'medication', name: 'Medication Reminders', importance: AndroidImportance.HIGH },
   { id: 'water', name: 'Water Reminders', importance: AndroidImportance.HIGH },
   { id: 'workout', name: 'Workout Reminders', importance: AndroidImportance.HIGH },
-  { id: 'nutrition', name: 'Nutrition Reminders', importance: AndroidImportance.DEFAULT },
+  { id: 'nutrition', name: 'Nutrition Reminders', importance: AndroidImportance.HIGH },
   { id: 'sleep', name: 'Sleep Reminders', importance: AndroidImportance.HIGH },
   { id: 'health', name: 'Health Reminders', importance: AndroidImportance.HIGH },
   { id: 'appointment', name: 'Appointment Reminders', importance: AndroidImportance.HIGH },
-  { id: 'general', name: 'General Notifications', importance: AndroidImportance.DEFAULT },
+  { id: 'general', name: 'General Notifications', importance: AndroidImportance.HIGH },
 ];
 
 /**
+ * Returns the versioned channel ID (e.g. 'medication_v2').
+ * This forces Android to create a fresh channel when the version changes.
+ */
+export function getVersionedChannelId(baseId: string): string {
+  return `${baseId}_${CHANNEL_VERSION}`;
+}
+
+/**
+ * Deletes old versioned channels from previous versions.
+ */
+async function cleanupOldChannels(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  try {
+    const existingChannels = await notifee.getChannels();
+    for (const ch of existingChannels) {
+      // Delete channels that don't have the current version suffix
+      const isOurChannel = CHANNELS.some(c => ch.id.startsWith(c.id));
+      if (isOurChannel && !ch.id.endsWith(`_${CHANNEL_VERSION}`)) {
+        await notifee.deleteChannel(ch.id);
+      }
+    }
+  } catch (e) {
+    console.warn('[NotificationService] Failed to clean up old channels:', e);
+  }
+}
+
+/**
  * Creates all notification channels. Call once on app startup.
+ * Uses versioned channel IDs to ensure Android re-creates channels
+ * when sound/vibration/importance settings change.
  */
 export async function createNotificationChannels(): Promise<void> {
+  // Clean up old channels first
+  await cleanupOldChannels();
+
   for (const channel of CHANNELS) {
     await notifee.createChannel({
-      id: channel.id,
+      id: getVersionedChannelId(channel.id),
       name: channel.name,
       importance: channel.importance,
+      sound: 'default',
       vibration: true,
+      vibrationPattern: [300, 500],
     });
   }
 }
@@ -144,6 +186,7 @@ export async function scheduleReminderNotification(
   if (triggerDate > sixtyDaysOut) return;
 
   const notificationId = getNotificationId(reminder.reminder_id, schedule.reminder_schedule_id);
+  const versionedChannelId = getVersionedChannelId(meta.channel);
 
   const trigger: TimestampTrigger = {
     type: TriggerType.TIMESTAMP,
@@ -156,16 +199,21 @@ export async function scheduleReminderNotification(
   await notifee.createTriggerNotification(
     {
       id: notificationId,
-      title: meta.label + ' Reminder',
+      title: `${meta.icon} ${meta.label} Reminder`,
       body: reminder.title + (reminder.description ? ` — ${reminder.description}` : ''),
       android: {
-        channelId: meta.channel,
-        importance: meta.channel === 'medication' || meta.channel === 'appointment'
-          ? AndroidImportance.HIGH
-          : AndroidImportance.DEFAULT,
+        channelId: versionedChannelId,
+        importance: AndroidImportance.HIGH,
         visibility: AndroidVisibility.PUBLIC,
         smallIcon: 'ic_launcher',
+        color: meta.color,
+        sound: 'default',
         pressAction: { id: 'default' },
+        style: reminder.description
+          ? { type: AndroidStyle.BIGTEXT, text: reminder.description }
+          : undefined,
+        showTimestamp: true,
+        timestamp: triggerDate.getTime(),
       },
       data: {
         reminderId: reminder.reminder_id,
@@ -236,5 +284,35 @@ export async function rescheduleAllNotifications(
  * Gets the channel ID for a reminder category.
  */
 export function getChannelForCategory(category: string): string {
-  return CATEGORY_META[category as keyof typeof CATEGORY_META]?.channel || 'general';
+  const baseChannel = CATEGORY_META[category as keyof typeof CATEGORY_META]?.channel || 'general';
+  return getVersionedChannelId(baseChannel);
+}
+
+/**
+ * Fires an immediate test notification to verify sound, vibration, and display.
+ */
+export async function sendTestNotification(): Promise<void> {
+  const channelId = getVersionedChannelId('general');
+
+  await notifee.displayNotification({
+    title: '🔔 Test Notification',
+    body: 'If you can hear a sound and see this banner — notifications are working!',
+    android: {
+      channelId,
+      importance: AndroidImportance.HIGH,
+      sound: 'default',
+      smallIcon: 'ic_launcher',
+      color: '#00E5CC',
+      pressAction: { id: 'default' },
+      style: {
+        type: AndroidStyle.BIGTEXT,
+        text: 'If you can hear a sound and see this banner — notifications are working! You can customize categories in the Reminders tab.',
+      },
+      showTimestamp: true,
+      timestamp: Date.now(),
+    },
+    ios: {
+      sound: 'default',
+    },
+  });
 }
