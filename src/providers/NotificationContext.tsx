@@ -1,19 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import notifee, { EventType } from '@notifee/react-native';
 
-export type AppNotification = {
-  id: string;
-  title: string;
-  body: string;
-  receivedAt: number;
-  read: boolean;
-  data?: Record<string, unknown>;
-};
+import {
+  getNotificationInbox,
+  addNotificationToInbox,
+  markInboxItemRead,
+  markAllInboxItemsRead,
+  clearNotificationInbox,
+  removeInboxItem,
+  AppNotification
+} from '../services/notificationInbox';
+
+export type { AppNotification };
 
 type NotificationContextType = {
   notifications: AppNotification[];
   unreadCount: number;
-  addNotification: (n: Omit<AppNotification, 'id' | 'receivedAt' | 'read'>) => string;
+  addNotification: (n: Omit<AppNotification, 'id' | 'receivedAt' | 'read'>) => Promise<string>;
   markAsRead: (id: string) => void;
   markAllRead: () => void;
   removeNotification: (id: string) => void;
@@ -25,7 +28,7 @@ type NotificationContextType = {
 const NotificationContext = createContext<NotificationContextType>({
   notifications: [],
   unreadCount: 0,
-  addNotification: () => '',
+  addNotification: async () => '',
   markAsRead: () => {},
   markAllRead: () => {},
   removeNotification: () => {},
@@ -60,18 +63,24 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const idCounter = useRef(0);
   const tapHandlerRef = useRef<((screen: string, data?: Record<string, unknown>) => void) | null>(null);
 
+  // Load inbox on mount
+  useEffect(() => {
+    getNotificationInbox().then(setNotifications);
+  }, []);
+
   // Listen for foreground notification events
   useEffect(() => {
-    const unsubscribe = notifee.onForegroundEvent(({ type, detail }) => {
-      if (type === EventType.PRESS) {
+    const unsubscribe = notifee.onForegroundEvent(async ({ type, detail }) => {
+      if (type === EventType.DELIVERED) {
+        if (detail.notification) {
+          const added = await addNotificationToInbox(detail.notification);
+          if (added) {
+            setNotifications(prev => [added, ...prev]);
+          }
+        }
+      } else if (type === EventType.PRESS) {
         const { notification } = detail;
         if (notification) {
-          addNotification({
-            title: notification.title || 'Notification',
-            body: notification.body || '',
-            data: notification.data as Record<string, unknown> | undefined,
-          });
-
           // Route to the correct screen
           const screen = (notification.data?.screen as string) || 'general';
           const mappedScreen = mapScreenToTab(screen);
@@ -97,7 +106,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     });
   }, []);
 
-  const addNotification = useCallback((n: Omit<AppNotification, 'id' | 'receivedAt' | 'read'>): string => {
+  const addNotification = useCallback(async (n: Omit<AppNotification, 'id' | 'receivedAt' | 'read'>): Promise<string> => {
     idCounter.current += 1;
     const id = `notif_${idCounter.current}_${Date.now()}`;
     const newNotif: AppNotification = {
@@ -106,24 +115,30 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       receivedAt: Date.now(),
       read: false,
     };
+    
+    // Actually we shouldn't use this manually much if DELIVERED handles it, but keep it for legacy compat
     setNotifications(prev => [newNotif, ...prev]);
     return id;
   }, []);
 
-  const markAsRead = useCallback((id: string) => {
+  const markAsRead = useCallback(async (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    await markInboxItemRead(id);
   }, []);
 
-  const markAllRead = useCallback(() => {
+  const markAllRead = useCallback(async () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    await markAllInboxItemsRead();
   }, []);
 
-  const removeNotification = useCallback((id: string) => {
+  const removeNotification = useCallback(async (id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
+    await removeInboxItem(id);
   }, []);
 
-  const clearAll = useCallback(() => {
+  const clearAll = useCallback(async () => {
     setNotifications([]);
+    await clearNotificationInbox();
   }, []);
 
   const setOnNotificationTap = useCallback((handler: (screen: string, data?: Record<string, unknown>) => void) => {

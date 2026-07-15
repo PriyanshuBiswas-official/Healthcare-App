@@ -17,7 +17,7 @@ import { CATEGORY_META } from '../types/reminder';
 // IMPORTANT: Android caches channel settings permanently.
 // If you change sound/vibration/importance here, bump CHANNEL_VERSION
 // so old cached channels are deleted and recreated with the new settings.
-const CHANNEL_VERSION = 'v3';
+const CHANNEL_VERSION = 'v4';
 
 const CHANNELS = [
   { id: 'medication', name: 'Medication Reminders', importance: AndroidImportance.HIGH },
@@ -29,6 +29,138 @@ const CHANNELS = [
   { id: 'appointment', name: 'Appointment Reminders', importance: AndroidImportance.HIGH },
   { id: 'general', name: 'General Notifications', importance: AndroidImportance.HIGH },
 ];
+
+// ── Creative Notification Pools ────────────────────────────
+
+const TITLE_POOL: Record<string, string[]> = {
+  water: [
+    '💧 Time to Hydrate!',
+    '💧 Water break!',
+    '💧 Stay hydrated!',
+    '💧 Sip sip!',
+    '💧 Your body needs water',
+    '💧 Hydration time!',
+    '💧 Water o\'clock!',
+    '💧 Drink up!',
+  ],
+  workout: [
+    '💪 Let\'s get moving!',
+    '💪 Sweat time!',
+    '💪 Don\'t skip today!',
+    '💪 Crush it!',
+    '💪 Your workout awaits',
+    '💪 Time to train!',
+    '💪 Show up strong!',
+    '💪 Move your body!',
+  ],
+  sleep: [
+    '🌙 Wind down time!',
+    '🌙 Sleep o\'clock!',
+    '🌙 Time to rest!',
+    '🌙 Bedtime reminder',
+    '🌙 Sweet dreams ahead',
+    '🌙 Unwind & relax',
+    '🌙 Rest up!',
+    '🌙 Good night!',
+  ],
+  health: [
+    '❤️ Health check!',
+    '❤️ Quick reminder!',
+    '❤️ Your health matters',
+    '❤️ Time for a check-in',
+    '❤️ Stay on track!',
+    '❤️ Wellness time!',
+    '❤️ Take a moment',
+    '❤️ You matter!',
+  ],
+  appointment: [
+    '📅 Heads up!',
+    '📅 Coming up soon!',
+    '📅 Don\'t forget!',
+    '📅 Appointment reminder',
+    '📅 Mark your calendar!',
+    '📅 Stay punctual!',
+    '📅 Upcoming event!',
+    '📅 Be prepared!',
+  ],
+  general: [
+    '🔔 Hey there!',
+    '🔔 Friendly reminder!',
+    '🔔 Quick nudge!',
+    '🔔 Just checking in!',
+    '🔔 Don\'t forget!',
+    '🔔 Here\'s a reminder!',
+    '🔔 Stay consistent!',
+    '🔔 You\'ve got this!',
+  ],
+};
+
+const BODY_POOL: Record<string, Array<(r: Reminder) => string>> = {
+  water: [
+    () => 'A glass a day keeps you fresh 💧',
+    (r) => `${r.title} - Your body will thank you later`,
+    () => 'Stay fresh, stay hydrated',
+    (r) => `Water o\'clock! Time to sip ${r.title} of water`,
+    (r) => `Small sips, big benefits - Only ${r.title}`,
+    () => 'Hydration is self-care',
+    (r) => `Keep the momentum going, one ${r.title} at a time 💧`,
+    (r) => `Your cells are thirsty, treat them with ${r.title} of water`,
+  ],
+  workout: [
+    () => 'No excuses today! 💪',
+    () => 'Your goals are counting on you',
+    () => 'Strong body, strong mind',
+    () => 'Today\'s effort, tomorrow\'s strength',
+    () => 'Show up for yourself',
+    () => 'You\'ll feel better after',
+    () => 'Consistency is key 🔑',
+    () => 'One rep at a time',
+  ],
+  sleep: [
+    () => 'Wind down, big day tomorrow 🌙',
+    () => 'Rest well, recover strong',
+    () => 'Sleep is self-care',
+    () => 'Time to recharge 🔋',
+    () => 'Good night, sleep tight',
+    () => 'Your body needs rest',
+    () => 'Drift off peacefully tonight',
+    () => 'Recharge for tomorrow',
+  ],
+  health: [
+    () => 'Quick check, big difference ❤️',
+    () => 'Your health matters',
+    () => 'A minute of care goes a long way',
+    () => 'Small step, big impact',
+    () => 'Health is wealth',
+    () => 'Stay on top of things',
+    () => 'Your future self will thank you',
+    () => 'Wellness starts here',
+  ],
+  appointment: [
+    (r) => `Don\'t miss your appointment with ${r.title} 📅`,
+    () => 'Be punctual, be prepared',
+    (r) => `Remember your appointment with ${r.title} 📅`,
+    (r) => `Upcoming — stay on track with ${r.title}`,
+    () => 'Don\'t let it slip!',
+    () => 'Plan your day around this',
+    (r) => `Heads up — coming soon with ${r.title}`,
+    () => 'You\'re expected, don\'t be late',
+  ],
+  general: [
+    () => 'Just a friendly nudge 🔔',
+    () => 'We\'re here to help',
+    () => 'Take a moment for yourself',
+    () => 'You\'ve got this! 💪',
+    () => 'Quick reminder, big impact',
+    () => 'Stay consistent, stay strong',
+    () => 'A little reminder goes a long way',
+    () => 'Hey! Don\'t forget this',
+  ],
+};
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
 /**
  * Returns the versioned channel ID (e.g. 'medication_v2').
@@ -73,7 +205,7 @@ export async function createNotificationChannels(): Promise<void> {
       importance: channel.importance,
       sound: 'default',
       vibration: true,
-      vibrationPattern: [300, 500],
+      vibrationPattern: [300, 500, 300, 500],
     });
   }
 }
@@ -199,8 +331,8 @@ export async function scheduleReminderNotification(
   await notifee.createTriggerNotification(
     {
       id: notificationId,
-      title: `${meta.icon} ${meta.label} Reminder`,
-      body: reminder.title + (reminder.description ? ` — ${reminder.description}` : ''),
+      title: pickRandom(TITLE_POOL[reminder.category] || TITLE_POOL.general),
+      body: pickRandom(BODY_POOL[reminder.category] || BODY_POOL.general)(reminder),
       android: {
         channelId: versionedChannelId,
         importance: AndroidImportance.HIGH,

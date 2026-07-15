@@ -8,7 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
-import { ArrowLeft, Bell } from 'lucide-react-native';
+import { ArrowLeft, Bell, X } from 'lucide-react-native';
 
 import { GlassCardView, SectionHeader } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
@@ -54,7 +54,7 @@ function getNotificationIcon(title: string): string {
   return '🔔';
 }
 
-function NotificationCard({ item, onPress }: { item: AppNotification; onPress?: () => void }) {
+function NotificationCard({ item, onPress, onRemove }: { item: AppNotification; onPress?: () => void; onRemove?: () => void }) {
   const color = getNotificationColor(item.title);
   const icon = getNotificationIcon(item.title);
 
@@ -73,6 +73,11 @@ function NotificationCard({ item, onPress }: { item: AppNotification; onPress?: 
             <Text style={styles.notifSub}>{item.body}</Text>
             <Text style={styles.notifTime}>{formatTimeAgo(item.receivedAt)}</Text>
           </View>
+          {onRemove && (
+            <TouchableOpacity onPress={onRemove} style={styles.removeBtn} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <X size={18} color={Colors.textMuted} />
+            </TouchableOpacity>
+          )}
         </View>
       </GlassCardView>
     </TouchableOpacity>
@@ -81,7 +86,7 @@ function NotificationCard({ item, onPress }: { item: AppNotification; onPress?: 
 
 export default function NotificationsScreen({ onBackPress }: { onBackPress?: () => void }) {
   const { onScroll } = useScrollVisibility();
-  const { notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllRead, removeNotification } = useNotifications();
   const [now, setNow] = useState(Date.now());
 
   // Re-render every 30s to update "time ago" labels
@@ -110,7 +115,7 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
           ) : (
             <View style={styles.backPlaceholder} />
           )}
-          <Text style={styles.pageTitle}>Notifications</Text>
+          <Text style={styles.pageTitle} pointerEvents="none">Notifications</Text>
           <View style={styles.topRight}>
             <TouchableOpacity
               style={styles.testBtn}
@@ -150,6 +155,7 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
                     key={item.id}
                     item={item}
                     onPress={() => markAsRead(item.id)}
+                    onRemove={() => removeNotification(item.id)}
                   />
                 ))}
               </>
@@ -163,6 +169,7 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
                     key={item.id}
                     item={item}
                     onPress={() => markAsRead(item.id)}
+                    onRemove={() => removeNotification(item.id)}
                   />
                 ))}
               </>
@@ -192,6 +199,7 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: Spacing.lg,
   },
   backBtn: {
@@ -203,6 +211,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.bgCardBorder,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   backPlaceholder: { width: 40 },
   pageTitle: {
@@ -257,28 +266,33 @@ const styles = StyleSheet.create({
   notifTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 2,
+    justifyContent: 'space-between',
+    marginBottom: 4,
   },
   notifTitle: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
+    fontSize: Typography.base,
+    color: Colors.text,
+    flex: 1,
   },
   unreadDot: {
-    width: 7,
-    height: 7,
+    width: 8,
+    height: 8,
     borderRadius: 4,
-    marginLeft: Spacing.sm,
+    marginLeft: Spacing.xs,
   },
   notifSub: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    lineHeight: 18,
+    fontSize: Typography.sm,
+    color: Colors.textMuted,
+    lineHeight: 20,
     marginBottom: 4,
+    paddingRight: Spacing.md,
   },
   notifTime: {
     fontSize: Typography.xs,
-    color: Colors.textMuted,
+    color: Colors.textSecondary,
+  },
+  removeBtn: {
+    padding: 4,
   },
 
   emptyState: {
