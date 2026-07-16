@@ -165,6 +165,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
   const [activeSection, setActiveSection] = useState<HealthSection | null>(
     initialSection as HealthSection | null
   );
+  const cameFromExternal = !!initialSection;
 
   // Handle initialSection changes (from notification taps)
   useEffect(() => {
@@ -172,6 +173,14 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
       setActiveSection(initialSection as HealthSection);
     }
   }, [initialSection]);
+
+  const handleSubScreenBack = useCallback(() => {
+    if (cameFromExternal) {
+      onBackPress?.();
+    } else {
+      setActiveSection(null);
+    }
+  }, [cameFromExternal, onBackPress]);
 
   const fetchProfile = useCallback(async () => {
     if (!session?.access_token) return;
@@ -247,36 +256,36 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
           )}
           {activeSection === 'emergency' && (
             <EmergencyContactsScreen
-              onBack={() => setActiveSection(null)}
+              onBack={handleSubScreenBack}
             />
           )}
           {activeSection === 'reminders-water' && (
             <WaterRemindersScreen
-              onBack={() => setActiveSection(null)}
+              onBack={handleSubScreenBack}
               onSaved={fetchProfile}
             />
           )}
           {activeSection === 'reminders-workouts' && (
             <WorkoutsRemindersScreen
-              onBack={() => setActiveSection(null)}
+              onBack={handleSubScreenBack}
               onSaved={fetchProfile}
             />
           )}
           {activeSection === 'reminders-appointments' && (
             <AppointmentsRemindersScreen
-              onBack={() => setActiveSection(null)}
+              onBack={handleSubScreenBack}
               onSaved={fetchProfile}
             />
           )}
           {activeSection === 'reminders-sleep' && (
             <SleepRemindersScreen
-              onBack={() => setActiveSection(null)}
+              onBack={handleSubScreenBack}
               onSaved={fetchProfile}
             />
           )}
           {activeSection === 'reminders-health' && (
             <HealthRemindersScreen
-              onBack={() => setActiveSection(null)}
+              onBack={handleSubScreenBack}
               onSaved={fetchProfile}
             />
           )}

@@ -26,6 +26,7 @@ import HealthCalendar from '../../components/HealthCalendar';
 import { useAuth } from '../../providers/AuthProvider';
 import { usePreferences } from '../../providers/PreferencesContext';
 import { useNotifications } from '../../providers/NotificationContext';
+import { useAppointments } from '../../providers/AppointmentContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg';
 import { launchCamera } from 'react-native-image-picker';
@@ -41,6 +42,24 @@ import type { DayMealsResponse, DayWaterResponse, NutritionGoal, MealType, Water
 import type { ActivitySummary, ActivityGoal, WeeklyData } from '../../types/activity';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+
+function formatDashboardDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    const now = new Date();
+    const diffDays = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    let dayLabel: string;
+    if (diffDays <= 0) dayLabel = 'Today';
+    else if (diffDays === 1) dayLabel = 'Tomorrow';
+    else dayLabel = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+
+    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `${dayLabel} · ${time}`;
+  } catch {
+    return iso;
+  }
+}
 
 // ── Health Timeline Types ──
 type TimelineEventStatus = 'pending' | 'completed' | 'skipped' | 'stopped';
@@ -155,7 +174,7 @@ const CompactRing = ({ size, progress, color, children }: any) => {
   );
 };
 
-export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab, onPartnerPress, onOpenAI }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void; onPartnerPress?: (partnerId: string) => void; onOpenAI?: (fromTab?: TabName, startInChat?: boolean, initialQuery?: string) => void; }) {
+export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab, onPartnerPress, onOpenAI, onOpenAppointments }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void; onPartnerPress?: (partnerId: string) => void; onOpenAI?: (fromTab?: TabName, startInChat?: boolean, initialQuery?: string) => void; onOpenAppointments?: () => void; }) {
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion, gender } = useAuth();
   const { hideVitals, hideCommunitySpotlight } = usePreferences();
@@ -171,6 +190,14 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [calendarExpanded, setCalendarExpanded] = useState<boolean>(true);
   const [showAllMeds, setShowAllMeds] = useState<boolean>(false);
   const [isListening, setIsListening] = useState(false);
+
+  const { appointments } = useAppointments();
+  const nextAppointment = useMemo(() => {
+    const now = new Date();
+    return appointments
+      .filter(a => a.status === 'UPCOMING' && new Date(a.date_with_time) > now)
+      .sort((a, b) => new Date(a.date_with_time).getTime() - new Date(b.date_with_time).getTime())[0] || null;
+  }, [appointments]);
 
   const handleSearchPress = useCallback(() => {
     onOpenAI?.('Home', true, '');
@@ -1168,22 +1195,34 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
         {/* SECTION: NEXT APPOINTMENT */}
         <SectionHeader title="Next Appointment" />
-        <GlassCardView style={styles.aptCard}>
-          <View style={styles.aptRow}>
-            <View style={styles.aptAvatar}><Text style={{ fontSize: Typography.xl }}>👨‍⚕️</Text></View>
-            <View style={styles.aptInfo}>
-              <Text style={styles.aptName}>Dr. Sharma</Text>
-              <Text style={styles.aptSpec}>General Physician</Text>
-              <View style={styles.aptTimeBadge}>
-                <Text style={styles.aptTimeIcon}>📅</Text>
-                <Text style={styles.aptTimeText}>Tomorrow, 12 May · 04:30 PM</Text>
+        {nextAppointment ? (
+          <GlassCardView style={styles.aptCard}>
+            <View style={styles.aptRow}>
+              <View style={styles.aptAvatar}><Text style={{ fontSize: Typography.xl }}>👨‍⚕️</Text></View>
+              <View style={styles.aptInfo}>
+                <Text style={styles.aptName}>{nextAppointment.doctor_name}</Text>
+                <Text style={styles.aptSpec}>{nextAppointment.speciality}</Text>
+                <View style={styles.aptTimeBadge}>
+                  <Text style={styles.aptTimeIcon}>📅</Text>
+                  <Text style={styles.aptTimeText}>{formatDashboardDate(nextAppointment.date_with_time)}</Text>
+                </View>
               </View>
             </View>
-          </View>
-          <TouchableOpacity style={styles.aptBtn}>
-            <Text style={styles.aptBtnText}>View Details →</Text>
-          </TouchableOpacity>
-        </GlassCardView>
+            <TouchableOpacity style={styles.aptBtn} onPress={onOpenAppointments}>
+              <Text style={styles.aptBtnText}>View Details →</Text>
+            </TouchableOpacity>
+          </GlassCardView>
+        ) : (
+          <GlassCardView style={styles.aptCard}>
+            <View style={styles.aptEmpty}>
+              <Text style={styles.aptEmptyIcon}>📅</Text>
+              <Text style={styles.aptEmptyText}>No upcoming appointments</Text>
+              <TouchableOpacity style={styles.aptAddBtn} onPress={onOpenAppointments} activeOpacity={0.7}>
+                <Text style={styles.aptAddBtnText}>+ Add Appointment</Text>
+              </TouchableOpacity>
+            </View>
+          </GlassCardView>
+        )}
 
         {/* SECTION: HEALTH AGE CARD
         <SectionHeader title="Biological Age" />
@@ -2134,6 +2173,32 @@ const styles = StyleSheet.create({
     fontSize: Typography.sm,
     color: Colors.textSecondary,
     fontWeight: Typography.medium,
+  },
+  aptEmpty: {
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+  },
+  aptEmptyIcon: {
+    fontSize: Typography.xxl,
+    marginBottom: Spacing.sm,
+  },
+  aptEmptyText: {
+    fontSize: Typography.sm,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.md,
+  },
+  aptAddBtn: {
+    backgroundColor: Colors.teal + '20',
+    borderWidth: 1,
+    borderColor: Colors.teal + '50',
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+  },
+  aptAddBtnText: {
+    fontSize: Typography.sm,
+    color: Colors.teal,
+    fontWeight: Typography.semiBold,
   },
 
   // BIOLOGICAL AGE CARD

@@ -18,6 +18,7 @@ import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 import { PreferencesProvider } from './src/providers/PreferencesContext';
 import { NotificationProvider, useNotifications } from './src/providers/NotificationContext';
 import { ReminderProvider } from './src/providers/ReminderContext';
+import { AppointmentProvider } from './src/providers/AppointmentContext';
 import { ThemeProvider, useTheme } from './src/providers/ThemeProvider';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -172,6 +173,7 @@ function AppShell() {
   const closeHealthLog = useCallback(() => dispatch({ type: 'CLOSE_HEALTH_LOG' }), []);
   const closeWorkoutLog = useCallback(() => dispatch({ type: 'CLOSE_WORKOUT_LOG' }), []);
   const openPartnerReport = useCallback((partnerId: string) => dispatch({ type: 'OPEN_PARTNER_REPORT', partnerId }), []);
+  const openAppointments = useCallback(() => dispatch({ type: 'OPEN_PROFILE', section: 'reminders-appointments' }), []);
 
   // ── Notification tap handler ──────────────────────────────────
   const { setOnNotificationTap } = useNotifications();
@@ -318,6 +320,7 @@ function AppShell() {
                     navigateToTab={navigateToTab}
                     onPartnerPress={openPartnerReport}
                     onOpenAI={openAI}
+                    onOpenAppointments={openAppointments}
                   />
                 </ErrorBoundary>
               )}
@@ -486,9 +489,11 @@ export default function App() {
         <AuthProvider>
           <NotificationProvider>
             <ReminderProvider>
-              <PreferencesProvider>
-                <RootThemedApp />
-              </PreferencesProvider>
+              <AppointmentProvider>
+                <PreferencesProvider>
+                  <RootThemedApp />
+                </PreferencesProvider>
+              </AppointmentProvider>
             </ReminderProvider>
           </NotificationProvider>
         </AuthProvider>
