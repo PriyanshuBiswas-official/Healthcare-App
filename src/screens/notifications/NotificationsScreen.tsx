@@ -54,45 +54,45 @@ function getNotificationIcon(title: string): string {
   return '🔔';
 }
 
-function NotificationCard({ item, onPress, onRemove }: { item: AppNotification; onPress?: () => void; onRemove?: () => void }) {
+function NotificationCard({ item, onRemove }: { item: AppNotification; onRemove?: () => void }) {
   const color = getNotificationColor(item.title);
   const icon = getNotificationIcon(item.title);
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-      <GlassCardView style={[styles.notifCard, !item.read && { borderColor: color + '40' }]}>
-        <View style={styles.notifRow}>
-          <View style={[styles.notifIconWrap, { backgroundColor: color + '20' }]}>
-            <Text style={{ fontSize: Typography.lg }}>{icon}</Text>
-          </View>
-          <View style={styles.notifContent}>
-            <View style={styles.notifTitleRow}>
-              <Text style={[styles.notifTitle, !item.read && { fontWeight: Typography.bold }]}>{item.title}</Text>
-              {!item.read && <View style={[styles.unreadDot, { backgroundColor: color }]} />}
-            </View>
-            <Text style={styles.notifSub}>{item.body}</Text>
-            <Text style={styles.notifTime}>{formatTimeAgo(item.receivedAt)}</Text>
-          </View>
-          {onRemove && (
-            <TouchableOpacity onPress={onRemove} style={styles.removeBtn} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <X size={18} color={Colors.textMuted} />
-            </TouchableOpacity>
-          )}
+    <GlassCardView style={styles.notifCard}>
+      <View style={styles.notifRow}>
+        <View style={[styles.notifIconWrap, { backgroundColor: color + '20' }]}>
+          <Text style={{ fontSize: Typography.lg }}>{icon}</Text>
         </View>
-      </GlassCardView>
-    </TouchableOpacity>
+        <View style={styles.notifContent}>
+          <Text style={styles.notifTitle}>{item.title}</Text>
+          <Text style={styles.notifSub}>{item.body}</Text>
+          <Text style={styles.notifTime}>{formatTimeAgo(item.receivedAt)}</Text>
+        </View>
+        {onRemove && (
+          <TouchableOpacity onPress={onRemove} style={styles.removeBtn} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <X size={18} color={Colors.textMuted} />
+          </TouchableOpacity>
+        )}
+      </View>
+    </GlassCardView>
   );
 }
 
 export default function NotificationsScreen({ onBackPress }: { onBackPress?: () => void }) {
   const { onScroll } = useScrollVisibility();
-  const { notifications, unreadCount, markAsRead, markAllRead, removeNotification } = useNotifications();
+  const { notifications, markAllRead, removeNotification } = useNotifications();
   const [now, setNow] = useState(Date.now());
 
   // Re-render every 30s to update "time ago" labels
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Auto-mark all as read when screen opens
+  useEffect(() => {
+    markAllRead();
   }, []);
 
 
@@ -129,11 +129,6 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
               }}>
               <Text style={styles.testBtnText}>🔔 Test</Text>
             </TouchableOpacity>
-            {unreadCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{unreadCount}</Text>
-              </View>
-            )}
           </View>
         </View>
 
@@ -154,7 +149,6 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
                   <NotificationCard
                     key={item.id}
                     item={item}
-                    onPress={() => markAsRead(item.id)}
                     onRemove={() => removeNotification(item.id)}
                   />
                 ))}
@@ -168,19 +162,12 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
                   <NotificationCard
                     key={item.id}
                     item={item}
-                    onPress={() => markAsRead(item.id)}
                     onRemove={() => removeNotification(item.id)}
                   />
                 ))}
               </>
             )}
           </>
-        )}
-
-        {notifications.length > 0 && unreadCount > 0 && (
-          <TouchableOpacity style={styles.markAllBtn} onPress={markAllRead} activeOpacity={0.7}>
-            <Text style={styles.markAllText}>Mark all read</Text>
-          </TouchableOpacity>
         )}
 
         <View style={{ height: 100 }} />
@@ -228,21 +215,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.sm,
   },
-  badge: {
-    marginLeft: Spacing.sm,
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: Colors.pink,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-  },
-  badgeText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.bg,
-  },
 
   notifCard: {
     padding: Spacing.base,
@@ -263,22 +235,11 @@ const styles = StyleSheet.create({
   notifContent: {
     flex: 1,
   },
-  notifTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
   notifTitle: {
     fontSize: Typography.base,
+    fontWeight: Typography.semiBold,
     color: Colors.text,
-    flex: 1,
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginLeft: Spacing.xs,
+    marginBottom: 4,
   },
   notifSub: {
     fontSize: Typography.sm,
@@ -322,22 +283,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-
-  markAllBtn: {
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.sm,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.teal + '40',
-    backgroundColor: Colors.teal + '10',
-    alignItems: 'center',
-  },
-  markAllText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.teal,
-  },
   testBtn: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs + 2,
