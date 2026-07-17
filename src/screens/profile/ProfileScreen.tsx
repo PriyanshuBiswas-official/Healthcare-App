@@ -27,8 +27,9 @@ import WorkoutsRemindersScreen from './WorkoutsRemindersScreen';
 import AppointmentsRemindersScreen from './AppointmentsRemindersScreen';
 import SleepRemindersScreen from './SleepRemindersScreen';
 import HealthRemindersScreen from './HealthRemindersScreen';
+import MedicationsRemindersScreen from './MedicationsRemindersScreen';
 
-type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency' | 'reminders-water' | 'reminders-workouts' | 'reminders-appointments' | 'reminders-sleep' | 'reminders-health';
+type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency' | 'reminders-medication' | 'reminders-water' | 'reminders-workouts' | 'reminders-appointments' | 'reminders-sleep' | 'reminders-health';
 
 type MenuItem = {
   icon: string;
@@ -245,7 +246,10 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
           {activeSection === 'medications' && (
             <MedicationsScreen
               onBack={() => { setActiveSection(null); fetchProfile(); }}
-              onSaved={fetchProfile}
+              onSaved={(section) => {
+                fetchProfile();
+                if (section) setActiveSection(section as HealthSection);
+              }}
             />
           )}
           {activeSection === 'allergies' && (
@@ -257,6 +261,12 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
           {activeSection === 'emergency' && (
             <EmergencyContactsScreen
               onBack={handleSubScreenBack}
+            />
+          )}
+          {activeSection === 'reminders-medication' && (
+            <MedicationsRemindersScreen
+              onBack={handleSubScreenBack}
+              onSaved={fetchProfile}
             />
           )}
           {activeSection === 'reminders-water' && (
@@ -399,7 +409,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
                 item={item}
                 onPress={() => {
                   const sectionMap: Record<string, HealthSection> = {
-                    'Medications': 'medications',
+                    'Medications': 'reminders-medication',
                     'Water Reminders': 'reminders-water',
                     'Workouts': 'reminders-workouts',
                     'Appointments': 'reminders-appointments',

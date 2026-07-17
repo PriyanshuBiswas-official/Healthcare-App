@@ -34,6 +34,16 @@ const CHANNELS = [
 // ── Creative Notification Pools ────────────────────────────
 
 const TITLE_POOL: Record<string, string[]> = {
+  medication: [
+    '💊 Time for your medication!',
+    '💊 Medication reminder!',
+    '💊 Don\'t miss your dose!',
+    '💊 Take your medicine!',
+    '💊 Your medication is due!',
+    '💊 Stay on track!',
+    '💊 Health first — take your meds!',
+    '💊 Your prescription awaits!',
+  ],
   water: [
     '💧 Time to Hydrate!',
     '💧 Water break!',
@@ -87,6 +97,16 @@ const TITLE_POOL: Record<string, string[]> = {
 };
 
 const BODY_POOL: Record<string, Array<(r: Reminder) => string>> = {
+  medication: [
+    (r) => `Take ${r.title} as prescribed`,
+    (r) => `${r.title} — stay consistent with your dosage`,
+    () => 'Your health depends on timely medication',
+    (r) => `Time to take ${r.title}. Follow your doctor's advice.`,
+    (r) => `${r.title} is part of your daily routine`,
+    () => 'Medication adherence is key to recovery',
+    (r) => `Don't forget — ${r.title} keeps you healthy`,
+    (r) => `Take ${r.title} now for best results`,
+  ],
   water: [
     () => 'A glass a day keeps you fresh',
     (r) => `${r.title} - Your body will thank you later`,

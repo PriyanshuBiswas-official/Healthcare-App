@@ -434,6 +434,9 @@ export default function AppointmentsRemindersScreen({ onBack, onSaved }: Props) 
                       <TouchableOpacity onPress={() => handleStatusChange(appt, 'COMPLETED')} hitSlop={styles.hitSlop}>
                         <Text style={styles.completeBtn}>✓</Text>
                       </TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleStatusChange(appt, 'CANCELLED')} hitSlop={styles.hitSlop}>
+                        <Text style={styles.cancelBtn}>⊘</Text>
+                      </TouchableOpacity>
                       <TouchableOpacity onPress={() => startEdit(appt)} hitSlop={styles.hitSlop} style={styles.editIconBtn}>
                         <Pencil size={18} color={Colors.textSecondary} strokeWidth={2} />
                       </TouchableOpacity>
@@ -512,6 +515,7 @@ const styles = StyleSheet.create({
   entryNotes: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2, fontStyle: 'italic' },
   actions: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
   completeBtn: { fontSize: Typography.lg, color: Colors.success || '#4CAF50', padding: Spacing.xs },
+  cancelBtn: { fontSize: Typography.lg, color: Colors.amber || '#FFB347', padding: Spacing.xs },
   editIconBtn: { padding: Spacing.xs },
   removeBtn: { fontSize: Typography.md, color: Colors.danger, padding: Spacing.sm },
   hitSlop: { top: 10, bottom: 10, left: 10, right: 10 },

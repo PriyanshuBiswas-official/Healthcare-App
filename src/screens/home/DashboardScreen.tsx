@@ -193,9 +193,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
   const { appointments } = useAppointments();
   const nextAppointment = useMemo(() => {
-    const now = new Date();
     return appointments
-      .filter(a => a.status === 'UPCOMING' && new Date(a.date_with_time) > now)
+      .filter(a => a.status === 'UPCOMING')
       .sort((a, b) => new Date(a.date_with_time).getTime() - new Date(b.date_with_time).getTime())[0] || null;
   }, [appointments]);
 
