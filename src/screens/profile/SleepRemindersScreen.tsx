@@ -20,6 +20,8 @@ interface Props {
   onSaved?: () => void;
 }
 
+const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
 export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
   const { getRemindersByCategory, addReminder, removeReminder, addReminderSchedule, fetchSchedules } = useReminders();
 
@@ -55,6 +57,8 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
 
   const handleAdd = async () => {
     if (!newBedtime.trim()) return;
+    if (!TIME_RE.test(newBedtime.trim())) { Alert.alert('Invalid time', 'Bedtime must be in HH:MM format (e.g. 22:30)'); return; }
+    if (newWakeTime.trim() && !TIME_RE.test(newWakeTime.trim())) { Alert.alert('Invalid time', 'Wake time must be in HH:MM format (e.g. 06:30)'); return; }
     try {
       setSaving(true);
       const desc = [newWakeTime.trim() ? `Wake: ${newWakeTime.trim()}` : '', newTarget.trim() ? `Target: ${newTarget.trim()} hrs` : ''].filter(Boolean).join(' · ');
@@ -102,6 +106,8 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
     }
     try {
       setSaving(true);
+      if (!TIME_RE.test(newBedtime.trim())) { Alert.alert('Invalid time', 'Bedtime must be in HH:MM format (e.g. 22:30)'); return; }
+      if (newWakeTime.trim() && !TIME_RE.test(newWakeTime.trim())) { Alert.alert('Invalid time', 'Wake time must be in HH:MM format (e.g. 06:30)'); return; }
       const desc = [newWakeTime.trim() ? `Wake: ${newWakeTime.trim()}` : '', newTarget.trim() ? `Target: ${newTarget.trim()} hrs` : ''].filter(Boolean).join(' · ');
       const reminder = await addReminder({
         category: 'sleep',

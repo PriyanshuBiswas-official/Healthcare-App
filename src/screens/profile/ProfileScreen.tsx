@@ -12,9 +12,10 @@ import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/them
 import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView, SectionHeader, ProgressBar } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../providers/AuthProvider';
+import { supabase } from '../../lib/supabase';
 import { usePreferences } from '../../providers/PreferencesContext';
+import { useTheme } from '../../providers/ThemeProvider';
 import { API_BASE_URL } from '../../config/api';
 import PersonalInfoScreen from './PersonalInfoScreen';
 import MedicalHistoryScreen from './MedicalHistoryScreen';
@@ -26,8 +27,9 @@ import WorkoutsRemindersScreen from './WorkoutsRemindersScreen';
 import AppointmentsRemindersScreen from './AppointmentsRemindersScreen';
 import SleepRemindersScreen from './SleepRemindersScreen';
 import HealthRemindersScreen from './HealthRemindersScreen';
+import MedicationsRemindersScreen from './MedicationsRemindersScreen';
 
-type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency' | 'reminders-water' | 'reminders-workouts' | 'reminders-appointments' | 'reminders-sleep' | 'reminders-health';
+type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency' | 'reminders-medication' | 'reminders-water' | 'reminders-workouts' | 'reminders-appointments' | 'reminders-sleep' | 'reminders-health';
 
 type MenuItem = {
   icon: string;
@@ -156,6 +158,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion } = useAuth();
   const { hideVitals, setHideVitals, hideCommunitySpotlight, setHideCommunitySpotlight } = usePreferences();
+  const { systemSync, setSystemSync, themeName, setThemeName } = useTheme();
   const [toggles, setToggles] = useState(
     Object.fromEntries(PREFERENCES.map(p => [p.key, p.default])) as Record<string, boolean>,
   );
@@ -163,6 +166,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
   const [activeSection, setActiveSection] = useState<HealthSection | null>(
     initialSection as HealthSection | null
   );
+  const cameFromExternal = !!initialSection;
 
   // Handle initialSection changes (from notification taps)
   useEffect(() => {
@@ -170,6 +174,14 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
       setActiveSection(initialSection as HealthSection);
     }
   }, [initialSection]);
+
+  const handleSubScreenBack = useCallback(() => {
+    if (cameFromExternal) {
+      onBackPress?.();
+    } else {
+      setActiveSection(null);
+    }
+  }, [cameFromExternal, onBackPress]);
 
   const fetchProfile = useCallback(async () => {
     if (!session?.access_token) return;
@@ -234,7 +246,10 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
           {activeSection === 'medications' && (
             <MedicationsScreen
               onBack={() => { setActiveSection(null); fetchProfile(); }}
-              onSaved={fetchProfile}
+              onSaved={(section) => {
+                fetchProfile();
+                if (section) setActiveSection(section as HealthSection);
+              }}
             />
           )}
           {activeSection === 'allergies' && (
@@ -245,36 +260,42 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
           )}
           {activeSection === 'emergency' && (
             <EmergencyContactsScreen
-              onBack={() => setActiveSection(null)}
+              onBack={handleSubScreenBack}
+            />
+          )}
+          {activeSection === 'reminders-medication' && (
+            <MedicationsRemindersScreen
+              onBack={handleSubScreenBack}
+              onSaved={fetchProfile}
             />
           )}
           {activeSection === 'reminders-water' && (
             <WaterRemindersScreen
-              onBack={() => setActiveSection(null)}
+              onBack={handleSubScreenBack}
               onSaved={fetchProfile}
             />
           )}
           {activeSection === 'reminders-workouts' && (
             <WorkoutsRemindersScreen
-              onBack={() => setActiveSection(null)}
+              onBack={handleSubScreenBack}
               onSaved={fetchProfile}
             />
           )}
           {activeSection === 'reminders-appointments' && (
             <AppointmentsRemindersScreen
-              onBack={() => setActiveSection(null)}
+              onBack={handleSubScreenBack}
               onSaved={fetchProfile}
             />
           )}
           {activeSection === 'reminders-sleep' && (
             <SleepRemindersScreen
-              onBack={() => setActiveSection(null)}
+              onBack={handleSubScreenBack}
               onSaved={fetchProfile}
             />
           )}
           {activeSection === 'reminders-health' && (
             <HealthRemindersScreen
-              onBack={() => setActiveSection(null)}
+              onBack={handleSubScreenBack}
               onSaved={fetchProfile}
             />
           )}
@@ -388,7 +409,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
                 item={item}
                 onPress={() => {
                   const sectionMap: Record<string, HealthSection> = {
-                    'Medications': 'medications',
+                    'Medications': 'reminders-medication',
                     'Water Reminders': 'reminders-water',
                     'Workouts': 'reminders-workouts',
                     'Appointments': 'reminders-appointments',
@@ -427,6 +448,26 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
               {i < PREFERENCES.length - 1 && <View style={styles.divider} />}
             </View>
           ))}
+          <View style={styles.divider} />
+          <ToggleRow
+            icon="🎨"
+            label="System Theme Sync"
+            sub="Match device dark/light mode"
+            value={systemSync}
+            onValueChange={setSystemSync}
+          />
+          {!systemSync && (
+            <>
+              <View style={styles.divider} />
+              <ToggleRow
+                icon="🌗"
+                label="Dark Theme"
+                sub="Use dark appearance manually"
+                value={themeName === 'dark'}
+                onValueChange={v => setThemeName(v ? 'dark' : 'light')}
+              />
+            </>
+          )}
           <View style={styles.divider} />
           <ToggleRow
             icon="❤️"

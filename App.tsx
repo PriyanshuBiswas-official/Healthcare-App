@@ -18,6 +18,8 @@ import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 import { PreferencesProvider } from './src/providers/PreferencesContext';
 import { NotificationProvider, useNotifications } from './src/providers/NotificationContext';
 import { ReminderProvider } from './src/providers/ReminderContext';
+import { AppointmentProvider } from './src/providers/AppointmentContext';
+import { ThemeProvider, useTheme } from './src/providers/ThemeProvider';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -171,6 +173,7 @@ function AppShell() {
   const closeHealthLog = useCallback(() => dispatch({ type: 'CLOSE_HEALTH_LOG' }), []);
   const closeWorkoutLog = useCallback(() => dispatch({ type: 'CLOSE_WORKOUT_LOG' }), []);
   const openPartnerReport = useCallback((partnerId: string) => dispatch({ type: 'OPEN_PARTNER_REPORT', partnerId }), []);
+  const openAppointments = useCallback(() => dispatch({ type: 'OPEN_PROFILE', section: 'reminders-appointments' }), []);
 
   // ── Notification tap handler ──────────────────────────────────
   const { setOnNotificationTap } = useNotifications();
@@ -251,15 +254,17 @@ function AppShell() {
     setForceHidden(OVERLAY_TABS.includes(state.activeTab));
   }, [state.activeTab, setForceHidden]);
 
+  const { theme } = useTheme();
+
   // ── Status bar color per screen ────────────────────────────────
 
   useEffect(() => {
     if (state.activeTab === 'Home') {
-      StatusBar.setBackgroundColor(Colors.bgHero, false);
+      StatusBar.setBackgroundColor(theme.colors.bgHero, false);
     } else {
-      StatusBar.setBackgroundColor(Colors.bg, false);
+      StatusBar.setBackgroundColor(theme.colors.bg, false);
     }
-  }, [state.activeTab]);
+  }, [state.activeTab, theme]);
 
   // ── BackHandler (single stable listener using ref) ────────────
 
@@ -315,6 +320,7 @@ function AppShell() {
                     navigateToTab={navigateToTab}
                     onPartnerPress={openPartnerReport}
                     onOpenAI={openAI}
+                    onOpenAppointments={openAppointments}
                   />
                 </ErrorBoundary>
               )}
@@ -459,27 +465,39 @@ const RootComponent = () => {
   );
 };
 
+const RootThemedApp = () => {
+  const { theme, themeName } = useTheme();
+
+  return (
+    <View style={[styles.root, { backgroundColor: theme.colors.bg }]}>
+      <StatusBar
+        barStyle={themeName === 'light' ? 'dark-content' : 'light-content'}
+        backgroundColor={theme.colors.bgHero}
+        translucent={false}
+      />
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.bgHero }]}>
+        <RootComponent />
+      </SafeAreaView>
+    </View>
+  );
+};
+
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <NotificationProvider>
-          <ReminderProvider>
-            <PreferencesProvider>
-          <View style={styles.root}>
-          <StatusBar
-            barStyle="light-content"
-            backgroundColor={Colors.bgHero}
-            translucent={false}
-          />
-            <SafeAreaView style={styles.safeArea}>
-              <RootComponent />
-            </SafeAreaView>
-          </View>
-          </PreferencesProvider>
-          </ReminderProvider>
-        </NotificationProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <ReminderProvider>
+              <AppointmentProvider>
+                <PreferencesProvider>
+                  <RootThemedApp />
+                </PreferencesProvider>
+              </AppointmentProvider>
+            </ReminderProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

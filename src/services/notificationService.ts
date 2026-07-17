@@ -10,6 +10,7 @@ import notifee, {
 } from '@notifee/react-native';
 import { Platform } from 'react-native';
 import type { Reminder, ReminderSchedule, NotificationPreferences } from '../types/reminder';
+import type { Appointment } from '../types/appointment';
 import { CATEGORY_META } from '../types/reminder';
 
 // ── Channel Setup ──────────────────────────────────────────
@@ -33,6 +34,16 @@ const CHANNELS = [
 // ── Creative Notification Pools ────────────────────────────
 
 const TITLE_POOL: Record<string, string[]> = {
+  medication: [
+    '💊 Time for your medication!',
+    '💊 Medication reminder!',
+    '💊 Don\'t miss your dose!',
+    '💊 Take your medicine!',
+    '💊 Your medication is due!',
+    '💊 Stay on track!',
+    '💊 Health first — take your meds!',
+    '💊 Your prescription awaits!',
+  ],
   water: [
     '💧 Time to Hydrate!',
     '💧 Water break!',
@@ -73,16 +84,6 @@ const TITLE_POOL: Record<string, string[]> = {
     '❤️ Take a moment',
     '❤️ You matter!',
   ],
-  appointment: [
-    '📅 Heads up!',
-    '📅 Coming up soon!',
-    '📅 Don\'t forget!',
-    '📅 Appointment reminder',
-    '📅 Mark your calendar!',
-    '📅 Stay punctual!',
-    '📅 Upcoming event!',
-    '📅 Be prepared!',
-  ],
   general: [
     '🔔 Hey there!',
     '🔔 Friendly reminder!',
@@ -96,14 +97,24 @@ const TITLE_POOL: Record<string, string[]> = {
 };
 
 const BODY_POOL: Record<string, Array<(r: Reminder) => string>> = {
+  medication: [
+    (r) => `Take ${r.title} as prescribed`,
+    (r) => `${r.title} — stay consistent with your dosage`,
+    () => 'Your health depends on timely medication',
+    (r) => `Time to take ${r.title}. Follow your doctor's advice.`,
+    (r) => `${r.title} is part of your daily routine`,
+    () => 'Medication adherence is key to recovery',
+    (r) => `Don't forget — ${r.title} keeps you healthy`,
+    (r) => `Take ${r.title} now for best results`,
+  ],
   water: [
-    () => 'A glass a day keeps you fresh 💧',
+    () => 'A glass a day keeps you fresh',
     (r) => `${r.title} - Your body will thank you later`,
     () => 'Stay fresh, stay hydrated',
     (r) => `Water o\'clock! Time to sip ${r.title} of water`,
     (r) => `Small sips, big benefits - Only ${r.title}`,
     () => 'Hydration is self-care',
-    (r) => `Keep the momentum going, one ${r.title} at a time 💧`,
+    (r) => `Keep the momentum going, one ${r.title} at a time`,
     (r) => `Your cells are thirsty, treat them with ${r.title} of water`,
   ],
   workout: [
@@ -136,16 +147,6 @@ const BODY_POOL: Record<string, Array<(r: Reminder) => string>> = {
     () => 'Your future self will thank you',
     () => 'Wellness starts here',
   ],
-  appointment: [
-    (r) => `Don\'t miss your appointment with ${r.title} 📅`,
-    () => 'Be punctual, be prepared',
-    (r) => `Remember your appointment with ${r.title} 📅`,
-    (r) => `Upcoming — stay on track with ${r.title}`,
-    () => 'Don\'t let it slip!',
-    () => 'Plan your day around this',
-    (r) => `Heads up — coming soon with ${r.title}`,
-    () => 'You\'re expected, don\'t be late',
-  ],
   general: [
     () => 'Just a friendly nudge 🔔',
     () => 'We\'re here to help',
@@ -157,6 +158,31 @@ const BODY_POOL: Record<string, Array<(r: Reminder) => string>> = {
     () => 'Hey! Don\'t forget this',
   ],
 };
+
+function formatApptTime(dateWithTime: string): string {
+  try {
+    const d = new Date(dateWithTime);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '';
+  }
+}
+
+function getApptBody(appointment: Appointment, suffix: string): string {
+  const time = formatApptTime(appointment.date_with_time);
+  switch (suffix) {
+    case '1d':
+      return `Appointment with ${appointment.doctor_name} (${appointment.speciality}) tomorrow at ${time}`;
+    case '2h':
+      return `Appointment with ${appointment.doctor_name} (${appointment.speciality}) in 2 hours — at ${time}`;
+    case 'custom':
+      return `Reminder: Appointment with ${appointment.doctor_name} (${appointment.speciality}) at ${time}`;
+    case 'now':
+      return `Appointment with ${appointment.doctor_name} (${appointment.speciality}) is now!`;
+    default:
+      return `Appointment with ${appointment.doctor_name} (${appointment.speciality}) at ${time}`;
+  }
+}
 
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -418,6 +444,101 @@ export async function rescheduleAllNotifications(
 export function getChannelForCategory(category: string): string {
   const baseChannel = CATEGORY_META[category as keyof typeof CATEGORY_META]?.channel || 'general';
   return getVersionedChannelId(baseChannel);
+}
+
+// ── Appointment Notifications ──────────────────────────────
+
+function getApptNotificationId(appointmentId: number, suffix: string): string {
+  return `appt_${appointmentId}_${suffix}`;
+}
+
+/**
+ * Schedules up to 4 notifications for an appointment:
+ * 1 day before (if remind_1d), 2 hours before (if remind_2h),
+ * at custom time (if remind_custom), and at appointment time (always).
+ */
+export async function scheduleAppointmentNotifications(appointment: Appointment): Promise<void> {
+  const channelId = getVersionedChannelId('appointment');
+  const now = Date.now();
+  const apptTime = new Date(appointment.date_with_time).getTime();
+
+  const notifications: Array<{ id: string; timestamp: number; suffix: string }> = [];
+
+  // 1 day before
+  if (appointment.remind_1d) {
+    const ts = apptTime - 24 * 60 * 60 * 1000;
+    if (ts > now && ts - now > 1000) {
+      notifications.push({ id: getApptNotificationId(appointment.appointment_id, '1d'), timestamp: ts, suffix: '1d' });
+    }
+  }
+
+  // 2 hours before
+  if (appointment.remind_2h) {
+    const ts = apptTime - 2 * 60 * 60 * 1000;
+    if (ts > now && ts - now > 1000) {
+      notifications.push({ id: getApptNotificationId(appointment.appointment_id, '2h'), timestamp: ts, suffix: '2h' });
+    }
+  }
+
+  // Custom time
+  if (appointment.remind_custom) {
+    const ts = new Date(appointment.remind_custom).getTime();
+    if (ts > now && ts - now > 1000 && ts < apptTime) {
+      notifications.push({ id: getApptNotificationId(appointment.appointment_id, 'custom'), timestamp: ts, suffix: 'custom' });
+    }
+  }
+
+  // At appointment time (always)
+  if (apptTime > now && apptTime - now > 1000) {
+    notifications.push({ id: getApptNotificationId(appointment.appointment_id, 'now'), timestamp: apptTime, suffix: 'now' });
+  }
+
+  for (const n of notifications) {
+    try {
+      const isNow = n.suffix === 'now';
+      await notifee.createTriggerNotification(
+        {
+          id: n.id,
+          title: isNow
+            ? '📅 Time for your appointment!'
+            : n.suffix === '1d'
+              ? '📅 Appointment tomorrow!'
+              : n.suffix === '2h'
+                ? '📅 Appointment in 2 hours!'
+                : '📅 Appointment reminder!',
+          body: getApptBody(appointment, n.suffix),
+          android: {
+            channelId,
+            importance: AndroidImportance.HIGH,
+            visibility: AndroidVisibility.PUBLIC,
+            smallIcon: 'ic_launcher',
+            color: '#00E5CC',
+            sound: 'default',
+            pressAction: { id: 'default' },
+            showTimestamp: true,
+            timestamp: n.timestamp,
+          },
+          data: {
+            appointmentId: appointment.appointment_id,
+            screen: 'reminders-appointments',
+          },
+        },
+        { type: TriggerType.TIMESTAMP, timestamp: n.timestamp },
+      );
+    } catch (err) {
+      console.error(`[NotificationService] Failed to schedule appointment notification ${n.id}:`, err);
+    }
+  }
+}
+
+/**
+ * Cancels all notifications for a specific appointment.
+ */
+export async function cancelAppointmentNotifications(appointmentId: number): Promise<void> {
+  const suffixes = ['1d', '2h', 'custom', 'now'];
+  for (const suffix of suffixes) {
+    await notifee.cancelNotification(getApptNotificationId(appointmentId, suffix));
+  }
 }
 
 /**

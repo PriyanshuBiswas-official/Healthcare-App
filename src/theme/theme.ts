@@ -1,4 +1,6 @@
-export const Colors = {
+import { ThemeColors, AppTheme } from './types';
+
+const darkThemeColors: ThemeColors = {
   // Backgrounds
   bg: '#0A0B14',
   bgHero: '#1A1535',
@@ -61,6 +63,14 @@ export const Colors = {
   divider: 'rgba(255,255,255,0.07)',
   shadowColor: '#000',
 };
+
+export const darkTheme: AppTheme = {
+  name: 'dark',
+  colors: darkThemeColors,
+};
+
+// Temporarily keep Colors exported so we don't break the whole app instantly
+export const Colors = darkThemeColors;
 
 export const Typography = {
   // ── Font Sizes ──

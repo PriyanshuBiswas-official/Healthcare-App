@@ -20,6 +20,8 @@ interface Props {
   onSaved?: () => void;
 }
 
+const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
 export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
   const { getRemindersByCategory, addReminder, editReminder, removeReminder, addReminderSchedule, removeSchedule, fetchSchedules, getSchedulesForReminder, syncAll } = useReminders();
 
@@ -55,6 +57,7 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
 
   const handleAdd = async () => {
     if (!newAmount.trim()) return;
+    if (newTime.trim() && !TIME_RE.test(newTime.trim())) { Alert.alert('Invalid time', 'Time must be in HH:MM format (e.g. 09:00)'); return; }
     try {
       setSaving(true);
       const reminder = await addReminder({
@@ -103,6 +106,7 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
     }
     try {
       setSaving(true);
+      if (newTime.trim() && !TIME_RE.test(newTime.trim())) { Alert.alert('Invalid time', 'Time must be in HH:MM format (e.g. 09:00)'); return; }
       const reminder = await addReminder({
         category: 'water',
         title: `${newAmount.trim()} ml`,
