@@ -15,9 +15,9 @@ import {
 import {
   createNotificationChannels,
   requestNotificationPermission,
-  rescheduleAllNotifications,
+  syncNotifications,
+  rescheduleReminderNotifications,
   cancelAllReminderNotifications,
-  scheduleReminderNotification,
 } from '../services/notificationService';
 import type {
   Reminder,
@@ -182,13 +182,14 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
       next.set(reminderId, [...existing, schedule]);
       return next;
     });
-    // Schedule local notification on device
+    // Re-schedule notifications for this reminder
     const reminderObj = reminder || reminders.find(r => r.reminder_id === reminderId);
     if (reminderObj && preferences) {
-      await scheduleReminderNotification(reminderObj, schedule, preferences);
+      const updatedSchedules = [...(schedules.get(reminderId) || []), schedule];
+      await rescheduleReminderNotifications(reminderObj, updatedSchedules, preferences);
     }
     return schedule;
-  }, [token, reminders, preferences]);
+  }, [token, reminders, schedules, preferences]);
 
   const removeSchedule = useCallback(async (scheduleId: number, reminderId: number): Promise<void> => {
     if (!token) throw new Error('Not authenticated');
@@ -199,7 +200,13 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
       next.set(reminderId, existing.filter(s => s.reminder_schedule_id !== scheduleId));
       return next;
     });
-  }, [token]);
+    // Re-schedule notifications for this reminder (without the removed schedule)
+    const reminderObj = reminders.find(r => r.reminder_id === reminderId);
+    if (reminderObj && preferences) {
+      const remainingSchedules = (schedules.get(reminderId) || []).filter(s => s.reminder_schedule_id !== scheduleId);
+      await rescheduleReminderNotifications(reminderObj, remainingSchedules, preferences);
+    }
+  }, [token, reminders, schedules, preferences]);
 
   // ── Preferences ────────────────────────────────────────
 
@@ -250,8 +257,8 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
       );
       setSchedules(schedulesMap);
 
-      // 3. Reschedule all notifications on device
-      await rescheduleAllNotifications(remindersData, schedulesMap, prefsData);
+      // 3. Smart sync notifications on device (non-destructive)
+      await syncNotifications(remindersData, schedulesMap, prefsData);
     } catch (err: any) {
       console.error('[ReminderContext] syncAll error:', err);
       setError(err.message);

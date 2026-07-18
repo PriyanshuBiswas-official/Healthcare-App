@@ -138,10 +138,19 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
         await addReminderSchedule(reminder.reminder_id, {
           notify_at: t,
           enabled: true,
+          repeat_type: 'daily',
+          repeat_interval: 1,
+          interval_unit: 'days',
         }, reminder);
       }
       resetForm();
-      await loadData();
+      const scheds = await fetchSchedules(reminder.reminder_id);
+      setReminders(prev => [reminder, ...prev]);
+      setSchedulesMap(prev => {
+        const next = new Map(prev);
+        next.set(reminder.reminder_id, scheds);
+        return next;
+      });
       onSaved?.();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to add reminder');
@@ -174,11 +183,20 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
         await addReminderSchedule(editingReminder.reminder_id, {
           notify_at: t,
           enabled: true,
+          repeat_type: 'daily',
+          repeat_interval: 1,
+          interval_unit: 'days',
         }, editingReminder);
       }
 
       resetForm();
-      await loadData();
+      const scheds = await fetchSchedules(editingReminder.reminder_id);
+      setReminders(prev => prev.map(r => r.reminder_id === editingReminder.reminder_id ? { ...r, description: desc || null } : r));
+      setSchedulesMap(prev => {
+        const next = new Map(prev);
+        next.set(editingReminder.reminder_id, scheds);
+        return next;
+      });
       onSaved?.();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to update reminder');
@@ -198,7 +216,12 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
         onPress: async () => {
           try {
             await removeReminder(reminder.reminder_id);
-            await loadData();
+            setReminders(prev => prev.filter(r => r.reminder_id !== reminder.reminder_id));
+            setSchedulesMap(prev => {
+              const next = new Map(prev);
+              next.delete(reminder.reminder_id);
+              return next;
+            });
             onSaved?.();
           } catch (err: any) {
             Alert.alert('Error', err.message || 'Failed to remove');

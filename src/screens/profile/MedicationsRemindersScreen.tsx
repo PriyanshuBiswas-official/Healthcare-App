@@ -169,6 +169,9 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
         repeat,
         weekdays: repeat && selectedWeekdays.length > 0 ? selectedWeekdays : undefined,
         start_date: startDate.toISOString().split('T')[0],
+        repeat_type: repeat ? (selectedWeekdays.length > 0 ? 'weekly' : 'daily') : null,
+        repeat_interval: repeat ? 1 : 0,
+        interval_unit: repeat ? (selectedWeekdays.length > 0 ? 'weeks' : 'days') : null,
       };
 
       if (selectedMed.reminder) {
@@ -178,7 +181,8 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
       }
 
       resetForm();
-      await loadData();
+      const updatedData = await getMedications(session.access_token);
+      setMedications(updatedData);
       onSaved?.();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to save');
@@ -200,7 +204,8 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
           try {
             await deleteMedicationReminder(session.access_token!, med.id);
             if (selectedMed?.id === med.id) resetForm();
-            await loadData();
+            const updatedData = await getMedications(session.access_token!);
+            setMedications(updatedData);
             onSaved?.();
           } catch (err: any) {
             Alert.alert('Error', err.message || 'Failed to remove');

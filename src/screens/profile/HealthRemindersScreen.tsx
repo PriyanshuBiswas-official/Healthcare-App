@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
-import { ArrowLeft, Trash2, Pencil } from 'lucide-react-native';
+import { ArrowLeft, Trash2, Pencil, Check } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';
 import { useReminders } from '../../providers/ReminderContext';
 import type { Reminder, ReminderSchedule, Weekday } from '../../types/reminder';
@@ -149,11 +149,20 @@ export default function HealthRemindersScreen({ onBack, onSaved }: Props) {
         await addReminderSchedule(reminder.reminder_id, {
           notify_at: t,
           enabled: true,
+          repeat_type: repeat ? (selectedWeekdays.length > 0 ? 'weekly' : 'daily') : null,
+          repeat_interval: repeat ? 1 : 0,
+          interval_unit: repeat ? (selectedWeekdays.length > 0 ? 'weeks' : 'days') : null,
           weekdays: repeat && selectedWeekdays.length > 0 ? selectedWeekdays as Weekday[] : undefined,
         }, reminder);
       }
       resetForm();
-      await loadData();
+      const scheds = await fetchSchedules(reminder.reminder_id);
+      setReminders(prev => [reminder, ...prev]);
+      setSchedulesMap(prev => {
+        const next = new Map(prev);
+        next.set(reminder.reminder_id, scheds);
+        return next;
+      });
       onSaved?.();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to add reminder');
@@ -189,12 +198,21 @@ export default function HealthRemindersScreen({ onBack, onSaved }: Props) {
         await addReminderSchedule(editingReminder.reminder_id, {
           notify_at: t,
           enabled: true,
+          repeat_type: repeat ? (selectedWeekdays.length > 0 ? 'weekly' : 'daily') : null,
+          repeat_interval: repeat ? 1 : 0,
+          interval_unit: repeat ? (selectedWeekdays.length > 0 ? 'weeks' : 'days') : null,
           weekdays: repeat && selectedWeekdays.length > 0 ? selectedWeekdays as Weekday[] : undefined,
         }, editingReminder);
       }
 
       resetForm();
-      await loadData();
+      const scheds = await fetchSchedules(editingReminder.reminder_id);
+      setReminders(prev => prev.map(r => r.reminder_id === editingReminder.reminder_id ? { ...r, title: newTitle.trim(), description: newDescription.trim() || null, repeat } : r));
+      setSchedulesMap(prev => {
+        const next = new Map(prev);
+        next.set(editingReminder.reminder_id, scheds);
+        return next;
+      });
       onSaved?.();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to update reminder');
@@ -214,10 +232,40 @@ export default function HealthRemindersScreen({ onBack, onSaved }: Props) {
         onPress: async () => {
           try {
             await removeReminder(reminder.reminder_id);
-            await loadData();
+            setReminders(prev => prev.filter(r => r.reminder_id !== reminder.reminder_id));
+            setSchedulesMap(prev => {
+              const next = new Map(prev);
+              next.delete(reminder.reminder_id);
+              return next;
+            });
             onSaved?.();
           } catch (err: any) {
             Alert.alert('Error', err.message || 'Failed to remove');
+          }
+        },
+      },
+    ]);
+  };
+
+  // ── Complete ─────────────────────────────────────────────
+
+  const handleComplete = async (reminder: Reminder) => {
+    Alert.alert('Mark Complete', `Mark "${reminder.title}" as completed?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Complete',
+        onPress: async () => {
+          try {
+            await removeReminder(reminder.reminder_id);
+            setReminders(prev => prev.filter(r => r.reminder_id !== reminder.reminder_id));
+            setSchedulesMap(prev => {
+              const next = new Map(prev);
+              next.delete(reminder.reminder_id);
+              return next;
+            });
+            onSaved?.();
+          } catch (err: any) {
+            Alert.alert('Error', err.message || 'Failed to complete');
           }
         },
       },
@@ -397,6 +445,11 @@ export default function HealthRemindersScreen({ onBack, onSaved }: Props) {
                       )}
                     </View>
                     <View style={styles.entryActions}>
+                      <TouchableOpacity
+                        onPress={() => handleComplete(reminder)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Check size={18} color="#4CAF50" />
+                      </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => startEdit(reminder)}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>

@@ -39,6 +39,9 @@ export interface MedicationReminderPayload {
   weekdays?: number[];
   description?: string;
   start_date?: string;
+  repeat_type?: string | null;
+  repeat_interval?: number;
+  interval_unit?: string | null;
 }
 
 function authHeaders(token: string) {

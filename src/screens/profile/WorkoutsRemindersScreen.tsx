@@ -73,6 +73,9 @@ export default function WorkoutsRemindersScreen({ onBack, onSaved }: Props) {
         const schedule = await addReminderSchedule(reminder.reminder_id, {
           notify_at: newTime.trim(),
           enabled: true,
+          repeat_type: 'daily',
+          repeat_interval: 1,
+          interval_unit: 'days',
         }, reminder);
         setSchedulesMap(prev => {
           const next = new Map(prev);
@@ -119,6 +122,9 @@ export default function WorkoutsRemindersScreen({ onBack, onSaved }: Props) {
         const schedule = await addReminderSchedule(reminder.reminder_id, {
           notify_at: newTime.trim(),
           enabled: true,
+          repeat_type: 'daily',
+          repeat_interval: 1,
+          interval_unit: 'days',
         }, reminder);
         setSchedulesMap(prev => {
           const next = new Map(prev);

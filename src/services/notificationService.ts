@@ -18,7 +18,7 @@ import { CATEGORY_META } from '../types/reminder';
 // IMPORTANT: Android caches channel settings permanently.
 // If you change sound/vibration/importance here, bump CHANNEL_VERSION
 // so old cached channels are deleted and recreated with the new settings.
-const CHANNEL_VERSION = 'v4';
+const CHANNEL_VERSION = 'v5';
 
 const CHANNELS = [
   { id: 'medication', name: 'Medication Reminders', importance: AndroidImportance.HIGH },
@@ -295,6 +295,9 @@ function shouldFireOnWeekday(weekdays: number[] | null, date: Date): boolean {
 /**
  * Schedules a single notification for a reminder+schedule combination.
  * Respects preferences (sound, vibration, quiet hours).
+ *
+ * For interval-type schedules (interval_unit: 'hours'), calculates all
+ * fire times within the day and schedules each as a daily notification.
  */
 export async function scheduleReminderNotification(
   reminder: Reminder,
@@ -306,36 +309,144 @@ export async function scheduleReminderNotification(
 
   const meta = CATEGORY_META[reminder.category] || CATEGORY_META.general;
 
-  // Check quiet hours
-  if (isInQuietHours(schedule.notify_at, preferences.quiet_hr_start, preferences.quiet_hr_end)) {
-    return; // Skip scheduling during quiet hours
+  // For interval hours: schedule multiple notifications within the day
+  if (schedule.repeat_type === 'interval' && schedule.interval_unit === 'hours') {
+    await scheduleIntervalHoursNotifications(reminder, schedule, preferences, meta);
+    return;
   }
 
-  const [hours, minutes] = schedule.notify_at.split(':').map(Number);
+  // For all other types (daily, weekly, monthly, null/one-shot): single notification
+  await scheduleSingleNotification(reminder, schedule, preferences, meta);
+}
 
-  // Build the next trigger date
+/**
+ * Schedules multiple notifications for interval-based hourly reminders.
+ * Calculates fire times from start through end of day (or midnight).
+ */
+async function scheduleIntervalHoursNotifications(
+  reminder: Reminder,
+  schedule: ReminderSchedule,
+  preferences: NotificationPreferences,
+  meta: { label: string; icon: string; color: string; channel: string },
+): Promise<void> {
+  const [startHour, startMin] = schedule.notify_at.split(':').map(Number);
+  const intervalHours = schedule.repeat_interval || 1;
+
+  // Calculate all fire times within the day
+  const fireTimes: Array<{ hour: number; minute: number }> = [];
+  let currentHour = startHour;
+  let currentMin = startMin;
+
+  while (currentHour < 24) {
+    fireTimes.push({ hour: currentHour, minute: currentMin });
+    currentHour += intervalHours;
+  }
+
+  // If start time is past today, skip to tomorrow
   const now = new Date();
-  const triggerDate = new Date();
-  triggerDate.setHours(hours, minutes, 0, 0);
-
-  // If trigger time already passed today, schedule for next applicable day
-  if (triggerDate <= now) {
-    triggerDate.setDate(triggerDate.getDate() + 1);
-  }
-
-  // For recurring with weekdays, find the next applicable weekday
-  if (schedule.weekdays && schedule.weekdays.length > 0) {
-    let maxDaysAhead = 7; // safety limit
-    while (!shouldFireOnWeekday(schedule.weekdays, triggerDate) && maxDaysAhead > 0) {
-      triggerDate.setDate(triggerDate.getDate() + 1);
-      maxDaysAhead--;
+  let dayOffset = 0;
+  if (fireTimes.length > 0) {
+    const firstToday = new Date();
+    firstToday.setHours(fireTimes[0].hour, fireTimes[0].minute, 0, 0);
+    if (firstToday <= now) {
+      dayOffset = 1;
     }
   }
 
-  // Check end_date
-  if (reminder.end_date) {
-    const endDate = new Date(reminder.end_date + 'T23:59:59');
-    if (triggerDate > endDate) return; // Reminder expired
+  for (const ft of fireTimes) {
+    const triggerDate = new Date();
+    triggerDate.setDate(triggerDate.getDate() + dayOffset);
+    triggerDate.setHours(ft.hour, ft.minute, 0, 0);
+
+    // Skip if more than 60 days out
+    const sixtyDaysOut = new Date();
+    sixtyDaysOut.setDate(sixtyDaysOut.getDate() + 60);
+    if (triggerDate > sixtyDaysOut) continue;
+
+    // Check quiet hours
+    const timeStr = `${String(ft.hour).padStart(2, '0')}:${String(ft.minute).padStart(2, '0')}`;
+    if (isInQuietHours(timeStr, preferences.quiet_hr_start, preferences.quiet_hr_end)) continue;
+
+    const notificationId = `${getNotificationId(reminder.reminder_id, schedule.reminder_schedule_id)}_${ft.hour}${String(ft.minute).padStart(2, '0')}`;
+    const versionedChannelId = getVersionedChannelId(meta.channel);
+
+    const trigger: TimestampTrigger = {
+      type: TriggerType.TIMESTAMP,
+      timestamp: triggerDate.getTime(),
+      repeatFrequency: RepeatFrequency.DAILY,
+    };
+
+    await notifee.createTriggerNotification(
+      {
+        id: notificationId,
+        title: pickRandom(TITLE_POOL[reminder.category] || TITLE_POOL.general),
+        body: pickRandom(BODY_POOL[reminder.category] || BODY_POOL.general)(reminder),
+        android: {
+          channelId: versionedChannelId,
+          importance: AndroidImportance.HIGH,
+          visibility: AndroidVisibility.PUBLIC,
+          smallIcon: 'ic_launcher',
+          color: meta.color,
+          sound: 'default',
+          pressAction: { id: 'default' },
+          style: reminder.description
+            ? { type: AndroidStyle.BIGTEXT, text: reminder.description }
+            : undefined,
+          showTimestamp: true,
+          timestamp: triggerDate.getTime(),
+        },
+        data: {
+          reminderId: reminder.reminder_id,
+          category: reminder.category,
+          screen: meta.channel,
+        },
+      },
+      trigger,
+    );
+  }
+}
+
+/**
+ * Schedules a single notification for daily/weekly/monthly/once reminders.
+ */
+async function scheduleSingleNotification(
+  reminder: Reminder,
+  schedule: ReminderSchedule,
+  preferences: NotificationPreferences,
+  meta: { label: string; icon: string; color: string; channel: string },
+): Promise<void> {
+  // Check quiet hours
+  if (isInQuietHours(schedule.notify_at, preferences.quiet_hr_start, preferences.quiet_hr_end)) {
+    return;
+  }
+
+  const [hours, minutes] = schedule.notify_at.split(':').map(Number);
+  const now = new Date();
+
+  let triggerDate: Date;
+
+  if (!reminder.repeat) {
+    // One-shot: fire on start_date at the specified time
+    const [sy, sm, sd] = reminder.start_date.split('-').map(Number);
+    triggerDate = new Date(sy, sm - 1, sd, hours, minutes, 0, 0);
+    // If the intended fire time already passed, skip
+    if (triggerDate <= now) return;
+  } else {
+    // Repeating: fire starting today/tomorrow
+    triggerDate = new Date();
+    triggerDate.setHours(hours, minutes, 0, 0);
+    if (triggerDate <= now) {
+      triggerDate.setDate(triggerDate.getDate() + 1);
+    }
+
+    // For recurring with weekdays, find the next applicable weekday
+    if (schedule.weekdays && schedule.weekdays.length > 0) {
+      let maxDaysAhead = 7;
+      while (!shouldFireOnWeekday(schedule.weekdays, triggerDate) && maxDaysAhead > 0) {
+        triggerDate.setDate(triggerDate.getDate() + 1);
+        maxDaysAhead--;
+      }
+    }
   }
 
   // Don't schedule more than 60 days out
@@ -346,12 +457,43 @@ export async function scheduleReminderNotification(
   const notificationId = getNotificationId(reminder.reminder_id, schedule.reminder_schedule_id);
   const versionedChannelId = getVersionedChannelId(meta.channel);
 
+  // Determine repeat frequency based on schedule repeat_type
+  let repeatFrequency: RepeatFrequency | undefined;
+  if (reminder.repeat) {
+    switch (schedule.repeat_type) {
+      case 'daily':
+        // Daily with no weekday filter = native daily repeat
+        repeatFrequency = (!schedule.weekdays || schedule.weekdays.length === 0)
+          ? RepeatFrequency.DAILY
+          : undefined;
+        break;
+      case 'weekly':
+        repeatFrequency = RepeatFrequency.WEEKLY;
+        break;
+      case 'monthly':
+        // No native monthly repeat in notifee — fire once and reschedule on app start
+        repeatFrequency = undefined;
+        break;
+      case 'interval':
+        // interval with days/weeks/months unit — use native repeat where possible
+        if (schedule.interval_unit === 'days') {
+          repeatFrequency = schedule.repeat_interval === 1
+            ? RepeatFrequency.DAILY
+            : undefined; // multi-day intervals can't use native repeat, fire once per cycle
+        } else if (schedule.interval_unit === 'weeks') {
+          repeatFrequency = RepeatFrequency.WEEKLY;
+        }
+        // months: no native monthly repeat in notifee, fire once and reschedule on app start
+        break;
+      default:
+        repeatFrequency = undefined;
+    }
+  }
+
   const trigger: TimestampTrigger = {
     type: TriggerType.TIMESTAMP,
     timestamp: triggerDate.getTime(),
-    repeatFrequency: reminder.repeat && !schedule.weekdays?.length
-      ? RepeatFrequency.DAILY
-      : undefined,
+    repeatFrequency,
   };
 
   await notifee.createTriggerNotification(
@@ -393,11 +535,13 @@ export async function cancelReminderNotification(reminderId: number, scheduleId:
 
 /**
  * Cancels all notifications for a specific reminder.
+ * Handles both regular IDs (reminder_X_Y) and interval IDs (reminder_X_Y_HHMM).
  */
 export async function cancelAllReminderNotifications(reminderId: number): Promise<void> {
+  const prefix = `reminder_${reminderId}_`;
   const notifications = await notifee.getTriggerNotifications();
   for (const notification of notifications) {
-    if (notification.notification.id?.startsWith(`reminder_${reminderId}_`)) {
+    if (notification.notification.id?.startsWith(prefix)) {
       await notifee.cancelNotification(notification.notification.id);
     }
   }
@@ -411,8 +555,134 @@ export async function cancelAllNotifications(): Promise<void> {
 }
 
 /**
+ * Returns the set of notification IDs currently scheduled at the OS level.
+ */
+async function getCurrentlyScheduledIds(): Promise<Set<string>> {
+  const triggered = await notifee.getTriggerNotifications();
+  const ids = new Set<string>();
+  for (const t of triggered) {
+    if (t.notification.id) ids.add(t.notification.id);
+  }
+  return ids;
+}
+
+/**
+ * Generates the notification IDs that SHOULD be scheduled
+ * for a given reminder+schedule combination.
+ */
+function getExpectedNotificationIds(reminder: Reminder, schedule: ReminderSchedule): string[] {
+  const ids: string[] = [];
+
+  // For one-shots: if start_date is in the past, the notification already fired
+  if (!reminder.repeat) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startDate = new Date(reminder.start_date + 'T00:00:00');
+    if (startDate < today) return [];
+  }
+
+  if (schedule.repeat_type === 'interval' && schedule.interval_unit === 'hours') {
+    const [startHour, startMin] = schedule.notify_at.split(':').map(Number);
+    const min = String(startMin).padStart(2, '0');
+    const intervalHours = schedule.repeat_interval || 1;
+    let currentHour = startHour;
+    while (currentHour < 24) {
+      ids.push(`${getNotificationId(reminder.reminder_id, schedule.reminder_schedule_id)}_${currentHour}${min}`);
+      currentHour += intervalHours;
+    }
+  } else {
+    ids.push(getNotificationId(reminder.reminder_id, schedule.reminder_schedule_id));
+  }
+
+  return ids;
+}
+
+/**
+ * Smart sync: compares what's scheduled at the OS level with what should be scheduled.
+ * Only adds missing notifications and removes stale ones.
+ * Does NOT cancel notifications that are already correctly scheduled.
+ *
+ * Safe to call on every app open — won't nuke pending notifications.
+ */
+export async function syncNotifications(
+  reminders: Reminder[],
+  schedulesMap: Map<number, ReminderSchedule[]>,
+  preferences: NotificationPreferences,
+): Promise<void> {
+  if (!preferences.push_enabled || !preferences.local_enabled) {
+    await cancelAllNotifications();
+    return;
+  }
+
+  const scheduledIds = await getCurrentlyScheduledIds();
+  const expectedIds = new Set<string>();
+
+  // Calculate what should be scheduled
+  for (const reminder of reminders) {
+    const reminderSchedules = schedulesMap.get(reminder.reminder_id) || [];
+    for (const schedule of reminderSchedules) {
+      if (!schedule.enabled) continue;
+
+      const ids = getExpectedNotificationIds(reminder, schedule);
+      for (const id of ids) {
+        expectedIds.add(id);
+      }
+    }
+  }
+
+  // Remove stale notifications (no longer in reminders/schedules)
+  for (const scheduledId of scheduledIds) {
+    if (!expectedIds.has(scheduledId)) {
+      await notifee.cancelNotification(scheduledId);
+    }
+  }
+
+  // Add missing notifications (new reminders/schedules added while app was closed)
+  for (const reminder of reminders) {
+    const reminderSchedules = schedulesMap.get(reminder.reminder_id) || [];
+    for (const schedule of reminderSchedules) {
+      const ids = getExpectedNotificationIds(reminder, schedule);
+      if (ids.length === 0) continue; // expired one-shot or disabled
+      const alreadyScheduled = ids.every(id => scheduledIds.has(id));
+
+      if (!alreadyScheduled) {
+        try {
+          await scheduleReminderNotification(reminder, schedule, preferences);
+        } catch (error) {
+          console.error(`[NotificationService] sync failed for reminder ${reminder.reminder_id}, schedule ${schedule.reminder_schedule_id}:`, error);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Reschedules notifications for a single reminder.
+ * Cancels existing notifications for this reminder, then re-schedules.
+ * Used when a specific reminder is added/edited/removed.
+ */
+export async function rescheduleReminderNotifications(
+  reminder: Reminder,
+  schedules: ReminderSchedule[],
+  preferences: NotificationPreferences,
+): Promise<void> {
+  await cancelAllReminderNotifications(reminder.reminder_id);
+
+  if (!preferences.push_enabled || !preferences.local_enabled) return;
+
+  for (const schedule of schedules) {
+    try {
+      await scheduleReminderNotification(reminder, schedule, preferences);
+    } catch (error) {
+      console.error(`[NotificationService] Failed to reschedule notification for reminder ${reminder.reminder_id}, schedule ${schedule.reminder_schedule_id}:`, error);
+    }
+  }
+}
+
+/**
  * Reschedules all notifications for a user based on their reminders and preferences.
- * This is the main sync function — called on app start, sign-in, and any reminder/schedule change.
+ * NUCLEAR option — cancels everything and reschedules.
+ * Only use for force-refresh scenarios.
  */
 export async function rescheduleAllNotifications(
   reminders: Reminder[],

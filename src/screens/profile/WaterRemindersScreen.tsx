@@ -8,9 +8,11 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Trash2, Pencil, Check } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';
 import { useReminders } from '../../providers/ReminderContext';
 import type { Reminder, ReminderSchedule } from '../../types/reminder';
@@ -22,26 +24,71 @@ interface Props {
 
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
-export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
-  const { getRemindersByCategory, addReminder, editReminder, removeReminder, addReminderSchedule, removeSchedule, fetchSchedules, getSchedulesForReminder, syncAll } = useReminders();
+const INTERVAL_OPTIONS = [
+  { label: 'Every 1 hour', value: 1 },
+  { label: 'Every 2 hours', value: 2 },
+  { label: 'Every 3 hours', value: 3 },
+  { label: 'Every 4 hours', value: 4 },
+  { label: 'Every 6 hours', value: 6 },
+  { label: 'Every 8 hours', value: 8 },
+  { label: 'Every 12 hours', value: 12 },
+];
 
-  const [editing, setEditing] = useState(false);
+function formatTime12h(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
+}
+
+function getIntervalLabel(interval: number): string {
+  const opt = INTERVAL_OPTIONS.find(o => o.value === interval);
+  return opt ? opt.label : `Every ${interval} hours`;
+}
+
+function getFireTimesPreview(startHHMM: string, intervalHours: number): string[] {
+  const [h, m] = startHHMM.split(':').map(Number);
+  const times: string[] = [];
+  let currentH = h;
+  while (currentH < 24) {
+    times.push(`${String(currentH).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    currentH += intervalHours;
+  }
+  return times;
+}
+
+function isIntervalValid(startHHMM: string, intervalHours: number): boolean {
+  const [h] = startHHMM.split(':').map(Number);
+  const fireTimes = getFireTimesPreview(startHHMM, intervalHours);
+  // At least 2 fire times (start + one more), and last must be < 24:00
+  return fireTimes.length >= 2 && fireTimes.length <= 12;
+}
+
+export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
+  const { getRemindersByCategory, addReminder, editReminder, removeReminder, addReminderSchedule, removeSchedule, fetchSchedules, getSchedulesForReminder } = useReminders();
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [schedulesMap, setSchedulesMap] = useState<Map<number, ReminderSchedule[]>>(new Map());
 
-  const [newAmount, setNewAmount] = useState('');
-  const [newTime, setNewTime] = useState('');
-  const [newFrequency, setNewFrequency] = useState('');
+  // Add form
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [startTime, setStartTime] = useState('08:00');
+  const [intervalHours, setIntervalHours] = useState(2);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
+
+  // ── Load ───────────────────────────────────────────────────
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const waterReminders = getRemindersByCategory('water');
-      setReminders(waterReminders);
+      const items = getRemindersByCategory('water');
+      setReminders(items);
       const newMap = new Map<number, ReminderSchedule[]>();
-      for (const r of waterReminders) {
+      for (const r of items) {
         const scheds = await fetchSchedules(r.reminder_id);
         newMap.set(r.reminder_id, scheds);
       }
@@ -55,33 +102,84 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // ── Form Helpers ───────────────────────────────────────────
+
+  function resetForm() {
+    setAmount('');
+    setStartTime('08:00');
+    setIntervalHours(2);
+    setShowTimePicker(false);
+    setShowAddForm(false);
+    setEditingReminder(null);
+  }
+
+  // ── Time Picker ────────────────────────────────────────────
+
+  const onTimeChange = (_: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS === 'android') setShowTimePicker(false);
+    if (selected) {
+      const h = String(selected.getHours()).padStart(2, '0');
+      const m = String(selected.getMinutes()).padStart(2, '0');
+      setStartTime(`${h}:${m}`);
+    }
+  };
+
+  // ── Edit ───────────────────────────────────────────────────
+
+  const startEdit = (reminder: Reminder) => {
+    const scheds = schedulesMap.get(reminder.reminder_id) || [];
+    const sched = scheds[0];
+    setEditingReminder(reminder);
+    // Parse amount from title (e.g. "250 ml" → "250")
+    const amountMatch = reminder.title.match(/^(\d+)/);
+    setAmount(amountMatch ? amountMatch[1] : '');
+    if (sched) {
+      setStartTime(sched.notify_at);
+      setIntervalHours(sched.repeat_interval || 2);
+    }
+    setShowAddForm(true);
+  };
+
+  // ── Add ────────────────────────────────────────────────────
+
   const handleAdd = async () => {
-    if (!newAmount.trim()) return;
-    if (newTime.trim() && !TIME_RE.test(newTime.trim())) { Alert.alert('Invalid time', 'Time must be in HH:MM format (e.g. 09:00)'); return; }
+    if (!amount.trim()) {
+      Alert.alert('Required', 'Enter an amount in ml');
+      return;
+    }
+    if (!TIME_RE.test(startTime)) {
+      Alert.alert('Invalid time', 'Time must be in HH:MM format');
+      return;
+    }
+    if (!isIntervalValid(startTime, intervalHours)) {
+      Alert.alert('Invalid interval', 'With this start time and interval, there must be at least 2 notifications before midnight');
+      return;
+    }
     try {
       setSaving(true);
       const reminder = await addReminder({
         category: 'water',
-        title: `${newAmount.trim()} ml`,
-        description: newFrequency.trim() || undefined,
+        title: `${amount.trim()} ml`,
+        description: `${amount.trim()} ml every ${intervalHours}h`,
         start_date: new Date().toISOString().split('T')[0],
         repeat: true,
       });
-      if (newTime.trim()) {
-        const schedule = await addReminderSchedule(reminder.reminder_id, {
-          notify_at: newTime.trim(),
-          enabled: true,
-        }, reminder);
-        setSchedulesMap(prev => {
-          const next = new Map(prev);
-          next.set(reminder.reminder_id, [schedule]);
-          return next;
-        });
-      }
-      setReminders(prev => prev.some(r => r.reminder_id === reminder.reminder_id) ? prev : [reminder, ...prev]);
-      setNewAmount('');
-      setNewTime('');
-      setNewFrequency('');
+      await addReminderSchedule(reminder.reminder_id, {
+        notify_at: startTime,
+        enabled: true,
+        repeat_type: 'interval',
+        repeat_interval: intervalHours,
+        interval_unit: 'hours',
+      }, reminder);
+      resetForm();
+      const scheds = await fetchSchedules(reminder.reminder_id);
+      setReminders(prev => [reminder, ...prev]);
+      setSchedulesMap(prev => {
+        const next = new Map(prev);
+        next.set(reminder.reminder_id, scheds);
+        return next;
+      });
+      onSaved?.();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to add reminder');
     } finally {
@@ -89,55 +187,79 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
     }
   };
 
-  const handleRemove = async (reminder: Reminder) => {
-    try {
-      await removeReminder(reminder.reminder_id);
-      setReminders(prev => prev.filter(r => r.reminder_id !== reminder.reminder_id));
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to remove reminder');
-    }
-  };
+  // ── Update ─────────────────────────────────────────────────
 
-  const handleSave = async () => {
-    if (!newAmount.trim()) {
-      setEditing(false);
-      onSaved?.();
+  const handleUpdate = async () => {
+    if (!editingReminder) return;
+    if (!amount.trim()) {
+      Alert.alert('Required', 'Enter an amount in ml');
+      return;
+    }
+    if (!isIntervalValid(startTime, intervalHours)) {
+      Alert.alert('Invalid interval', 'With this start time and interval, there must be at least 2 notifications before midnight');
       return;
     }
     try {
       setSaving(true);
-      if (newTime.trim() && !TIME_RE.test(newTime.trim())) { Alert.alert('Invalid time', 'Time must be in HH:MM format (e.g. 09:00)'); return; }
-      const reminder = await addReminder({
-        category: 'water',
-        title: `${newAmount.trim()} ml`,
-        description: newFrequency.trim() || undefined,
-        start_date: new Date().toISOString().split('T')[0],
-        repeat: true,
+      await editReminder(editingReminder.reminder_id, {
+        title: `${amount.trim()} ml`,
       });
-      if (newTime.trim()) {
-        const schedule = await addReminderSchedule(reminder.reminder_id, {
-          notify_at: newTime.trim(),
-          enabled: true,
-        }, reminder);
-        setSchedulesMap(prev => {
-          const next = new Map(prev);
-          next.set(reminder.reminder_id, [schedule]);
-          return next;
-        });
+
+      const existing = getSchedulesForReminder(editingReminder.reminder_id);
+      for (const s of existing) {
+        await removeSchedule(s.reminder_schedule_id, editingReminder.reminder_id);
       }
-      setReminders(prev => prev.some(r => r.reminder_id === reminder.reminder_id) ? prev : [reminder, ...prev]);
-      setNewAmount('');
-      setNewTime('');
-      setNewFrequency('');
-      Alert.alert('Saved', 'Water reminder added');
+      await addReminderSchedule(editingReminder.reminder_id, {
+        notify_at: startTime,
+        enabled: true,
+        repeat_type: 'interval',
+        repeat_interval: intervalHours,
+        interval_unit: 'hours',
+      }, editingReminder);
+
+      resetForm();
+      const scheds = await fetchSchedules(editingReminder.reminder_id);
+      setReminders(prev => prev.map(r => r.reminder_id === editingReminder.reminder_id ? { ...r, title: `${amount.trim()} ml` } : r));
+      setSchedulesMap(prev => {
+        const next = new Map(prev);
+        next.set(editingReminder.reminder_id, scheds);
+        return next;
+      });
+      onSaved?.();
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to save reminder');
+      Alert.alert('Error', err.message || 'Failed to update reminder');
     } finally {
       setSaving(false);
-      setEditing(false);
-      onSaved?.();
     }
   };
+
+  // ── Remove ─────────────────────────────────────────────────
+
+  const handleRemove = (reminder: Reminder) => {
+    Alert.alert('Remove', `Remove "${reminder.title}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await removeReminder(reminder.reminder_id);
+            setReminders(prev => prev.filter(r => r.reminder_id !== reminder.reminder_id));
+            setSchedulesMap(prev => {
+              const next = new Map(prev);
+              next.delete(reminder.reminder_id);
+              return next;
+            });
+            onSaved?.();
+          } catch (err: any) {
+            Alert.alert('Error', err.message || 'Failed to remove');
+          }
+        },
+      },
+    ]);
+  };
+
+  // ── Loading ────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -156,6 +278,8 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
     );
   }
 
+  const fireTimes = getFireTimesPreview(startTime, intervalHours);
+
   return (
     <View style={styles.root}>
       <View style={styles.topBar}>
@@ -164,75 +288,146 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Water Reminders</Text>
         <TouchableOpacity
-          style={styles.editBtn}
-          onPress={() => (editing ? handleSave() : setEditing(true))}
+          style={styles.addTopBtn}
+          onPress={() => {
+            if (showAddForm) {
+              resetForm();
+            } else {
+              setShowAddForm(true);
+            }
+          }}
           activeOpacity={0.7}>
-          <Text style={[styles.editBtnText, editing && styles.editBtnSave]}>
-            {editing ? 'Done' : 'Edit'}
-          </Text>
+          <Text style={styles.addTopBtnText}>{showAddForm ? '✕' : '+ Add'}</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {editing && (
+        {/* ── Add Form ── */}
+        {showAddForm && (
           <GlassCardView style={styles.card}>
-            <Text style={styles.addTitle}>Add Water Reminder</Text>
+            <Text style={styles.sectionLabel}>{editingReminder ? 'EDIT REMINDER' : 'NEW WATER REMINDER'}</Text>
+
+            <Text style={styles.subLabel}>AMOUNT (ML)</Text>
             <TextInput
               style={styles.input}
-              value={newAmount}
-              onChangeText={setNewAmount}
-              placeholder="Amount (e.g. 250 ml)"
+              value={amount}
+              onChangeText={setAmount}
+              placeholder="e.g. 250"
               placeholderTextColor={Colors.textMuted}
+              keyboardType="numeric"
             />
-            <TextInput
-              style={styles.input}
-              value={newTime}
-              onChangeText={setNewTime}
-              placeholder="Time (HH:MM, e.g. 09:00)"
-              placeholderTextColor={Colors.textMuted}
-            />
-            <TextInput
-              style={styles.input}
-              value={newFrequency}
-              onChangeText={setNewFrequency}
-              placeholder="Description (optional)"
-              placeholderTextColor={Colors.textMuted}
-            />
+
+            <Text style={styles.subLabel}>START TIME</Text>
             <TouchableOpacity
-              style={[styles.addBtn, saving && styles.addBtnDisabled]}
-              onPress={handleAdd}
+              style={styles.timePickerBtn}
+              onPress={() => setShowTimePicker(true)}
+              activeOpacity={0.7}>
+              <Text style={styles.timePickerText}>{formatTime12h(startTime)}</Text>
+              <Text style={styles.timePickerMilitary}>{startTime}</Text>
+            </TouchableOpacity>
+
+            {showTimePicker && (
+              <DateTimePicker
+                value={(() => {
+                  const [h, m] = startTime.split(':').map(Number);
+                  const d = new Date();
+                  d.setHours(h, m, 0, 0);
+                  return d;
+                })()}
+                mode="time"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={onTimeChange}
+              />
+            )}
+
+            <Text style={styles.subLabel}>REPEAT INTERVAL</Text>
+            <View style={styles.intervalList}>
+              {INTERVAL_OPTIONS.map(opt => {
+                const valid = isIntervalValid(startTime, opt.value);
+                const selected = intervalHours === opt.value;
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[
+                      styles.intervalRow,
+                      selected && styles.intervalRowSelected,
+                      !valid && styles.intervalRowDisabled,
+                    ]}
+                    onPress={() => valid && setIntervalHours(opt.value)}
+                    activeOpacity={valid ? 0.7 : 1}>
+                    <View style={styles.intervalLeft}>
+                      <View style={[styles.intervalRadio, selected && styles.intervalRadioSelected]}>
+                        {selected && <Check size={12} color="#fff" strokeWidth={3} />}
+                      </View>
+                      <Text style={[styles.intervalLabel, selected && styles.intervalLabelSelected, !valid && styles.intervalLabelDisabled]}>
+                        {opt.label}
+                      </Text>
+                    </View>
+                    {valid && (
+                      <Text style={styles.intervalCount}>
+                        {getFireTimesPreview(startTime, opt.value).length}x/day
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Fire times preview */}
+            <Text style={styles.subLabel}>NOTIFICATIONS AT</Text>
+            <View style={styles.previewRow}>
+              {fireTimes.map(t => (
+                <View key={t} style={styles.previewDot}>
+                  <Text style={styles.previewTime}>{formatTime12h(t)}</Text>
+                </View>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
+              onPress={editingReminder ? handleUpdate : handleAdd}
               activeOpacity={0.7}
               disabled={saving}>
-              <Text style={styles.addBtnText}>{saving ? 'Adding...' : '+ Add'}</Text>
+              <Text style={styles.saveBtnText}>{saving ? 'Saving...' : editingReminder ? 'Save Changes' : 'Save Reminder'}</Text>
             </TouchableOpacity>
           </GlassCardView>
         )}
 
+        {/* ── Reminders List ── */}
         <GlassCardView style={styles.card}>
           {reminders.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>💧</Text>
               <Text style={styles.emptyText}>No water reminders</Text>
-              <Text style={styles.emptySub}>Tap Edit to set up hydration reminders</Text>
+              <Text style={styles.emptySub}>Tap + Add to create one</Text>
             </View>
           ) : (
             reminders.map((reminder, i) => {
               const scheds = schedulesMap.get(reminder.reminder_id) || [];
-              const timeStr = scheds.map(s => s.notify_at).join(', ');
+              const sched = scheds[0];
               return (
                 <View key={reminder.reminder_id}>
                   <View style={styles.entryRow}>
                     <View style={styles.entryInfo}>
                       <Text style={styles.entryName}>{reminder.title}</Text>
-                      <Text style={styles.entryDetail}>
-                        {timeStr}{reminder.description ? ` · ${reminder.description}` : ''}
-                      </Text>
+                      {sched && (
+                        <Text style={styles.entrySchedule}>
+                          {formatTime12h(sched.notify_at)} · Every {sched.repeat_interval}h · {getFireTimesPreview(sched.notify_at, sched.repeat_interval).length}x/day
+                        </Text>
+                      )}
                     </View>
-                    {editing && (
-                      <TouchableOpacity onPress={() => handleRemove(reminder)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Text style={styles.removeBtn}>✕</Text>
+                    <View style={styles.entryActions}>
+                      <TouchableOpacity
+                        onPress={() => startEdit(reminder)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Pencil size={18} color={Colors.textSecondary} />
                       </TouchableOpacity>
-                    )}
+                      <TouchableOpacity
+                        onPress={() => handleRemove(reminder)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Trash2 size={18} color={Colors.textMuted} />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                   {i < reminders.length - 1 && <View style={styles.divider} />}
                 </View>
@@ -249,12 +444,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.md,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
   },
   backBtn: {
     width: 40, height: 40, borderRadius: Radius.md,
@@ -262,29 +453,69 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
-  editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
-  editBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.blue },
-  editBtnSave: { color: Colors.success },
+  addTopBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+  addTopBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.blue },
   scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
-  card: { padding: Spacing.lg, marginBottom: Spacing.lg },
-  entryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },
-  entryInfo: { flex: 1 },
-  entryName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  entryDetail: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2 },
-  removeBtn: { fontSize: Typography.md, color: Colors.danger, padding: Spacing.sm },
-  divider: { height: 1, backgroundColor: Colors.divider },
-  addTitle: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary, marginBottom: Spacing.md },
+  card: { padding: Spacing.lg, marginBottom: Spacing.md },
+  sectionLabel: {
+    fontSize: Typography.xs, fontWeight: Typography.bold, color: Colors.textMuted,
+    letterSpacing: 1, marginBottom: Spacing.md,
+  },
+  subLabel: {
+    fontSize: Typography.xs, fontWeight: Typography.bold, color: Colors.textMuted,
+    letterSpacing: 0.5, marginBottom: Spacing.sm, marginTop: Spacing.sm,
+  },
   input: {
     backgroundColor: Colors.bgCardSolid, borderWidth: 1, borderColor: Colors.bgCardBorder,
     borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
     fontSize: Typography.base, color: Colors.textPrimary, marginBottom: Spacing.sm,
   },
-  addBtn: {
-    backgroundColor: Colors.blue + '20', borderWidth: 1, borderColor: Colors.blue + '50',
-    borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm,
+  timePickerBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+    backgroundColor: Colors.bgCardSolid, borderWidth: 1, borderColor: Colors.bgCardBorder,
+    borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
+    marginBottom: Spacing.sm,
   },
-  addBtnDisabled: { opacity: 0.6 },
-  addBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.blue },
+  timePickerText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
+  timePickerMilitary: { fontSize: Typography.sm, color: Colors.textMuted },
+  intervalList: { marginBottom: Spacing.md },
+  intervalRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1, borderBottomColor: Colors.divider,
+  },
+  intervalRowSelected: { backgroundColor: Colors.blue + '10', marginHorizontal: -Spacing.md, paddingHorizontal: Spacing.md, borderRadius: Radius.md },
+  intervalRowDisabled: { opacity: 0.4 },
+  intervalLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  intervalRadio: {
+    width: 20, height: 20, borderRadius: 10, borderWidth: 2,
+    borderColor: Colors.textMuted, alignItems: 'center', justifyContent: 'center',
+  },
+  intervalRadioSelected: { borderColor: Colors.blue, backgroundColor: Colors.blue },
+  intervalLabel: { fontSize: Typography.base, color: Colors.textPrimary },
+  intervalLabelSelected: { fontWeight: Typography.semiBold },
+  intervalLabelDisabled: { color: Colors.textMuted },
+  intervalCount: { fontSize: Typography.sm, color: Colors.textMuted },
+  previewRow: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md,
+  },
+  previewDot: {
+    backgroundColor: Colors.blue + '15', borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs,
+  },
+  previewTime: { fontSize: Typography.sm, fontWeight: Typography.semiBold, color: Colors.blue },
+  saveBtn: {
+    backgroundColor: Colors.blue, borderRadius: Radius.md,
+    paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm,
+  },
+  saveBtnDisabled: { opacity: 0.6 },
+  saveBtnText: { fontSize: Typography.base, fontWeight: Typography.bold, color: '#fff' },
+  entryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },
+  entryInfo: { flex: 1 },
+  entryName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
+  entrySchedule: { fontSize: Typography.sm, color: Colors.blue, marginTop: 2 },
+  entryActions: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
+  divider: { height: 1, backgroundColor: Colors.divider },
   emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
   emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
   emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
