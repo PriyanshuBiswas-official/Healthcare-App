@@ -2,6 +2,10 @@ export type ReminderCategory = 'medication' | 'water' | 'workout' | 'nutrition' 
 
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
+export type RepeatType = 'daily' | 'weekly' | 'interval' | 'monthly';
+
+export type IntervalUnit = 'hours' | 'days' | 'weeks' | 'months';
+
 export interface Reminder {
   reminder_id: number;
   user_id: number;
@@ -20,9 +24,11 @@ export interface ReminderSchedule {
   reminder_schedule_id: number;
   reminder_id: number;
   notify_at: string;
-  repeat_interval_days: number | null;
   weekdays: Weekday[] | null;
   enabled: boolean;
+  repeat_type: RepeatType | null;
+  repeat_interval: number;
+  interval_unit: IntervalUnit | null;
   created_at: string;
   updated_at: string | null;
 }
@@ -44,7 +50,6 @@ export interface CreateReminderPayload {
   title: string;
   description?: string;
   start_date: string;
-  end_date?: string;
   repeat?: boolean;
 }
 
@@ -59,15 +64,19 @@ export interface UpdateReminderPayload {
 export interface CreateSchedulePayload {
   notify_at: string;
   weekdays?: Weekday[];
-  repeat_interval_days?: number;
   enabled?: boolean;
+  repeat_type?: RepeatType | null;
+  repeat_interval?: number;
+  interval_unit?: IntervalUnit | null;
 }
 
 export interface UpdateSchedulePayload {
   notify_at?: string;
   weekdays?: Weekday[];
-  repeat_interval_days?: number;
   enabled?: boolean;
+  repeat_type?: RepeatType | null;
+  repeat_interval?: number;
+  interval_unit?: IntervalUnit | null;
 }
 
 export interface UpdatePreferencesPayload {

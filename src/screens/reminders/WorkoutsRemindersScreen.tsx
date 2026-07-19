@@ -22,7 +22,7 @@ interface Props {
 
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
-export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
+export default function WorkoutsRemindersScreen({ onBack, onSaved }: Props) {
   const { getRemindersByCategory, addReminder, removeReminder, addReminderSchedule, fetchSchedules } = useReminders();
 
   const [editing, setEditing] = useState(false);
@@ -31,23 +31,24 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [schedulesMap, setSchedulesMap] = useState<Map<number, ReminderSchedule[]>>(new Map());
 
-  const [newBedtime, setNewBedtime] = useState('');
-  const [newWakeTime, setNewWakeTime] = useState('');
-  const [newTarget, setNewTarget] = useState('');
+  const [newType, setNewType] = useState('');
+  const [newDuration, setNewDuration] = useState('');
+  const [newTime, setNewTime] = useState('');
+  const [newDays, setNewDays] = useState('');
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const items = getRemindersByCategory('sleep');
-      setReminders(items);
+      const workoutReminders = getRemindersByCategory('workout');
+      setReminders(workoutReminders);
       const newMap = new Map<number, ReminderSchedule[]>();
-      for (const r of items) {
+      for (const r of workoutReminders) {
         const scheds = await fetchSchedules(r.reminder_id);
         newMap.set(r.reminder_id, scheds);
       }
       setSchedulesMap(newMap);
     } catch (err) {
-      console.error('[SleepReminders] load error:', err);
+      console.error('[WorkoutsReminders] load error:', err);
     } finally {
       setLoading(false);
     }
@@ -56,32 +57,34 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleAdd = async () => {
-    if (!newBedtime.trim()) return;
-    if (!TIME_RE.test(newBedtime.trim())) { Alert.alert('Invalid time', 'Bedtime must be in HH:MM format (e.g. 22:30)'); return; }
-    if (newWakeTime.trim() && !TIME_RE.test(newWakeTime.trim())) { Alert.alert('Invalid time', 'Wake time must be in HH:MM format (e.g. 06:30)'); return; }
+    if (!newType.trim()) return;
+    if (newTime.trim() && !TIME_RE.test(newTime.trim())) { Alert.alert('Invalid time', 'Time must be in HH:MM format (e.g. 09:00)'); return; }
     try {
       setSaving(true);
-      const desc = [newWakeTime.trim() ? `Wake: ${newWakeTime.trim()}` : '', newTarget.trim() ? `Target: ${newTarget.trim()} hrs` : ''].filter(Boolean).join(' · ');
+      const desc = [newDuration.trim(), newDays.trim()].filter(Boolean).join(' · ');
       const reminder = await addReminder({
-        category: 'sleep',
-        title: `Bedtime: ${newBedtime.trim()}`,
+        category: 'workout',
+        title: newType.trim(),
         description: desc || undefined,
         start_date: new Date().toISOString().split('T')[0],
         repeat: true,
       });
-      // Parse HH:MM from bedtime string for schedule
-      const timeMatch = newBedtime.trim().match(/(\d{1,2}):?(\d{2})\s*(AM|PM)?/i);
-      if (timeMatch) {
-        let hours = parseInt(timeMatch[1], 10);
-        const mins = timeMatch[2] || '00';
-        if (timeMatch[3] && timeMatch[3].toUpperCase() === 'PM' && hours < 12) hours += 12;
-        if (timeMatch[3] && timeMatch[3].toUpperCase() === 'AM' && hours === 12) hours = 0;
-        const notifyTime = `${hours.toString().padStart(2, '0')}:${mins}`;
-        const schedule = await addReminderSchedule(reminder.reminder_id, { notify_at: notifyTime, enabled: true }, reminder);
-        setSchedulesMap(prev => { const next = new Map(prev); next.set(reminder.reminder_id, [schedule]); return next; });
+      if (newTime.trim()) {
+        const schedule = await addReminderSchedule(reminder.reminder_id, {
+          notify_at: newTime.trim(),
+          enabled: true,
+          repeat_type: 'daily',
+          repeat_interval: 1,
+          interval_unit: 'days',
+        }, reminder);
+        setSchedulesMap(prev => {
+          const next = new Map(prev);
+          next.set(reminder.reminder_id, [schedule]);
+          return next;
+        });
       }
       setReminders(prev => prev.some(r => r.reminder_id === reminder.reminder_id) ? prev : [reminder, ...prev]);
-      setNewBedtime(''); setNewWakeTime(''); setNewTarget('');
+      setNewType(''); setNewDuration(''); setNewTime(''); setNewDays('');
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to add reminder');
     } finally {
@@ -99,36 +102,39 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
   };
 
   const handleSave = async () => {
-    if (!newBedtime.trim()) {
+    if (!newType.trim()) {
       setEditing(false);
       onSaved?.();
       return;
     }
     try {
       setSaving(true);
-      if (!TIME_RE.test(newBedtime.trim())) { Alert.alert('Invalid time', 'Bedtime must be in HH:MM format (e.g. 22:30)'); return; }
-      if (newWakeTime.trim() && !TIME_RE.test(newWakeTime.trim())) { Alert.alert('Invalid time', 'Wake time must be in HH:MM format (e.g. 06:30)'); return; }
-      const desc = [newWakeTime.trim() ? `Wake: ${newWakeTime.trim()}` : '', newTarget.trim() ? `Target: ${newTarget.trim()} hrs` : ''].filter(Boolean).join(' · ');
+      if (newTime.trim() && !TIME_RE.test(newTime.trim())) { Alert.alert('Invalid time', 'Time must be in HH:MM format (e.g. 09:00)'); return; }
+      const desc = [newDuration.trim(), newDays.trim()].filter(Boolean).join(' · ');
       const reminder = await addReminder({
-        category: 'sleep',
-        title: `Bedtime: ${newBedtime.trim()}`,
+        category: 'workout',
+        title: newType.trim(),
         description: desc || undefined,
         start_date: new Date().toISOString().split('T')[0],
         repeat: true,
       });
-      const timeMatch = newBedtime.trim().match(/(\d{1,2}):?(\d{2})\s*(AM|PM)?/i);
-      if (timeMatch) {
-        let hours = parseInt(timeMatch[1], 10);
-        const mins = timeMatch[2] || '00';
-        if (timeMatch[3] && timeMatch[3].toUpperCase() === 'PM' && hours < 12) hours += 12;
-        if (timeMatch[3] && timeMatch[3].toUpperCase() === 'AM' && hours === 12) hours = 0;
-        const notifyTime = `${hours.toString().padStart(2, '0')}:${mins}`;
-        const schedule = await addReminderSchedule(reminder.reminder_id, { notify_at: notifyTime, enabled: true }, reminder);
-        setSchedulesMap(prev => { const next = new Map(prev); next.set(reminder.reminder_id, [schedule]); return next; });
+      if (newTime.trim()) {
+        const schedule = await addReminderSchedule(reminder.reminder_id, {
+          notify_at: newTime.trim(),
+          enabled: true,
+          repeat_type: 'daily',
+          repeat_interval: 1,
+          interval_unit: 'days',
+        }, reminder);
+        setSchedulesMap(prev => {
+          const next = new Map(prev);
+          next.set(reminder.reminder_id, [schedule]);
+          return next;
+        });
       }
       setReminders(prev => prev.some(r => r.reminder_id === reminder.reminder_id) ? prev : [reminder, ...prev]);
-      setNewBedtime(''); setNewWakeTime(''); setNewTarget('');
-      Alert.alert('Saved', 'Sleep reminder added');
+      setNewType(''); setNewDuration(''); setNewTime(''); setNewDays('');
+      Alert.alert('Saved', 'Workout reminder added');
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to save reminder');
     } finally {
@@ -143,10 +149,10 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
       <View style={styles.root}>
         <View style={styles.topBar}>
           <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}><ArrowLeft size={22} color={Colors.text} strokeWidth={2} /></TouchableOpacity>
-          <Text style={styles.pageTitle}>Sleep Reminders</Text>
+          <Text style={styles.pageTitle}>Workout Reminders</Text>
           <View style={{ width: 60 }} />
         </View>
-        <View style={styles.loadingContainer}><ActivityIndicator size="large" color={Colors.purple} /></View>
+        <View style={styles.loadingContainer}><ActivityIndicator size="large" color={Colors.pink} /></View>
       </View>
     );
   }
@@ -155,7 +161,7 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
     <View style={styles.root}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}><ArrowLeft size={22} color={Colors.text} strokeWidth={2} /></TouchableOpacity>
-        <Text style={styles.pageTitle}>Sleep Reminders</Text>
+        <Text style={styles.pageTitle}>Workout Reminders</Text>
         <TouchableOpacity style={styles.editBtn} onPress={() => (editing ? handleSave() : setEditing(true))} activeOpacity={0.7}>
           <Text style={[styles.editBtnText, editing && styles.editBtnSave]}>{editing ? 'Done' : 'Edit'}</Text>
         </TouchableOpacity>
@@ -164,10 +170,11 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {editing && (
           <GlassCardView style={styles.card}>
-            <Text style={styles.addTitle}>Add Sleep Reminder</Text>
-            <TextInput style={styles.input} value={newBedtime} onChangeText={setNewBedtime} placeholder="Bedtime (e.g. 22:30)" placeholderTextColor={Colors.textMuted} />
-            <TextInput style={styles.input} value={newWakeTime} onChangeText={setNewWakeTime} placeholder="Wake time (e.g. 06:30)" placeholderTextColor={Colors.textMuted} />
-            <TextInput style={styles.input} value={newTarget} onChangeText={setNewTarget} placeholder="Target hours (e.g. 8)" placeholderTextColor={Colors.textMuted} keyboardType="number-pad" />
+            <Text style={styles.addTitle}>Add Workout Reminder</Text>
+            <TextInput style={styles.input} value={newType} onChangeText={setNewType} placeholder="Workout type (e.g. Strength Training)" placeholderTextColor={Colors.textMuted} />
+            <TextInput style={styles.input} value={newDuration} onChangeText={setNewDuration} placeholder="Duration (e.g. 45 min)" placeholderTextColor={Colors.textMuted} />
+            <TextInput style={styles.input} value={newTime} onChangeText={setNewTime} placeholder="Time (HH:MM)" placeholderTextColor={Colors.textMuted} />
+            <TextInput style={styles.input} value={newDays} onChangeText={setNewDays} placeholder="Days (e.g. Mon, Wed, Fri)" placeholderTextColor={Colors.textMuted} />
             <TouchableOpacity style={[styles.addBtn, saving && styles.addBtnDisabled]} onPress={handleAdd} activeOpacity={0.7} disabled={saving}>
               <Text style={styles.addBtnText}>{saving ? 'Adding...' : '+ Add'}</Text>
             </TouchableOpacity>
@@ -177,9 +184,9 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
         <GlassCardView style={styles.card}>
           {reminders.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>🌙</Text>
-              <Text style={styles.emptyText}>No sleep reminders</Text>
-              <Text style={styles.emptySub}>Tap Edit to set bedtime and wake reminders</Text>
+              <Text style={styles.emptyIcon}>💪</Text>
+              <Text style={styles.emptyText}>No workout reminders</Text>
+              <Text style={styles.emptySub}>Tap Edit to schedule workout reminders</Text>
             </View>
           ) : (
             reminders.map((reminder, i) => {
@@ -216,7 +223,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, borderRadius: Radius.md, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.bgCardBorder, alignItems: 'center', justifyContent: 'center' },
   pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
   editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
-  editBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.purple },
+  editBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.pink },
   editBtnSave: { color: Colors.success },
   scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
   card: { padding: Spacing.lg, marginBottom: Spacing.lg },
@@ -228,9 +235,9 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: Colors.divider },
   addTitle: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary, marginBottom: Spacing.md },
   input: { backgroundColor: Colors.bgCardSolid, borderWidth: 1, borderColor: Colors.bgCardBorder, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md, fontSize: Typography.base, color: Colors.textPrimary, marginBottom: Spacing.sm },
-  addBtn: { backgroundColor: Colors.purple + '20', borderWidth: 1, borderColor: Colors.purple + '50', borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm },
+  addBtn: { backgroundColor: Colors.pink + '20', borderWidth: 1, borderColor: Colors.pink + '50', borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm },
   addBtnDisabled: { opacity: 0.6 },
-  addBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.purple },
+  addBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.pink },
   emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
   emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
   emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },

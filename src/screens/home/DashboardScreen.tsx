@@ -40,6 +40,9 @@ import { getTodaySummary, getActivityGoal, getWeeklyStats } from '../../services
 import type { SleepLog, WeightEntry } from '../../types/health';
 import type { DayMealsResponse, DayWaterResponse, NutritionGoal, MealType, WaterChallenge, WeeklyTrendDay } from '../../types/diet';
 import type { ActivitySummary, ActivityGoal, WeeklyData } from '../../types/activity';
+import { getMedications, getMedicationLogsForDate, logMedicationTaken, removeMedicationLog } from '../../types/medication';
+import type { Medication, MedicationLog } from '../../types/medication';
+import { formatTime12h } from '../../utils/calendarHelpers';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -185,9 +188,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const slideAnim = useRef(new Animated.Value(30)).current;
   const heroHeightRef = useRef(0);
 
-  const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date>(new Date());
-  const [calendarCurrentMonth, setCalendarCurrentMonth] = useState<Date>(new Date());
-  const [calendarExpanded, setCalendarExpanded] = useState<boolean>(true);
   const [showAllMeds, setShowAllMeds] = useState<boolean>(false);
   const [isListening, setIsListening] = useState(false);
 
@@ -255,15 +255,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     }
   }, [onOpenAI]);
 
-  const [medicationsData, setMedicationsData] = useState([
-    { name: 'Paracetamol', dose: '500 mg', time: '08:00 AM', taken: true, color: Colors.purple, purpose: 'Fever' },
-    { name: 'Metformin', dose: '500 mg', time: '08:00 PM', taken: false, color: Colors.amber, purpose: 'Sugar' },
-    { name: 'Vitamin D3', dose: '1000 IU', time: '09:00 AM', taken: true, color: Colors.blue, purpose: 'Vitamin' },
-    { name: 'Cetirizine', dose: '10 mg', time: '08:00 AM', taken: false, color: Colors.pink, purpose: 'Allergy' },
-    { name: 'Omeprazole', dose: '20 mg', time: '07:00 AM', taken: true, color: Colors.teal, purpose: 'Acidity' },
-    { name: 'Amlodipine', dose: '5 mg', time: '08:00 AM', taken: false, color: Colors.success, purpose: 'BP' },
-    { name: 'Atorvastatin', dose: '10 mg', time: '09:00 PM', taken: false, color: Colors.textSecondary, purpose: 'Cholesterol' },
-  ]);
+  const [medications, setMedications] = useState<Medication[]>([]);
+  const [medicationLogs, setMedicationLogs] = useState<MedicationLog[]>([]);
 
   // Dynamic status bar color on scroll
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -312,6 +305,28 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [waterAmount, setWaterAmount] = useState('');
   const [modalSaving, setModalSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  const medicationsData = useMemo(() => {
+    const medColors = [Colors.purple, Colors.amber, Colors.blue, Colors.pink, Colors.teal, Colors.success, Colors.textSecondary];
+    const logIds = new Set(medicationLogs.map(l => l.medicine_id));
+    return medications
+      .filter(m => m.is_active)
+      .map((med, idx) => {
+        // Supabase nests schedules inside reminder via the join query
+        const reminderObj = med.reminder as any;
+        const schedules = reminderObj?.schedules || med.schedules || [];
+        const times = schedules.map((s: any) => formatTime12h(s.notify_at)).filter(Boolean);
+        return {
+          id: med.id,
+          name: med.name,
+          dose: med.dosage || 'N/A',
+          time: times.length > 0 ? times.join(' · ') : 'No reminder set',
+          taken: logIds.has(med.id),
+          color: medColors[idx % medColors.length],
+          purpose: med.frequency || 'Medication',
+        };
+      });
+  }, [medications, medicationLogs]);
 
   useEffect(() => {
     Animated.parallel([
@@ -374,6 +389,14 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getWeeklyStats(session.access_token, today)
         .then(setWeeklyActivity)
         .catch(err => console.warn('Failed to load weekly stats on Dashboard:', err));
+
+      getMedications(session.access_token)
+        .then(setMedications)
+        .catch(err => console.warn('Failed to load medications on Dashboard:', err));
+
+      getMedicationLogsForDate(session.access_token, today)
+        .then(setMedicationLogs)
+        .catch(err => console.warn('Failed to load medication logs on Dashboard:', err));
     }
   };
 
@@ -392,6 +415,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getWaterChallenge(session.access_token, 5).then(setWaterChallenge),
       getWeeklyTrend(session.access_token).then(setWeeklyTrend),
       getWeeklyStats(session.access_token, today).then(setWeeklyActivity),
+      getMedications(session.access_token).then(setMedications),
+      getMedicationLogsForDate(session.access_token, today).then(setMedicationLogs),
     ]);
     setRefreshing(false);
   }, [session?.access_token]);
@@ -786,96 +811,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           ))}
         </ScrollView>
 
-        {/* SECTION: COLLAPSIBLE MONTHLY CALENDAR */}
-        <HealthCalendar
-          selectedDate={calendarSelectedDate}
-          currentMonth={calendarCurrentMonth}
-          expanded={calendarExpanded}
-          gender={gender ?? 'female'}
-          onDateSelect={setCalendarSelectedDate}
-          onMonthChange={setCalendarCurrentMonth}
-          onToggleExpand={() => setCalendarExpanded(!calendarExpanded)}
-        />
-
-        {/* SECTION: TODAY'S AGENDA */}
-        <SectionHeader
-          title={`Agenda — ${calendarSelectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`}
-        />
-        <GlassCardView style={styles.agendaCard}>
-          {(() => {
-            const isSameDay = (d1: Date, d2: Date) =>
-              d1.getFullYear() === d2.getFullYear() &&
-              d1.getMonth() === d2.getMonth() &&
-              d1.getDate() === d2.getDate();
-
-            const today = new Date();
-            const agendaEvents: { icon: string; label: string; time: string; type: string }[] = [];
-
-            if (gender === 'female') {
-              const periodStart = new Date(today.getFullYear(), today.getMonth(), 3);
-              const daysInCycle = 5;
-              for (let d = 0; d < daysInCycle; d++) {
-                const day = new Date(periodStart);
-                day.setDate(periodStart.getDate() + d);
-                if (isSameDay(day, calendarSelectedDate)) {
-                  agendaEvents.push({ icon: '🩸', label: 'Period Day', time: 'All day', type: 'period' });
-                }
-              }
-            }
-
-            const workoutDays = [1, 3, 5];
-            if (workoutDays.includes(calendarSelectedDate.getDay())) {
-              agendaEvents.push({ icon: '💪', label: 'Workout Day', time: '07:00 AM', type: 'workout' });
-            }
-
-            if (calendarSelectedDate.getDate() % 14 === 0) {
-              agendaEvents.push({ icon: '🩺', label: 'Dr. Sharma — Cardiology', time: '10:30 AM', type: 'appointment' });
-            }
-
-            agendaEvents.push({ icon: '💊', label: 'Vitamin D3 1000 IU', time: '08:00 AM', type: 'medication' });
-            agendaEvents.push({ icon: '💊', label: 'Metformin 500 mg', time: '08:00 PM', type: 'medication' });
-
-            const typeConfig: Record<string, { accentColor: string; badge: string }> = {
-              period: { accentColor: Colors.pink, badge: 'Period' },
-              appointment: { accentColor: Colors.blue, badge: 'Appointment' },
-              workout: { accentColor: Colors.teal, badge: 'Workout' },
-              medication: { accentColor: Colors.textMuted, badge: 'Medication' },
-            };
-
-            if (agendaEvents.length === 0) {
-              return (
-                <View style={styles.agendaEmpty}>
-                  <Text style={styles.agendaEmptyIcon}>📅</Text>
-                  <Text style={styles.agendaEmptyText}>Nothing scheduled</Text>
-                  <Text style={styles.agendaEmptySubtext}>Enjoy your free day</Text>
-                </View>
-              );
-            }
-
-            return (
-              <View style={{ gap: Spacing.xs }}>
-                {agendaEvents.map((evt, idx) => {
-                  const cfg = typeConfig[evt.type] ?? typeConfig.medication;
-                  return (
-                    <View key={idx} style={styles.agendaEventRow}>
-                      <View style={[styles.agendaEventAccentDot, { backgroundColor: cfg.accentColor }]} />
-                      <View style={styles.agendaEventIconWrap}>
-                        <Text style={styles.agendaEventIcon}>{evt.icon}</Text>
-                      </View>
-                      <View style={styles.agendaEventInfo}>
-                        <Text style={styles.agendaEventLabel}>{evt.label}</Text>
-                        <Text style={styles.agendaEventTime}>{evt.time}</Text>
-                      </View>
-                      <View style={styles.agendaEventBadge}>
-                        <Text style={styles.agendaEventBadgeText}>{cfg.badge}</Text>
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            );
-          })()}
-        </GlassCardView>
+        {/* SECTION: HEALTH CALENDAR (Self-contained and optimized) */}
+        <HealthCalendar />
 
         {/* SECTION: REDESIGNED QUICK ACTIONS */}
         <SectionHeader title="Quick Actions" />
@@ -1130,12 +1067,21 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         {/* SECTION: TODAY'S MEDICATIONS */}
         <SectionHeader title="Today's Medications" />
         <View style={styles.medList}>
-          {medicationsData.slice(0, showAllMeds ? medicationsData.length : 5).map((med, index) => (
-            <View key={index} style={[styles.medItem, index < Math.min(5, medicationsData.length) - 1 && styles.medItemBorder]}>
+          {medicationsData.slice(0, showAllMeds ? medicationsData.length : 5).map((med) => (
+            <View key={med.id} style={[styles.medItem, styles.medItemBorder]}>
               <TouchableOpacity
                 style={[styles.medCheck, med.taken && { backgroundColor: Colors.success, borderColor: Colors.success }]}
                 onPress={() => {
-                  setMedicationsData(prev => prev.map((m, i) => i === index ? { ...m, taken: !m.taken } : m));
+                  const today = new Date().toISOString().split('T')[0];
+                  if (med.taken) {
+                    removeMedicationLog(session?.access_token || '', med.id, today)
+                      .then(() => setMedicationLogs(prev => prev.filter(l => !(l.medicine_id === med.id && l.date === today))))
+                      .catch(err => console.warn('Failed to remove medication log:', err));
+                  } else {
+                    logMedicationTaken(session?.access_token || '', med.id, today)
+                      .then(log => setMedicationLogs(prev => [...prev, log]))
+                      .catch(err => console.warn('Failed to log medication:', err));
+                  }
                 }}
                 activeOpacity={0.7}
               >

@@ -81,3 +81,13 @@ export interface ActivityGoal {
   steps_goal: number;
   created_at: string;
 }
+
+export interface WorkoutPlanDay {
+  day_name: string;
+  day_no: number;
+}
+
+export interface WorkoutPlanDays {
+  plan_name: string | null;
+  days: WorkoutPlanDay[];
+}

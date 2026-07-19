@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '../config/api';
-import type { ActivitySummary, TodayWorkout, WeeklyData, PersonalRecord, ActivityGoal } from '../types/activity';
+import type { ActivitySummary, TodayWorkout, WeeklyData, PersonalRecord, ActivityGoal, WorkoutPlanDays } from '../types/activity';
 
 export interface PlanDayInput {
   day_no: number;
@@ -73,6 +73,15 @@ export async function createWorkoutPlan(token: string, plan: PlanInput): Promise
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.error || 'Failed to create workout plan');
+  return json.data;
+}
+
+export async function getCurrentWorkoutPlanDays(token: string): Promise<WorkoutPlanDays> {
+  const res = await fetch(`${API_BASE_URL}/api/activity/plan/current-days`, {
+    headers: authHeaders(token),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch workout plan days');
   return json.data;
 }
 
