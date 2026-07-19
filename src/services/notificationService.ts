@@ -254,6 +254,32 @@ export async function checkNotificationPermission(): Promise<boolean> {
   return settings.authorizationStatus >= 1;
 }
 
+/**
+ * Returns true if battery optimization is enabled for this app (Android only).
+ * When enabled, the OS may delay or batch local alarm notifications.
+ */
+export async function isBatteryOptimizationEnabled(): Promise<boolean> {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return await notifee.isBatteryOptimizationEnabled();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Opens the Android battery optimization settings screen for this app.
+ * Allows user to set the app to "Unrestricted" so alarms fire on time.
+ */
+export async function openBatteryOptimizationSettings(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  try {
+    await notifee.openBatteryOptimizationSettings();
+  } catch {
+    console.warn('[NotificationService] Could not open battery optimization settings');
+  }
+}
+
 // ── Scheduling ─────────────────────────────────────────────
 
 /**
@@ -342,18 +368,13 @@ async function scheduleIntervalHoursNotifications(
     currentHour += intervalHours;
   }
 
-  // If start time is past today, skip to tomorrow
   const now = new Date();
-  let dayOffset = 0;
-  if (fireTimes.length > 0) {
-    const firstToday = new Date();
-    firstToday.setHours(fireTimes[0].hour, fireTimes[0].minute, 0, 0);
-    if (firstToday <= now) {
-      dayOffset = 1;
-    }
-  }
 
   for (const ft of fireTimes) {
+    const slotToday = new Date();
+    slotToday.setHours(ft.hour, ft.minute, 0, 0);
+    const dayOffset = slotToday <= now ? 1 : 0;
+
     const triggerDate = new Date();
     triggerDate.setDate(triggerDate.getDate() + dayOffset);
     triggerDate.setHours(ft.hour, ft.minute, 0, 0);
@@ -362,10 +383,6 @@ async function scheduleIntervalHoursNotifications(
     const sixtyDaysOut = new Date();
     sixtyDaysOut.setDate(sixtyDaysOut.getDate() + 60);
     if (triggerDate > sixtyDaysOut) continue;
-
-    // Check quiet hours
-    const timeStr = `${String(ft.hour).padStart(2, '0')}:${String(ft.minute).padStart(2, '0')}`;
-    if (isInQuietHours(timeStr, preferences.quiet_hr_start, preferences.quiet_hr_end)) continue;
 
     const notificationId = `${getNotificationId(reminder.reminder_id, schedule.reminder_schedule_id)}_${ft.hour}${String(ft.minute).padStart(2, '0')}`;
     const versionedChannelId = getVersionedChannelId(meta.channel);
@@ -415,11 +432,6 @@ async function scheduleSingleNotification(
   preferences: NotificationPreferences,
   meta: { label: string; icon: string; color: string; channel: string },
 ): Promise<void> {
-  // Check quiet hours
-  if (isInQuietHours(schedule.notify_at, preferences.quiet_hr_start, preferences.quiet_hr_end)) {
-    return;
-  }
-
   const [hours, minutes] = schedule.notify_at.split(':').map(Number);
   const now = new Date();
 
