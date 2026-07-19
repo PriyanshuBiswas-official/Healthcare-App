@@ -686,7 +686,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             <View style={{ flex: 1 }}>
               <Text style={styles.heroDate}>{todayDateStr}</Text>
               <Text style={styles.heroGreeting} numberOfLines={1}>
-                Hi, {user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'} 👋
+                Hi, {user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'}
               </Text>
             </View>
             <View style={styles.heroTopBarActions}>
