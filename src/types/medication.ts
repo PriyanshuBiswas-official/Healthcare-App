@@ -153,6 +153,53 @@ export async function toggleMedicationReminder(
     body: JSON.stringify({ enabled }),
   });
   const json = await res.json();
-  if (!json.success) throw new Error(json.error || json.message || 'Failed to toggle reminder');
+  if (!json.success) throw new Error(json.error || 'Failed to toggle reminder');
   return json.data;
+}
+
+// ── Medication Logs ────────────────────────────────────────
+
+export interface MedicationLog {
+  user_id: number;
+  medicine_id: number;
+  date: string;
+  created_at: string;
+}
+
+export async function getMedicationLogsForDate(token: string, date: string): Promise<MedicationLog[]> {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/health/medication-log?date=${date}`, {
+    headers: authHeaders(token),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch medication logs');
+  return json.data;
+}
+
+export async function logMedicationTaken(
+  token: string,
+  medicineId: number,
+  date: string,
+): Promise<MedicationLog> {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/health/medication-log`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ medicine_id: medicineId, date }),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to log medication');
+  return json.data;
+}
+
+export async function removeMedicationLog(
+  token: string,
+  medicineId: number,
+  date: string,
+): Promise<void> {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/api/health/medication-log`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+    body: JSON.stringify({ medicine_id: medicineId, date }),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to remove medication log');
 }

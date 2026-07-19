@@ -22,12 +22,12 @@ import MedicalHistoryScreen from './MedicalHistoryScreen';
 import MedicationsScreen from './MedicationsScreen';
 import AllergiesScreen from './AllergiesScreen';
 import EmergencyContactsScreen from './EmergencyContactsScreen';
-import WaterRemindersScreen from './WaterRemindersScreen';
-import WorkoutsRemindersScreen from './WorkoutsRemindersScreen';
-import AppointmentsRemindersScreen from './AppointmentsRemindersScreen';
-import SleepRemindersScreen from './SleepRemindersScreen';
-import HealthRemindersScreen from './HealthRemindersScreen';
-import MedicationsRemindersScreen from './MedicationsRemindersScreen';
+import WaterRemindersScreen from '../reminders/WaterRemindersScreen';
+import WorkoutsRemindersScreen from '../reminders/WorkoutsRemindersScreen';
+import AppointmentsRemindersScreen from '../reminders/AppointmentsRemindersScreen';
+import SleepRemindersScreen from '../reminders/SleepRemindersScreen';
+import HealthRemindersScreen from '../reminders/HealthRemindersScreen';
+import MedicationsRemindersScreen from '../reminders/MedicationsRemindersScreen';
 
 type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency' | 'reminders-medication' | 'reminders-water' | 'reminders-workouts' | 'reminders-appointments' | 'reminders-sleep' | 'reminders-health';
 

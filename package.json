@@ -23,6 +23,7 @@
     "lucide-react-native": "^1.24.0",
     "react": "19.2.3",
     "react-native": "0.86.0",
+    "react-native-calendars": "^1.1314.0",
     "react-native-image-picker": "^8.2.1",
     "react-native-safe-area-context": "^5.8.0",
     "react-native-screens": "^4.25.2",
