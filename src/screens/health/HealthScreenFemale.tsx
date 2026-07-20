@@ -526,6 +526,7 @@ export default function HealthScreenFemale({
   const { unreadCount } = useNotifications();
   const [activeTab, setActiveTab] = useState('Overview');
   const [selectedPhase, setSelectedPhase] = useState('Luteal');
+  const [hasTodayLog, setHasTodayLog] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   // ── Data state ──────────────────────────────────────────────────────────
@@ -576,6 +577,9 @@ export default function HealthScreenFemale({
       ]);
       setPeriodLogs(periods ?? []);
       setMoodLogs(moods ?? []);
+      // Check if a mood log exists for today
+      const today = new Date().toISOString().split('T')[0];
+      setHasTodayLog((moods ?? []).some((log: any) => log.date === today));
       setDischargeLogs(discharges ?? []);
       setSymptomsLogs(symptoms ?? []);
       setInsights(ins ?? []);
@@ -610,6 +614,8 @@ export default function HealthScreenFemale({
     ]);
     setPeriodLogs(periods ?? []);
     setMoodLogs(moods ?? []);
+    const today = new Date().toISOString().split('T')[0];
+    setHasTodayLog((moods ?? []).some((log: any) => log.date === today));
     setDischargeLogs(discharges ?? []);
     setSymptomsLogs(symptoms ?? []);
     setInsights(ins ?? []);
@@ -814,7 +820,7 @@ export default function HealthScreenFemale({
         <InnerTabBar tabs={TABS} active={activeTab} onSelect={setActiveTab} accentColor={Colors.pink} />
 
         {/* Health log banner — common to all tabs */}
-        {lastHealthLog ? (
+        {lastHealthLog || hasTodayLog ? (
           <TouchableOpacity style={[s.logCta, { borderColor: Colors.success + '45', backgroundColor: Colors.success + '12' }]} onPress={onOpenHealthLog} activeOpacity={0.85}>
             <View style={[s.logCtaCopy, { flex: 1 }]}>
               <Text style={[s.logCtaTitle, { color: Colors.success }]}>Log added today</Text>
@@ -880,7 +886,7 @@ export default function HealthScreenFemale({
                   </Svg>
                   <View style={s.cycleRingCenter}>
                     <Text style={s.ringDay}>Day {cycleDay}</Text>
-                    <Text style={s.ringSub}>of {cycleLength}</Text>
+                    <Text style={s.ringSub}>of {cycleDay > cycleLength ? `${cycleLength}+` : cycleLength}</Text>
                   </View>
                 </View>
                 <View style={s.cycleInfoWrap}>
@@ -891,9 +897,9 @@ export default function HealthScreenFemale({
                   </View>
                   <View style={s.cycleStatsGrid}>
                     <Text style={s.cycleStatLabel}>Cycle day</Text>
-                    <Text style={s.cycleStatVal}>{cycleDay} / {cycleLength}</Text>
+                    <Text style={s.cycleStatVal}>{cycleDay} / {cycleDay > cycleLength ? `${cycleLength}+` : cycleLength}</Text>
                     <Text style={s.cycleStatLabel}>Next period</Text>
-                    <Text style={[s.cycleStatVal, { color: Colors.pink }]}>{daysUntilNextPeriod} days away</Text>
+                    <Text style={[s.cycleStatVal, { color: Colors.pink }]}>{daysUntilNextPeriod <= 0 ? 'Overdue' : `${daysUntilNextPeriod} days away`}</Text>
                     <Text style={s.cycleStatLabel}>Cycle length</Text>
                     <Text style={s.cycleStatVal}>{cycleLength} days</Text>
                     <Text style={s.cycleStatLabel}>Period length</Text>

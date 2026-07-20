@@ -31,13 +31,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg';
 import { launchCamera } from 'react-native-image-picker';
 import Voice from '@dev-amirzubair/react-native-voice';
-import { Search, Mic, Camera, Check } from 'lucide-react-native';
+import { Search, Mic, Camera, Check, TriangleAlert } from 'lucide-react-native';
 import { TabName } from '../../navigation/TabBar';
 import { SleepTrackerSection, VitalsDashboardSection } from '../health/HealthCommonSections';
 import { getSleepLogs, getWeightLogs, saveWeightLog } from '../../services/healthService';
 import { getMealsForDate, getWaterForDate, getCalorieGoal, logMeal, logWater, getWaterChallenge, getWeeklyTrend } from '../../services/dietService';
 import { getTodaySummary, getActivityGoal, getWeeklyStats } from '../../services/activityService';
-import type { SleepLog, WeightEntry } from '../../types/health';
+import { getDashboardHealthScore } from '../../services/healthScoreService';
+import type { SleepLog, WeightEntry, DashboardHealthScore } from '../../types/health';
 import type { DayMealsResponse, DayWaterResponse, NutritionGoal, MealType, WaterChallenge, WeeklyTrendDay } from '../../types/diet';
 import type { ActivitySummary, ActivityGoal, WeeklyData } from '../../types/activity';
 import { getMedications, getMedicationLogsForDate, logMedicationTaken, removeMedicationLog } from '../../types/medication';
@@ -50,11 +51,15 @@ function formatDashboardDate(iso: string): string {
   try {
     const d = new Date(iso);
     const now = new Date();
-    const diffDays = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    const dDateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffDays = Math.round((dDateOnly.getTime() - nowDateOnly.getTime()) / (1000 * 60 * 60 * 24));
 
     let dayLabel: string;
-    if (diffDays <= 0) dayLabel = 'Today';
+    if (diffDays === 0) dayLabel = 'Today';
     else if (diffDays === 1) dayLabel = 'Tomorrow';
+    else if (diffDays === -1) dayLabel = 'Yesterday';
     else dayLabel = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 
     const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -305,6 +310,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [waterAmount, setWaterAmount] = useState('');
   const [modalSaving, setModalSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [healthScore, setHealthScore] = useState<DashboardHealthScore | null>(null);
 
   const medicationsData = useMemo(() => {
     const medColors = [Colors.purple, Colors.amber, Colors.blue, Colors.pink, Colors.teal, Colors.success, Colors.textSecondary];
@@ -397,6 +403,10 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getMedicationLogsForDate(session.access_token, today)
         .then(setMedicationLogs)
         .catch(err => console.warn('Failed to load medication logs on Dashboard:', err));
+
+      getDashboardHealthScore(session.access_token)
+        .then(setHealthScore)
+        .catch(err => console.warn('Failed to load health score on Dashboard:', err));
     }
   };
 
@@ -417,6 +427,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getWeeklyStats(session.access_token, today).then(setWeeklyActivity),
       getMedications(session.access_token).then(setMedications),
       getMedicationLogsForDate(session.access_token, today).then(setMedicationLogs),
+      getDashboardHealthScore(session.access_token).then(setHealthScore),
     ]);
     setRefreshing(false);
   }, [session?.access_token]);
@@ -720,11 +731,17 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           {/* ── Health Score + Overview ── */}
           <View style={styles.heroOverviewRow}>
             <View style={styles.heroScoreArea}>
-              <HeroScoreRing score={86} />
+              <HeroScoreRing score={healthScore?.score ?? 38} />
             </View>
             <View style={styles.heroOverviewText}>
               <Text style={styles.heroOverviewLabel}>Health Record Overview</Text>
-              <Text style={styles.heroOverviewSub}>Showing data from {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</Text>
+              <Text style={[styles.heroOverviewSub, { marginBottom: healthScore?.isLimitedData ? 0 : Spacing.sm }]}>Showing data from past week</Text>
+              {healthScore?.isLimitedData && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm }}>
+                  <TriangleAlert size={12} color={Colors.amber} />
+                  <Text style={[styles.heroOverviewSub, { marginBottom: 0, marginLeft: 4 }]}>Limited data available</Text>
+                </View>
+              )}
               <TouchableOpacity style={styles.heroReportBtn}>
                 <Text style={styles.heroReportBtnText}>Full Report →</Text>
               </TouchableOpacity>

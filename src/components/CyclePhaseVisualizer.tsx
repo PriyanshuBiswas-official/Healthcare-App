@@ -71,11 +71,20 @@ function bell(x: number, center: number, width: number, amp: number): number {
   return amp * Math.exp(-0.5 * Math.pow((x - center) / width, 2));
 }
 
-function buildHormoneData(cycleLength: number): HormoneFrame[] {
+function buildHormoneData(cycleLength: number, graphLength: number): HormoneFrame[] {
   const ovDay = cycleLength * 0.50;   // ovulation at ~50 % through cycle
   const lutPeak = cycleLength * 0.75;   // progesterone peak at ~75 %
-  return Array.from({ length: cycleLength }, (_, i) => {
+  return Array.from({ length: graphLength }, (_, i) => {
     const d = i + 1;
+    // Beyond the original cycle length, flatten to luteal baseline
+    if (d > cycleLength) {
+      return {
+        fsh: 0.15,
+        lh: 0.10,
+        estrogen: 0.12,
+        progesterone: 0.05,
+      };
+    }
     return {
       fsh: Math.min(1,
         bell(d, ovDay - 1, cycleLength * 0.10, 0.62) + 0.15,
@@ -214,11 +223,14 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
 
   const scrollRef = useRef<ScrollView>(null);
 
+  // ── Effective graph length extends when cycle runs long ──────────────
+  const effectiveGraphLength = Math.max(cycleLength, currentDay);
+
   // ── Compute calendar dates from start_date ───────────────────────────
   const DAY_ABBR = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   const dayLabels = useMemo(() => {
     const base = startDate ? new Date(startDate) : new Date();
-    return Array.from({ length: cycleLength }, (_, i) => {
+    return Array.from({ length: effectiveGraphLength }, (_, i) => {
       const d = new Date(base);
       d.setDate(d.getDate() + i);
       return {
@@ -227,7 +239,7 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
         dayAbbr: DAY_ABBR[d.getDay()],
       };
     });
-  }, [startDate, cycleLength]);
+  }, [startDate, effectiveGraphLength]);
 
   // ── Derived phase boundaries (scale with cycle length) ────────────────────
   const menEnd = Math.min(5, Math.round(cycleLength * 0.18));
@@ -235,20 +247,20 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
   const ovEnd = Math.round(cycleLength * 0.54);
 
   // ── Data ─────────────────────────────────────────────────────────────────
-  const hormoneData = useMemo(() => buildHormoneData(cycleLength), [cycleLength]);
+  const hormoneData = useMemo(() => buildHormoneData(cycleLength, effectiveGraphLength), [cycleLength, effectiveGraphLength]);
   const chartData = useMemo(
-    () => buildChartData(hormoneData, cycleLength),
-    [hormoneData, cycleLength],
+    () => buildChartData(hormoneData, effectiveGraphLength),
+    [hormoneData, effectiveGraphLength],
   );
 
   // ── Layout ───────────────────────────────────────────────────────────────
-  const totalWidth = cycleLength * COL_WIDTH;
+  const totalWidth = effectiveGraphLength * COL_WIDTH;
 
   const phaseBands = [
     { label: 'Menstruation', start: 0, end: menEnd, color: Colors.pink },
     { label: 'Follicular', start: menEnd, end: ovStart, color: Colors.follicular },
     { label: 'Ovulation', start: ovStart, end: ovEnd, color: Colors.amber },
-    { label: 'Luteal', start: ovEnd, end: cycleLength, color: Colors.purple },
+    { label: 'Luteal', start: ovEnd, end: effectiveGraphLength, color: Colors.purple },
   ];
 
   // ── Tooltip ───────────────────────────────────────────────────────────────
@@ -384,7 +396,7 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
             </Svg>
 
             {/* ── Tappable invisible column overlays ──────────────────────── */}
-            {Array.from({ length: cycleLength }, (_, i) => {
+            {Array.from({ length: effectiveGraphLength }, (_, i) => {
               const day = i + 1;
               const isSelected = selectedDay === day;
               const isCurrent = day === currentDay;
@@ -464,7 +476,7 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
           {/* ── Phase label bar ─────────────────────────────────────────────── */}
           <View style={cv.phaseLabelBar}>
             {phaseBands.map(band => {
-              const w = ((band.end - band.start) / cycleLength) * totalWidth;
+              const w = ((band.end - band.start) / effectiveGraphLength) * totalWidth;
               return (
                 <View
                   key={band.label}
@@ -529,7 +541,7 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
       <View style={cv.countdownStrip}>
         <View style={cv.countdownItem}>
           <Text style={[cv.countdownVal, { color: Colors.pink }]}>
-            {daysToNextPeriod}
+            {daysToNextPeriod <= 0 ? 'Overdue' : daysToNextPeriod}
           </Text>
           <Text style={cv.countdownLbl}>{'Days to\nNext Period'}</Text>
         </View>

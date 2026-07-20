@@ -179,9 +179,6 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
       notes,
     };
 
-    // Always call local save callback for immediate UI feedback
-    onSave?.(draft);
-
     // If token available, persist to backend
     if (token) {
       setSaving(true);
@@ -227,6 +224,9 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
         setSaving(false);
       }
     }
+
+    // Call local save callback AFTER backend persist so re-fetch gets fresh data
+    onSave?.(draft);
 
     if (!onSave) onBack();
   };
