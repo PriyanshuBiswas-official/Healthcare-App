@@ -14,6 +14,7 @@ import ProfileSetupScreen from './src/screens/profile/ProfileSetupScreen';
 import WorkoutLogScreen from './src/screens/fitness/WorkoutLogScreen';
 import HealthLogScreen, { HealthLogDraft } from './src/screens/health/HealthLogScreen';
 import PartnerHealthReportScreen from './src/screens/relationships/PartnerHealthReportScreen';
+import RelationshipsScreen from './src/screens/relationships/RelationshipsScreen';
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 import { PreferencesProvider } from './src/providers/PreferencesContext';
 import { NotificationProvider, useNotifications } from './src/providers/NotificationContext';
@@ -33,7 +34,7 @@ import OfflineBanner from './src/components/OfflineBanner';
 const Stack = createNativeStackNavigator();
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
-const OVERLAY_TABS: TabName[] = ['Profile', 'Notifications', 'WorkoutLog', 'HealthLog', 'PartnerReport'];
+const OVERLAY_TABS: TabName[] = ['Profile', 'Notifications', 'WorkoutLog', 'HealthLog', 'PartnerReport', 'Relationships'];
 
 // ── Reducer ──────────────────────────────────────────────────────────
 
@@ -47,6 +48,7 @@ type AppState = {
   profileSection: string | null;
   workoutLogExercise: any;
   lastHealthLog: HealthLogDraft | null;
+  selectedPartnerRelationshipId: string | null;
 };
 
 type AppAction =
@@ -61,6 +63,7 @@ type AppAction =
   | { type: 'OPEN_HEALTH_LOG' }
   | { type: 'CLOSE_HEALTH_LOG' }
   | { type: 'OPEN_PARTNER_REPORT'; partnerId: string }
+  | { type: 'OPEN_RELATIONSHIPS' }
   | { type: 'CLOSE_OVERLAY' }
   | { type: 'SAVE_HEALTH_LOG'; log: HealthLogDraft };
 
@@ -74,6 +77,7 @@ const INITIAL_STATE: AppState = {
   profileSection: null,
   workoutLogExercise: null,
   lastHealthLog: null,
+  selectedPartnerRelationshipId: null,
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -121,10 +125,13 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, activeTab: state.previousTab };
 
     case 'OPEN_PARTNER_REPORT':
-      return { ...state, previousTab: state.activeTab, activeTab: 'PartnerReport' };
+      return { ...state, previousTab: state.activeTab, activeTab: 'PartnerReport', selectedPartnerRelationshipId: action.partnerId };
+
+    case 'OPEN_RELATIONSHIPS':
+      return { ...state, previousTab: state.activeTab, activeTab: 'Relationships' };
 
     case 'CLOSE_OVERLAY':
-      return { ...state, activeTab: state.previousTab, profileSection: null };
+      return { ...state, activeTab: state.previousTab, profileSection: null, selectedPartnerRelationshipId: null };
 
     case 'SAVE_HEALTH_LOG':
       return { ...state, activeTab: state.previousTab, lastHealthLog: action.log };
@@ -147,6 +154,7 @@ const MemoizedNotificationsScreen = React.memo(NotificationsScreen);
 const MemoizedWorkoutLogScreen = React.memo(WorkoutLogScreen);
 const MemoizedHealthLogScreen = React.memo(HealthLogScreen);
 const MemoizedPartnerReportScreen = React.memo(PartnerHealthReportScreen);
+const MemoizedRelationshipsScreen = React.memo(RelationshipsScreen);
 const MemoizedTabBar = React.memo(TabBar);
 
 // ── AppShell ─────────────────────────────────────────────────────────
@@ -173,6 +181,8 @@ function AppShell() {
   const closeHealthLog = useCallback(() => dispatch({ type: 'CLOSE_HEALTH_LOG' }), []);
   const closeWorkoutLog = useCallback(() => dispatch({ type: 'CLOSE_WORKOUT_LOG' }), []);
   const openPartnerReport = useCallback((partnerId: string) => dispatch({ type: 'OPEN_PARTNER_REPORT', partnerId }), []);
+  const openRelationships = useCallback(() => dispatch({ type: 'OPEN_RELATIONSHIPS' }), []);
+  const closeRelationships = useCallback(() => dispatch({ type: 'CLOSE_OVERLAY' }), []);
   const openAppointments = useCallback(() => dispatch({ type: 'OPEN_PROFILE', section: 'reminders-appointments' }), []);
 
   // ── Notification tap handler ──────────────────────────────────
@@ -319,6 +329,7 @@ function AppShell() {
                     onCompleteProfile={openProfileSetup}
                     navigateToTab={navigateToTab}
                     onPartnerPress={openPartnerReport}
+                    onRelationshipsPress={openRelationships}
                     onOpenAI={openAI}
                     onOpenAppointments={openAppointments}
                   />
@@ -398,7 +409,18 @@ function AppShell() {
         )}
         {state.activeTab === 'PartnerReport' && (
           <View style={styles.screenWrapper}>
-            <MemoizedPartnerReportScreen onBack={closePartnerReport} />
+            <MemoizedPartnerReportScreen
+              relationshipId={state.selectedPartnerRelationshipId || ''}
+              onBack={closePartnerReport}
+            />
+          </View>
+        )}
+        {state.activeTab === 'Relationships' && (
+          <View style={styles.screenWrapper}>
+            <MemoizedRelationshipsScreen
+              onBack={closeRelationships}
+              onPartnerPress={openPartnerReport}
+            />
           </View>
         )}
       </View>

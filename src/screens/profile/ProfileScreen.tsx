@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   Switch,
   Image,
+  Alert,
 } from 'react-native';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
 import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView, SectionHeader, ProgressBar } from '../../components/SharedComponents';
@@ -221,9 +223,25 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
 
   const handleLogout = async () => {
     try {
+      // Sign out from Google first to clear cached account.
+      // This ensures the account picker appears on the next Google login.
+      const { GoogleSignin } = require('../../lib/googleSignin');
+      const isSignedIn = await GoogleSignin.isSignedIn();
+      if (isSignedIn) {
+        try {
+          await GoogleSignin.revokeAccess();
+        } catch (_) {
+          // revokeAccess may fail if the token was already revoked — safe to ignore
+        }
+        await GoogleSignin.signOut();
+      }
+    } catch (e) {
+      console.warn('[ProfileScreen] Google sign-out error:', e);
+    }
+    try {
       await supabase.auth.signOut();
     } catch (e) {
-      console.warn('[ProfileScreen] Logout error:', e);
+      console.warn('[ProfileScreen] Supabase sign-out error:', e);
     }
   };
 

@@ -40,6 +40,9 @@ const LoginScreen = () => {
     try {
       setLoading(true);
       await GoogleSignin.hasPlayServices();
+      // Always sign out first so the account picker is shown even if a
+      // Google account was previously cached on this device.
+      try { await GoogleSignin.signOut(); } catch (_) {}
       const { data } = await GoogleSignin.signIn();
       const idToken = data?.idToken;
 

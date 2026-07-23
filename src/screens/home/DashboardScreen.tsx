@@ -38,6 +38,7 @@ import { getSleepLogs, getWeightLogs, saveWeightLog } from '../../services/healt
 import { getMealsForDate, getWaterForDate, getCalorieGoal, logMeal, logWater, getWaterChallenge, getWeeklyTrend } from '../../services/dietService';
 import { getTodaySummary, getActivityGoal, getWeeklyStats } from '../../services/activityService';
 import { getDashboardHealthScore } from '../../services/healthScoreService';
+import * as relationshipApi from '../../services/relationshipApi';
 import type { SleepLog, WeightEntry, DashboardHealthScore } from '../../types/health';
 import type { DayMealsResponse, DayWaterResponse, NutritionGoal, MealType, WaterChallenge, WeeklyTrendDay } from '../../types/diet';
 import type { ActivitySummary, ActivityGoal, WeeklyData } from '../../types/activity';
@@ -182,7 +183,7 @@ const CompactRing = ({ size, progress, color, children }: any) => {
   );
 };
 
-export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab, onPartnerPress, onOpenAI, onOpenAppointments }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void; onPartnerPress?: (partnerId: string) => void; onOpenAI?: (fromTab?: TabName, startInChat?: boolean, initialQuery?: string) => void; onOpenAppointments?: () => void; }) {
+export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab, onPartnerPress, onRelationshipsPress, onOpenAI, onOpenAppointments }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void; onPartnerPress?: (partnerId: string) => void; onRelationshipsPress?: () => void; onOpenAI?: (fromTab?: TabName, startInChat?: boolean, initialQuery?: string) => void; onOpenAppointments?: () => void; }) {
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion, gender } = useAuth();
   const { hideVitals, hideCommunitySpotlight } = usePreferences();
@@ -195,6 +196,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
   const [showAllMeds, setShowAllMeds] = useState<boolean>(false);
   const [isListening, setIsListening] = useState(false);
+  const [relationships, setRelationships] = useState<relationshipApi.Relationship[]>([]);
 
   const { appointments } = useAppointments();
   const nextAppointment = useMemo(() => {
@@ -407,6 +409,10 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getDashboardHealthScore(session.access_token)
         .then(setHealthScore)
         .catch(err => console.warn('Failed to load health score on Dashboard:', err));
+
+      relationshipApi.listRelationships(session.access_token)
+        .then(setRelationships)
+        .catch(err => console.warn('Failed to load relationships on Dashboard:', err));
     }
   };
 
@@ -428,6 +434,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getMedications(session.access_token).then(setMedications),
       getMedicationLogsForDate(session.access_token, today).then(setMedicationLogs),
       getDashboardHealthScore(session.access_token).then(setHealthScore),
+      relationshipApi.listRelationships(session.access_token).then(setRelationships),
     ]);
     setRefreshing(false);
   }, [session?.access_token]);
@@ -788,44 +795,51 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
 
         {/* SECTION: RELATIONSHIPS */}
-        <SectionHeader title="Active Relationships" subtitle="Shared health & activity" />
+        <SectionHeader
+          title="Active Relationships"
+          subtitle="Shared health &amp; activity"
+          action="Manage"
+          onAction={onRelationshipsPress}
+        />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.relationshipsScroll}>
-          {[
-            { id: '1', name: 'Sarah M.', relation: 'Partner', avatar: 'https://i.pravatar.cc/150?u=sarah', status: 'online' },
-            { id: '2', name: 'Dr. Smith', relation: 'Doctor', avatar: 'https://i.pravatar.cc/150?u=drsmith', status: 'offline' },
-            { id: '3', name: 'Mike T.', relation: 'Coach', avatar: 'https://i.pravatar.cc/150?u=mike', status: 'online' },
-            { id: 'add', name: 'Add New', relation: 'Invite', avatar: '', status: 'none' },
-          ].map((partner, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={styles.partnerCard}
-              onPress={() => {
-                if (partner.id === 'add') {
-                  // handle invite logic
-                } else if (onPartnerPress) {
-                  onPartnerPress(partner.id);
-                }
-              }}
-            >
-              <View style={styles.partnerAvatarContainer}>
-                {partner.avatar ? (
+          {relationships
+            .filter(r => r.status === 'accepted')
+            .map(partner => (
+              <TouchableOpacity
+                key={partner.relationship_id}
+                style={styles.partnerCard}
+                onPress={() => {
+                  if (partner.role === 'viewer' && onPartnerPress) {
+                    onPartnerPress(String(partner.relationship_id));
+                  } else if (partner.role === 'owner' && onRelationshipsPress) {
+                    onRelationshipsPress();
+                  }
+                }}
+              >
+                <View style={styles.partnerAvatarContainer}>
                   <View style={styles.partnerAvatarImagePlaceholder}>
-                    {/* Placeholder for actual image since Image is not imported */}
-                    <Text style={styles.partnerInitials}>{partner.name.substring(0, 1)}</Text>
+                    <Text style={styles.partnerInitials}>{partner.partner.avatar.charAt(0)}</Text>
                   </View>
-                ) : (
-                  <View style={[styles.partnerAvatarImagePlaceholder, { backgroundColor: Colors.teal + '20', borderWidth: 1, borderColor: Colors.teal + '50', borderStyle: 'dashed' }]}>
-                    <Text style={{ fontSize: 20, color: Colors.teal }}>+</Text>
-                  </View>
-                )}
-                {partner.status !== 'none' && (
-                  <View style={[styles.partnerStatusDot, { backgroundColor: partner.status === 'online' ? Colors.success : Colors.textMuted }]} />
-                )}
+                  <View style={[styles.partnerStatusDot, { backgroundColor: Colors.success }]} />
+                </View>
+                <Text style={styles.partnerName} numberOfLines={1}>{partner.partner.name}</Text>
+                <Text style={styles.partnerRelation}>
+                  {partner.relationship_type.charAt(0).toUpperCase() + partner.relationship_type.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          <TouchableOpacity
+            style={styles.partnerCard}
+            onPress={onRelationshipsPress}
+          >
+            <View style={styles.partnerAvatarContainer}>
+              <View style={[styles.partnerAvatarImagePlaceholder, { backgroundColor: Colors.teal + '20', borderWidth: 1, borderColor: Colors.teal + '50', borderStyle: 'dashed' }]}>
+                <Text style={{ fontSize: 20, color: Colors.teal }}>+</Text>
               </View>
-              <Text style={styles.partnerName} numberOfLines={1}>{partner.name}</Text>
-              <Text style={styles.partnerRelation}>{partner.relation}</Text>
-            </TouchableOpacity>
-          ))}
+            </View>
+            <Text style={styles.partnerName} numberOfLines={1}>Add New</Text>
+            <Text style={styles.partnerRelation}>Invite</Text>
+          </TouchableOpacity>
         </ScrollView>
 
         {/* SECTION: HEALTH CALENDAR (Self-contained and optimized) */}

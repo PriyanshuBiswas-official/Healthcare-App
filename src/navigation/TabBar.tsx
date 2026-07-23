@@ -4,7 +4,7 @@ import { Colors, Typography, Spacing } from '../theme/theme';
 import { Home, Stethoscope, Bot, Utensils, Activity } from 'lucide-react-native';
 import { useScrollVisibility } from './ScrollVisibilityContext';
 
-export type TabName = 'Home' | 'Health' | 'Diet' | 'Activity' | 'AI' | 'Profile' | 'Notifications' | 'WorkoutLog' | 'HealthLog' | 'PartnerReport';
+export type TabName = 'Home' | 'Health' | 'Diet' | 'Activity' | 'AI' | 'Profile' | 'Notifications' | 'WorkoutLog' | 'HealthLog' | 'PartnerReport' | 'Relationships';
 
 interface TabBarProps {
   activeTab: TabName;
