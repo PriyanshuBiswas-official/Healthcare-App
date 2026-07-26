@@ -131,13 +131,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           return true;
         }
       }
-      setHasProfile(true);
+      setHasProfile(false);
       setProfileCompletion(null);
       setGender(null);
       return false;
     } catch (e) {
       console.warn('[AuthProvider] checkProfile failed:', e);
-      setHasProfile(true);
+      setHasProfile(false);
       setProfileCompletion(null);
       setGender(null);
       return false;
