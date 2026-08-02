@@ -90,7 +90,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         previousTab: state.activeTab,
         activeTab: 'AI',
-        aiOrigin: action.from ?? state.activeTab,
+        // Only record a foreign origin when explicitly provided (e.g. Home quick-action → AI).
+        // Direct tab-bar taps pass from=undefined → null, so back returns to AI overview.
+        aiOrigin: action.from !== undefined ? action.from : null,
         aiStartInChat: action.startInChat ?? false,
         aiInitialQuery: action.initialQuery ?? '',
       };
@@ -261,6 +263,10 @@ function AppShell() {
   // ── Derive forceHidden from activeTab ─────────────────────────
 
   useEffect(() => {
+    // For overlay tabs: always hide the tab bar
+    // For AI tab: AIAdvisorScreen manages its own visibility (chat sub-view hides it)
+    // For all other main tabs: always show the tab bar
+    if (state.activeTab === 'AI') return;
     setForceHidden(OVERLAY_TABS.includes(state.activeTab));
   }, [state.activeTab, setForceHidden]);
 

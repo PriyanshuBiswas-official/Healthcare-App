@@ -6,8 +6,16 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
+  Clipboard,
+  Share,
+  Animated,
+  Platform,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { useAuth } from '../../providers/AuthProvider';
+import { sendAIChatMessage, ChatHistoryItem } from '../../services/aiApi';
+import { Copy, RotateCcw, Volume2, Share2, Paperclip, Mic, SendHorizonal } from 'lucide-react-native';
 
 export type Message = {
   id: string;
@@ -20,59 +28,281 @@ const QUICK_PROMPTS = [
   { icon: '🍎', label: 'Analyze my nutrition' },
   { icon: '💪', label: 'Suggest a workout' },
   { icon: '🌙', label: 'Sleep optimization tips' },
-  { icon: '📅', label: 'Book appointment' },
   { icon: '💊', label: 'Supplement advice' },
   { icon: '🩺', label: 'Check my vitals trend' },
 ];
 
-const INITIAL_MESSAGES: Message[] = [
-  {
-    id: '1',
-    role: 'ai',
-    text: "Hello! I'm your AI health advisor. I can analyze your health data, suggest workout plans, track your cycle, and even book appointments for you. How can I help you today?",
-    time: '09:30 AM',
-  },
-];
-
-const AI_RESPONSES: Record<string, string> = {
-  'Analyze my nutrition': "Based on today's log, your protein intake is 32% below target (82g vs 120g goal). Your carb intake is well-balanced. I recommend adding a protein-rich snack like a Greek yogurt or protein shake. Overall caloric deficit looks healthy for your current goals! 📊",
-  'Suggest a workout': "Given your current Push-Day streak and the fact that tomorrow is Day 15 of your cycle (high energy phase), I recommend a full Upper Body Strength session:\n• Bench Press: 4×8 @ 80kg\n• OHP: 3×10 @ 50kg\n• Pull-ups: 3×12\n• Cable flys: 3×15\n\nExpected burn: ~450 kcal 💪",
-  'Book appointment': "I found 3 available slots for you nearby. Check the scheduler below. I can auto-confirm your preferred slot and send a reminder 1 hour before! 📅",
-  'Sleep optimization tips': "Your avg sleep is 7.2 hours — just below the optimal 7.5–9 hours. Given your cycle phase (Day 14, luteal transition incoming), you may experience disrupted sleep soon. Tips: avoid screens after 10 PM, try magnesium glycinate supplementation, and maintain a consistent wake time. 🌙",
-  'Check my vitals trend': "Over the past 30 days: Resting heart rate averaged 68 bpm ✅, Steps averaged 7,400/day (88% of goal), Sleep quality improving by 12%. Your overall health score this month: 78 / 100 — Great progress! 🩺",
-  'Supplement advice': "Based on your cycle phase and activity level, I recommend:\n• Iron: 18mg/day (especially during menstrual phase)\n• Magnesium: 300mg (for sleep & muscle recovery)\n• Vitamin D: 2000 IU (your levels are slightly low)\n• Omega-3: 1g EPA+DHA daily for inflammation 💊",
-};
-
 export function useChatState() {
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [isThinking, setIsThinking] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  const { session } = useAuth();
 
-  const sendMessage = (text: string) => {
-    if (!text.trim()) return;
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isThinking) return;
+
     const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     const userMsg: Message = { id: Date.now().toString(), role: 'user', text, time };
-    const aiText = AI_RESPONSES[text] || "I'm analyzing your health data to provide personalized insights. For complex queries, consider booking a consultation with one of our partnered doctors. Is there anything specific you'd like to focus on?";
-    const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'ai', text: aiText, time };
-    setMessages(prev => [...prev, userMsg, aiMsg]);
+    
+    // Build chat history for LLM (excluding error messages)
+    const history: ChatHistoryItem[] = messages
+      .filter(m => !m.text.includes('Google Gemini API error:') && !m.text.includes('having trouble connecting'))
+      .map(m => ({
+        role: m.role,
+        text: m.text,
+      }));
+
+    setMessages(prev => [...prev, userMsg]);
     setInput('');
+    setIsThinking(true);
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+
+    try {
+      const token = session?.access_token || '';
+      const aiResponse = await sendAIChatMessage(token, text, history);
+      
+      const aiMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'ai',
+        text: aiResponse.text,
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      setMessages(prev => [...prev, aiMsg]);
+    } catch (err: any) {
+      console.warn('[AIChatView Error]:', err.message);
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'ai',
+        text: err.message || "I'm having trouble connecting to my servers right now. Please check your connection and try again.",
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsThinking(false);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    }
   };
 
-  return { messages, input, setInput, sendMessage, scrollRef };
+  const retryLastMessage = () => {
+    // Find the last user message and resend it
+    const lastUser = [...messages].reverse().find(m => m.role === 'user');
+    if (lastUser) {
+      // Remove the last AI response
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last && last.role === 'ai') return prev.slice(0, -1);
+        return prev;
+      });
+      setTimeout(() => sendMessage(lastUser.text), 100);
+    }
+  };
+
+  return { messages, input, setInput, isThinking, sendMessage, retryLastMessage, scrollRef };
 }
 
 type AIChatViewProps = {
   messages: Message[];
   input: string;
   setInput: (val: string) => void;
+  isThinking?: boolean;
   sendMessage: (text: string) => void;
+  retryLastMessage?: () => void;
   scrollRef: React.RefObject<ScrollView | null>;
   initialQuery?: string;
 };
 
-export default function AIChatView({ messages, input, setInput, sendMessage, scrollRef, initialQuery }: AIChatViewProps) {
+// ── AI Action Buttons Row ────────────────────────────────────────
+function AIActionRow({ text, onRetry }: { text: string; onRetry?: () => void }) {
+  const handleCopy = () => {
+    Clipboard.setString(text);
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({ message: text });
+    } catch {}
+  };
+
+  return (
+    <View style={actionStyles.row}>
+      <TouchableOpacity style={actionStyles.btn} onPress={handleCopy}>
+        <Copy size={18} color={Colors.textMuted} strokeWidth={1.5} />
+      </TouchableOpacity>
+      {onRetry && (
+        <TouchableOpacity style={actionStyles.btn} onPress={onRetry}>
+          <RotateCcw size={18} color={Colors.textMuted} strokeWidth={1.5} />
+        </TouchableOpacity>
+      )}
+      <TouchableOpacity style={actionStyles.btn} onPress={() => { /* Speak aloud - TTS integration later */ }}>
+        <Volume2 size={18} color={Colors.textMuted} strokeWidth={1.5} />
+      </TouchableOpacity>
+      <TouchableOpacity style={actionStyles.btn} onPress={handleShare}>
+        <Share2 size={18} color={Colors.textMuted} strokeWidth={1.5} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const actionStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    gap: 2,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.sm,
+    marginLeft: 4,
+  },
+  btn: {
+    width: 40,
+    height: 36,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
+// ── Welcome Placeholder ────────────────────────────────────────
+function WelcomePlaceholder() {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+  }, [fadeAnim]);
+
+  return (
+    <Animated.View style={[welcomeStyles.container, { opacity: fadeAnim }]}>
+      <Text style={welcomeStyles.sparkle}>✦</Text>
+      <Text style={welcomeStyles.title}>What can I help you with?</Text>
+      <Text style={welcomeStyles.subtitle}>
+        Ask me about your health, nutrition, workouts, sleep patterns, or anything wellness related.
+      </Text>
+    </Animated.View>
+  );
+}
+
+const welcomeStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xl * 2,
+    paddingBottom: 80,
+  },
+  sparkle: {
+    fontSize: 40,
+    color: Colors.purple,
+    marginBottom: Spacing.md,
+  },
+  title: {
+    fontSize: Typography.lg,
+    fontWeight: Typography.bold as any,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: Typography.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+});
+
+// ── Formatted Markdown Text Component ───────────────────────────────
+function FormattedText({ text, style }: { text: string; style?: any }) {
+  if (!text) return null;
+
+  const lines = text.split('\n');
+
+  return (
+    <View style={{ width: '100%' }}>
+      {lines.map((line, lineIdx) => {
+        let trimmed = line.trim();
+
+        if (trimmed === '---') {
+          return (
+            <View
+              key={lineIdx}
+              style={{
+                height: 1,
+                backgroundColor: Colors.divider,
+                marginVertical: Spacing.sm,
+              }}
+            />
+          );
+        }
+
+        // Check if line is a bullet item (* or - or • followed by space)
+        let isBullet = false;
+        if (/^[\*\-\•]\s+/.test(trimmed)) {
+          isBullet = true;
+          trimmed = trimmed.replace(/^[\*\-\•]\s+/, '');
+        }
+
+        // Split by ** to safely isolate bold text blocks
+        const boldSegments = trimmed.split('**');
+
+        return (
+          <Text key={lineIdx} style={[style, { marginBottom: trimmed === '' ? 6 : 4 }]}>
+            {isBullet && <Text style={{ color: Colors.purple, fontWeight: 'bold' }}>• </Text>}
+            {boldSegments.map((segment, bIdx) => {
+              const isBold = bIdx % 2 === 1;
+
+              if (isBold) {
+                return (
+                  <Text
+                    key={bIdx}
+                    style={{
+                      fontWeight: '900',
+                      color: '#FFFFFF',
+                      fontFamily: Platform.OS === 'android' ? 'sans-serif-black' : undefined,
+                    }}>
+                    {segment}
+                  </Text>
+                );
+              }
+
+              // Parse single * italic inside plain text segments (must be a valid pair)
+              const italicSegments = segment.split('*');
+              const hasValidItalicPair = italicSegments.length >= 3 && italicSegments.length % 2 === 1;
+
+              if (hasValidItalicPair) {
+                return (
+                  <React.Fragment key={bIdx}>
+                    {italicSegments.map((itSeg, iIdx) => {
+                      const isItalic = iIdx % 2 === 1;
+                      return isItalic ? (
+                        <Text
+                          key={iIdx}
+                          style={{
+                            fontStyle: 'italic',
+                            color: Colors.textPrimary,
+                            fontFamily: Platform.OS === 'android' ? 'sans-serif-italic' : undefined,
+                          }}>
+                          {itSeg}
+                        </Text>
+                      ) : (
+                        <Text key={iIdx}>{itSeg}</Text>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              }
+
+              return <Text key={bIdx}>{segment}</Text>;
+            })}
+          </Text>
+        );
+      })}
+    </View>
+  );
+}
+
+// ── Main Chat View ────────────────────────────────────────────
+export default function AIChatView({ messages, input, setInput, isThinking, sendMessage, retryLastMessage, scrollRef, initialQuery }: AIChatViewProps) {
   const hasSentInitial = useRef(false);
+  const hasMessages = messages.length > 0;
 
   useEffect(() => {
     if (initialQuery && !hasSentInitial.current) {
@@ -80,116 +310,277 @@ export default function AIChatView({ messages, input, setInput, sendMessage, scr
       setTimeout(() => sendMessage(initialQuery), 300);
     }
   }, [initialQuery]);
+
   return (
     <>
-      {/* Quick Prompts */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickScroll} contentContainerStyle={styles.quickContent}>
-        {QUICK_PROMPTS.map(p => (
-          <TouchableOpacity
-            key={p.label}
-            onPress={() => sendMessage(p.label)}
-            style={styles.quickChip}>
-            <Text style={{ fontSize: Typography.xs }}>{p.icon}</Text>
-            <Text style={styles.quickChipText}>{p.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Messages */}
-      <ScrollView
-        ref={scrollRef}
-        style={styles.chatScroll}
-        contentContainerStyle={styles.chatContent}
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}>
-        {messages.map(msg => (
-          <View
-            key={msg.id}
-            style={[styles.msgRow, msg.role === 'user' && styles.msgRowUser]}>
-            {msg.role === 'ai' && (
-              <View style={styles.msgAvatar}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.purple }}>✦</Text>
+      {/* Messages or Welcome */}
+      {!hasMessages && !isThinking ? (
+        <View style={styles.chatScroll}>
+          <WelcomePlaceholder />
+        </View>
+      ) : (
+        <ScrollView
+          ref={scrollRef}
+          style={styles.chatScroll}
+          contentContainerStyle={styles.chatContent}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}>
+          {messages.map((msg, index) => {
+            const isLastAi = msg.role === 'ai' && (index === messages.length - 1 || messages[index + 1]?.role === 'user');
+            return (
+              <View key={msg.id}>
+                {msg.role === 'user' ? (
+                  /* ── User message: boxed ── */
+                  <View style={[styles.msgRow, styles.msgRowUser]}>
+                    <View style={styles.userBubble}>
+                      <Text style={styles.userMsgText}>{msg.text}</Text>
+                      <Text style={styles.userMsgTime}>{msg.time}</Text>
+                    </View>
+                  </View>
+                ) : (
+                  /* ── AI message: flat on background ── */
+                  <View style={styles.aiMsgContainer}>
+                    <FormattedText text={msg.text} style={styles.aiMsgText} />
+                    {/* Action buttons: show on last AI message or each AI msg */}
+                    <AIActionRow
+                      text={msg.text}
+                      onRetry={isLastAi ? retryLastMessage : undefined}
+                    />
+                  </View>
+                )}
               </View>
-            )}
-            <View style={[
-              styles.msgBubble,
-              msg.role === 'ai' ? styles.aiBubble : styles.userBubble,
-            ]}>
-              <Text style={[styles.msgText, msg.role === 'user' && { color: Colors.bg }]}>{msg.text}</Text>
-              <Text style={[styles.msgTime, msg.role === 'user' && { color: Colors.bg + '99' }]}>{msg.time}</Text>
-            </View>
-          </View>
-        ))}
-        <View style={{ height: 20 }} />
-      </ScrollView>
+            );
+          })}
 
-      {/* Input */}
-      <View style={styles.inputRow}>
-        <TextInput
-          style={styles.input}
-          placeholder="Ask anything about your health..."
-          placeholderTextColor={Colors.textMuted}
-          value={input}
-          onChangeText={setInput}
-          onSubmitEditing={() => sendMessage(input)}
-          returnKeyType="send"
-          multiline
-        />
-        <TouchableOpacity
-          style={[styles.sendBtn, { backgroundColor: input.trim() ? Colors.purple : Colors.bgCardBorder }]}
-          onPress={() => sendMessage(input)}
-          disabled={!input.trim()}>
-          <Text style={{ fontSize: Typography.lg }}>↑</Text>
-        </TouchableOpacity>
+          {/* Loading Indicator when AI is generating response */}
+          {isThinking && (
+            <View style={styles.aiMsgContainer}>
+              <View style={styles.thinkingRow}>
+                <ActivityIndicator size="small" color={Colors.purple} />
+                <Text style={styles.thinkingText}>Analyzing your health metrics...</Text>
+              </View>
+            </View>
+          )}
+
+          <View style={{ height: 20 }} />
+        </ScrollView>
+      )}
+
+      {/* Quick Prompts — shown above input only when no messages yet */}
+      {!hasMessages && !isThinking && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickScroll} contentContainerStyle={styles.quickContent}>
+          {QUICK_PROMPTS.map(p => (
+            <TouchableOpacity
+              key={p.label}
+              onPress={() => sendMessage(p.label)}
+              disabled={isThinking}
+              style={[styles.quickChip, isThinking && { opacity: 0.6 }]}>
+              <Text style={{ fontSize: Typography.xs }}>{p.icon}</Text>
+              <Text style={styles.quickChipText}>{p.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
+      {/* Input Area */}
+      <View style={styles.inputContainer}>
+        <View style={styles.inputRow}>
+          {/* Attachment button */}
+          <TouchableOpacity style={styles.inputIconBtn} onPress={() => { /* File upload - future */ }}>
+            <Paperclip size={20} color={Colors.textMuted} strokeWidth={1.5} />
+          </TouchableOpacity>
+
+          {/* Text input */}
+          <TextInput
+            style={styles.input}
+            placeholder="Ask anything about your health..."
+            placeholderTextColor={Colors.textMuted}
+            value={input}
+            onChangeText={setInput}
+            onSubmitEditing={() => sendMessage(input)}
+            returnKeyType="send"
+            multiline
+            editable={!isThinking}
+          />
+
+          {/* Mic or Send button */}
+          {input.trim() ? (
+            <TouchableOpacity
+              style={[styles.sendBtn, { opacity: isThinking ? 0.5 : 1 }]}
+              onPress={() => sendMessage(input)}
+              disabled={isThinking}>
+              {isThinking ? (
+                <ActivityIndicator size="small" color={Colors.white} />
+              ) : (
+                <SendHorizonal size={18} color={Colors.white} strokeWidth={2} />
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.micBtn} onPress={() => { /* Voice input - future */ }}>
+              <Mic size={20} color={Colors.textSecondary} strokeWidth={1.5} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  quickScroll: { maxHeight: 56, borderBottomWidth: 1, borderBottomColor: Colors.divider },
-  quickContent: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm, gap: Spacing.sm, flexDirection: 'row' },
+  // ── Quick Prompts ──
+  quickScroll: {
+    maxHeight: 50,
+    marginBottom: Spacing.xs,
+  },
+  quickContent: {
+    paddingHorizontal: Spacing.base,
+    gap: Spacing.sm,
+    flexDirection: 'row',
+  },
   quickChip: {
-    flexDirection: 'row', alignItems: 'center',
-    gap: Spacing.xs, paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs, borderRadius: Radius.full,
-    backgroundColor: Colors.bgCard, borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
     borderColor: Colors.bgCardBorder,
   },
-  quickChipText: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: Typography.medium },
+  quickChipText: {
+    fontSize: Typography.xs,
+    color: Colors.textSecondary,
+    fontWeight: Typography.medium as any,
+  },
+
+  // ── Chat Area ──
   chatScroll: { flex: 1 },
-  chatContent: { padding: Spacing.base },
-  msgRow: { flexDirection: 'row', marginBottom: Spacing.md, alignItems: 'flex-end' },
+  chatContent: { paddingHorizontal: Spacing.sm, paddingVertical: Spacing.base, paddingBottom: Spacing.sm },
+
+  // ── User Message (boxed) ──
+  msgRow: {
+    flexDirection: 'row',
+    marginBottom: Spacing.md,
+    alignItems: 'flex-end',
+  },
   msgRowUser: { flexDirection: 'row-reverse' },
-  msgAvatar: {
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: Colors.purple + '25', borderWidth: 1,
-    borderColor: Colors.purple + '60', alignItems: 'center',
-    justifyContent: 'center', marginRight: Spacing.sm,
-  },
-  msgBubble: {
-    maxWidth: '78%', padding: Spacing.md,
-    borderRadius: Radius.lg, borderBottomLeftRadius: 4,
-  },
-  aiBubble: { ...GlassCard, borderBottomLeftRadius: 4 },
   userBubble: {
-    backgroundColor: Colors.purple, borderRadius: Radius.lg,
-    borderBottomRightRadius: 4, ...Shadows.teal,
+    maxWidth: '78%',
+    padding: Spacing.md,
+    backgroundColor: Colors.purple,
+    borderRadius: Radius.lg,
+    borderBottomRightRadius: 4,
+    ...Shadows.teal,
   },
-  msgText: { fontSize: Typography.sm, color: Colors.textPrimary, lineHeight: 20 },
-  msgTime: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 5, alignSelf: 'flex-end' },
+  userMsgText: {
+    fontSize: Typography.sm,
+    color: Colors.bg,
+    lineHeight: 20,
+  },
+  userMsgTime: {
+    fontSize: 10,
+    color: Colors.bg + '80',
+    marginTop: 4,
+    alignSelf: 'flex-end',
+  },
+
+  // ── AI Message (flat / no box) ──
+  aiMsgContainer: {
+    marginBottom: Spacing.xs,
+    paddingLeft: 4,
+  },
+  aiAvatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginBottom: Spacing.xs,
+  },
+  aiAvatar: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.purple + '20',
+    borderWidth: 1,
+    borderColor: Colors.purple + '50',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiLabel: {
+    fontSize: 11,
+    fontWeight: Typography.semiBold as any,
+    color: Colors.purple,
+  },
+  aiTime: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    marginLeft: 'auto',
+  },
+  aiMsgText: {
+    fontSize: Typography.base,
+    color: Colors.textPrimary,
+    lineHeight: 24,
+    paddingLeft: 4,
+  },
+
+  // ── Thinking ──
+  thinkingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingLeft: 4,
+    paddingVertical: Spacing.xs,
+  },
+  thinkingText: {
+    fontSize: Typography.xs,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+  },
+
+  // ── Input Area ──
+  inputContainer: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.divider,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    paddingBottom: Spacing.md,
+  },
   inputRow: {
-    flexDirection: 'row', alignItems: 'flex-end',
-    padding: Spacing.base, borderTopWidth: 1,
-    borderTopColor: Colors.divider, gap: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    ...GlassCard,
+    borderRadius: Radius.xl,
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: 3,
+    gap: 2,
+  },
+  inputIconBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   input: {
-    flex: 1, ...GlassCard, padding: Spacing.md,
-    fontSize: Typography.sm, color: Colors.textPrimary,
-    maxHeight: 120, borderRadius: Radius.lg,
+    flex: 1,
+    fontSize: Typography.sm,
+    color: Colors.textPrimary,
+    maxHeight: 100,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   sendBtn: {
-    width: 46, height: 46, borderRadius: 23,
-    alignItems: 'center', justifyContent: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.purple,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  micBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

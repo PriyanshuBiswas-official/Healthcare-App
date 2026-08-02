@@ -17,7 +17,7 @@ import { TabName } from '../../navigation/TabBar';
 import AIChatView, { useChatState } from './AIChatView';
 import { useAuth } from '../../providers/AuthProvider';
 import { useNotifications } from '../../providers/NotificationContext';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, History } from 'lucide-react-native';
 
 const APPOINTMENT_SLOTS = [
   { time: '10:00 AM', date: 'Thu, Jun 12', doctor: 'Dr. Priya Sharma', spec: 'Gynecologist', available: true },
@@ -27,7 +27,7 @@ const APPOINTMENT_SLOTS = [
 ];
 
 export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, startInChat, initialQuery, originTab, navigateToTab, isTabActive }: { onProfilePress?: () => void; onNotificationsPress?: () => void; startInChat?: boolean; initialQuery?: string; originTab?: TabName; navigateToTab?: (tab: TabName) => void; isTabActive?: boolean }) {
-  const { messages, input, setInput, sendMessage, scrollRef } = useChatState();
+  const { messages, input, setInput, isThinking, sendMessage, retryLastMessage, scrollRef } = useChatState();
   const { user } = useAuth();
   const { unreadCount } = useNotifications();
   const [bookedSlot, setBookedSlot] = useState<string | null>(null);
@@ -37,40 +37,46 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
+  // Hide tab bar immediately when entering chat, restore when leaving
   useEffect(() => {
     if (activeTab === 'chat') {
       setForceHidden(true);
     } else {
-      setForceHidden(false);
+      // Only restore & animate when AI tab is the active main tab
+      if (isTabActive) {
+        setForceHidden(false);
+      }
       Animated.parallel([
         Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
         Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
       ]).start();
     }
     return () => setForceHidden(false);
-  }, [activeTab, setForceHidden, fadeAnim, slideAnim]);
+  }, [activeTab, isTabActive, setForceHidden, fadeAnim, slideAnim]);
 
+  // If launched directly into chat (e.g. via quick action from Home), immediately switch
   useEffect(() => {
-    if (startInChat) setActiveTab('chat');
-  }, [startInChat]);
-
-  useEffect(() => {
-    if (!isTabActive) {
-      setForceHidden(false);
+    if (startInChat) {
+      setActiveTab('chat');
+      setForceHidden(true); // Hide immediately, don't wait for state transition
     }
-  }, [isTabActive, setForceHidden]);
+  }, [startInChat, setForceHidden]);
 
+  // Back handler: in chat view, always go to AI overview (not a foreign tab)
+  // unless we were deep-linked from another tab via openAI()
   useEffect(() => {
     const onBack = () => {
       if (activeTab === 'chat') {
-        if (navigateToTab && originTab) {
+        // If we were sent here from another tab (e.g. Home quick action), go back to that tab
+        if (navigateToTab && originTab && originTab !== 'AI') {
           navigateToTab(originTab);
         } else {
+          // Came from AI overview — just go back to overview
           setActiveTab('overview');
         }
-        return true;
+        return true; // Consumed
       }
-      return false;
+      return false; // Let App.tsx BackHandler handle it
     };
     const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
     return () => sub.remove();
@@ -87,8 +93,12 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
         {activeTab === 'chat' && (
           <TouchableOpacity
             onPress={() => {
-              if (navigateToTab && originTab) navigateToTab(originTab);
-              else setActiveTab('overview');
+              // Mirror the same logic as the hardware back handler
+              if (navigateToTab && originTab && originTab !== 'AI') {
+                navigateToTab(originTab);
+              } else {
+                setActiveTab('overview');
+              }
             }}
             style={styles.backBtn}>
             <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
@@ -103,15 +113,17 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
         ) : (
           <View style={styles.headerTextWrap}>
              <Text style={styles.greeting}>Chat with AI</Text>
-             <View style={styles.onlineRow}>
-               <View style={styles.onlineDot} />
-               <Text style={styles.onlineText}>Online · Powered by Health AI</Text>
-             </View>
           </View>
         )}
         
         <View style={styles.headerActions}>
-          <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
+          {activeTab === 'chat' ? (
+            <TouchableOpacity style={styles.historyBtn} onPress={() => { /* Chat history - future */ }}>
+              <History size={20} color={Colors.textSecondary} strokeWidth={1.5} />
+            </TouchableOpacity>
+          ) : (
+            <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
+          )}
           <ProfileAvatarButton
             onPress={onProfilePress}
             userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
@@ -348,7 +360,9 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
           messages={messages}
           input={input}
           setInput={setInput}
+          isThinking={isThinking}
           sendMessage={sendMessage}
+          retryLastMessage={retryLastMessage}
           scrollRef={scrollRef}
           initialQuery={initialQuery}
         />
@@ -387,6 +401,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
+  },
+  historyBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.bgCardBorder,
   },
   
   scroll: { padding: Spacing.base },

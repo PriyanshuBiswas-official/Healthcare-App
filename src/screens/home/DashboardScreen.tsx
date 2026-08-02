@@ -45,6 +45,7 @@ import type { ActivitySummary, ActivityGoal, WeeklyData } from '../../types/acti
 import { getMedications, getMedicationLogsForDate, logMedicationTaken, removeMedicationLog } from '../../types/medication';
 import type { Medication, MedicationLog } from '../../types/medication';
 import { formatTime12h } from '../../utils/calendarHelpers';
+import { getAIHealthSummary, AISummaryTag } from '../../services/aiApi';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -313,6 +314,11 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [modalSaving, setModalSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [healthScore, setHealthScore] = useState<DashboardHealthScore | null>(null);
+  const [aiSummary, setAiSummary] = useState<string>('Analyzing your health metrics to compile summary...');
+  const [aiSummaryTags, setAiSummaryTags] = useState<AISummaryTag[]>([
+    { label: 'Analyzing...', color: 'purple' }
+  ]);
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
 
   const medicationsData = useMemo(() => {
     const medColors = [Colors.purple, Colors.amber, Colors.blue, Colors.pink, Colors.teal, Colors.success, Colors.textSecondary];
@@ -354,9 +360,30 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     };
   }, []);
 
+  const loadAiSummary = useCallback(async () => {
+    if (!session?.access_token) return;
+    setAiSummaryLoading(true);
+    try {
+      const data = await getAIHealthSummary(session.access_token);
+      setAiSummary(data.summary);
+      setAiSummaryTags(data.tags);
+    } catch (err: any) {
+      console.warn('Failed to load AI health summary:', err.message);
+      setAiSummary('Stable metrics today. Add more water, meals, and sleep logs to compile custom health insights.');
+      setAiSummaryTags([
+        { label: 'Vitals stable', color: 'success' },
+        { label: 'Ready', color: 'purple' }
+      ]);
+    } finally {
+      setAiSummaryLoading(false);
+    }
+  }, [session?.access_token]);
+
   const loadData = () => {
     if (session?.access_token) {
       const today = new Date().toISOString().split('T')[0];
+      
+      loadAiSummary();
 
       getSleepLogs(session.access_token)
         .then(setSleepLogs)
@@ -421,6 +448,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     setRefreshing(true);
     const today = new Date().toISOString().split('T')[0];
     await Promise.allSettled([
+      loadAiSummary(),
       getSleepLogs(session.access_token).then(setSleepLogs),
       getWeightLogs(session.access_token).then(setWeightLogs),
       getMealsForDate(session.access_token, today).then(setMealsData),
@@ -762,24 +790,32 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                 <Text style={styles.heroAiSparkle}>✦</Text>
                 <Text style={styles.heroAiTitle}>AI HEALTH SUMMARY</Text>
               </View>
-              <TouchableOpacity style={styles.heroAiChatBtn}>
+              <TouchableOpacity style={styles.heroAiChatBtn} onPress={() => onOpenAI?.('Home', true, '')}>
                 <Text style={styles.heroAiChatText}>💬 Chat</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.heroAiText}>
-              Vitals stable. Sleep +12% vs last week. Light activity advised today — cortisol elevated from yesterday's session.
-            </Text>
-            <View style={styles.heroAiTagRow}>
-              {[
-                { label: '● Vitals stable', color: Colors.success },
-                { label: '● Sleep +12%', color: Colors.purple },
-                { label: '● Rest advised', color: Colors.amber },
-              ].map((tag, i) => (
-                <View key={i} style={[styles.heroAiTag, { backgroundColor: tag.color + '15', borderColor: tag.color + '40' }]}>
-                  <Text style={[styles.heroAiTagText, { color: tag.color }]}>{tag.label}</Text>
+            {aiSummaryLoading ? (
+              <View style={{ paddingVertical: Spacing.sm, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                <ActivityIndicator size="small" color={Colors.white} />
+                <Text style={[styles.heroAiText, { fontStyle: 'italic', marginBottom: 0 }]}>Updating health metrics...</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.heroAiText}>
+                  {aiSummary}
+                </Text>
+                <View style={styles.heroAiTagRow}>
+                  {aiSummaryTags.map((tag, i) => {
+                    const mappedColor = (Colors as any)[tag.color] || Colors.teal;
+                    return (
+                      <View key={i} style={[styles.heroAiTag, { backgroundColor: mappedColor + '15', borderColor: mappedColor + '40' }]}>
+                        <Text style={[styles.heroAiTagText, { color: mappedColor }]}>● {tag.label}</Text>
+                      </View>
+                    );
+                  })}
                 </View>
-              ))}
-            </View>
+              </>
+            )}
           </View>
 
         </Animated.View>
