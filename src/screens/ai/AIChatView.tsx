@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   TextInput,
@@ -12,7 +11,8 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useAuth } from '../../providers/AuthProvider';
 import { sendAIChatMessage, ChatHistoryItem } from '../../services/aiApi';
 import { Copy, RotateCcw, Volume2, Share2, Paperclip, Mic, SendHorizonal } from 'lucide-react-native';
@@ -115,6 +115,23 @@ type AIChatViewProps = {
 
 // ── AI Action Buttons Row ────────────────────────────────────────
 function AIActionRow({ text, onRetry }: { text: string; onRetry?: () => void }) {
+  const { theme } = useTheme();
+  const styles = useStyles((theme) => ({
+    row: {
+      flexDirection: 'row',
+      gap: 2,
+      marginTop: Spacing.xs,
+      marginBottom: Spacing.sm,
+      marginLeft: 4,
+    },
+    btn: {
+      width: 40,
+      height: 36,
+      borderRadius: Radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  }));
   const handleCopy = () => {
     Clipboard.setString(text);
   };
@@ -126,44 +143,55 @@ function AIActionRow({ text, onRetry }: { text: string; onRetry?: () => void }) 
   };
 
   return (
-    <View style={actionStyles.row}>
-      <TouchableOpacity style={actionStyles.btn} onPress={handleCopy}>
-        <Copy size={18} color={Colors.textMuted} strokeWidth={1.5} />
+    <View style={styles.row}>
+      <TouchableOpacity style={styles.btn} onPress={handleCopy}>
+        <Copy size={18} color={theme.colors.textMuted} strokeWidth={1.5} />
       </TouchableOpacity>
       {onRetry && (
-        <TouchableOpacity style={actionStyles.btn} onPress={onRetry}>
-          <RotateCcw size={18} color={Colors.textMuted} strokeWidth={1.5} />
+        <TouchableOpacity style={styles.btn} onPress={onRetry}>
+          <RotateCcw size={18} color={theme.colors.textMuted} strokeWidth={1.5} />
         </TouchableOpacity>
       )}
-      <TouchableOpacity style={actionStyles.btn} onPress={() => { /* Speak aloud - TTS integration later */ }}>
-        <Volume2 size={18} color={Colors.textMuted} strokeWidth={1.5} />
+      <TouchableOpacity style={styles.btn} onPress={() => { /* Speak aloud - TTS integration later */ }}>
+        <Volume2 size={18} color={theme.colors.textMuted} strokeWidth={1.5} />
       </TouchableOpacity>
-      <TouchableOpacity style={actionStyles.btn} onPress={handleShare}>
-        <Share2 size={18} color={Colors.textMuted} strokeWidth={1.5} />
+      <TouchableOpacity style={styles.btn} onPress={handleShare}>
+        <Share2 size={18} color={theme.colors.textMuted} strokeWidth={1.5} />
       </TouchableOpacity>
     </View>
   );
 }
 
-const actionStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: 2,
-    marginTop: Spacing.xs,
-    marginBottom: Spacing.sm,
-    marginLeft: 4,
-  },
-  btn: {
-    width: 40,
-    height: 36,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
-
 // ── Welcome Placeholder ────────────────────────────────────────
 function WelcomePlaceholder() {
+  const { theme } = useTheme();
+  const styles = useStyles((theme) => ({
+    container: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: Spacing.xl * 2,
+      paddingBottom: 80,
+    },
+    sparkle: {
+      fontSize: 40,
+      color: theme.colors.purple,
+      marginBottom: Spacing.md,
+    },
+    title: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.bold as any,
+      color: theme.colors.textPrimary,
+      marginBottom: Spacing.sm,
+      textAlign: 'center',
+    },
+    subtitle: {
+      fontSize: Typography.sm,
+      color: theme.colors.textMuted,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+  }));
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -171,46 +199,19 @@ function WelcomePlaceholder() {
   }, [fadeAnim]);
 
   return (
-    <Animated.View style={[welcomeStyles.container, { opacity: fadeAnim }]}>
-      <Text style={welcomeStyles.sparkle}>✦</Text>
-      <Text style={welcomeStyles.title}>What can I help you with?</Text>
-      <Text style={welcomeStyles.subtitle}>
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      <Text style={styles.sparkle}>✦</Text>
+      <Text style={styles.title}>What can I help you with?</Text>
+      <Text style={styles.subtitle}>
         Ask me about your health, nutrition, workouts, sleep patterns, or anything wellness related.
       </Text>
     </Animated.View>
   );
 }
 
-const welcomeStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xl * 2,
-    paddingBottom: 80,
-  },
-  sparkle: {
-    fontSize: 40,
-    color: Colors.purple,
-    marginBottom: Spacing.md,
-  },
-  title: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.bold as any,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: Typography.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-});
-
 // ── Formatted Markdown Text Component ───────────────────────────────
 function FormattedText({ text, style }: { text: string; style?: any }) {
+  const { theme } = useTheme();
   if (!text) return null;
 
   const lines = text.split('\n');
@@ -226,7 +227,7 @@ function FormattedText({ text, style }: { text: string; style?: any }) {
               key={lineIdx}
               style={{
                 height: 1,
-                backgroundColor: Colors.divider,
+                backgroundColor: theme.colors.divider,
                 marginVertical: Spacing.sm,
               }}
             />
@@ -245,7 +246,7 @@ function FormattedText({ text, style }: { text: string; style?: any }) {
 
         return (
           <Text key={lineIdx} style={[style, { marginBottom: trimmed === '' ? 6 : 4 }]}>
-            {isBullet && <Text style={{ color: Colors.purple, fontWeight: 'bold' }}>• </Text>}
+            {isBullet && <Text style={{ color: theme.colors.purple, fontWeight: 'bold' }}>• </Text>}
             {boldSegments.map((segment, bIdx) => {
               const isBold = bIdx % 2 === 1;
 
@@ -277,7 +278,7 @@ function FormattedText({ text, style }: { text: string; style?: any }) {
                           key={iIdx}
                           style={{
                             fontStyle: 'italic',
-                            color: Colors.textPrimary,
+                            color: theme.colors.textPrimary,
                             fontFamily: Platform.OS === 'android' ? 'sans-serif-italic' : undefined,
                           }}>
                           {itSeg}
@@ -301,6 +302,165 @@ function FormattedText({ text, style }: { text: string; style?: any }) {
 
 // ── Main Chat View ────────────────────────────────────────────
 export default function AIChatView({ messages, input, setInput, isThinking, sendMessage, retryLastMessage, scrollRef, initialQuery }: AIChatViewProps) {
+  const { theme } = useTheme();
+  const styles = useStyles((theme) => ({
+    // ── Quick Prompts ──
+    quickScroll: {
+      maxHeight: 50,
+      marginBottom: Spacing.xs,
+    },
+    quickContent: {
+      paddingHorizontal: Spacing.base,
+      gap: Spacing.sm,
+      flexDirection: 'row',
+    },
+    quickChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      borderRadius: Radius.full,
+      backgroundColor: theme.colors.bgCard,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+    },
+    quickChipText: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+      fontWeight: Typography.medium as any,
+    },
+
+    // ── Chat Area ──
+    chatScroll: { flex: 1 },
+    chatContent: { paddingHorizontal: Spacing.sm, paddingVertical: Spacing.base, paddingBottom: Spacing.sm },
+
+    // ── User Message (boxed) ──
+    msgRow: {
+      flexDirection: 'row',
+      marginBottom: Spacing.md,
+      alignItems: 'flex-end',
+    },
+    msgRowUser: { flexDirection: 'row-reverse' },
+    userBubble: {
+      maxWidth: '78%',
+      padding: Spacing.md,
+      backgroundColor: theme.colors.purple,
+      borderRadius: Radius.lg,
+      borderBottomRightRadius: 4,
+      ...Shadows.teal,
+    },
+    userMsgText: {
+      fontSize: Typography.sm,
+      color: theme.colors.bg,
+      lineHeight: 20,
+    },
+    userMsgTime: {
+      fontSize: 10,
+      color: theme.colors.bg + '80',
+      marginTop: 4,
+      alignSelf: 'flex-end',
+    },
+
+    // ── AI Message (flat / no box) ──
+    aiMsgContainer: {
+      marginBottom: Spacing.xs,
+      paddingLeft: 4,
+    },
+    aiAvatarRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      marginBottom: Spacing.xs,
+    },
+    aiAvatar: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: theme.colors.purple + '20',
+      borderWidth: 1,
+      borderColor: theme.colors.purple + '50',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    aiLabel: {
+      fontSize: 11,
+      fontWeight: Typography.semiBold as any,
+      color: theme.colors.purple,
+    },
+    aiTime: {
+      fontSize: 10,
+      color: theme.colors.textMuted,
+      marginLeft: 'auto',
+    },
+    aiMsgText: {
+      fontSize: Typography.base,
+      color: theme.colors.textPrimary,
+      lineHeight: 24,
+      paddingLeft: 4,
+    },
+
+    // ── Thinking ──
+    thinkingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingLeft: 4,
+      paddingVertical: Spacing.xs,
+    },
+    thinkingText: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+      fontStyle: 'italic',
+    },
+
+    // ── Input Area ──
+    inputContainer: {
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.divider,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.sm,
+      paddingBottom: Spacing.md,
+    },
+    inputRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      ...GlassCard,
+      borderRadius: Radius.xl,
+      paddingHorizontal: Spacing.xs,
+      paddingVertical: 3,
+      gap: 2,
+    },
+    inputIconBtn: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    input: {
+      flex: 1,
+      fontSize: Typography.sm,
+      color: theme.colors.textPrimary,
+      maxHeight: 100,
+      paddingVertical: 8,
+      paddingHorizontal: 4,
+    },
+    sendBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: theme.colors.purple,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 2,
+    },
+    micBtn: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  }));
   const hasSentInitial = useRef(false);
   const hasMessages = messages.length > 0;
 
@@ -356,7 +516,7 @@ export default function AIChatView({ messages, input, setInput, isThinking, send
           {isThinking && (
             <View style={styles.aiMsgContainer}>
               <View style={styles.thinkingRow}>
-                <ActivityIndicator size="small" color={Colors.purple} />
+                <ActivityIndicator size="small" color={theme.colors.purple} />
                 <Text style={styles.thinkingText}>Analyzing your health metrics...</Text>
               </View>
             </View>
@@ -387,14 +547,14 @@ export default function AIChatView({ messages, input, setInput, isThinking, send
         <View style={styles.inputRow}>
           {/* Attachment button */}
           <TouchableOpacity style={styles.inputIconBtn} onPress={() => { /* File upload - future */ }}>
-            <Paperclip size={20} color={Colors.textMuted} strokeWidth={1.5} />
+            <Paperclip size={20} color={theme.colors.textMuted} strokeWidth={1.5} />
           </TouchableOpacity>
 
           {/* Text input */}
           <TextInput
             style={styles.input}
             placeholder="Ask anything about your health..."
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={theme.colors.textMuted}
             value={input}
             onChangeText={setInput}
             onSubmitEditing={() => sendMessage(input)}
@@ -410,14 +570,14 @@ export default function AIChatView({ messages, input, setInput, isThinking, send
               onPress={() => sendMessage(input)}
               disabled={isThinking}>
               {isThinking ? (
-                <ActivityIndicator size="small" color={Colors.white} />
+                <ActivityIndicator size="small" color={theme.colors.white} />
               ) : (
-                <SendHorizonal size={18} color={Colors.white} strokeWidth={2} />
+                <SendHorizonal size={18} color={theme.colors.white} strokeWidth={2} />
               )}
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={styles.micBtn} onPress={() => { /* Voice input - future */ }}>
-              <Mic size={20} color={Colors.textSecondary} strokeWidth={1.5} />
+              <Mic size={20} color={theme.colors.textSecondary} strokeWidth={1.5} />
             </TouchableOpacity>
           )}
         </View>
@@ -425,162 +585,3 @@ export default function AIChatView({ messages, input, setInput, isThinking, send
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  // ── Quick Prompts ──
-  quickScroll: {
-    maxHeight: 50,
-    marginBottom: Spacing.xs,
-  },
-  quickContent: {
-    paddingHorizontal: Spacing.base,
-    gap: Spacing.sm,
-    flexDirection: 'row',
-  },
-  quickChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  quickChipText: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.medium as any,
-  },
-
-  // ── Chat Area ──
-  chatScroll: { flex: 1 },
-  chatContent: { paddingHorizontal: Spacing.sm, paddingVertical: Spacing.base, paddingBottom: Spacing.sm },
-
-  // ── User Message (boxed) ──
-  msgRow: {
-    flexDirection: 'row',
-    marginBottom: Spacing.md,
-    alignItems: 'flex-end',
-  },
-  msgRowUser: { flexDirection: 'row-reverse' },
-  userBubble: {
-    maxWidth: '78%',
-    padding: Spacing.md,
-    backgroundColor: Colors.purple,
-    borderRadius: Radius.lg,
-    borderBottomRightRadius: 4,
-    ...Shadows.teal,
-  },
-  userMsgText: {
-    fontSize: Typography.sm,
-    color: Colors.bg,
-    lineHeight: 20,
-  },
-  userMsgTime: {
-    fontSize: 10,
-    color: Colors.bg + '80',
-    marginTop: 4,
-    alignSelf: 'flex-end',
-  },
-
-  // ── AI Message (flat / no box) ──
-  aiMsgContainer: {
-    marginBottom: Spacing.xs,
-    paddingLeft: 4,
-  },
-  aiAvatarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    marginBottom: Spacing.xs,
-  },
-  aiAvatar: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: Colors.purple + '20',
-    borderWidth: 1,
-    borderColor: Colors.purple + '50',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  aiLabel: {
-    fontSize: 11,
-    fontWeight: Typography.semiBold as any,
-    color: Colors.purple,
-  },
-  aiTime: {
-    fontSize: 10,
-    color: Colors.textMuted,
-    marginLeft: 'auto',
-  },
-  aiMsgText: {
-    fontSize: Typography.base,
-    color: Colors.textPrimary,
-    lineHeight: 24,
-    paddingLeft: 4,
-  },
-
-  // ── Thinking ──
-  thinkingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingLeft: 4,
-    paddingVertical: Spacing.xs,
-  },
-  thinkingText: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    fontStyle: 'italic',
-  },
-
-  // ── Input Area ──
-  inputContainer: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.divider,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    paddingBottom: Spacing.md,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    ...GlassCard,
-    borderRadius: Radius.xl,
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: 3,
-    gap: 2,
-  },
-  inputIconBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  input: {
-    flex: 1,
-    fontSize: Typography.sm,
-    color: Colors.textPrimary,
-    maxHeight: 100,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  sendBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.purple,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
-  },
-  micBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

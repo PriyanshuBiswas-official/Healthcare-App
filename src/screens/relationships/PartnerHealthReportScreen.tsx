@@ -25,7 +25,8 @@ import {
   Moon,
   Calendar,
 } from 'lucide-react-native';
-import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { GlassCardView, SectionHeader, ActivityProgressCard } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import * as relationshipApi from '../../services/relationshipApi';
@@ -42,6 +43,271 @@ export default function PartnerHealthReportScreen({
   onBack,
 }: PartnerHealthReportScreenProps) {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+  const colors = theme.colors;
+  const styles = useStyles(t => ({
+    root: {
+      flex: 1,
+      backgroundColor: t.colors.bg,
+    },
+    center: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: Spacing.xl,
+    },
+    loadingText: {
+      color: t.colors.textMuted,
+      fontSize: Typography.sm,
+      marginTop: Spacing.base,
+    },
+    errorHeader: {
+      position: 'absolute',
+      top: Spacing.base,
+      left: Spacing.base,
+    },
+    errorTitle: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+      marginTop: Spacing.base,
+    },
+    errorSub: {
+      fontSize: Typography.sm,
+      color: t.colors.textMuted,
+      textAlign: 'center',
+      marginTop: Spacing.xs,
+      lineHeight: 18,
+      marginBottom: Spacing.lg,
+    },
+    retryBtn: {
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      backgroundColor: t.colors.chipBg,
+      borderRadius: Radius.sm,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+    },
+    retryBtnText: {
+      color: t.colors.textPrimary,
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: t.colors.chipBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+    },
+    headerTitles: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    headerTitle: {
+      fontSize: Typography.lg,
+      color: t.colors.textPrimary,
+      fontWeight: Typography.bold,
+    },
+    headerSubtitle: {
+      fontSize: Typography.xs,
+      color: t.colors.textMuted,
+    },
+    scrollContent: {
+      paddingHorizontal: Spacing.base,
+      paddingBottom: 100,
+    },
+    profileCard: {
+      padding: Spacing.lg,
+      marginBottom: Spacing.lg,
+      marginTop: Spacing.md,
+    },
+    profileHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    avatarContainer: {
+      marginRight: Spacing.md,
+    },
+    avatarPlaceholder: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: t.colors.teal + '20',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1.5,
+      borderColor: t.colors.teal,
+    },
+    avatarText: {
+      fontSize: Typography.xl,
+      fontWeight: Typography.bold,
+      color: t.colors.teal,
+    },
+    profileInfo: {
+      flex: 1,
+    },
+    profileName: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+      marginBottom: 2,
+    },
+    profileDetails: {
+      fontSize: Typography.xs,
+      color: t.colors.textMuted,
+      marginBottom: 4,
+    },
+    activeBadge: {
+      alignSelf: 'flex-start',
+      backgroundColor: t.colors.teal + '20',
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: Radius.full,
+    },
+    activeBadgeText: {
+      fontSize: 10,
+      color: t.colors.teal,
+      fontWeight: Typography.semiBold,
+    },
+    healthScoreRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderTopWidth: 1,
+      borderTopColor: t.colors.bgCardBorder + '30',
+      marginTop: Spacing.base,
+      paddingTop: Spacing.base,
+    },
+    scoreCircle: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: t.colors.teal,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    scoreText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: t.colors.white,
+    },
+    scoreMeta: {
+      marginLeft: Spacing.base,
+    },
+    scoreTitle: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+    },
+    scoreDesc: {
+      fontSize: Typography.xs - 1,
+      color: t.colors.textMuted,
+      marginTop: 2,
+    },
+    section: {
+      marginTop: Spacing.md,
+    },
+    dataCard: {
+      padding: Spacing.base,
+      borderRadius: Radius.md,
+    },
+    hScroll: {
+      paddingBottom: Spacing.md,
+      gap: Spacing.md,
+    },
+    vitalCard: {
+      padding: Spacing.md,
+      width: 130,
+      marginRight: Spacing.sm,
+    },
+    vitalLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginBottom: Spacing.sm,
+    },
+    vitalLabel: {
+      fontSize: Typography.xs,
+      color: t.colors.textMuted,
+      fontWeight: Typography.bold,
+    },
+    vitalValue: {
+      fontSize: Typography.base,
+      color: t.colors.textPrimary,
+      fontWeight: Typography.bold,
+    },
+    vitalUnit: {
+      fontSize: Typography.xs - 1,
+      color: t.colors.textMuted,
+    },
+    vitalBP: {
+      fontSize: Typography.xs - 2,
+      color: t.colors.textSecondary,
+      marginTop: 2,
+    },
+    emptyMetricCard: {
+      padding: Spacing.base,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: Radius.md,
+      flexDirection: 'row',
+      gap: Spacing.sm,
+    },
+    emptyMetricText: {
+      color: t.colors.textMuted,
+      fontSize: Typography.xs,
+    },
+    workoutItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    medItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    apptItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    workoutIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: Radius.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: Spacing.md,
+    },
+    workoutInfo: {
+      flex: 1,
+    },
+    workoutTitle: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+    },
+    workoutSub: {
+      fontSize: Typography.xs,
+      color: t.colors.textMuted,
+      marginTop: 2,
+    },
+    emptyInner: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: Spacing.md,
+    },
+    emptyInnerText: {
+      fontSize: Typography.xs,
+      color: t.colors.textMuted,
+    },
+  }));
   const { session } = useAuth();
   const token = session?.access_token || '';
 
@@ -72,7 +338,7 @@ export default function PartnerHealthReportScreen({
   if (loading) {
     return (
       <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={Colors.teal} />
+        <ActivityIndicator size="large" color={colors.teal} />
         <Text style={styles.loadingText}>Loading shared health data...</Text>
       </View>
     );
@@ -83,10 +349,10 @@ export default function PartnerHealthReportScreen({
       <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
         <View style={styles.errorHeader}>
           <TouchableOpacity style={styles.backBtn} onPress={onBack}>
-            <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
+            <ArrowLeft size={22} color={colors.text} strokeWidth={2} />
           </TouchableOpacity>
         </View>
-        <ShieldAlert size={48} color={Colors.pink} />
+        <ShieldAlert size={48} color={colors.pink} />
         <Text style={styles.errorTitle}>Access Denied or Revoked</Text>
         <Text style={styles.errorSub}>{error || 'You do not have active sharing permissions for this user.'}</Text>
         <TouchableOpacity style={styles.retryBtn} onPress={onBack}>
@@ -108,13 +374,13 @@ export default function PartnerHealthReportScreen({
       {/* HEADER */}
       <View style={[styles.header, { zIndex: 10 }]}>
         <TouchableOpacity style={styles.backBtn} onPress={onBack}>
-          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
+          <ArrowLeft size={22} color={colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <View style={styles.headerTitles}>
           <Text style={styles.headerTitle}>Health Report</Text>
           <Text style={styles.headerSubtitle}>
             Shared by {partnerUser.name}{' '}
-            <ShieldCheck size={14} color={Colors.teal} style={{ marginLeft: 4 }} />
+            <ShieldCheck size={14} color={colors.teal} style={{ marginLeft: 4 }} />
           </Text>
         </View>
         <View style={{ width: 40 }} />
@@ -187,7 +453,7 @@ export default function PartnerHealthReportScreen({
                 {report.vitals.map((v, i) => (
                   <GlassCardView key={i} style={styles.vitalCard}>
                     <View style={styles.vitalLabelRow}>
-                      <Heart size={14} color={Colors.pink} />
+                      <Heart size={14} color={colors.pink} />
                       <Text style={styles.vitalLabel}>Heart Rate</Text>
                     </View>
                     <Text style={styles.vitalValue}>
@@ -203,7 +469,7 @@ export default function PartnerHealthReportScreen({
               </ScrollView>
             ) : (
               <GlassCardView style={styles.emptyMetricCard}>
-                <Heart size={20} color={Colors.textMuted} />
+                <Heart size={20} color={colors.textMuted} />
                 <Text style={styles.emptyMetricText}>No recent vitals logged</Text>
               </GlassCardView>
             )}
@@ -218,8 +484,8 @@ export default function PartnerHealthReportScreen({
               {report.workouts && report.workouts.length > 0 ? (
                 report.workouts.map((w, idx) => (
                   <View key={idx} style={[styles.workoutItem, idx > 0 && { marginTop: Spacing.md }]}>
-                    <View style={[styles.workoutIcon, { backgroundColor: Colors.teal + '20' }]}>
-                      <Dumbbell size={18} color={Colors.teal} />
+                    <View style={[styles.workoutIcon, { backgroundColor: colors.teal + '20' }]}>
+                      <Dumbbell size={18} color={colors.teal} />
                     </View>
                     <View style={styles.workoutInfo}>
                       <Text style={styles.workoutTitle}>{w.workout_type || 'Exercise'}</Text>
@@ -246,8 +512,8 @@ export default function PartnerHealthReportScreen({
               {report.medications && report.medications.length > 0 ? (
                 report.medications.map((m, idx) => (
                   <View key={idx} style={[styles.medItem, idx > 0 && { marginTop: Spacing.md }]}>
-                    <View style={[styles.workoutIcon, { backgroundColor: Colors.amber + '20' }]}>
-                      <Pill size={18} color={Colors.amber} />
+                    <View style={[styles.workoutIcon, { backgroundColor: colors.amber + '20' }]}>
+                      <Pill size={18} color={colors.amber} />
                     </View>
                     <View style={styles.workoutInfo}>
                       <Text style={styles.workoutTitle}>{m.name}</Text>
@@ -274,8 +540,8 @@ export default function PartnerHealthReportScreen({
               {report.appointments && report.appointments.length > 0 ? (
                 report.appointments.map((a, idx) => (
                   <View key={idx} style={[styles.apptItem, idx > 0 && { marginTop: Spacing.md }]}>
-                    <View style={[styles.workoutIcon, { backgroundColor: Colors.blue + '20' }]}>
-                      <Calendar size={18} color={Colors.blue} />
+                    <View style={[styles.workoutIcon, { backgroundColor: colors.blue + '20' }]}>
+                      <Calendar size={18} color={colors.blue} />
                     </View>
                     <View style={styles.workoutInfo}>
                       <Text style={styles.workoutTitle}>{a.doctor_name}</Text>
@@ -297,267 +563,3 @@ export default function PartnerHealthReportScreen({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: Colors.bg,
-  },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.xl,
-  },
-  loadingText: {
-    color: Colors.textMuted,
-    fontSize: Typography.sm,
-    marginTop: Spacing.base,
-  },
-  errorHeader: {
-    position: 'absolute',
-    top: Spacing.base,
-    left: Spacing.base,
-  },
-  errorTitle: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-    marginTop: Spacing.base,
-  },
-  errorSub: {
-    fontSize: Typography.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    marginTop: Spacing.xs,
-    lineHeight: 18,
-    marginBottom: Spacing.lg,
-  },
-  retryBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: Colors.chipBg,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  retryBtnText: {
-    color: Colors.textPrimary,
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.chipBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  headerTitles: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: Typography.lg,
-    color: Colors.textPrimary,
-    fontWeight: Typography.bold,
-  },
-  headerSubtitle: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-  },
-  scrollContent: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: 100,
-  },
-  profileCard: {
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
-    marginTop: Spacing.md,
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatarContainer: {
-    marginRight: Spacing.md,
-  },
-  avatarPlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Colors.teal + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: Colors.teal,
-  },
-  avatarText: {
-    fontSize: Typography.xl,
-    fontWeight: Typography.bold,
-    color: Colors.teal,
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  profileName: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-    marginBottom: 2,
-  },
-  profileDetails: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    marginBottom: 4,
-  },
-  activeBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: Colors.teal + '20',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: Radius.full,
-  },
-  activeBadgeText: {
-    fontSize: 10,
-    color: Colors.teal,
-    fontWeight: Typography.semiBold,
-  },
-  healthScoreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: Colors.bgCardBorder + '30',
-    marginTop: Spacing.base,
-    paddingTop: Spacing.base,
-  },
-  scoreCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.teal,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scoreText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.white,
-  },
-  scoreMeta: {
-    marginLeft: Spacing.base,
-  },
-  scoreTitle: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  scoreDesc: {
-    fontSize: Typography.xs - 1,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  section: {
-    marginTop: Spacing.md,
-  },
-  dataCard: {
-    padding: Spacing.base,
-    borderRadius: Radius.md,
-  },
-  hScroll: {
-    paddingBottom: Spacing.md,
-    gap: Spacing.md,
-  },
-  vitalCard: {
-    padding: Spacing.md,
-    width: 130,
-    marginRight: Spacing.sm,
-  },
-  vitalLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: Spacing.sm,
-  },
-  vitalLabel: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    fontWeight: Typography.bold,
-  },
-  vitalValue: {
-    fontSize: Typography.base,
-    color: Colors.textPrimary,
-    fontWeight: Typography.bold,
-  },
-  vitalUnit: {
-    fontSize: Typography.xs - 1,
-    color: Colors.textMuted,
-  },
-  vitalBP: {
-    fontSize: Typography.xs - 2,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  emptyMetricCard: {
-    padding: Spacing.base,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.md,
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  emptyMetricText: {
-    color: Colors.textMuted,
-    fontSize: Typography.xs,
-  },
-  workoutItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  medItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  apptItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  workoutIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-  },
-  workoutInfo: {
-    flex: 1,
-  },
-  workoutTitle: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  workoutSub: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  emptyInner: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.md,
-  },
-  emptyInnerText: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-  },
-});

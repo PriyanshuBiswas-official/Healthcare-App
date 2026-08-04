@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,14 +10,14 @@ import {
   Alert,
 } from 'react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView, SectionHeader, ProgressBar } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useAuth } from '../../providers/AuthProvider';
 import { supabase } from '../../lib/supabase';
 import { usePreferences } from '../../providers/PreferencesContext';
-import { useTheme } from '../../providers/ThemeProvider';
 import { API_BASE_URL } from '../../config/api';
 import PersonalInfoScreen from './PersonalInfoScreen';
 import MedicalHistoryScreen from './MedicalHistoryScreen';
@@ -30,6 +30,7 @@ import AppointmentsRemindersScreen from '../reminders/AppointmentsRemindersScree
 import SleepRemindersScreen from '../reminders/SleepRemindersScreen';
 import HealthRemindersScreen from '../reminders/HealthRemindersScreen';
 import MedicationsRemindersScreen from '../reminders/MedicationsRemindersScreen';
+import { AppTheme } from '../../theme';
 
 type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency' | 'reminders-medication' | 'reminders-water' | 'reminders-workouts' | 'reminders-appointments' | 'reminders-sleep' | 'reminders-health';
 
@@ -57,7 +58,7 @@ interface ProfileData {
   medical_profile?: { allergies?: string; conditions?: string };
 }
 
-function getHealthProfile(profileData: ProfileData | null): MenuItem[] {
+function getHealthProfile(profileData: ProfileData | null, colors: AppTheme['colors']): MenuItem[] {
   const meds = profileData?.medications;
   const medCount = Array.isArray(meds) ? meds.length : 0;
   const allergiesRaw = (profileData as any)?.allergies || (profileData as any)?.medical_profile?.allergies || '';
@@ -66,59 +67,31 @@ function getHealthProfile(profileData: ProfileData | null): MenuItem[] {
     : Array.isArray(allergiesRaw) ? allergiesRaw : [];
 
   return [
-    { icon: '👤', label: 'Personal Information', sub: 'Name, DOB, gender', color: Colors.teal },
-    { icon: '📋', label: 'Medical History', sub: 'Conditions, surgeries', color: Colors.pink },
-    { icon: '💊', label: 'Medications', sub: medCount > 0 ? `${medCount} active prescription${medCount > 1 ? 's' : ''}` : 'No active medications', color: Colors.amber, badge: medCount > 0 ? String(medCount) : undefined },
-    { icon: '⚠️', label: 'Allergies', sub: allergyList.length > 0 ? allergyList.slice(0, 2).join(', ') : 'No allergies recorded', color: Colors.danger },
-    { icon: '🆘', label: 'Emergency Contacts', sub: 'Emergency contacts', color: Colors.purple },
+    { icon: '👤', label: 'Personal Information', sub: 'Name, DOB, gender', color: colors.teal },
+    { icon: '📋', label: 'Medical History', sub: 'Conditions, surgeries', color: colors.pink },
+    { icon: '💊', label: 'Medications', sub: medCount > 0 ? `${medCount} active prescription${medCount > 1 ? 's' : ''}` : 'No active medications', color: colors.amber, badge: medCount > 0 ? String(medCount) : undefined },
+    { icon: '⚠️', label: 'Allergies', sub: allergyList.length > 0 ? allergyList.slice(0, 2).join(', ') : 'No allergies recorded', color: colors.danger },
+    { icon: '🆘', label: 'Emergency Contacts', sub: 'Emergency contacts', color: colors.purple },
   ];
 }
 
-const CONNECTED_DEVICES: MenuItem[] = [
-  { icon: '⌚', label: 'Apple Watch', sub: 'Synced · Last: 2 min ago', color: Colors.teal, badge: 'On' },
-  { icon: '📱', label: 'Health Connect', sub: 'Steps, sleep, heart rate', color: Colors.pink },
-];
-
-const REMINDER_ITEMS: MenuItem[] = [
-  { icon: '💊', label: 'Medications', sub: 'Manage medication reminders', color: Colors.amber },
-  { icon: '💧', label: 'Water Reminders', sub: 'Hydration intake alerts', color: Colors.blue },
-  { icon: '💪', label: 'Workouts', sub: 'Exercise schedule & reminders', color: Colors.pink },
-  { icon: '🏥', label: 'Appointments', sub: 'Upcoming visits & alerts', color: Colors.teal },
-  { icon: '🌙', label: 'Sleep', sub: 'Bedtime & wake reminders', color: Colors.purple },
-  { icon: '❤️', label: 'Health', sub: 'General health reminders', color: Colors.danger },
-];
-
-const PREFERENCES = [
-  { key: 'notifications', icon: '🔔', label: 'Push Notifications', sub: 'Appointments & reminders', default: true },
-  { key: 'reminders', icon: '💊', label: 'Medication Reminders', sub: 'Daily dose alerts', default: true },
-  { key: 'cycle', icon: '🌸', label: 'Cycle Tracking Alerts', sub: 'Phase & fertility updates', default: false },
-  { key: 'biometric', icon: '🔒', label: 'Biometric Lock', sub: 'Face ID / fingerprint', default: true },
-] as const;
-
-const SUPPORT: MenuItem[] = [
-  { icon: '❓', label: 'Help & Support', sub: 'FAQs, chat support' },
-  { icon: '🛡️', label: 'Privacy & Security', sub: 'Data sharing, permissions' },
-  { icon: '📄', label: 'Terms & Policies', sub: 'Legal documents' },
-  { icon: 'ℹ️', label: 'About HealthApp', sub: 'Version 0.0.1' },
-];
-
-function MenuRow({ item, onPress }: { item: MenuItem; onPress?: () => void }) {
-  const accent = item.color ?? Colors.teal;
+function MenuRow({ item, onPress, colors }: { item: MenuItem; onPress?: () => void; colors: AppTheme['colors'] }) {
+  const accent = item.color ?? colors.teal;
   return (
-    <TouchableOpacity style={styles.menuRow} onPress={onPress} activeOpacity={0.7}>
-      <View style={[styles.menuIcon, { backgroundColor: accent + '20' }]}>
-        <Text style={styles.menuIconText}>{item.icon}</Text>
+    <TouchableOpacity style={menuStyles.menuRow} onPress={onPress} activeOpacity={0.7}>
+      <View style={[menuStyles.menuIcon, { backgroundColor: accent + '20' }]}>
+        <Text style={menuStyles.menuIconText}>{item.icon}</Text>
       </View>
-      <View style={styles.menuContent}>
-        <Text style={styles.menuLabel}>{item.label}</Text>
-        {item.sub && <Text style={styles.menuSub}>{item.sub}</Text>}
+      <View style={menuStyles.menuContent}>
+        <Text style={[menuStyles.menuLabel, { color: colors.textPrimary }]}>{item.label}</Text>
+        {item.sub && <Text style={[menuStyles.menuSub, { color: colors.textSecondary }]}>{item.sub}</Text>}
       </View>
       {item.badge ? (
-        <View style={[styles.badge, { backgroundColor: accent + '25', borderColor: accent + '50' }]}>
-          <Text style={[styles.badgeText, { color: accent }]}>{item.badge}</Text>
+        <View style={[menuStyles.badge, { backgroundColor: accent + '25', borderColor: accent + '50' }]}>
+          <Text style={[menuStyles.badgeText, { color: accent }]}>{item.badge}</Text>
         </View>
       ) : (
-        <Text style={styles.chevron}>›</Text>
+        <Text style={[menuStyles.chevron, { color: colors.textMuted }]}>›</Text>
       )}
     </TouchableOpacity>
   );
@@ -130,37 +103,89 @@ function ToggleRow({
   sub,
   value,
   onValueChange,
+  colors,
 }: {
   icon: string;
   label: string;
   sub: string;
   value: boolean;
   onValueChange: (v: boolean) => void;
+  colors: AppTheme['colors'];
 }) {
   return (
-    <View style={styles.menuRow}>
-      <View style={[styles.menuIcon, { backgroundColor: Colors.teal + '20' }]}>
-        <Text style={styles.menuIconText}>{icon}</Text>
+    <View style={menuStyles.menuRow}>
+      <View style={[menuStyles.menuIcon, { backgroundColor: colors.teal + '20' }]}>
+        <Text style={menuStyles.menuIconText}>{icon}</Text>
       </View>
-      <View style={styles.menuContent}>
-        <Text style={styles.menuLabel}>{label}</Text>
-        <Text style={styles.menuSub}>{sub}</Text>
+      <View style={menuStyles.menuContent}>
+        <Text style={[menuStyles.menuLabel, { color: colors.textPrimary }]}>{label}</Text>
+        <Text style={[menuStyles.menuSub, { color: colors.textSecondary }]}>{sub}</Text>
       </View>
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: Colors.bgCardBorder, true: Colors.teal + '60' }}
-        thumbColor={value ? Colors.teal : Colors.textMuted}
+        trackColor={{ false: colors.bgCardBorder, true: colors.teal + '60' }}
+        thumbColor={value ? colors.teal : colors.textMuted}
       />
     </View>
   );
 }
 
+const menuStyles = StyleSheet.create({
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.md,
+  },
+  menuIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuIconText: { fontSize: Typography.md },
+  menuContent: { flex: 1, marginLeft: Spacing.md },
+  menuLabel: {
+    fontSize: Typography.base,
+    fontWeight: Typography.semiBold,
+  },
+  menuSub: {
+    fontSize: Typography.xs,
+    marginTop: 2,
+  },
+  chevron: {
+    fontSize: Typography.xl,
+    fontWeight: Typography.medium,
+    marginLeft: Spacing.sm,
+  },
+  badge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  badgeText: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.bold,
+  },
+});
+
 export default function ProfileScreen({ onBackPress, onCompleteProfile, initialSection }: { onBackPress?: () => void; onCompleteProfile?: () => void; initialSection?: string | null }) {
+  const { theme } = useTheme();
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion } = useAuth();
   const { hideVitals, setHideVitals, hideCommunitySpotlight, setHideCommunitySpotlight } = usePreferences();
   const { systemSync, setSystemSync, themeName, setThemeName } = useTheme();
+
+  const PREFERENCES = useMemo(() => [
+    { key: 'notifications', icon: '🔔', label: 'Push Notifications', sub: 'Appointments & reminders', default: true },
+    { key: 'reminders', icon: '💊', label: 'Medication Reminders', sub: 'Daily dose alerts', default: true },
+    { key: 'cycle', icon: '🌸', label: 'Cycle Tracking Alerts', sub: 'Phase & fertility updates', default: false },
+    { key: 'biometric', icon: '🔒', label: 'Biometric Lock', sub: 'Face ID / fingerprint', default: true },
+  ] as const, []);
+
   const [toggles, setToggles] = useState(
     Object.fromEntries(PREFERENCES.map(p => [p.key, p.default])) as Record<string, boolean>,
   );
@@ -169,6 +194,256 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
     initialSection as HealthSection | null
   );
   const cameFromExternal = !!initialSection;
+
+  const healthProfile = useMemo(() => getHealthProfile(profileData, theme.colors), [profileData, theme.colors]);
+
+  const styles = useStyles((t) => ({
+    root: { flex: 1, backgroundColor: t.colors.bg },
+    scroll: {
+      paddingHorizontal: Spacing.base,
+      paddingTop: Spacing.xl,
+      paddingBottom: 120,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: Spacing.xl,
+    },
+    backBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: Radius.md,
+      backgroundColor: t.colors.bgCard,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    backPlaceholder: { width: 40 },
+    backIcon: { fontSize: Typography.lg, color: t.colors.textPrimary },
+    pageTitle: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+    },
+    profileCard: { padding: Spacing.lg, marginBottom: Spacing.lg },
+    profileRow: { flexDirection: 'row', alignItems: 'center' },
+    avatar: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: t.colors.teal + '30',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    avatarImage: {
+      width: 68,
+      height: 68,
+      borderRadius: 34,
+    },
+    avatarText: {
+      fontSize: Typography.xl,
+      fontWeight: Typography.extraBold,
+      color: t.colors.teal,
+    },
+    profileInfo: { flex: 1, marginLeft: Spacing.base },
+    name: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.extraBold,
+      color: t.colors.textPrimary,
+      letterSpacing: -0.3,
+    },
+    email: {
+      fontSize: Typography.sm,
+      color: t.colors.textSecondary,
+      marginTop: 2,
+    },
+    memberBadge: {
+      alignSelf: 'flex-start',
+      marginTop: Spacing.sm,
+      paddingHorizontal: Spacing.sm + 2,
+      paddingVertical: 3,
+      borderRadius: Radius.full,
+      backgroundColor: t.colors.teal + '20',
+      borderWidth: 1,
+      borderColor: t.colors.teal + '50',
+    },
+    memberBadgeText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.semiBold,
+      color: t.colors.teal,
+      letterSpacing: Typography.lsWide,
+    },
+    profileMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: Spacing.base,
+      paddingTop: Spacing.base,
+      borderTopWidth: 1,
+      borderTopColor: t.colors.divider,
+    },
+    metaItem: { fontSize: Typography.xs, color: t.colors.textSecondary },
+    statsRow: {
+      flexDirection: 'row',
+      paddingVertical: Spacing.sm + 2,
+      paddingHorizontal: Spacing.base,
+      marginBottom: Spacing.xl,
+    },
+    statItem: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    statValue: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+    },
+    statLabel: {
+      fontSize: Typography.xs,
+      color: t.colors.textSecondary,
+      marginTop: 2,
+    },
+    statDivider: {
+      width: 1,
+      height: '80%',
+      backgroundColor: t.colors.divider,
+      position: 'absolute',
+      right: 0,
+    },
+    completeCard: {
+      ...GlassCard,
+      padding: Spacing.lg,
+      marginBottom: Spacing.xl,
+      borderColor: t.colors.teal + '40',
+    },
+    completeCardInner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: Spacing.md,
+    },
+    completeCardLeft: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    completeCardIcon: {
+      fontSize: Typography.xl,
+      marginRight: Spacing.md,
+    },
+    completeCardTextWrap: {
+      flex: 1,
+    },
+    completeCardTitle: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+    },
+    completeCardSub: {
+      fontSize: Typography.xs,
+      color: t.colors.textSecondary,
+      marginTop: 2,
+    },
+    completeCardProgress: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    completeCardPercent: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+      color: t.colors.teal,
+      marginLeft: Spacing.sm,
+      minWidth: 30,
+    },
+    menuCard: { paddingVertical: Spacing.xs, marginBottom: Spacing.xl },
+    divider: {
+      height: 1,
+      backgroundColor: t.colors.divider,
+      marginLeft: 68,
+    },
+    logoutBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.lg,
+      backgroundColor: t.colors.danger + '15',
+      borderWidth: 1,
+      borderColor: t.colors.danger + '40',
+      marginBottom: Spacing.lg,
+    },
+    logoutIcon: { fontSize: Typography.base, marginRight: Spacing.sm },
+    logoutText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: t.colors.danger,
+    },
+    chevron: {
+      fontSize: Typography.xl,
+      fontWeight: Typography.medium,
+      marginLeft: Spacing.sm,
+    },
+    version: {
+      textAlign: 'center',
+      fontSize: Typography.xs,
+      color: t.colors.textMuted,
+      marginBottom: Spacing.base,
+    },
+    themeChipRow: {
+      flexDirection: 'row',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.sm,
+      paddingHorizontal: Spacing.xs,
+    },
+    themeChip: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.md,
+      backgroundColor: t.colors.bgCardBorder + '30',
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+    },
+    themeChipActive: {
+      backgroundColor: t.colors.teal + '20',
+      borderColor: t.colors.teal + '60',
+    },
+    themeChipIcon: {
+      fontSize: Typography.xl,
+      marginBottom: 4,
+    },
+    themeChipText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.semiBold,
+      color: t.colors.textSecondary,
+    },
+    themeChipTextActive: {
+      color: t.colors.teal,
+    },
+  }));
+
+  const CONNECTED_DEVICES: MenuItem[] = useMemo(() => [
+    { icon: '⌚', label: 'Apple Watch', sub: 'Synced · Last: 2 min ago', color: theme.colors.teal, badge: 'On' },
+    { icon: '📱', label: 'Health Connect', sub: 'Steps, sleep, heart rate', color: theme.colors.pink },
+  ], [theme.colors]);
+
+  const REMINDER_ITEMS: MenuItem[] = useMemo(() => [
+    { icon: '💊', label: 'Medications', sub: 'Manage medication reminders', color: theme.colors.amber },
+    { icon: '💧', label: 'Water Reminders', sub: 'Hydration intake alerts', color: theme.colors.blue },
+    { icon: '💪', label: 'Workouts', sub: 'Exercise schedule & reminders', color: theme.colors.pink },
+    { icon: '🏥', label: 'Appointments', sub: 'Upcoming visits & alerts', color: theme.colors.teal },
+    { icon: '🌙', label: 'Sleep', sub: 'Bedtime & wake reminders', color: theme.colors.purple },
+    { icon: '❤️', label: 'Health', sub: 'General health reminders', color: theme.colors.danger },
+  ], [theme.colors]);
+
+  const SUPPORT: MenuItem[] = useMemo(() => [
+    { icon: '❓', label: 'Help & Support', sub: 'FAQs, chat support' },
+    { icon: '🛡️', label: 'Privacy & Security', sub: 'Data sharing, permissions' },
+    { icon: '📄', label: 'Terms & Policies', sub: 'Legal documents' },
+    { icon: 'ℹ️', label: 'About HealthApp', sub: 'Version 0.0.1' },
+  ], []);
 
   // Handle initialSection changes (from notification taps)
   useEffect(() => {
@@ -223,16 +498,12 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
 
   const handleLogout = async () => {
     try {
-      // Sign out from Google first to clear cached account.
-      // This ensures the account picker appears on the next Google login.
       const { GoogleSignin } = require('../../lib/googleSignin');
       const isSignedIn = await GoogleSignin.isSignedIn();
       if (isSignedIn) {
         try {
           await GoogleSignin.revokeAccess();
-        } catch (_) {
-          // revokeAccess may fail if the token was already revoked — safe to ignore
-        }
+        } catch (_) {}
         await GoogleSignin.signOut();
       }
     } catch (e) {
@@ -327,7 +598,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
         <View style={styles.topBar}>
           {onBackPress ? (
             <TouchableOpacity style={styles.backBtn} onPress={onBackPress} activeOpacity={0.7}>
-              <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
+              <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
             </TouchableOpacity>
           ) : (
             <View style={styles.backPlaceholder} />
@@ -336,7 +607,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
           <View style={{ width: 40 }} />
         </View>
 
-        <GlassCardView style={styles.profileCard} accentColor={Colors.teal}>
+        <GlassCardView style={styles.profileCard} accentColor={theme.colors.teal}>
           <View style={styles.profileRow}>
             <View style={styles.avatar}>
               {avatarUrl ? (
@@ -390,7 +661,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
                 <Text style={styles.chevron}>›</Text>
               </View>
               <View style={styles.completeCardProgress}>
-                <ProgressBar progress={percentage / 100} color={Colors.teal} height={4} />
+                <ProgressBar progress={percentage / 100} color={theme.colors.teal} height={4} />
                 <Text style={styles.completeCardPercent}>{percentage}%</Text>
               </View>
             </TouchableOpacity>
@@ -399,10 +670,11 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
 
         <SectionHeader title="Health Profile" subtitle="Manage your medical information" />
         <GlassCardView style={styles.menuCard}>
-          {getHealthProfile(profileData).map((item, i) => (
+          {healthProfile.map((item, i) => (
             <View key={item.label}>
               <MenuRow
                 item={item}
+                colors={theme.colors}
                 onPress={() => {
                   const sectionMap: Record<string, HealthSection> = {
                     'Personal Information': 'personal',
@@ -414,7 +686,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
                   setActiveSection(sectionMap[item.label] || null);
                 }}
               />
-              {i < getHealthProfile(profileData).length - 1 && <View style={styles.divider} />}
+              {i < healthProfile.length - 1 && <View style={styles.divider} />}
             </View>
           ))}
         </GlassCardView>
@@ -425,6 +697,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
             <View key={item.label}>
               <MenuRow
                 item={item}
+                colors={theme.colors}
                 onPress={() => {
                   const sectionMap: Record<string, HealthSection> = {
                     'Medications': 'reminders-medication',
@@ -446,10 +719,44 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
         <GlassCardView style={styles.menuCard}>
           {CONNECTED_DEVICES.map((item, i) => (
             <View key={item.label}>
-              <MenuRow item={item} />
+              <MenuRow item={item} colors={theme.colors} />
               {i < CONNECTED_DEVICES.length - 1 && <View style={styles.divider} />}
             </View>
           ))}
+        </GlassCardView>
+
+        <SectionHeader title="Appearance" subtitle="Choose your app theme" />
+        <GlassCardView style={styles.menuCard}>
+          <View style={styles.themeChipRow}>
+            {([
+              { key: 'system' as const, icon: '🔄', label: 'System' },
+              { key: 'dark' as const, icon: '🌙', label: 'Dark' },
+              { key: 'light' as const, icon: '☀️', label: 'Light' },
+            ]).map((opt) => {
+              const isActive = opt.key === 'system'
+                ? systemSync
+                : !systemSync && themeName === opt.key;
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[styles.themeChip, isActive && styles.themeChipActive]}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    if (opt.key === 'system') {
+                      setSystemSync(true);
+                    } else {
+                      setSystemSync(false);
+                      setThemeName(opt.key);
+                    }
+                  }}>
+                  <Text style={styles.themeChipIcon}>{opt.icon}</Text>
+                  <Text style={[styles.themeChipText, isActive && styles.themeChipTextActive]}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </GlassCardView>
 
         <SectionHeader title="Preferences" />
@@ -462,30 +769,11 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
                 sub={item.sub}
                 value={toggles[item.key]}
                 onValueChange={v => setToggle(item.key, v)}
+                colors={theme.colors}
               />
               {i < PREFERENCES.length - 1 && <View style={styles.divider} />}
             </View>
           ))}
-          <View style={styles.divider} />
-          <ToggleRow
-            icon="🎨"
-            label="System Theme Sync"
-            sub="Match device dark/light mode"
-            value={systemSync}
-            onValueChange={setSystemSync}
-          />
-          {!systemSync && (
-            <>
-              <View style={styles.divider} />
-              <ToggleRow
-                icon="🌗"
-                label="Dark Theme"
-                sub="Use dark appearance manually"
-                value={themeName === 'dark'}
-                onValueChange={v => setThemeName(v ? 'dark' : 'light')}
-              />
-            </>
-          )}
           <View style={styles.divider} />
           <ToggleRow
             icon="❤️"
@@ -493,6 +781,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
             sub="Remove vitals from all health pages"
             value={hideVitals}
             onValueChange={setHideVitals}
+            colors={theme.colors}
           />
           <View style={styles.divider} />
           <ToggleRow
@@ -501,6 +790,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
             sub="Remove community posts from dashboard"
             value={hideCommunitySpotlight}
             onValueChange={setHideCommunitySpotlight}
+            colors={theme.colors}
           />
         </GlassCardView>
 
@@ -508,7 +798,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
         <GlassCardView style={styles.menuCard}>
           {SUPPORT.map((item, i) => (
             <View key={item.label}>
-              <MenuRow item={item} />
+              <MenuRow item={item} colors={theme.colors} />
               {i < SUPPORT.length - 1 && <View style={styles.divider} />}
             </View>
           ))}
@@ -525,234 +815,3 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  scroll: {
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.xl,
-    paddingBottom: 120,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.xl,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backPlaceholder: { width: 40 },
-  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
-  pageTitle: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  profileCard: { padding: Spacing.lg, marginBottom: Spacing.lg },
-  profileRow: { flexDirection: 'row', alignItems: 'center' },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.teal + '30',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  avatarImage: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-  },
-  avatarText: {
-    fontSize: Typography.xl,
-    fontWeight: Typography.extraBold,
-    color: Colors.teal,
-  },
-  profileInfo: { flex: 1, marginLeft: Spacing.base },
-  name: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.extraBold,
-    color: Colors.textPrimary,
-    letterSpacing: -0.3,
-  },
-  email: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  memberBadge: {
-    alignSelf: 'flex-start',
-    marginTop: Spacing.sm,
-    paddingHorizontal: Spacing.sm + 2,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.teal + '20',
-    borderWidth: 1,
-    borderColor: Colors.teal + '50',
-  },
-  memberBadgeText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.semiBold,
-    color: Colors.teal,
-    letterSpacing: Typography.lsWide,
-  },
-  profileMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: Spacing.base,
-    paddingTop: Spacing.base,
-    borderTopWidth: 1,
-    borderTopColor: Colors.divider,
-  },
-  metaItem: { fontSize: Typography.xs, color: Colors.textSecondary },
-  statsRow: {
-    flexDirection: 'row',
-    paddingVertical: Spacing.sm + 2,
-    paddingHorizontal: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  statLabel: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  statDivider: {
-    width: 1,
-    height: '80%',
-    backgroundColor: Colors.divider,
-    position: 'absolute',
-    right: 0,
-  },
-  completeCard: {
-    ...GlassCard,
-    padding: Spacing.lg,
-    marginBottom: Spacing.xl,
-    borderColor: Colors.teal + '40',
-  },
-  completeCardInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  completeCardLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  completeCardIcon: {
-    fontSize: Typography.xl,
-    marginRight: Spacing.md,
-  },
-  completeCardTextWrap: {
-    flex: 1,
-  },
-  completeCardTitle: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  completeCardSub: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  completeCardProgress: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  completeCardPercent: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.teal,
-    marginLeft: Spacing.sm,
-    minWidth: 30,
-  },
-  menuCard: { paddingVertical: Spacing.xs, marginBottom: Spacing.xl },
-  menuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-  },
-  menuIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  menuIconText: { fontSize: Typography.md },
-  menuContent: { flex: 1, marginLeft: Spacing.md },
-  menuLabel: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-  },
-  menuSub: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  chevron: {
-    fontSize: Typography.xl,
-    color: Colors.textMuted,
-    fontWeight: Typography.medium,
-    marginLeft: Spacing.sm,
-  },
-  badge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-  },
-  badgeText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.divider,
-    marginLeft: 68,
-  },
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.lg,
-    backgroundColor: Colors.danger + '15',
-    borderWidth: 1,
-    borderColor: Colors.danger + '40',
-    marginBottom: Spacing.lg,
-  },
-  logoutIcon: { fontSize: Typography.base, marginRight: Spacing.sm },
-  logoutText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.danger,
-  },
-  version: {
-    textAlign: 'center',
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    marginBottom: Spacing.base,
-  },
-});

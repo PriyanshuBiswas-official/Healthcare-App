@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TextInput,
   TouchableOpacity,
@@ -11,7 +10,8 @@ import {
   Platform,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { ArrowLeft, Pencil } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
@@ -45,6 +45,7 @@ function parseDateString(s: string): Date | null {
 }
 
 export default function MedicationsScreen({ onBack, onSaved }: Props) {
+  const { theme } = useTheme();
   const { session } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -69,6 +70,161 @@ export default function MedicationsScreen({ onBack, onSaved }: Props) {
   const [editEndDate, setEditEndDate] = useState<Date | null>(null);
   const [showEditStartPicker, setShowEditStartPicker] = useState(false);
   const [showEditEndPicker, setShowEditEndPicker] = useState(false);
+
+  const styles = useStyles((t) => ({
+    root: { flex: 1, backgroundColor: t.colors.bg },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.base,
+      paddingTop: Spacing.xl,
+      paddingBottom: Spacing.md,
+    },
+    backBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: Radius.md,
+      backgroundColor: t.colors.bgCard,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pageTitle: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+    },
+    addTopBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+    addTopBtnText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.semiBold,
+      color: t.colors.amber,
+    },
+    scroll: {
+      paddingHorizontal: Spacing.base,
+      paddingBottom: 120,
+    },
+    card: { padding: Spacing.lg, marginBottom: Spacing.lg },
+    medRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: Spacing.md,
+    },
+    medInfo: { flex: 1 },
+    medName: {
+      fontSize: Typography.base,
+      fontWeight: Typography.semiBold,
+      color: t.colors.textPrimary,
+    },
+    medDetail: {
+      fontSize: Typography.sm,
+      color: t.colors.textSecondary,
+      marginTop: 2,
+    },
+    medDate: {
+      fontSize: Typography.xs,
+      color: t.colors.textMuted,
+      marginTop: 2,
+    },
+    medActions: {
+      flexDirection: 'row',
+      gap: Spacing.md,
+      alignItems: 'center',
+    },
+    removeBtn: {
+      fontSize: Typography.md,
+      color: t.colors.danger,
+      padding: Spacing.sm,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: t.colors.divider,
+    },
+    addTitle: {
+      fontSize: Typography.base,
+      fontWeight: Typography.semiBold,
+      color: t.colors.textPrimary,
+      marginBottom: Spacing.md,
+    },
+    input: {
+      backgroundColor: t.colors.bgCardSolid,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      fontSize: Typography.base,
+      color: t.colors.textPrimary,
+      marginBottom: Spacing.sm,
+    },
+    inputText: { fontSize: Typography.base, color: t.colors.textPrimary },
+    inputPlaceholder: { fontSize: Typography.base, color: t.colors.textMuted },
+    row: { flexDirection: 'row', gap: Spacing.sm },
+    halfField: { flex: 1 },
+    addBtn: {
+      backgroundColor: t.colors.amber + '20',
+      borderWidth: 1,
+      borderColor: t.colors.amber + '50',
+      borderRadius: Radius.md,
+      paddingVertical: Spacing.md,
+      alignItems: 'center',
+      marginTop: Spacing.sm,
+    },
+    addBtnText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.semiBold,
+      color: t.colors.amber,
+    },
+    inlineEditBlock: {
+      paddingVertical: Spacing.sm,
+    },
+    inlineActions: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: Spacing.sm,
+      marginTop: Spacing.sm,
+    },
+    inlineCancelBtn: {
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+    },
+    inlineCancelText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: t.colors.textSecondary,
+    },
+    inlineSaveBtn: {
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      borderRadius: Radius.md,
+      backgroundColor: t.colors.amber + '20',
+      borderWidth: 1,
+      borderColor: t.colors.amber + '50',
+    },
+    inlineSaveText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: t.colors.amber,
+    },
+    emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
+    emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
+    emptyText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.semiBold,
+      color: t.colors.textPrimary,
+    },
+    emptySub: {
+      fontSize: Typography.sm,
+      color: t.colors.textSecondary,
+      marginTop: Spacing.xs,
+    },
+  }));
 
   // ── Fetch Profile ───────────────────────────────────────
 
@@ -243,7 +399,7 @@ export default function MedicationsScreen({ onBack, onSaved }: Props) {
     return (
       <View style={styles.root}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.amber} />
+          <ActivityIndicator size="large" color={theme.colors.amber} />
         </View>
       </View>
     );
@@ -255,7 +411,7 @@ export default function MedicationsScreen({ onBack, onSaved }: Props) {
     <View style={styles.root}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
+          <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Medications</Text>
         <TouchableOpacity
@@ -286,7 +442,7 @@ export default function MedicationsScreen({ onBack, onSaved }: Props) {
               value={newName}
               onChangeText={setNewName}
               placeholder="Medication name *"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={theme.colors.textMuted}
             />
             <View style={styles.row}>
               <View style={styles.halfField}>
@@ -295,7 +451,7 @@ export default function MedicationsScreen({ onBack, onSaved }: Props) {
                   value={newDosage}
                   onChangeText={setNewDosage}
                   placeholder="Dosage (e.g. 500mg)"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={theme.colors.textMuted}
                 />
               </View>
               <View style={styles.halfField}>
@@ -304,7 +460,7 @@ export default function MedicationsScreen({ onBack, onSaved }: Props) {
                   value={newFrequency}
                   onChangeText={setNewFrequency}
                   placeholder="Frequency"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={theme.colors.textMuted}
                 />
               </View>
             </View>
@@ -368,7 +524,7 @@ export default function MedicationsScreen({ onBack, onSaved }: Props) {
                       value={editName}
                       onChangeText={setEditName}
                       placeholder="Medication name *"
-                      placeholderTextColor={Colors.textMuted}
+                      placeholderTextColor={theme.colors.textMuted}
                     />
                     <View style={styles.row}>
                       <View style={styles.halfField}>
@@ -377,7 +533,7 @@ export default function MedicationsScreen({ onBack, onSaved }: Props) {
                           value={editDosage}
                           onChangeText={setEditDosage}
                           placeholder="Dosage"
-                          placeholderTextColor={Colors.textMuted}
+                          placeholderTextColor={theme.colors.textMuted}
                         />
                       </View>
                       <View style={styles.halfField}>
@@ -386,7 +542,7 @@ export default function MedicationsScreen({ onBack, onSaved }: Props) {
                           value={editFrequency}
                           onChangeText={setEditFrequency}
                           placeholder="Frequency"
-                          placeholderTextColor={Colors.textMuted}
+                          placeholderTextColor={theme.colors.textMuted}
                         />
                       </View>
                     </View>
@@ -452,7 +608,7 @@ export default function MedicationsScreen({ onBack, onSaved }: Props) {
                       <TouchableOpacity
                         onPress={() => startInlineEdit(i)}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Pencil size={18} color={Colors.textSecondary} strokeWidth={2} />
+                        <Pencil size={18} color={theme.colors.textSecondary} strokeWidth={2} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => removeMedication(i)}
@@ -471,158 +627,3 @@ export default function MedicationsScreen({ onBack, onSaved }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.md,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pageTitle: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  addTopBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
-  addTopBtnText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semiBold,
-    color: Colors.amber,
-  },
-  scroll: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: 120,
-  },
-  card: { padding: Spacing.lg, marginBottom: Spacing.lg },
-  medRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-  },
-  medInfo: { flex: 1 },
-  medName: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-  },
-  medDetail: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  medDate: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  medActions: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    alignItems: 'center',
-  },
-  removeBtn: {
-    fontSize: Typography.md,
-    color: Colors.danger,
-    padding: Spacing.sm,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.divider,
-  },
-  addTitle: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.md,
-  },
-  input: {
-    backgroundColor: Colors.bgCardSolid,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    fontSize: Typography.base,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
-  },
-  inputText: { fontSize: Typography.base, color: Colors.textPrimary },
-  inputPlaceholder: { fontSize: Typography.base, color: Colors.textMuted },
-  row: { flexDirection: 'row', gap: Spacing.sm },
-  halfField: { flex: 1 },
-  addBtn: {
-    backgroundColor: Colors.amber + '20',
-    borderWidth: 1,
-    borderColor: Colors.amber + '50',
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.md,
-    alignItems: 'center',
-    marginTop: Spacing.sm,
-  },
-  addBtnText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semiBold,
-    color: Colors.amber,
-  },
-  inlineEditBlock: {
-    paddingVertical: Spacing.sm,
-  },
-  inlineActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: Spacing.sm,
-    marginTop: Spacing.sm,
-  },
-  inlineCancelBtn: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  inlineCancelText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.textSecondary,
-  },
-  inlineSaveBtn: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.amber + '20',
-    borderWidth: 1,
-    borderColor: Colors.amber + '50',
-  },
-  inlineSaveText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.amber,
-  },
-  emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
-  emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
-  emptyText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-  },
-  emptySub: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    marginTop: Spacing.xs,
-  },
-});

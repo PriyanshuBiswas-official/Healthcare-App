@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { Bell } from 'lucide-react-native';
-import { Colors, Radius, Spacing, Typography, GlassCard, Shadows } from '../theme/theme';
+import { Radius, Spacing, Typography, GlassCard, Shadows } from '../theme/theme';
+import { useTheme, useStyles } from '../providers/ThemeProvider';
 
 // ─── Glass Card ─────────────────────────────────────────────────────────────
 interface GlassCardProps {
@@ -38,32 +39,39 @@ export const ProfileAvatarButton: React.FC<{
   onPress?: () => void;
   userName?: string;
   avatarUrl?: string;
-}> = React.memo(({ onPress, userName, avatarUrl }) => (
-  <TouchableOpacity style={profileAvatarStyles.avatar} onPress={onPress} activeOpacity={0.8}>
-    {avatarUrl ? (
-      <Image source={{ uri: avatarUrl }} style={profileAvatarStyles.avatarImage} />
-    ) : (
-      <Text style={profileAvatarStyles.avatarText}>
-        {(userName || 'A').charAt(0).toUpperCase()}
-      </Text>
-    )}
-  </TouchableOpacity>
-));
+}> = React.memo(({ onPress, userName, avatarUrl }) => {
+  const styles = useStyles(profileAvatarStyles);
+  return (
+    <TouchableOpacity style={styles.avatar} onPress={onPress} activeOpacity={0.8}>
+      {avatarUrl ? (
+        <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+      ) : (
+        <Text style={styles.avatarText}>
+          {(userName || 'A').charAt(0).toUpperCase()}
+        </Text>
+      )}
+    </TouchableOpacity>
+  );
+});
 
 // ─── Notification Icon Button ────────────────────────────────────────────────
 export const NotificationIconButton: React.FC<{ onPress?: () => void; unreadCount?: number }> = React.memo(({
   onPress,
   unreadCount = 0,
-}) => (
-  <TouchableOpacity style={notifIconStyles.btn} onPress={onPress} activeOpacity={0.8}>
-    <Bell size={30} color={Colors.white} strokeWidth={2} />
-    {unreadCount > 0 && (
-      <View style={notifIconStyles.badge}>
-        <Text style={notifIconStyles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-      </View>
-    )}
-  </TouchableOpacity>
-));
+}) => {
+  const { theme } = useTheme();
+  const styles = useStyles(notifIconStyles);
+  return (
+    <TouchableOpacity style={styles.btn} onPress={onPress} activeOpacity={0.8}>
+      <Bell size={30} color={theme.colors.white} strokeWidth={2} />
+      {unreadCount > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+});
 
 // ─── Section Header ──────────────────────────────────────────────────────────
 interface SectionHeaderProps {
@@ -78,21 +86,24 @@ export const SectionHeader: React.FC<SectionHeaderProps> = React.memo(({
   subtitle,
   action,
   onAction,
-}) => (
-  <View style={sharedStyles.sectionHeader}>
-    <View>
-      <Text style={sharedStyles.sectionTitle}>{title}</Text>
-      {subtitle && (
-        <Text style={sharedStyles.sectionSubtitle}>{subtitle}</Text>
+}) => {
+  const styles = useStyles(sharedStyleCreator);
+  return (
+    <View style={styles.sectionHeader}>
+      <View>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {subtitle && (
+          <Text style={styles.sectionSubtitle}>{subtitle}</Text>
+        )}
+      </View>
+      {action && (
+        <TouchableOpacity onPress={onAction}>
+          <Text style={styles.sectionAction}>{action}</Text>
+        </TouchableOpacity>
       )}
     </View>
-    {action && (
-      <TouchableOpacity onPress={onAction}>
-        <Text style={sharedStyles.sectionAction}>{action}</Text>
-      </TouchableOpacity>
-    )}
-  </View>
-));
+  );
+});
 
 // ─── Stat Pill ───────────────────────────────────────────────────────────────
 interface StatPillProps {
@@ -101,15 +112,19 @@ interface StatPillProps {
   color: string;
 }
 
-export const StatPill: React.FC<StatPillProps> = React.memo(({ label, value, color }) => (
-  <View style={[sharedStyles.statPill, { borderColor: color + '50', backgroundColor: color + '18' }]}>
-    <Text style={[sharedStyles.statValue, { color }]}>{value}</Text>
-    <Text style={sharedStyles.statLabel}>{label}</Text>
-  </View>
-));
+export const StatPill: React.FC<StatPillProps> = React.memo(({ label, value, color }) => {
+  const styles = useStyles(sharedStyleCreator);
+  return (
+    <View style={[styles.statPill, { borderColor: color + '50', backgroundColor: color + '18' }]}>
+      <Text style={[styles.statValue, { color }]}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+});
 
 // ─── Activity Rings & Card ───────────────────────────────────────────────────
 export function ActivityRings({ steps, exercise, calories }: { steps: number; exercise: number; calories: number }) {
+  const { theme } = useTheme();
   const size = 120;
   const strokeWidth = 10;
   const center = size / 2;
@@ -128,9 +143,9 @@ export function ActivityRings({ steps, exercise, calories }: { steps: number; ex
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size}>
-        {drawRing(50, Colors.pink, calories)}
-        {drawRing(36, Colors.teal, steps)}
-        {drawRing(22, Colors.blue, exercise)}
+        {drawRing(50, theme.colors.pink, calories)}
+        {drawRing(36, theme.colors.teal, steps)}
+        {drawRing(22, theme.colors.blue, exercise)}
       </Svg>
     </View>
   );
@@ -145,33 +160,35 @@ export const ActivityProgressCard = React.memo(({
   exercise: number; exerciseTarget: number;
   calories: number; caloriesTarget: number;
 }) => {
+  const { theme } = useTheme();
+  const styles = useStyles(activityCardStyleCreator);
   const stepsPct = stepsTarget > 0 ? steps / stepsTarget : 0;
   const exercisePct = exerciseTarget > 0 ? exercise / exerciseTarget : 0;
   const caloriesPct = caloriesTarget > 0 ? calories / caloriesTarget : 0;
 
   return (
-    <View style={activityCardStyles.activityRow}>
+    <View style={styles.activityRow}>
       <ActivityRings steps={stepsPct} exercise={exercisePct} calories={caloriesPct} />
-      <View style={activityCardStyles.activityLegend}>
-        <View style={activityCardStyles.legendItem}>
-          <View style={[activityCardStyles.legendDot, { backgroundColor: Colors.teal }]} />
-          <View style={activityCardStyles.legendTextWrap}>
-            <Text style={activityCardStyles.legendLabel}>Steps</Text>
-            <Text style={activityCardStyles.legendValue}>{steps.toLocaleString()} <Text style={activityCardStyles.legendTarget}>/ {stepsTarget.toLocaleString()}</Text></Text>
+      <View style={styles.activityLegend}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: theme.colors.teal }]} />
+          <View style={styles.legendTextWrap}>
+            <Text style={styles.legendLabel}>Steps</Text>
+            <Text style={styles.legendValue}>{steps.toLocaleString()} <Text style={styles.legendTarget}>/ {stepsTarget.toLocaleString()}</Text></Text>
           </View>
         </View>
-        <View style={activityCardStyles.legendItem}>
-          <View style={[activityCardStyles.legendDot, { backgroundColor: Colors.blue }]} />
-          <View style={activityCardStyles.legendTextWrap}>
-            <Text style={activityCardStyles.legendLabel}>Active Min</Text>
-            <Text style={activityCardStyles.legendValue}>{exercise.toLocaleString()} <Text style={activityCardStyles.legendTarget}>/ {exerciseTarget.toLocaleString()}</Text></Text>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: theme.colors.blue }]} />
+          <View style={styles.legendTextWrap}>
+            <Text style={styles.legendLabel}>Active Min</Text>
+            <Text style={styles.legendValue}>{exercise.toLocaleString()} <Text style={styles.legendTarget}>/ {exerciseTarget.toLocaleString()}</Text></Text>
           </View>
         </View>
-        <View style={activityCardStyles.legendItem}>
-          <View style={[activityCardStyles.legendDot, { backgroundColor: Colors.pink }]} />
-          <View style={activityCardStyles.legendTextWrap}>
-            <Text style={activityCardStyles.legendLabel}>Calories</Text>
-            <Text style={activityCardStyles.legendValue}>{calories.toLocaleString()} <Text style={activityCardStyles.legendTarget}>/ {caloriesTarget.toLocaleString()}</Text></Text>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: theme.colors.pink }]} />
+          <View style={styles.legendTextWrap}>
+            <Text style={styles.legendLabel}>Calories</Text>
+            <Text style={styles.legendValue}>{calories.toLocaleString()} <Text style={styles.legendTarget}>/ {caloriesTarget.toLocaleString()}</Text></Text>
           </View>
         </View>
       </View>
@@ -192,21 +209,24 @@ export const ProgressBar: React.FC<ProgressBarProps> = React.memo(({
   color,
   height = 6,
   style,
-}) => (
-  <View style={[sharedStyles.progressTrack, { height }, style]}>
-    <View
-      style={[
-        sharedStyles.progressFill,
-        {
-          width: `${Math.min(progress * 100, 100)}%`,
-          height,
-          backgroundColor: color,
-          shadowColor: color,
-        },
-      ]}
-    />
-  </View>
-));
+}) => {
+  const styles = useStyles(sharedStyleCreator);
+  return (
+    <View style={[styles.progressTrack, { height }, style]}>
+      <View
+        style={[
+          styles.progressFill,
+          {
+            width: `${Math.min(progress * 100, 100)}%`,
+            height,
+            backgroundColor: color,
+            shadowColor: color,
+          },
+        ]}
+      />
+    </View>
+  );
+});
 
 // ─── Circular Ring ───────────────────────────────────────────────────────────
 interface RingProps {
@@ -228,14 +248,15 @@ export const CircularRing: React.FC<RingProps> = React.memo(({
   value,
   unit,
 }) => {
+  const styles = useStyles(ringStyleCreator);
   const clampedProgress = Math.max(0, Math.min(progress, 1));
 
   return (
-    <View style={[ringStyles.container, { width: size, height: size }]}>
+    <View style={[styles.container, { width: size, height: size }]}>
       {/* SVG-like ring using border trick */}
       <View
         style={[
-          ringStyles.track,
+          styles.track,
           {
             width: size,
             height: size,
@@ -245,14 +266,14 @@ export const CircularRing: React.FC<RingProps> = React.memo(({
           },
         ]}
       />
-      <View style={ringStyles.center}>
-        <Text style={[ringStyles.value, { color }]}>{value}</Text>
-        {unit && <Text style={[ringStyles.unit, { color: color + 'BB' }]}>{unit}</Text>}
-        <Text style={ringStyles.label}>{label}</Text>
+      <View style={styles.center}>
+        <Text style={[styles.value, { color }]}>{value}</Text>
+        {unit && <Text style={[styles.unit, { color: color + 'BB' }]}>{unit}</Text>}
+        <Text style={styles.label}>{label}</Text>
       </View>
       {/* Progress arc indicator dot */}
       <View style={[
-        ringStyles.glowDot,
+        styles.glowDot,
         {
           backgroundColor: color,
           opacity: clampedProgress,
@@ -277,21 +298,26 @@ interface ChipProps {
 export const Chip: React.FC<ChipProps> = React.memo(({
   label,
   selected,
-  color = Colors.teal,
+  color,
   onPress,
   icon,
-}) => (
-  <TouchableOpacity
-    onPress={onPress}
-    style={[
-      chipStyles.chip,
-      selected && { backgroundColor: color + '28', borderColor: color },
-      !selected && { borderColor: Colors.bgCardBorder },
-    ]}>
-    {icon && <Text style={chipStyles.icon}>{icon}</Text>}
-    <Text style={[chipStyles.label, selected && { color }]}>{label}</Text>
-  </TouchableOpacity>
-));
+}) => {
+  const { theme } = useTheme();
+  const styles = useStyles(chipStyleCreator);
+  const resolvedColor = color || theme.colors.teal;
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[
+        styles.chip,
+        selected && { backgroundColor: resolvedColor + '28', borderColor: resolvedColor },
+        !selected && { borderColor: theme.colors.bgCardBorder },
+      ]}>
+      {icon && <Text style={styles.icon}>{icon}</Text>}
+      <Text style={[styles.label, selected && { color: resolvedColor }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+});
 
 // ─── Primary Button ──────────────────────────────────────────────────────────
 interface PrimaryButtonProps extends TouchableOpacityProps {
@@ -302,22 +328,27 @@ interface PrimaryButtonProps extends TouchableOpacityProps {
 
 export const PrimaryButton: React.FC<PrimaryButtonProps> = React.memo(({
   label,
-  color = Colors.teal,
+  color,
   icon,
   style,
   ...rest
-}) => (
-  <TouchableOpacity
-    style={[btnStyles.btn, { backgroundColor: color }, Shadows.teal, style as any]}
-    activeOpacity={0.8}
-    {...rest}>
-    {icon && <Text style={btnStyles.icon}>{icon}</Text>}
-    <Text style={btnStyles.label}>{label}</Text>
-  </TouchableOpacity>
-));
+}) => {
+  const { theme } = useTheme();
+  const styles = useStyles(btnStyleCreator);
+  const resolvedColor = color || theme.colors.teal;
+  return (
+    <TouchableOpacity
+      style={[styles.btn, { backgroundColor: resolvedColor }, Shadows.teal, style as any]}
+      activeOpacity={0.8}
+      {...rest}>
+      {icon && <Text style={styles.icon}>{icon}</Text>}
+      <Text style={styles.label}>{label}</Text>
+    </TouchableOpacity>
+  );
+});
 
-// ─── Shared Styles ───────────────────────────────────────────────────────────
-const sharedStyles = StyleSheet.create({
+// ─── Style Creators ──────────────────────────────────────────────────────────
+const sharedStyleCreator = (theme: any) => StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -327,17 +358,17 @@ const sharedStyles = StyleSheet.create({
   sectionTitle: {
     fontSize: Typography.md,
     fontWeight: Typography.bold,
-    color: Colors.textPrimary,
+    color: theme.colors.textPrimary,
     letterSpacing: Typography.lsWide,
   },
   sectionSubtitle: {
     fontSize: Typography.sm,
-    color: Colors.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   sectionAction: {
     fontSize: Typography.sm,
-    color: Colors.teal,
+    color: theme.colors.teal,
     fontWeight: Typography.semiBold,
   },
   statPill: {
@@ -353,11 +384,11 @@ const sharedStyles = StyleSheet.create({
   },
   statLabel: {
     fontSize: Typography.xs,
-    color: Colors.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   progressTrack: {
-    backgroundColor: Colors.bgCardBorder,
+    backgroundColor: theme.colors.bgCardBorder,
     borderRadius: Radius.full,
     overflow: 'hidden',
   },
@@ -370,7 +401,7 @@ const sharedStyles = StyleSheet.create({
   },
 });
 
-const ringStyles = StyleSheet.create({
+const ringStyleCreator = (theme: any) => StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -393,7 +424,7 @@ const ringStyles = StyleSheet.create({
   },
   label: {
     fontSize: Typography.xs,
-    color: Colors.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 2,
     letterSpacing: Typography.lsWide,
     textTransform: 'uppercase',
@@ -410,7 +441,7 @@ const ringStyles = StyleSheet.create({
   },
 });
 
-const chipStyles = StyleSheet.create({
+const chipStyleCreator = (theme: any) => StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -423,7 +454,7 @@ const chipStyles = StyleSheet.create({
   },
   label: {
     fontSize: Typography.sm,
-    color: Colors.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: Typography.medium,
   },
   icon: {
@@ -431,12 +462,12 @@ const chipStyles = StyleSheet.create({
   },
 });
 
-const profileAvatarStyles = StyleSheet.create({
+const profileAvatarStyles = (theme: any) => StyleSheet.create({
   avatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.teal + '30',
+    backgroundColor: theme.colors.teal + '30',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -449,11 +480,11 @@ const profileAvatarStyles = StyleSheet.create({
   avatarText: {
     fontSize: Typography.md,
     fontWeight: Typography.bold,
-    color: Colors.teal,
+    color: theme.colors.teal,
   },
 });
 
-const notifIconStyles = StyleSheet.create({
+const notifIconStyles = (theme: any) => StyleSheet.create({
   btn: {
     width: 44,
     height: 44,
@@ -467,22 +498,22 @@ const notifIconStyles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: Colors.pink,
+    backgroundColor: theme.colors.pink,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
     borderWidth: 1.5,
-    borderColor: Colors.bg,
+    borderColor: theme.colors.bg,
   },
   badgeText: {
     fontSize: 10,
     fontWeight: Typography.bold,
-    color: Colors.bg,
+    color: theme.colors.bg,
     lineHeight: 14,
   },
 });
 
-const btnStyles = StyleSheet.create({
+const btnStyleCreator = (theme: any) => StyleSheet.create({
   btn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -498,12 +529,12 @@ const btnStyles = StyleSheet.create({
   label: {
     fontSize: Typography.base,
     fontWeight: Typography.bold,
-    color: Colors.bg,
+    color: theme.colors.bg,
     letterSpacing: Typography.lsWide,
   },
 });
 
-const activityCardStyles = StyleSheet.create({
+const activityCardStyleCreator = (theme: any) => StyleSheet.create({
   activityCard: {
     padding: Spacing.md,
     marginBottom: Spacing.lg,
@@ -532,15 +563,15 @@ const activityCardStyles = StyleSheet.create({
   },
   legendLabel: {
     fontSize: Typography.xs,
-    color: Colors.textSecondary,
+    color: theme.colors.textSecondary,
   },
   legendValue: {
     fontSize: Typography.sm,
-    color: Colors.white,
+    color: theme.colors.white,
     fontWeight: Typography.bold,
   },
   legendTarget: {
-    color: Colors.textMuted,
+    color: theme.colors.textMuted,
     fontWeight: 'normal',
   },
 });

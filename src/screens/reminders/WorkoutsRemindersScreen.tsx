@@ -2,14 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TextInput,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';
 import { useReminders } from '../../providers/ReminderContext';
@@ -23,6 +23,7 @@ interface Props {
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export default function WorkoutsRemindersScreen({ onBack, onSaved }: Props) {
+  const { theme } = useTheme();
   const { getRemindersByCategory, addReminder, removeReminder, addReminderSchedule, fetchSchedules } = useReminders();
 
   const [editing, setEditing] = useState(false);
@@ -144,15 +145,43 @@ export default function WorkoutsRemindersScreen({ onBack, onSaved }: Props) {
     }
   };
 
+  const styles = useStyles(theme => ({
+    root: { flex: 1, backgroundColor: theme.colors.bg },
+    loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md },
+    backBtn: { width: 40, height: 40, borderRadius: Radius.md, backgroundColor: theme.colors.bgCard, borderWidth: 1, borderColor: theme.colors.bgCardBorder, alignItems: 'center', justifyContent: 'center' },
+    pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
+    editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+    editBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.pink },
+    editBtnSave: { color: theme.colors.success },
+    scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
+    card: { padding: Spacing.lg, marginBottom: Spacing.lg },
+    entryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },
+    entryInfo: { flex: 1 },
+    entryName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
+    entryDetail: { fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: 2 },
+    removeBtn: { fontSize: Typography.md, color: theme.colors.danger, padding: Spacing.sm },
+    divider: { height: 1, backgroundColor: theme.colors.divider },
+    addTitle: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary, marginBottom: Spacing.md },
+    input: { backgroundColor: theme.colors.bgCardSolid, borderWidth: 1, borderColor: theme.colors.bgCardBorder, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md, fontSize: Typography.base, color: theme.colors.textPrimary, marginBottom: Spacing.sm },
+    addBtn: { backgroundColor: theme.colors.pink + '20', borderWidth: 1, borderColor: theme.colors.pink + '50', borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm },
+    addBtnDisabled: { opacity: 0.6 },
+    addBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.pink },
+    emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
+    emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
+    emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
+    emptySub: { fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: Spacing.xs },
+  }));
+
   if (loading) {
     return (
       <View style={styles.root}>
         <View style={styles.topBar}>
-          <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}><ArrowLeft size={22} color={Colors.text} strokeWidth={2} /></TouchableOpacity>
+          <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}><ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} /></TouchableOpacity>
           <Text style={styles.pageTitle}>Workout Reminders</Text>
           <View style={{ width: 60 }} />
         </View>
-        <View style={styles.loadingContainer}><ActivityIndicator size="large" color={Colors.pink} /></View>
+        <View style={styles.loadingContainer}><ActivityIndicator size="large" color={theme.colors.pink} /></View>
       </View>
     );
   }
@@ -160,7 +189,7 @@ export default function WorkoutsRemindersScreen({ onBack, onSaved }: Props) {
   return (
     <View style={styles.root}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}><ArrowLeft size={22} color={Colors.text} strokeWidth={2} /></TouchableOpacity>
+        <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}><ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} /></TouchableOpacity>
         <Text style={styles.pageTitle}>Workout Reminders</Text>
         <TouchableOpacity style={styles.editBtn} onPress={() => (editing ? handleSave() : setEditing(true))} activeOpacity={0.7}>
           <Text style={[styles.editBtnText, editing && styles.editBtnSave]}>{editing ? 'Done' : 'Edit'}</Text>
@@ -171,10 +200,10 @@ export default function WorkoutsRemindersScreen({ onBack, onSaved }: Props) {
         {editing && (
           <GlassCardView style={styles.card}>
             <Text style={styles.addTitle}>Add Workout Reminder</Text>
-            <TextInput style={styles.input} value={newType} onChangeText={setNewType} placeholder="Workout type (e.g. Strength Training)" placeholderTextColor={Colors.textMuted} />
-            <TextInput style={styles.input} value={newDuration} onChangeText={setNewDuration} placeholder="Duration (e.g. 45 min)" placeholderTextColor={Colors.textMuted} />
-            <TextInput style={styles.input} value={newTime} onChangeText={setNewTime} placeholder="Time (HH:MM)" placeholderTextColor={Colors.textMuted} />
-            <TextInput style={styles.input} value={newDays} onChangeText={setNewDays} placeholder="Days (e.g. Mon, Wed, Fri)" placeholderTextColor={Colors.textMuted} />
+            <TextInput style={styles.input} value={newType} onChangeText={setNewType} placeholder="Workout type (e.g. Strength Training)" placeholderTextColor={theme.colors.textMuted} />
+            <TextInput style={styles.input} value={newDuration} onChangeText={setNewDuration} placeholder="Duration (e.g. 45 min)" placeholderTextColor={theme.colors.textMuted} />
+            <TextInput style={styles.input} value={newTime} onChangeText={setNewTime} placeholder="Time (HH:MM)" placeholderTextColor={theme.colors.textMuted} />
+            <TextInput style={styles.input} value={newDays} onChangeText={setNewDays} placeholder="Days (e.g. Mon, Wed, Fri)" placeholderTextColor={theme.colors.textMuted} />
             <TouchableOpacity style={[styles.addBtn, saving && styles.addBtnDisabled]} onPress={handleAdd} activeOpacity={0.7} disabled={saving}>
               <Text style={styles.addBtnText}>{saving ? 'Adding...' : '+ Add'}</Text>
             </TouchableOpacity>
@@ -215,31 +244,3 @@ export default function WorkoutsRemindersScreen({ onBack, onSaved }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md },
-  backBtn: { width: 40, height: 40, borderRadius: Radius.md, backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.bgCardBorder, alignItems: 'center', justifyContent: 'center' },
-  pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
-  editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
-  editBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.pink },
-  editBtnSave: { color: Colors.success },
-  scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
-  card: { padding: Spacing.lg, marginBottom: Spacing.lg },
-  entryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },
-  entryInfo: { flex: 1 },
-  entryName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  entryDetail: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2 },
-  removeBtn: { fontSize: Typography.md, color: Colors.danger, padding: Spacing.sm },
-  divider: { height: 1, backgroundColor: Colors.divider },
-  addTitle: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary, marginBottom: Spacing.md },
-  input: { backgroundColor: Colors.bgCardSolid, borderWidth: 1, borderColor: Colors.bgCardBorder, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md, fontSize: Typography.base, color: Colors.textPrimary, marginBottom: Spacing.sm },
-  addBtn: { backgroundColor: Colors.pink + '20', borderWidth: 1, borderColor: Colors.pink + '50', borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm },
-  addBtnDisabled: { opacity: 0.6 },
-  addBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.pink },
-  emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
-  emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
-  emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  emptySub: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: Spacing.xs },
-});

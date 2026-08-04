@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TextInput,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
@@ -32,12 +32,124 @@ interface Props {
 }
 
 export default function MedicalHistoryScreen({ onBack, onSaved }: Props) {
+  const { theme } = useTheme();
   const { session } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [conditions, setConditions] = useState<string[]>([]);
   const [otherCondition, setOtherCondition] = useState('');
+
+  const styles = useStyles((t) => ({
+    root: { flex: 1, backgroundColor: t.colors.bg },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.base,
+      paddingTop: Spacing.xl,
+      paddingBottom: Spacing.md,
+    },
+    backBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: Radius.md,
+      backgroundColor: t.colors.bgCard,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    backIcon: { fontSize: Typography.lg, color: t.colors.textPrimary },
+    pageTitle: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+    },
+    editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+    editBtnText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.semiBold,
+      color: t.colors.pink,
+    },
+    editBtnSave: { color: t.colors.success },
+    scroll: {
+      paddingHorizontal: Spacing.base,
+      paddingBottom: 120,
+    },
+    sectionSub: {
+      fontSize: Typography.sm,
+      color: t.colors.textSecondary,
+      marginBottom: Spacing.base,
+    },
+    card: { padding: Spacing.lg, marginBottom: Spacing.lg },
+    chipGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.sm,
+    },
+    chip: {
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.sm + 2,
+      borderRadius: Radius.full,
+      backgroundColor: t.colors.bgCardSolid,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+    },
+    chipSelected: {
+      backgroundColor: t.colors.pink + '20',
+      borderColor: t.colors.pink + '60',
+    },
+    chipText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.medium,
+      color: t.colors.textSecondary,
+    },
+    chipTextSelected: { color: t.colors.pink },
+    input: {
+      backgroundColor: t.colors.bgCardSolid,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      fontSize: Typography.base,
+      color: t.colors.textPrimary,
+    },
+    emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
+    emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
+    emptyText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.semiBold,
+      color: t.colors.textPrimary,
+    },
+    emptySub: {
+      fontSize: Typography.sm,
+      color: t.colors.textSecondary,
+      marginTop: Spacing.xs,
+    },
+    conditionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: Spacing.md,
+    },
+    conditionDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      marginRight: Spacing.md,
+    },
+    conditionText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.medium,
+      color: t.colors.textPrimary,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: t.colors.divider,
+    },
+  }));
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -109,7 +221,7 @@ export default function MedicalHistoryScreen({ onBack, onSaved }: Props) {
     return (
       <View style={styles.root}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.pink} />
+          <ActivityIndicator size="large" color={theme.colors.pink} />
         </View>
       </View>
     );
@@ -119,7 +231,7 @@ export default function MedicalHistoryScreen({ onBack, onSaved }: Props) {
     <View style={styles.root}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
+          <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Medical History</Text>
         <TouchableOpacity
@@ -128,7 +240,7 @@ export default function MedicalHistoryScreen({ onBack, onSaved }: Props) {
           activeOpacity={0.7}
           disabled={saving}>
           {saving ? (
-            <ActivityIndicator size="small" color={Colors.pink} />
+            <ActivityIndicator size="small" color={theme.colors.pink} />
           ) : (
             <Text style={[styles.editBtnText, editing && styles.editBtnSave]}>
               {editing ? 'Save' : 'Edit'}
@@ -168,7 +280,7 @@ export default function MedicalHistoryScreen({ onBack, onSaved }: Props) {
                 value={otherCondition}
                 onChangeText={setOtherCondition}
                 placeholder="Specify other condition"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={theme.colors.textMuted}
               />
             )}
           </GlassCardView>
@@ -184,7 +296,7 @@ export default function MedicalHistoryScreen({ onBack, onSaved }: Props) {
               conditions.map((condition, i) => (
                 <View key={i}>
                   <View style={styles.conditionRow}>
-                    <View style={[styles.conditionDot, { backgroundColor: Colors.pink }]} />
+                    <View style={[styles.conditionDot, { backgroundColor: theme.colors.pink }]} />
                     <Text style={styles.conditionText}>{condition}</Text>
                   </View>
                   {i < conditions.length - 1 && <View style={styles.divider} />}
@@ -197,114 +309,3 @@ export default function MedicalHistoryScreen({ onBack, onSaved }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.md,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
-  pageTitle: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
-  editBtnText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semiBold,
-    color: Colors.pink,
-  },
-  editBtnSave: { color: Colors.success },
-  scroll: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: 120,
-  },
-  sectionSub: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.base,
-  },
-  card: { padding: Spacing.lg, marginBottom: Spacing.lg },
-  chipGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  chip: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm + 2,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.bgCardSolid,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  chipSelected: {
-    backgroundColor: Colors.pink + '20',
-    borderColor: Colors.pink + '60',
-  },
-  chipText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.medium,
-    color: Colors.textSecondary,
-  },
-  chipTextSelected: { color: Colors.pink },
-  input: {
-    backgroundColor: Colors.bgCardSolid,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    fontSize: Typography.base,
-    color: Colors.textPrimary,
-  },
-  emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
-  emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
-  emptyText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-  },
-  emptySub: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    marginTop: Spacing.xs,
-  },
-  conditionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-  },
-  conditionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: Spacing.md,
-  },
-  conditionText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.medium,
-    color: Colors.textPrimary,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.divider,
-  },
-});

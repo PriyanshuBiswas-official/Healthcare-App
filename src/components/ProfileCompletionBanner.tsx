@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../theme/theme';
+import { View, Text, TouchableOpacity, Animated } from 'react-native';
+import { Typography, Spacing, Radius, GlassCard, Shadows } from '../theme/theme';
+import { useTheme, useStyles } from '../providers/ThemeProvider';
 import { ProgressBar } from './SharedComponents';
 
 interface ProfileCompletionBannerProps {
@@ -14,6 +15,7 @@ export default function ProfileCompletionBanner({
   onSkip,
   onComplete,
 }: ProfileCompletionBannerProps) {
+  const { theme } = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
 
@@ -33,7 +35,82 @@ export default function ProfileCompletionBanner({
   }, [fadeAnim, slideAnim]);
 
   const progressColor =
-    percentage < 40 ? Colors.pink : percentage < 70 ? Colors.amber : Colors.teal;
+    percentage < 40 ? theme.colors.pink : percentage < 70 ? theme.colors.amber : theme.colors.teal;
+
+  const styles = useStyles((theme) => ({
+    container: {
+      marginBottom: Spacing.base,
+    },
+    card: {
+      ...GlassCard,
+      padding: Spacing.lg,
+      borderColor: theme.colors.teal + '40',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: Spacing.sm,
+    },
+    icon: {
+      fontSize: Typography.xl,
+      marginRight: Spacing.sm,
+    },
+    title: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: theme.colors.textPrimary,
+    },
+    subtitle: {
+      fontSize: Typography.sm,
+      color: theme.colors.textSecondary,
+      marginBottom: Spacing.md,
+      lineHeight: 18,
+    },
+    progressRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: Spacing.lg,
+    },
+    progressTrack: {
+      flex: 1,
+      marginRight: Spacing.md,
+    },
+    percentage: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+      minWidth: 36,
+      textAlign: 'right',
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: Spacing.sm,
+    },
+    skipBtn: {
+      flex: 1,
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+      alignItems: 'center',
+    },
+    skipText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: theme.colors.textSecondary,
+    },
+    completeBtn: {
+      flex: 1,
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.lg,
+      backgroundColor: theme.colors.teal,
+      alignItems: 'center',
+    },
+    completeText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+      color: theme.colors.bg,
+    },
+  }));
 
   return (
     <Animated.View
@@ -75,78 +152,3 @@ export default function ProfileCompletionBanner({
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: Spacing.base,
-  },
-  card: {
-    ...GlassCard,
-    padding: Spacing.lg,
-    borderColor: Colors.teal + '40',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  icon: {
-    fontSize: Typography.xl,
-    marginRight: Spacing.sm,
-  },
-  title: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.md,
-    lineHeight: 18,
-  },
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
-  },
-  progressTrack: {
-    flex: 1,
-    marginRight: Spacing.md,
-  },
-  percentage: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-    minWidth: 36,
-    textAlign: 'right',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  skipBtn: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    alignItems: 'center',
-  },
-  skipText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.textSecondary,
-  },
-  completeBtn: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.lg,
-    backgroundColor: Colors.teal,
-    alignItems: 'center',
-  },
-  completeText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-    color: Colors.bg,
-  },
-});

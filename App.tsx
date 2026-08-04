@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useReducer, useCallback } from 'react';
 import { View, StatusBar, StyleSheet, SafeAreaView, BackHandler } from 'react-native';
-import { Colors } from './src/theme/theme';
 import TabBar, { TabName } from './src/navigation/TabBar';
 import { ScrollVisibilityProvider, useScrollVisibility } from './src/navigation/ScrollVisibilityContext';
 import DashboardScreen from './src/screens/home/DashboardScreen';
@@ -533,11 +532,9 @@ export default function App() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: Colors.bg,
   },
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.bgHero,
   },
   screenContainer: {
     flex: 1,

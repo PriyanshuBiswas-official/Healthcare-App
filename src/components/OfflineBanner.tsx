@@ -1,17 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, StyleSheet, useColorScheme } from 'react-native';
+import { View, Text, Animated, StyleSheet } from 'react-native';
 import { Typography, Spacing } from '../theme/theme';
+import { useTheme } from '../providers/ThemeProvider';
 import { useNetwork } from '../services/networkService';
-
-const COLORS = {
-  dark: { bg: '#1A1040', text: '#E0E4F0', icon: '#FF6B6B' },
-  light: { bg: '#FFF0F0', text: '#D32F2F', icon: '#FF5252' },
-};
 
 const OfflineBanner: React.FC = () => {
   const { isConnected, isInitialCheck } = useNetwork();
-  const scheme = useColorScheme();
-  const c = COLORS[scheme === 'light' ? 'light' : 'dark'];
+  const { theme } = useTheme();
+  const c = theme.colors;
   const slideAnim = useRef(new Animated.Value(-50)).current;
 
   const showBanner = !isConnected && !isInitialCheck;
@@ -30,11 +26,11 @@ const OfflineBanner: React.FC = () => {
     <Animated.View
       style={[
         styles.banner,
-        { backgroundColor: c.bg, transform: [{ translateY: slideAnim }] },
+        { backgroundColor: c.danger + '20', transform: [{ translateY: slideAnim }] },
       ]}
     >
-      <Text style={[styles.icon, { color: c.icon }]}>⚡</Text>
-      <Text style={[styles.text, { color: c.text }]}>No internet connection</Text>
+      <Text style={[styles.icon, { color: c.danger }]}>⚡</Text>
+      <Text style={[styles.text, { color: c.danger }]}>No internet connection</Text>
     </Animated.View>
   );
 };

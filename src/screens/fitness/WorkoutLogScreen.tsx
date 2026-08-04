@@ -10,7 +10,8 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { ArrowLeft } from 'lucide-react-native';
 import { useAuth } from '../../providers/AuthProvider';
 import * as activityService from '../../services/activityService';
@@ -47,6 +48,7 @@ export default function WorkoutLogScreen({
   onBack: () => void;
 }) {
   const { session } = useAuth();
+  const { theme } = useTheme();
   const isCompleted = exercise.completed;
   const loggedSets = exercise.logged_sets || [];
 
@@ -170,12 +172,147 @@ export default function WorkoutLogScreen({
     setEditReps(String(set.reps || ''));
   };
 
+  const styles = useStyles((theme: any) => ({
+    root: { flex: 1, backgroundColor: theme.colors.bg },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.base,
+      paddingTop: Platform.OS === 'ios' ? 60 : Spacing.xl,
+      paddingBottom: Spacing.base,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.bgCardBorder,
+    },
+    backBtn: { marginRight: Spacing.md, padding: Spacing.xs },
+    headerTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
+    headerSub: { fontSize: Typography.xs, color: theme.colors.textSecondary, marginTop: 2 },
+    completedBadge: {
+      backgroundColor: theme.colors.teal + '20',
+      borderRadius: Radius.sm,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.xs,
+    },
+    completedBadgeText: { fontSize: Typography.xs, color: theme.colors.teal, fontWeight: Typography.bold },
+    lastHint: {
+      marginHorizontal: Spacing.base,
+      marginTop: Spacing.md,
+      padding: Spacing.md,
+      backgroundColor: theme.colors.purple + '10',
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.purple + '30',
+    },
+    lastHintTitle: { fontSize: Typography.xs, fontWeight: Typography.semiBold, color: theme.colors.purple, marginBottom: 4 },
+    lastHintText: { fontSize: Typography.sm, color: theme.colors.textSecondary },
+    suggestionText: { fontSize: Typography.sm, color: theme.colors.teal, fontWeight: Typography.semiBold, marginTop: 4 },
+    scroll: { flex: 1 },
+    scrollContent: { padding: Spacing.base },
+    completedBanner: {
+      backgroundColor: theme.colors.teal + '15',
+      borderRadius: Radius.md,
+      padding: Spacing.md,
+      marginBottom: Spacing.base,
+      borderWidth: 1,
+      borderColor: theme.colors.teal + '30',
+    },
+    completedBannerText: { fontSize: Typography.sm, color: theme.colors.teal, fontWeight: Typography.semiBold, textAlign: 'center' },
+    setRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: Spacing.sm,
+    },
+    setRowEditing: {
+      backgroundColor: theme.colors.purple + '10',
+      borderRadius: Radius.sm,
+      padding: Spacing.xs,
+      marginBottom: Spacing.sm,
+    },
+    setRowHeader: { marginBottom: Spacing.md },
+    setHeader: { fontSize: Typography.xs, color: theme.colors.textSecondary, fontWeight: Typography.semiBold, textAlign: 'center' },
+    setNum: { alignItems: 'center', justifyContent: 'center' },
+    setNumText: { fontSize: Typography.sm, fontWeight: Typography.bold, color: theme.colors.purple },
+    setInput: {
+      backgroundColor: theme.colors.bgCardSolid,
+      color: theme.colors.textPrimary,
+      borderRadius: Radius.sm,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      fontSize: Typography.sm,
+      textAlign: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+    },
+    setValue: {
+      backgroundColor: theme.colors.bgCardSolid,
+      borderRadius: Radius.sm,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      alignItems: 'center',
+    },
+    setValueText: { fontSize: Typography.sm, color: theme.colors.textPrimary },
+    editBtn: { padding: Spacing.xs },
+    editBtnText: { fontSize: Typography.sm },
+    editSaveBtn: {
+      backgroundColor: theme.colors.teal,
+      borderRadius: Radius.sm,
+      width: 28,
+      height: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 4,
+    },
+    editSaveBtnText: { color: theme.colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold },
+    editCancelBtn: {
+      backgroundColor: theme.colors.bgCardBorder,
+      borderRadius: Radius.sm,
+      width: 28,
+      height: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    editCancelBtnText: { color: theme.colors.textSecondary, fontSize: Typography.sm },
+    timerSection: {
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.bgCardBorder,
+    },
+    timerLabel: { fontSize: Typography.xs, color: theme.colors.textSecondary, fontWeight: Typography.semiBold, marginBottom: Spacing.xs },
+    timerDisplay: { fontSize: 40, fontWeight: Typography.bold, color: theme.colors.textPrimary, textAlign: 'center', marginBottom: Spacing.sm },
+    timerButtons: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.sm, marginBottom: Spacing.sm },
+    timerPreset: {
+      paddingVertical: Spacing.xs,
+      paddingHorizontal: Spacing.md,
+      borderRadius: Radius.sm,
+      backgroundColor: theme.colors.bgCardBorder,
+    },
+    timerPresetActive: { backgroundColor: theme.colors.purple },
+    timerPresetText: { fontSize: Typography.xs, color: theme.colors.textSecondary, fontWeight: Typography.semiBold },
+    timerToggle: {
+      paddingVertical: Spacing.sm,
+      borderRadius: Radius.md,
+      alignItems: 'center',
+    },
+    footer: {
+      padding: Spacing.base,
+      paddingBottom: Platform.OS === 'ios' ? 40 : Spacing.base,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.bgCardBorder,
+    },
+    saveBtn: {
+      backgroundColor: theme.colors.teal,
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.md,
+      alignItems: 'center',
+    },
+  }));
+
   return (
     <View style={styles.root}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backBtn} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
+          <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{exercise.exercise_name}</Text>
@@ -240,7 +377,7 @@ export default function WorkoutLogScreen({
                         onChangeText={setEditWeight}
                         keyboardType="decimal-pad"
                         placeholder="0"
-                        placeholderTextColor={Colors.textMuted}
+                        placeholderTextColor={theme.colors.textMuted}
                       />
                     ) : (
                       <View style={styles.setValue}>
@@ -256,7 +393,7 @@ export default function WorkoutLogScreen({
                         onChangeText={setEditReps}
                         keyboardType="number-pad"
                         placeholder="0"
-                        placeholderTextColor={Colors.textMuted}
+                        placeholderTextColor={theme.colors.textMuted}
                       />
                     ) : (
                       <View style={styles.setValue}>
@@ -305,7 +442,7 @@ export default function WorkoutLogScreen({
                     onChangeText={(v) => updateSet(i, 'weight', v)}
                     keyboardType="decimal-pad"
                     placeholder="0"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={theme.colors.textMuted}
                   />
                 </View>
                 <View style={{ flex: 1, paddingHorizontal: 6 }}>
@@ -315,7 +452,7 @@ export default function WorkoutLogScreen({
                     onChangeText={(v) => updateSet(i, 'reps', v)}
                     keyboardType="number-pad"
                     placeholder="0"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={theme.colors.textMuted}
                   />
                 </View>
               </View>
@@ -340,7 +477,7 @@ export default function WorkoutLogScreen({
               }}
               style={[styles.timerPreset, timerSeconds === sec && styles.timerPresetActive]}
               activeOpacity={0.7}>
-              <Text style={[styles.timerPresetText, timerSeconds === sec && { color: Colors.bg }]}>{sec}s</Text>
+              <Text style={[styles.timerPresetText, timerSeconds === sec && { color: theme.colors.bg }]}>{sec}s</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -357,9 +494,9 @@ export default function WorkoutLogScreen({
               setTimerRunning(true);
             }
           }}
-          style={[styles.timerToggle, { backgroundColor: timerRunning ? Colors.danger : Colors.teal }]}
+          style={[styles.timerToggle, { backgroundColor: timerRunning ? theme.colors.danger : theme.colors.teal }]}
           activeOpacity={0.8}>
-          <Text style={{ color: Colors.bg, fontWeight: Typography.bold, fontSize: Typography.sm }}>
+          <Text style={{ color: theme.colors.bg, fontWeight: Typography.bold, fontSize: Typography.sm }}>
             {timerRunning ? 'Stop' : 'Start Timer'}
           </Text>
         </TouchableOpacity>
@@ -370,9 +507,9 @@ export default function WorkoutLogScreen({
         {isCompleted ? (
           <TouchableOpacity
             onPress={onBack}
-            style={[styles.saveBtn, { backgroundColor: Colors.teal }]}
+            style={[styles.saveBtn, { backgroundColor: theme.colors.teal }]}
             activeOpacity={0.8}>
-            <Text style={{ color: Colors.bg, fontWeight: Typography.bold, fontSize: Typography.base }}>
+            <Text style={{ color: theme.colors.bg, fontWeight: Typography.bold, fontSize: Typography.base }}>
               Done
             </Text>
           </TouchableOpacity>
@@ -383,9 +520,9 @@ export default function WorkoutLogScreen({
             style={[styles.saveBtn, { opacity: saving ? 0.6 : 1 }]}
             activeOpacity={0.8}>
             {saving ? (
-              <ActivityIndicator size="small" color={Colors.bg} />
+              <ActivityIndicator size="small" color={theme.colors.bg} />
             ) : (
-              <Text style={{ color: Colors.bg, fontWeight: Typography.bold, fontSize: Typography.base }}>
+              <Text style={{ color: theme.colors.bg, fontWeight: Typography.bold, fontSize: Typography.base }}>
                 Save Sets
               </Text>
             )}
@@ -395,138 +532,3 @@ export default function WorkoutLogScreen({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingTop: Platform.OS === 'ios' ? 60 : Spacing.xl,
-    paddingBottom: Spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.bgCardBorder,
-  },
-  backBtn: { marginRight: Spacing.md, padding: Spacing.xs },
-  headerTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
-  headerSub: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 },
-  completedBadge: {
-    backgroundColor: Colors.teal + '20',
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-  },
-  completedBadgeText: { fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.bold },
-  lastHint: {
-    marginHorizontal: Spacing.base,
-    marginTop: Spacing.md,
-    padding: Spacing.md,
-    backgroundColor: Colors.purple + '10',
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.purple + '30',
-  },
-  lastHintTitle: { fontSize: Typography.xs, fontWeight: Typography.semiBold, color: Colors.purple, marginBottom: 4 },
-  lastHintText: { fontSize: Typography.sm, color: Colors.textSecondary },
-  suggestionText: { fontSize: Typography.sm, color: Colors.teal, fontWeight: Typography.semiBold, marginTop: 4 },
-  scroll: { flex: 1 },
-  scrollContent: { padding: Spacing.base },
-  completedBanner: {
-    backgroundColor: Colors.teal + '15',
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.base,
-    borderWidth: 1,
-    borderColor: Colors.teal + '30',
-  },
-  completedBannerText: { fontSize: Typography.sm, color: Colors.teal, fontWeight: Typography.semiBold, textAlign: 'center' },
-  setRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  setRowEditing: {
-    backgroundColor: Colors.purple + '10',
-    borderRadius: Radius.sm,
-    padding: Spacing.xs,
-    marginBottom: Spacing.sm,
-  },
-  setRowHeader: { marginBottom: Spacing.md },
-  setHeader: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: Typography.semiBold, textAlign: 'center' },
-  setNum: { alignItems: 'center', justifyContent: 'center' },
-  setNumText: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.purple },
-  setInput: {
-    backgroundColor: Colors.bgCardSolid,
-    color: Colors.textPrimary,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    fontSize: Typography.sm,
-    textAlign: 'center',
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  setValue: {
-    backgroundColor: Colors.bgCardSolid,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    alignItems: 'center',
-  },
-  setValueText: { fontSize: Typography.sm, color: Colors.textPrimary },
-  editBtn: { padding: Spacing.xs },
-  editBtnText: { fontSize: Typography.sm },
-  editSaveBtn: {
-    backgroundColor: Colors.teal,
-    borderRadius: Radius.sm,
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 4,
-  },
-  editSaveBtnText: { color: Colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold },
-  editCancelBtn: {
-    backgroundColor: Colors.bgCardBorder,
-    borderRadius: Radius.sm,
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  editCancelBtnText: { color: Colors.textSecondary, fontSize: Typography.sm },
-  timerSection: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Colors.bgCardBorder,
-  },
-  timerLabel: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: Typography.semiBold, marginBottom: Spacing.xs },
-  timerDisplay: { fontSize: 40, fontWeight: Typography.bold, color: Colors.textPrimary, textAlign: 'center', marginBottom: Spacing.sm },
-  timerButtons: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.sm, marginBottom: Spacing.sm },
-  timerPreset: {
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.bgCardBorder,
-  },
-  timerPresetActive: { backgroundColor: Colors.purple },
-  timerPresetText: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: Typography.semiBold },
-  timerToggle: {
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-  },
-  footer: {
-    padding: Spacing.base,
-    paddingBottom: Platform.OS === 'ios' ? 40 : Spacing.base,
-    borderTopWidth: 1,
-    borderTopColor: Colors.bgCardBorder,
-  },
-  saveBtn: {
-    backgroundColor: Colors.teal,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-  },
-});

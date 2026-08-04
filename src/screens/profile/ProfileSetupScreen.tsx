@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TextInput,
   TouchableOpacity,
@@ -14,7 +13,9 @@ import {
   ActivityIndicator,
   BackHandler,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView, ProgressBar } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
@@ -125,6 +126,7 @@ interface Props {
 }
 
 export default function ProfileSetupScreen({ onBack }: Props) {
+  const { theme } = useTheme();
   const { user, session, checkProfile } = useAuth();
   const [step, setStep] = useState(0);
   const [data, setData] = useState<ProfileSetupData>(() => {
@@ -143,8 +145,450 @@ export default function ProfileSetupScreen({ onBack }: Props) {
   const [newMedEnd, setNewMedEnd] = useState('');
   const [validationError, setValidationError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showLastPeriodPicker, setShowLastPeriodPicker] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  const styles = useStyles((t) => ({
+    root: { flex: 1, backgroundColor: t.colors.bg },
+    flex: { flex: 1 },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: t.colors.bgCardBorder,
+    },
+    backBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: Radius.md,
+      backgroundColor: t.colors.bgCard,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    backPlaceholder: { width: 40 },
+    backIcon: { fontSize: Typography.lg, color: t.colors.textPrimary },
+    pageTitle: {
+      fontSize: Typography.md,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+    },
+    progressContainer: {
+      paddingHorizontal: Spacing.base,
+      paddingTop: Spacing.lg,
+      paddingBottom: Spacing.md,
+    },
+    progressInfo: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: Spacing.sm,
+    },
+    progressLabel: {
+      fontSize: Typography.sm,
+      color: t.colors.textSecondary,
+    },
+    progressPercent: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+      color: t.colors.teal,
+    },
+    scrollContent: {
+      paddingHorizontal: Spacing.base,
+      paddingBottom: Spacing.xxl,
+    },
+    stepHeader: {
+      marginBottom: Spacing.xl,
+    },
+    stepIcon: {
+      fontSize: Typography.xxl,
+      marginBottom: Spacing.sm,
+    },
+    stepTitle: {
+      fontSize: Typography.xl,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+      marginBottom: Spacing.xs,
+    },
+    stepSubtitle: {
+      fontSize: Typography.sm,
+      color: t.colors.textSecondary,
+      lineHeight: 20,
+    },
+    formCard: {
+      padding: Spacing.lg,
+    },
+    inputLabel: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: t.colors.textPrimary,
+      marginBottom: Spacing.sm,
+    },
+    input: {
+      backgroundColor: t.colors.chipBg,
+      borderWidth: 1,
+      borderColor: t.colors.chipBorder,
+      borderRadius: Radius.md,
+      color: t.colors.textPrimary,
+      paddingVertical: Spacing.base,
+      paddingHorizontal: Spacing.base,
+      fontSize: Typography.base,
+      marginBottom: Spacing.md,
+      minHeight: 48,
+    },
+    textArea: {
+      height: 80,
+      paddingTop: Spacing.md,
+    },
+    row: {
+      flexDirection: 'row',
+      gap: Spacing.md,
+      marginBottom: Spacing.md,
+    },
+    halfField: {
+      flex: 1,
+    },
+    genderBadge: {
+      flex: 1,
+      paddingVertical: 14,
+      backgroundColor: t.colors.chipBg,
+      borderWidth: 1,
+      borderColor: t.colors.chipBorder,
+      borderRadius: Radius.md,
+      alignItems: 'center',
+    },
+    genderBadgeSelected: {
+      borderColor: t.colors.teal,
+      backgroundColor: t.colors.tealDim,
+    },
+    genderText: {
+      color: t.colors.textSecondary,
+      fontSize: Typography.base,
+      fontWeight: Typography.medium,
+    },
+    genderTextSelected: {
+      color: t.colors.teal,
+      fontWeight: Typography.bold,
+    },
+    bloodRow: {
+      gap: Spacing.sm,
+      paddingBottom: Spacing.xs,
+    },
+    bloodChip: {
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.full,
+      backgroundColor: t.colors.chipBg,
+      borderWidth: 1,
+      borderColor: t.colors.chipBorder,
+    },
+    bloodChipSelected: {
+      borderColor: t.colors.teal,
+      backgroundColor: t.colors.tealDim,
+    },
+    bloodText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: t.colors.textSecondary,
+    },
+    bloodTextSelected: {
+      color: t.colors.teal,
+    },
+    chipGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.sm,
+    },
+    chip: {
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.full,
+      backgroundColor: t.colors.chipBg,
+      borderWidth: 1,
+      borderColor: t.colors.chipBorder,
+    },
+    chipSelected: {
+      borderColor: t.colors.teal,
+      backgroundColor: t.colors.tealDim,
+    },
+    chipText: {
+      fontSize: Typography.sm,
+      color: t.colors.textSecondary,
+      fontWeight: Typography.medium,
+    },
+    chipTextSelected: {
+      color: t.colors.teal,
+      fontWeight: Typography.bold,
+    },
+    addRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    addBtn: {
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: t.colors.teal + '50',
+      backgroundColor: t.colors.tealDim,
+      alignItems: 'center',
+      marginTop: Spacing.sm,
+    },
+    addBtnText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: t.colors.teal,
+    },
+    addSmallBtn: {
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.base,
+      borderRadius: Radius.md,
+      backgroundColor: t.colors.teal,
+    },
+    addSmallBtnText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+      color: t.colors.bg,
+    },
+    tagRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.sm,
+      marginTop: Spacing.md,
+    },
+    tag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      borderRadius: Radius.full,
+      backgroundColor: t.colors.tealDim,
+      borderWidth: 1,
+      borderColor: t.colors.teal + '50',
+    },
+    tagText: {
+      fontSize: Typography.xs,
+      color: t.colors.teal,
+      fontWeight: Typography.semiBold,
+      marginRight: Spacing.xs,
+    },
+    tagRemove: {
+      fontSize: Typography.xs,
+      color: t.colors.teal,
+      fontWeight: Typography.bold,
+    },
+    skipCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: Spacing.base,
+      borderRadius: Radius.lg,
+      backgroundColor: t.colors.amberDim,
+      borderWidth: 1.5,
+      borderColor: t.colors.amber + '35',
+      marginBottom: Spacing.md,
+    },
+    skipCardSelected: {
+      backgroundColor: t.colors.amberDim,
+      borderColor: t.colors.amber + '70',
+    },
+    skipCardSelectedGreen: {
+      backgroundColor: t.colors.success + '1A',
+      borderColor: t.colors.success + '60',
+    },
+    skipIconWrap: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: t.colors.amber + '18',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: Spacing.md,
+    },
+    skipIconWrapSelected: {
+      backgroundColor: t.colors.amber + '30',
+    },
+    skipIconWrapSelectedGreen: {
+      backgroundColor: t.colors.success + '25',
+    },
+    skipIcon: {
+      fontSize: Typography.lg,
+    },
+    skipContent: {
+      flex: 1,
+    },
+    skipTitle: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: t.colors.amber,
+    },
+    skipTitleSelected: {
+      color: t.colors.amber,
+    },
+    skipTitleSelectedGreen: {
+      color: t.colors.success,
+    },
+    skipSub: {
+      fontSize: Typography.xs,
+      color: t.colors.textSecondary,
+      marginTop: 2,
+      lineHeight: 16,
+    },
+    skipCheck: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      borderWidth: 2,
+      borderColor: t.colors.amber + '40',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginLeft: Spacing.sm,
+    },
+    skipCheckSelected: {
+      backgroundColor: t.colors.amber,
+      borderColor: t.colors.amber,
+    },
+    skipCheckSelectedGreen: {
+      backgroundColor: t.colors.success,
+      borderColor: t.colors.success,
+    },
+    skipCheckMark: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+      color: t.colors.bg,
+    },
+    medList: {
+      gap: Spacing.sm,
+      marginTop: Spacing.md,
+    },
+    medItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: Spacing.md,
+      borderRadius: Radius.md,
+      backgroundColor: t.colors.chipBg,
+      borderWidth: 1,
+      borderColor: t.colors.chipBorder,
+    },
+    medInfo: {
+      flex: 1,
+    },
+    medName: {
+      fontSize: Typography.base,
+      fontWeight: Typography.semiBold,
+      color: t.colors.textPrimary,
+    },
+    medDetail: {
+      fontSize: Typography.xs,
+      color: t.colors.textSecondary,
+      marginTop: 2,
+    },
+    medDate: {
+      fontSize: Typography.xs,
+      color: t.colors.teal,
+      marginTop: 2,
+    },
+    removeBtn: {
+      fontSize: Typography.base,
+      color: t.colors.danger,
+      fontWeight: Typography.bold,
+      paddingLeft: Spacing.md,
+    },
+    dietGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.md,
+    },
+    dietCard: {
+      width: '47%',
+      padding: Spacing.lg,
+      borderRadius: Radius.lg,
+      backgroundColor: t.colors.chipBg,
+      borderWidth: 1,
+      borderColor: t.colors.chipBorder,
+      alignItems: 'center',
+    },
+    dietCardSelected: {
+      borderColor: t.colors.teal,
+      backgroundColor: t.colors.tealDim,
+    },
+    dietIcon: {
+      fontSize: Typography.xxl,
+      marginBottom: Spacing.sm,
+    },
+    dietLabel: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: t.colors.textSecondary,
+    },
+    dietLabelSelected: {
+      color: t.colors.teal,
+      fontWeight: Typography.bold,
+    },
+    emptyText: {
+      fontSize: Typography.sm,
+      color: t.colors.textSecondary,
+      textAlign: 'center',
+      paddingVertical: Spacing.xl,
+      lineHeight: 20,
+    },
+    errorBox: {
+      marginTop: Spacing.md,
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.md,
+      backgroundColor: t.colors.danger + '15',
+      borderWidth: 1,
+      borderColor: t.colors.danger + '40',
+    },
+    errorText: {
+      fontSize: Typography.sm,
+      color: t.colors.danger,
+      fontWeight: Typography.medium,
+      textAlign: 'center',
+    },
+    footer: {
+      flexDirection: 'row',
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.lg,
+      borderTopWidth: 1,
+      borderTopColor: t.colors.bgCardBorder,
+      gap: Spacing.md,
+    },
+    backStepBtn: {
+      flex: 1,
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    backStepText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.semiBold,
+      color: t.colors.textSecondary,
+    },
+    nextBtn: {
+      flex: 2,
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.md,
+      backgroundColor: t.colors.teal,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    saveBtn: {
+      ...Shadows.teal,
+    },
+    nextBtnText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: t.colors.bg,
+    },
+  }));
 
   const update = (partial: Partial<ProfileSetupData>) =>
     setData(prev => ({ ...prev, ...partial }));
@@ -214,9 +658,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
         return null;
       case 6:
         if (data.gender === 'female') {
-          // Gender specific is optional for females — allow skip
         } else if (data.gender === 'male') {
-          // Optional for males too
         }
         return null;
       default:
@@ -263,6 +705,10 @@ export default function ProfileSetupScreen({ onBack }: Props) {
         height: data.height,
         weight: data.weight,
         bloodGroup: data.bloodGroup,
+        getsPeriods: data.getsPeriods,
+        cycleLength: parseInt(data.cycleLength, 10) || 28,
+        periodLength: parseInt(data.periodLength, 10) || 5,
+        lastPeriodStart: data.lastPeriodStart || undefined,
       };
 
       const res = await fetch(`${API_BASE_URL}/api/profile/complete`, {
@@ -424,7 +870,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
           value={data.displayName}
           onChangeText={v => update({ displayName: v })}
           placeholder="Your name"
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={theme.colors.textMuted}
         />
 
         <Text style={styles.inputLabel}>Date of Birth</Text>
@@ -433,7 +879,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
           value={data.dateOfBirth}
           onChangeText={v => update({ dateOfBirth: v })}
           placeholder="YYYY-MM-DD"
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={theme.colors.textMuted}
         />
 
         <Text style={styles.inputLabel}>Gender</Text>
@@ -458,7 +904,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
               value={data.height}
               onChangeText={v => update({ height: v })}
               placeholder="175"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="decimal-pad"
             />
           </View>
@@ -469,7 +915,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
               value={data.weight}
               onChangeText={v => update({ weight: v })}
               placeholder="70"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="decimal-pad"
             />
           </View>
@@ -506,7 +952,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
             value={data.otherCondition}
             onChangeText={v => update({ otherCondition: v })}
             placeholder="Specify other condition"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={theme.colors.textMuted}
           />
         )}
       </GlassCardView>
@@ -571,7 +1017,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
               value={newMedName}
               onChangeText={setNewMedName}
               placeholder="Medication name"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={theme.colors.textMuted}
             />
             <View style={styles.row}>
               <View style={styles.halfField}>
@@ -580,7 +1026,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
                   value={newMedDosage}
                   onChangeText={setNewMedDosage}
                   placeholder="Dosage (e.g. 500mg)"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={theme.colors.textMuted}
                 />
               </View>
               <View style={styles.halfField}>
@@ -589,7 +1035,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
                   value={newMedFrequency}
                   onChangeText={setNewMedFrequency}
                   placeholder="Frequency (e.g. twice daily)"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={theme.colors.textMuted}
                 />
               </View>
             </View>
@@ -601,7 +1047,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
                   value={newMedStart}
                   onChangeText={setNewMedStart}
                   placeholder="YYYY-MM-DD"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={theme.colors.textMuted}
                 />
               </View>
               <View style={styles.halfField}>
@@ -611,7 +1057,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
                   value={newMedEnd}
                   onChangeText={setNewMedEnd}
                   placeholder="Ongoing"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={theme.colors.textMuted}
                 />
               </View>
             </View>
@@ -662,7 +1108,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
                 value={customAllergy}
                 onChangeText={setCustomAllergy}
                 placeholder="Type an allergy"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={theme.colors.textMuted}
               />
               <TouchableOpacity style={styles.addSmallBtn} onPress={addCustomAllergy} activeOpacity={0.7}>
                 <Text style={styles.addSmallBtnText}>Add</Text>
@@ -719,7 +1165,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
           value={data.dietaryRestrictions}
           onChangeText={v => update({ dietaryRestrictions: v })}
           placeholder="e.g. gluten-free, lactose intolerant"
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={theme.colors.textMuted}
           multiline
           numberOfLines={3}
           textAlignVertical="top"
@@ -795,13 +1241,31 @@ export default function ProfileSetupScreen({ onBack }: Props) {
                   </ScrollView>
 
                   <Text style={[styles.inputLabel, { marginTop: Spacing.xl }]}>Last Period Start Date</Text>
-                  <TextInput
+                  <TouchableOpacity
                     style={styles.input}
-                    value={data.lastPeriodStart}
-                    onChangeText={v => update({ lastPeriodStart: v })}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={Colors.textMuted}
-                  />
+                    onPress={() => setShowLastPeriodPicker(true)}
+                    activeOpacity={0.7}>
+                    <Text style={{ color: data.lastPeriodStart ? theme.colors.text : theme.colors.textMuted, fontSize: Typography.md }}>
+                      {data.lastPeriodStart || 'Select date'}
+                    </Text>
+                  </TouchableOpacity>
+                  {showLastPeriodPicker && (
+                    <DateTimePicker
+                      value={data.lastPeriodStart ? new Date(data.lastPeriodStart + 'T00:00:00') : new Date()}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      maximumDate={new Date()}
+                      onChange={(_: DateTimePickerEvent, selected?: Date) => {
+                        if (Platform.OS === 'android') setShowLastPeriodPicker(false);
+                        if (selected) {
+                          const y = selected.getFullYear();
+                          const m = String(selected.getMonth() + 1).padStart(2, '0');
+                          const d = String(selected.getDate()).padStart(2, '0');
+                          update({ lastPeriodStart: `${y}-${m}-${d}` });
+                        }
+                      }}
+                    />
+                  )}
                 </>
               )}
 
@@ -846,7 +1310,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
     <SafeAreaView style={styles.root}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backBtn} onPress={goBack} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
+          <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Complete Profile</Text>
         <View style={styles.backPlaceholder} />
@@ -857,7 +1321,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
           <Text style={styles.progressLabel}>Step {step + 1} of {TOTAL_STEPS}</Text>
           <Text style={styles.progressPercent}>{Math.round(progress * 100)}%</Text>
         </View>
-        <ProgressBar progress={progress} color={Colors.teal} height={6} />
+        <ProgressBar progress={progress} color={theme.colors.teal} height={6} />
       </View>
 
       <KeyboardAvoidingView
@@ -886,7 +1350,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
             activeOpacity={0.8}
             disabled={saving}>
             {saving ? (
-              <ActivityIndicator color={Colors.bg} />
+              <ActivityIndicator color={theme.colors.bg} />
             ) : (
               <Text style={styles.nextBtnText}>
                 {isLastStep ? 'Save Profile' : 'Continue'}
@@ -898,444 +1362,3 @@ export default function ProfileSetupScreen({ onBack }: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  flex: { flex: 1 },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.bgCardBorder,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backPlaceholder: { width: 40 },
-  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
-  pageTitle: {
-    fontSize: Typography.md,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  progressContainer: {
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.md,
-  },
-  progressInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.sm,
-  },
-  progressLabel: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-  },
-  progressPercent: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-    color: Colors.teal,
-  },
-  scrollContent: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.xxl,
-  },
-  stepHeader: {
-    marginBottom: Spacing.xl,
-  },
-  stepIcon: {
-    fontSize: Typography.xxl,
-    marginBottom: Spacing.sm,
-  },
-  stepTitle: {
-    fontSize: Typography.xl,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
-  },
-  stepSubtitle: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    lineHeight: 20,
-  },
-  formCard: {
-    padding: Spacing.lg,
-  },
-  inputLabel: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
-  },
-  input: {
-    backgroundColor: Colors.chipBg,
-    borderWidth: 1,
-    borderColor: Colors.chipBorder,
-    borderRadius: Radius.md,
-    color: Colors.textPrimary,
-    paddingVertical: Spacing.base,
-    paddingHorizontal: Spacing.base,
-    fontSize: Typography.base,
-    marginBottom: Spacing.md,
-    minHeight: 48,
-  },
-  textArea: {
-    height: 80,
-    paddingTop: Spacing.md,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    marginBottom: Spacing.md,
-  },
-  halfField: {
-    flex: 1,
-  },
-  genderBadge: {
-    flex: 1,
-    paddingVertical: 14,
-    backgroundColor: Colors.chipBg,
-    borderWidth: 1,
-    borderColor: Colors.chipBorder,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-  },
-  genderBadgeSelected: {
-    borderColor: Colors.teal,
-    backgroundColor: Colors.tealDim,
-  },
-  genderText: {
-    color: Colors.textSecondary,
-    fontSize: Typography.base,
-    fontWeight: Typography.medium,
-  },
-  genderTextSelected: {
-    color: Colors.teal,
-    fontWeight: Typography.bold,
-  },
-  bloodRow: {
-    gap: Spacing.sm,
-    paddingBottom: Spacing.xs,
-  },
-  bloodChip: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.chipBg,
-    borderWidth: 1,
-    borderColor: Colors.chipBorder,
-  },
-  bloodChipSelected: {
-    borderColor: Colors.teal,
-    backgroundColor: Colors.tealDim,
-  },
-  bloodText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.textSecondary,
-  },
-  bloodTextSelected: {
-    color: Colors.teal,
-  },
-  chipGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  chip: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.chipBg,
-    borderWidth: 1,
-    borderColor: Colors.chipBorder,
-  },
-  chipSelected: {
-    borderColor: Colors.teal,
-    backgroundColor: Colors.tealDim,
-  },
-  chipText: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.medium,
-  },
-  chipTextSelected: {
-    color: Colors.teal,
-    fontWeight: Typography.bold,
-  },
-  addRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  addBtn: {
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.teal + '50',
-    backgroundColor: Colors.tealDim,
-    alignItems: 'center',
-    marginTop: Spacing.sm,
-  },
-  addBtnText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.teal,
-  },
-  addSmallBtn: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.base,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.teal,
-  },
-  addSmallBtnText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-    color: Colors.bg,
-  },
-  tagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-    marginTop: Spacing.md,
-  },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.tealDim,
-    borderWidth: 1,
-    borderColor: Colors.teal + '50',
-  },
-  tagText: {
-    fontSize: Typography.xs,
-    color: Colors.teal,
-    fontWeight: Typography.semiBold,
-    marginRight: Spacing.xs,
-  },
-  tagRemove: {
-    fontSize: Typography.xs,
-    color: Colors.teal,
-    fontWeight: Typography.bold,
-  },
-  skipCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.base,
-    borderRadius: Radius.lg,
-    backgroundColor: Colors.amberDim,
-    borderWidth: 1.5,
-    borderColor: Colors.amber + '35',
-    marginBottom: Spacing.md,
-  },
-  skipCardSelected: {
-    backgroundColor: Colors.amberDim,
-    borderColor: Colors.amber + '70',
-  },
-  skipCardSelectedGreen: {
-    backgroundColor: Colors.success + '1A',
-    borderColor: Colors.success + '60',
-  },
-  skipIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.amber + '18',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-  },
-  skipIconWrapSelected: {
-    backgroundColor: Colors.amber + '30',
-  },
-  skipIconWrapSelectedGreen: {
-    backgroundColor: Colors.success + '25',
-  },
-  skipIcon: {
-    fontSize: Typography.lg,
-  },
-  skipContent: {
-    flex: 1,
-  },
-  skipTitle: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.amber,
-  },
-  skipTitleSelected: {
-    color: Colors.amber,
-  },
-  skipTitleSelectedGreen: {
-    color: Colors.success,
-  },
-  skipSub: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-    lineHeight: 16,
-  },
-  skipCheck: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 2,
-    borderColor: Colors.amber + '40',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: Spacing.sm,
-  },
-  skipCheckSelected: {
-    backgroundColor: Colors.amber,
-    borderColor: Colors.amber,
-  },
-  skipCheckSelectedGreen: {
-    backgroundColor: Colors.success,
-    borderColor: Colors.success,
-  },
-  skipCheckMark: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-    color: Colors.bg,
-  },
-  medList: {
-    gap: Spacing.sm,
-    marginTop: Spacing.md,
-  },
-  medItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.chipBg,
-    borderWidth: 1,
-    borderColor: Colors.chipBorder,
-  },
-  medInfo: {
-    flex: 1,
-  },
-  medName: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-  },
-  medDetail: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  medDate: {
-    fontSize: Typography.xs,
-    color: Colors.teal,
-    marginTop: 2,
-  },
-  removeBtn: {
-    fontSize: Typography.base,
-    color: Colors.danger,
-    fontWeight: Typography.bold,
-    paddingLeft: Spacing.md,
-  },
-  dietGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-  },
-  dietCard: {
-    width: '47%',
-    padding: Spacing.lg,
-    borderRadius: Radius.lg,
-    backgroundColor: Colors.chipBg,
-    borderWidth: 1,
-    borderColor: Colors.chipBorder,
-    alignItems: 'center',
-  },
-  dietCardSelected: {
-    borderColor: Colors.teal,
-    backgroundColor: Colors.tealDim,
-  },
-  dietIcon: {
-    fontSize: Typography.xxl,
-    marginBottom: Spacing.sm,
-  },
-  dietLabel: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.textSecondary,
-  },
-  dietLabelSelected: {
-    color: Colors.teal,
-    fontWeight: Typography.bold,
-  },
-  emptyText: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    paddingVertical: Spacing.xl,
-    lineHeight: 20,
-  },
-  errorBox: {
-    marginTop: Spacing.md,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.danger + '15',
-    borderWidth: 1,
-    borderColor: Colors.danger + '40',
-  },
-  errorText: {
-    fontSize: Typography.sm,
-    color: Colors.danger,
-    fontWeight: Typography.medium,
-    textAlign: 'center',
-  },
-  footer: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: Colors.bgCardBorder,
-    gap: Spacing.md,
-  },
-  backStepBtn: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backStepText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semiBold,
-    color: Colors.textSecondary,
-  },
-  nextBtn: {
-    flex: 2,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.teal,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveBtn: {
-    ...Shadows.teal,
-  },
-  nextBtnText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.bg,
-  },
-});

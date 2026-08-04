@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Animated, StyleSheet, Dimensions, useColorScheme } from 'react-native';
+import { View, Text, Animated, StyleSheet, Dimensions } from 'react-native';
 import { Typography } from '../theme/theme';
+import { useTheme } from '../providers/ThemeProvider';
 import { useAuth } from '../providers/AuthProvider';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -18,31 +19,10 @@ const QUOTES = [
   '"An ounce of prevention is worth a pound of cure."',
 ];
 
-const COLORS = {
-  dark: {
-    bgTop: '#0C0D1A',
-    bgBottom: '#141030',
-    barTrack: 'rgba(255,255,255,0.08)',
-    barFill: '#00E5CC',
-    shimmer: 'rgba(255,255,255,0.25)',
-    quote: '#E0E4F0',
-    tagline: '#5A6080',
-  },
-  light: {
-    bgTop: '#EEF1F8',
-    bgBottom: '#D8DFF0',
-    barTrack: 'rgba(0,0,0,0.07)',
-    barFill: '#00B8A3',
-    shimmer: 'rgba(255,255,255,0.5)',
-    quote: '#1E2130',
-    tagline: '#6B7090',
-  },
-};
-
 const LoadingScreen: React.FC = () => {
   const { loadProgress } = useAuth();
-  const scheme = useColorScheme();
-  const c = COLORS[scheme === 'light' ? 'light' : 'dark'];
+  const { theme } = useTheme();
+  const c = theme.colors;
 
   const [quoteIndex, setQuoteIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -98,21 +78,21 @@ const LoadingScreen: React.FC = () => {
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       {/* Gradient background */}
-      <View style={[styles.gradient, { backgroundColor: c.bgTop }]} />
-      <View style={[styles.gradientOverlay, { backgroundColor: c.bgBottom }]} />
+      <View style={[styles.gradient, { backgroundColor: c.bg }]} />
+      <View style={[styles.gradientOverlay, { backgroundColor: c.bgHero }]} />
 
       <View style={styles.content}>
         <Animated.View style={[styles.quoteContainer, { opacity: quoteFade }]}>
-          <Text style={[styles.quote, { color: c.quote }]}>{QUOTES[quoteIndex]}</Text>
+          <Text style={[styles.quote, { color: c.textPrimary }]}>{QUOTES[quoteIndex]}</Text>
         </Animated.View>
 
         <View style={styles.barArea}>
-          <View style={[styles.barTrack, { backgroundColor: c.barTrack }]}>
+          <View style={[styles.barTrack, { backgroundColor: c.bgCardBorder }]}>
             <Animated.View
               style={[
                 styles.barFill,
                 {
-                  backgroundColor: c.barFill,
+                  backgroundColor: c.teal,
                   transform: [{ scaleX: barScale }],
                 },
               ]}
@@ -120,13 +100,13 @@ const LoadingScreen: React.FC = () => {
             <Animated.View
               style={[
                 styles.shimmer,
-                { backgroundColor: c.shimmer, transform: [{ translateX: shimmerX }] },
+                { backgroundColor: 'rgba(255,255,255,0.25)', transform: [{ translateX: shimmerX }] },
               ]}
             />
           </View>
         </View>
 
-        <Text style={[styles.tagline, { color: c.tagline }]}>Loading your health journey...</Text>
+        <Text style={[styles.tagline, { color: c.textMuted }]}>Loading your health journey...</Text>
       </View>
     </Animated.View>
   );

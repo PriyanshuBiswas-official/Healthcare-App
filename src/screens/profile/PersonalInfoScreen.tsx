@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TextInput,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
@@ -35,6 +35,7 @@ interface Props {
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 export default function PersonalInfoScreen({ onBack, onSaved }: Props) {
+  const { theme } = useTheme();
   const { session } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,6 +47,143 @@ export default function PersonalInfoScreen({ onBack, onSaved }: Props) {
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
   const [bloodGroup, setBloodGroup] = useState('');
+
+  const styles = useStyles((t) => ({
+    root: { flex: 1, backgroundColor: t.colors.bg },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.base,
+      paddingTop: Spacing.xl,
+      paddingBottom: Spacing.md,
+    },
+    backBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: Radius.md,
+      backgroundColor: t.colors.bgCard,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    backIcon: { fontSize: Typography.lg, color: t.colors.textPrimary },
+    pageTitle: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+    },
+    editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+    editBtnText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.semiBold,
+      color: t.colors.teal,
+    },
+    editBtnSave: { color: t.colors.success },
+    scroll: {
+      paddingHorizontal: Spacing.base,
+      paddingBottom: 120,
+    },
+    card: { padding: Spacing.lg, marginBottom: Spacing.lg },
+    field: { marginBottom: Spacing.lg },
+    label: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: t.colors.textSecondary,
+      marginBottom: Spacing.xs,
+      textTransform: 'uppercase',
+      letterSpacing: Typography.lsWide,
+    },
+    value: {
+      fontSize: Typography.md,
+      fontWeight: Typography.medium,
+      color: t.colors.textPrimary,
+    },
+    input: {
+      backgroundColor: t.colors.bgCardSolid,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      fontSize: Typography.base,
+      color: t.colors.textPrimary,
+    },
+    genderRow: { flexDirection: 'row', gap: Spacing.sm },
+    genderChip: {
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.sm + 2,
+      borderRadius: Radius.full,
+      backgroundColor: t.colors.bgCardSolid,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+    },
+    genderChipSelected: {
+      backgroundColor: t.colors.teal + '20',
+      borderColor: t.colors.teal + '60',
+    },
+    genderChipText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.medium,
+      color: t.colors.textSecondary,
+    },
+    genderChipTextSelected: { color: t.colors.teal },
+    statsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: Spacing.sm,
+    },
+    statItem: { flex: 1, alignItems: 'center' },
+    statValue: {
+      fontSize: Typography.md,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+    },
+    statLabel: {
+      fontSize: Typography.xs,
+      color: t.colors.textSecondary,
+      marginTop: 2,
+    },
+    statInput: {
+      backgroundColor: t.colors.bgCardSolid,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.sm,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.xs,
+      fontSize: Typography.sm,
+      color: t.colors.textPrimary,
+      textAlign: 'center',
+      marginTop: Spacing.xs,
+      width: 70,
+    },
+    statDivider: {
+      width: 1,
+      height: 40,
+      backgroundColor: t.colors.divider,
+    },
+    bloodRow: { flexDirection: 'row', gap: Spacing.sm },
+    bloodChip: {
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.sm + 2,
+      borderRadius: Radius.full,
+      backgroundColor: t.colors.bgCardSolid,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+    },
+    bloodChipSelected: {
+      backgroundColor: t.colors.danger + '20',
+      borderColor: t.colors.danger + '60',
+    },
+    bloodChipText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.medium,
+      color: t.colors.textSecondary,
+    },
+    bloodChipTextSelected: { color: t.colors.danger },
+  }));
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -124,7 +262,7 @@ export default function PersonalInfoScreen({ onBack, onSaved }: Props) {
     return (
       <View style={styles.root}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.teal} />
+          <ActivityIndicator size="large" color={theme.colors.teal} />
         </View>
       </View>
     );
@@ -134,7 +272,7 @@ export default function PersonalInfoScreen({ onBack, onSaved }: Props) {
     <View style={styles.root}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
+          <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Personal Information</Text>
         <TouchableOpacity
@@ -143,7 +281,7 @@ export default function PersonalInfoScreen({ onBack, onSaved }: Props) {
           activeOpacity={0.7}
           disabled={saving}>
           {saving ? (
-            <ActivityIndicator size="small" color={Colors.teal} />
+            <ActivityIndicator size="small" color={theme.colors.teal} />
           ) : (
             <Text style={[styles.editBtnText, editing && styles.editBtnSave]}>
               {editing ? 'Save' : 'Edit'}
@@ -164,7 +302,7 @@ export default function PersonalInfoScreen({ onBack, onSaved }: Props) {
                 value={name}
                 onChangeText={setName}
                 placeholder="Your name"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={theme.colors.textMuted}
               />
             ) : (
               <Text style={styles.value}>{name || '--'}</Text>
@@ -184,7 +322,7 @@ export default function PersonalInfoScreen({ onBack, onSaved }: Props) {
                 value={dateOfBirth}
                 onChangeText={setDateOfBirth}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={theme.colors.textMuted}
               />
             ) : (
               <Text style={styles.value}>{dateOfBirth || '--'}</Text>
@@ -223,7 +361,7 @@ export default function PersonalInfoScreen({ onBack, onSaved }: Props) {
                   value={height}
                   onChangeText={setHeight}
                   placeholder="cm"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={theme.colors.textMuted}
                   keyboardType="decimal-pad"
                 />
               )}
@@ -238,7 +376,7 @@ export default function PersonalInfoScreen({ onBack, onSaved }: Props) {
                   value={weight}
                   onChangeText={setWeight}
                   placeholder="kg"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={theme.colors.textMuted}
                   keyboardType="decimal-pad"
                 />
               )}
@@ -276,140 +414,3 @@ export default function PersonalInfoScreen({ onBack, onSaved }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.md,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
-  pageTitle: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
-  editBtnText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semiBold,
-    color: Colors.teal,
-  },
-  editBtnSave: { color: Colors.success },
-  scroll: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: 120,
-  },
-  card: { padding: Spacing.lg, marginBottom: Spacing.lg },
-  field: { marginBottom: Spacing.lg },
-  label: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.xs,
-    textTransform: 'uppercase',
-    letterSpacing: Typography.lsWide,
-  },
-  value: {
-    fontSize: Typography.md,
-    fontWeight: Typography.medium,
-    color: Colors.textPrimary,
-  },
-  input: {
-    backgroundColor: Colors.bgCardSolid,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    fontSize: Typography.base,
-    color: Colors.textPrimary,
-  },
-  genderRow: { flexDirection: 'row', gap: Spacing.sm },
-  genderChip: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm + 2,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.bgCardSolid,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  genderChipSelected: {
-    backgroundColor: Colors.teal + '20',
-    borderColor: Colors.teal + '60',
-  },
-  genderChipText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.medium,
-    color: Colors.textSecondary,
-  },
-  genderChipTextSelected: { color: Colors.teal },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  statItem: { flex: 1, alignItems: 'center' },
-  statValue: {
-    fontSize: Typography.md,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  statLabel: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  statInput: {
-    backgroundColor: Colors.bgCardSolid,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    fontSize: Typography.sm,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    marginTop: Spacing.xs,
-    width: 70,
-  },
-  statDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: Colors.divider,
-  },
-  bloodRow: { flexDirection: 'row', gap: Spacing.sm },
-  bloodChip: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm + 2,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.bgCardSolid,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  bloodChipSelected: {
-    backgroundColor: Colors.danger + '20',
-    borderColor: Colors.danger + '60',
-  },
-  bloodChipText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.medium,
-    color: Colors.textSecondary,
-  },
-  bloodChipTextSelected: { color: Colors.danger },
-});

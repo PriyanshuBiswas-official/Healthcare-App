@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { Typography, Radius, Spacing } from '../../theme/theme';
+import { useTheme } from '../../providers/ThemeProvider';
 import {
   NotFoundIllustration,
   ServerErrorIllustration,
@@ -20,43 +21,6 @@ type ErrorScreenProps = {
   onRetry?: () => void;
   onGoHome?: () => void;
   onContactSupport?: () => void;
-};
-
-const COLORS = {
-  dark: {
-    bg: '#0A0B14',
-    title: '#F0F4FF',
-    subtitle: '#6B7090',
-    badgeBg: 'rgba(0,229,204,0.1)',
-    badgeText: '#00E5CC',
-    dangerBadgeBg: 'rgba(255,107,107,0.1)',
-    dangerBadgeText: '#FF6B6B',
-    warningBadgeBg: 'rgba(255,183,77,0.1)',
-    warningBadgeText: '#FFB74D',
-    purpleBadgeBg: 'rgba(179,136,255,0.1)',
-    purpleBadgeText: '#B388FF',
-    buttonBg: '#00E5CC',
-    buttonText: '#0A0B14',
-    secondaryButtonBg: 'rgba(255,255,255,0.06)',
-    secondaryButtonText: '#F0F4FF',
-  },
-  light: {
-    bg: '#F5F7FA',
-    title: '#1A1B2E',
-    subtitle: '#7A80A0',
-    badgeBg: 'rgba(0,184,163,0.1)',
-    badgeText: '#00B8A3',
-    dangerBadgeBg: 'rgba(255,82,82,0.1)',
-    dangerBadgeText: '#FF5252',
-    warningBadgeBg: 'rgba(255,167,38,0.1)',
-    warningBadgeText: '#FFA726',
-    purpleBadgeBg: 'rgba(156,106,222,0.1)',
-    purpleBadgeText: '#9C6ADE',
-    buttonBg: '#00B8A3',
-    buttonText: '#FFFFFF',
-    secondaryButtonBg: 'rgba(0,0,0,0.05)',
-    secondaryButtonText: '#1A1B2E',
-  },
 };
 
 const ILLUSTRATIONS: Record<ErrorType, React.FC<{ size?: number }>> = {
@@ -110,8 +74,8 @@ const ErrorScreen: React.FC<ErrorScreenProps> = ({
   onGoHome,
   onContactSupport,
 }) => {
-  const scheme = useColorScheme();
-  const c = COLORS[scheme === 'light' ? 'light' : 'dark'];
+  const { theme } = useTheme();
+  const c = theme.colors;
   const defaults = DEFAULTS[type];
   const Illustration = ILLUSTRATIONS[type];
 
@@ -122,13 +86,13 @@ const ErrorScreen: React.FC<ErrorScreenProps> = ({
   const getBadgeColors = () => {
     switch (defaults.badgeStyle) {
       case 'danger':
-        return { bg: c.dangerBadgeBg, text: c.dangerBadgeText };
+        return { bg: c.danger + '1A', text: c.danger };
       case 'warning':
-        return { bg: c.warningBadgeBg, text: c.warningBadgeText };
+        return { bg: c.amber + '1A', text: c.amber };
       case 'purple':
-        return { bg: c.purpleBadgeBg, text: c.purpleBadgeText };
+        return { bg: c.purple + '1A', text: c.purple };
       default:
-        return { bg: c.badgeBg, text: c.badgeText };
+        return { bg: c.teal + '1A', text: c.teal };
     }
   };
 
@@ -141,11 +105,11 @@ const ErrorScreen: React.FC<ErrorScreenProps> = ({
           <Illustration size={180} />
         </View>
 
-        <Text style={[styles.title, { color: c.title }]}>{displayTitle}</Text>
-        <Text style={[styles.message, { color: c.subtitle }]}>{displayMessage}</Text>
+        <Text style={[styles.title, { color: c.textPrimary }]}>{displayTitle}</Text>
+        <Text style={[styles.message, { color: c.textSecondary }]}>{displayMessage}</Text>
 
         {estimatedReturn && (
-          <Text style={[styles.estimated, { color: c.subtitle }]}>
+          <Text style={[styles.estimated, { color: c.textSecondary }]}>
             Estimated return: {new Date(estimatedReturn).toLocaleString()}
           </Text>
         )}
@@ -157,51 +121,51 @@ const ErrorScreen: React.FC<ErrorScreenProps> = ({
         <View style={styles.buttonContainer}>
           {type === 'no-internet' && onRetry && (
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: c.buttonBg }]}
+              style={[styles.button, { backgroundColor: c.teal }]}
               onPress={onRetry}
               activeOpacity={0.8}
             >
-              <Text style={[styles.buttonText, { color: c.buttonText }]}>Retry</Text>
+              <Text style={[styles.buttonText, { color: c.bg }]}>Retry</Text>
             </TouchableOpacity>
           )}
 
           {type === 'permission' && onContactSupport && (
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: c.buttonBg }]}
+              style={[styles.button, { backgroundColor: c.teal }]}
               onPress={onContactSupport}
               activeOpacity={0.8}
             >
-              <Text style={[styles.buttonText, { color: c.buttonText }]}>Contact Support</Text>
+              <Text style={[styles.buttonText, { color: c.bg }]}>Contact Support</Text>
             </TouchableOpacity>
           )}
 
           {type !== 'no-internet' && type !== 'permission' && onGoHome && (
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: c.buttonBg }]}
+              style={[styles.button, { backgroundColor: c.teal }]}
               onPress={onGoHome}
               activeOpacity={0.8}
             >
-              <Text style={[styles.buttonText, { color: c.buttonText }]}>Take Me Home</Text>
+              <Text style={[styles.buttonText, { color: c.bg }]}>Take Me Home</Text>
             </TouchableOpacity>
           )}
 
           {type === 'no-internet' && onGoHome && (
             <TouchableOpacity
-              style={[styles.button, styles.secondaryButton, { backgroundColor: c.secondaryButtonBg }]}
+              style={[styles.button, styles.secondaryButton, { backgroundColor: c.chipBg }]}
               onPress={onGoHome}
               activeOpacity={0.8}
             >
-              <Text style={[styles.buttonText, { color: c.secondaryButtonText }]}>Take Me Home</Text>
+              <Text style={[styles.buttonText, { color: c.textPrimary }]}>Take Me Home</Text>
             </TouchableOpacity>
           )}
 
           {type === 'permission' && onGoHome && (
             <TouchableOpacity
-              style={[styles.button, styles.secondaryButton, { backgroundColor: c.secondaryButtonBg }]}
+              style={[styles.button, styles.secondaryButton, { backgroundColor: c.chipBg }]}
               onPress={onGoHome}
               activeOpacity={0.8}
             >
-              <Text style={[styles.buttonText, { color: c.secondaryButtonText }]}>Take Me Home</Text>
+              <Text style={[styles.buttonText, { color: c.textPrimary }]}>Take Me Home</Text>
             </TouchableOpacity>
           )}
         </View>

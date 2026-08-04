@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TextInput,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
@@ -26,6 +26,7 @@ interface Props {
 }
 
 export default function AllergiesScreen({ onBack, onSaved }: Props) {
+  const { theme } = useTheme();
   const { session } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -33,6 +34,78 @@ export default function AllergiesScreen({ onBack, onSaved }: Props) {
   const [allergies, setAllergies] = useState<string[]>([]);
   const [noAllergies, setNoAllergies] = useState(false);
   const [customAllergy, setCustomAllergy] = useState('');
+
+  const styles = useStyles((t) => ({
+    root: { flex: 1, backgroundColor: t.colors.bg },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    topBar: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
+    },
+    backBtn: {
+      width: 40, height: 40, borderRadius: Radius.md, backgroundColor: t.colors.bgCard,
+      borderWidth: 1, borderColor: t.colors.bgCardBorder, alignItems: 'center', justifyContent: 'center',
+    },
+    backIcon: { fontSize: Typography.lg, color: t.colors.textPrimary },
+    pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary },
+    editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+    editBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.danger },
+    editBtnSave: { color: t.colors.success },
+    scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
+    card: { padding: Spacing.lg, marginBottom: Spacing.lg },
+    noAllergyCard: {
+      ...GlassCard, padding: Spacing.lg, marginBottom: Spacing.lg,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    },
+    noAllergyCardSelected: { backgroundColor: t.colors.danger + '15', borderColor: t.colors.danger + '40' },
+    noAllergyLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+    noAllergyIcon: { fontSize: Typography.lg, marginRight: Spacing.md },
+    noAllergyTitle: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.textPrimary },
+    noAllergySub: { fontSize: Typography.xs, color: t.colors.textSecondary, marginTop: 2 },
+    check: {
+      width: 24, height: 24, borderRadius: 12, borderWidth: 2,
+      borderColor: t.colors.bgCardBorder, alignItems: 'center', justifyContent: 'center',
+    },
+    checkSelected: { backgroundColor: t.colors.danger, borderColor: t.colors.danger },
+    checkMark: { fontSize: 14, color: t.colors.bg, fontWeight: Typography.bold },
+    sectionTitle: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.textPrimary, marginBottom: Spacing.md },
+    tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+    tag: {
+      flexDirection: 'row', alignItems: 'center', backgroundColor: t.colors.danger + '20',
+      borderWidth: 1, borderColor: t.colors.danger + '50', borderRadius: Radius.full,
+      paddingLeft: Spacing.md, paddingVertical: Spacing.xs + 2,
+    },
+    tagText: { fontSize: Typography.sm, fontWeight: Typography.medium, color: t.colors.danger },
+    tagRemove: { fontSize: Typography.sm, color: t.colors.danger, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
+    chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+    chip: {
+      paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm + 2,
+      borderRadius: Radius.full, backgroundColor: t.colors.bgCardSolid,
+      borderWidth: 1, borderColor: t.colors.bgCardBorder,
+    },
+    chipSelected: { backgroundColor: t.colors.danger + '20', borderColor: t.colors.danger + '60' },
+    chipText: { fontSize: Typography.sm, fontWeight: Typography.medium, color: t.colors.textSecondary },
+    chipTextSelected: { color: t.colors.danger },
+    customRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+    input: {
+      backgroundColor: t.colors.bgCardSolid, borderWidth: 1, borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
+      fontSize: Typography.base, color: t.colors.textPrimary,
+    },
+    customAddBtn: {
+      backgroundColor: t.colors.danger + '20', borderWidth: 1, borderColor: t.colors.danger + '50',
+      borderRadius: Radius.md, paddingHorizontal: Spacing.base, paddingVertical: Spacing.md,
+    },
+    customAddBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.danger },
+    emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
+    emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
+    emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.textPrimary },
+    emptySub: { fontSize: Typography.sm, color: t.colors.textSecondary, marginTop: Spacing.xs },
+    allergyRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },
+    allergyDot: { width: 8, height: 8, borderRadius: 4, marginRight: Spacing.md },
+    allergyText: { fontSize: Typography.base, fontWeight: Typography.medium, color: t.colors.textPrimary },
+    divider: { height: 1, backgroundColor: t.colors.divider },
+  }));
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -111,7 +184,7 @@ export default function AllergiesScreen({ onBack, onSaved }: Props) {
     return (
       <View style={styles.root}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.danger} />
+          <ActivityIndicator size="large" color={theme.colors.danger} />
         </View>
       </View>
     );
@@ -121,7 +194,7 @@ export default function AllergiesScreen({ onBack, onSaved }: Props) {
     <View style={styles.root}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
+          <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Allergies</Text>
         <TouchableOpacity
@@ -130,7 +203,7 @@ export default function AllergiesScreen({ onBack, onSaved }: Props) {
           activeOpacity={0.7}
           disabled={saving}>
           {saving ? (
-            <ActivityIndicator size="small" color={Colors.danger} />
+            <ActivityIndicator size="small" color={theme.colors.danger} />
           ) : (
             <Text style={[styles.editBtnText, editing && styles.editBtnSave]}>
               {editing ? 'Save' : 'Edit'}
@@ -149,7 +222,7 @@ export default function AllergiesScreen({ onBack, onSaved }: Props) {
               <View style={styles.noAllergyLeft}>
                 <Text style={styles.noAllergyIcon}>✅</Text>
                 <View>
-                  <Text style={[styles.noAllergyTitle, noAllergies && { color: Colors.danger }]}>
+                  <Text style={[styles.noAllergyTitle, noAllergies && { color: theme.colors.danger }]}>
                     No known allergies
                   </Text>
                   <Text style={styles.noAllergySub}>
@@ -208,7 +281,7 @@ export default function AllergiesScreen({ onBack, onSaved }: Props) {
                       value={customAllergy}
                       onChangeText={setCustomAllergy}
                       placeholder="Type an allergy..."
-                      placeholderTextColor={Colors.textMuted}
+                      placeholderTextColor={theme.colors.textMuted}
                       onSubmitEditing={addCustomAllergy}
                     />
                     <TouchableOpacity style={styles.customAddBtn} onPress={addCustomAllergy} activeOpacity={0.7}>
@@ -239,7 +312,7 @@ export default function AllergiesScreen({ onBack, onSaved }: Props) {
                 {allergies.map((a, i) => (
                   <View key={i}>
                     <View style={styles.allergyRow}>
-                      <View style={[styles.allergyDot, { backgroundColor: Colors.danger }]} />
+                      <View style={[styles.allergyDot, { backgroundColor: theme.colors.danger }]} />
                       <Text style={styles.allergyText}>{a}</Text>
                     </View>
                     {i < allergies.length - 1 && <View style={styles.divider} />}
@@ -253,75 +326,3 @@ export default function AllergiesScreen({ onBack, onSaved }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
-  },
-  backBtn: {
-    width: 40, height: 40, borderRadius: Radius.md, backgroundColor: Colors.bgCard,
-    borderWidth: 1, borderColor: Colors.bgCardBorder, alignItems: 'center', justifyContent: 'center',
-  },
-  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
-  pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
-  editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
-  editBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.danger },
-  editBtnSave: { color: Colors.success },
-  scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
-  card: { padding: Spacing.lg, marginBottom: Spacing.lg },
-  noAllergyCard: {
-    ...GlassCard, padding: Spacing.lg, marginBottom: Spacing.lg,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-  },
-  noAllergyCardSelected: { backgroundColor: Colors.danger + '15', borderColor: Colors.danger + '40' },
-  noAllergyLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  noAllergyIcon: { fontSize: Typography.lg, marginRight: Spacing.md },
-  noAllergyTitle: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  noAllergySub: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 },
-  check: {
-    width: 24, height: 24, borderRadius: 12, borderWidth: 2,
-    borderColor: Colors.bgCardBorder, alignItems: 'center', justifyContent: 'center',
-  },
-  checkSelected: { backgroundColor: Colors.danger, borderColor: Colors.danger },
-  checkMark: { fontSize: 14, color: Colors.bg, fontWeight: Typography.bold },
-  sectionTitle: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary, marginBottom: Spacing.md },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  tag: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.danger + '20',
-    borderWidth: 1, borderColor: Colors.danger + '50', borderRadius: Radius.full,
-    paddingLeft: Spacing.md, paddingVertical: Spacing.xs + 2,
-  },
-  tagText: { fontSize: Typography.sm, fontWeight: Typography.medium, color: Colors.danger },
-  tagRemove: { fontSize: Typography.sm, color: Colors.danger, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
-  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  chip: {
-    paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm + 2,
-    borderRadius: Radius.full, backgroundColor: Colors.bgCardSolid,
-    borderWidth: 1, borderColor: Colors.bgCardBorder,
-  },
-  chipSelected: { backgroundColor: Colors.danger + '20', borderColor: Colors.danger + '60' },
-  chipText: { fontSize: Typography.sm, fontWeight: Typography.medium, color: Colors.textSecondary },
-  chipTextSelected: { color: Colors.danger },
-  customRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  input: {
-    backgroundColor: Colors.bgCardSolid, borderWidth: 1, borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
-    fontSize: Typography.base, color: Colors.textPrimary,
-  },
-  customAddBtn: {
-    backgroundColor: Colors.danger + '20', borderWidth: 1, borderColor: Colors.danger + '50',
-    borderRadius: Radius.md, paddingHorizontal: Spacing.base, paddingVertical: Spacing.md,
-  },
-  customAddBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.danger },
-  emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
-  emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
-  emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  emptySub: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: Spacing.xs },
-  allergyRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },
-  allergyDot: { width: 8, height: 8, borderRadius: 4, marginRight: Spacing.md },
-  allergyText: { fontSize: Typography.base, fontWeight: Typography.medium, color: Colors.textPrimary },
-  divider: { height: 1, backgroundColor: Colors.divider },
-});

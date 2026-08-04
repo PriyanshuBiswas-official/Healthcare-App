@@ -1,8 +1,31 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Typography, Spacing } from '../../theme/theme';
+import { Typography, Spacing } from '../../theme/theme';
+import { useStyles } from '../../providers/ThemeProvider';
 
 export default function EmptyState() {
+  const styles = useStyles((theme) => ({
+    agendaEmpty: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: Spacing.xl,
+    },
+    agendaEmptyIcon: {
+      fontSize: Typography.xxl,
+      marginBottom: Spacing.sm,
+    },
+    agendaEmptyText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: theme.colors.textPrimary,
+    },
+    agendaEmptySubtext: {
+      fontSize: Typography.xs,
+      color: theme.colors.textMuted,
+      marginTop: 4,
+    },
+  }));
+
   return (
     <View style={styles.agendaEmpty}>
       <Text style={styles.agendaEmptyIcon}>📅</Text>
@@ -11,25 +34,3 @@ export default function EmptyState() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  agendaEmpty: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.xl,
-  },
-  agendaEmptyIcon: {
-    fontSize: Typography.xxl,
-    marginBottom: Spacing.sm,
-  },
-  agendaEmptyText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  agendaEmptySubtext: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    marginTop: 4,
-  },
-});

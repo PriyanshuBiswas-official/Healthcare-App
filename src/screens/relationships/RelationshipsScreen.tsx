@@ -23,7 +23,8 @@ import {
   Copy,
   Clock,
 } from 'lucide-react-native';
-import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { GlassCardView, SectionHeader } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import * as relationshipApi from '../../services/relationshipApi';
@@ -36,6 +37,257 @@ interface RelationshipsScreenProps {
 
 export default function RelationshipsScreen({ onBack, onPartnerPress }: RelationshipsScreenProps) {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+  const colors = theme.colors;
+  const styles = useStyles(t => ({
+    root: {
+      flex: 1,
+      backgroundColor: t.colors.bg,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: t.colors.bgCardBorder + '30',
+    },
+    backBtn: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: t.colors.chipBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pageTitle: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+    },
+    headerRightPlaceholder: {
+      width: 38,
+    },
+    scrollContent: {
+      paddingHorizontal: Spacing.base,
+      paddingBottom: 60,
+    },
+    section: {
+      marginTop: Spacing.base,
+    },
+    relCard: {
+      padding: Spacing.base,
+      borderRadius: Radius.md,
+      marginBottom: Spacing.base,
+    },
+    cardInfoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: Spacing.base,
+    },
+    avatarWrap: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: t.colors.teal + '20',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: t.colors.teal + '55',
+    },
+    avatarText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: t.colors.teal,
+    },
+    metaWrap: {
+      flex: 1,
+      marginLeft: Spacing.base,
+    },
+    partnerName: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+    },
+    partnerRole: {
+      fontSize: Typography.xs,
+      color: t.colors.textMuted,
+      marginTop: 2,
+    },
+    actionRow: {
+      flexDirection: 'row',
+      gap: Spacing.base,
+      borderTopWidth: 1,
+      borderTopColor: t.colors.bgCardBorder + '15',
+      paddingTop: Spacing.base,
+    },
+    smallBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: Radius.sm,
+      height: 36,
+      flex: 1,
+    },
+    primaryBtn: {
+      backgroundColor: t.colors.teal,
+    },
+    secBtn: {
+      backgroundColor: t.colors.teal + '20',
+      borderWidth: 1,
+      borderColor: t.colors.teal + '45',
+    },
+    acceptBtn: {
+      backgroundColor: t.colors.success,
+    },
+    rejectBtn: {
+      backgroundColor: t.colors.chipBg,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+    },
+    btnText: {
+      color: t.colors.white,
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+    },
+    emptyCard: {
+      padding: Spacing.xl,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: Radius.md,
+    },
+    emptyTitle: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+      marginTop: Spacing.sm,
+    },
+    emptyText: {
+      fontSize: Typography.xs,
+      color: t.colors.textMuted,
+      textAlign: 'center',
+      marginTop: Spacing.xs,
+      lineHeight: 16,
+    },
+    inviteCard: {
+      padding: Spacing.base,
+      borderRadius: Radius.md,
+    },
+    label: {
+      fontSize: Typography.xs,
+      color: t.colors.textSecondary,
+      fontWeight: Typography.bold,
+      marginBottom: Spacing.sm,
+    },
+    pillRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.xs,
+      marginBottom: Spacing.base,
+    },
+    pill: {
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: Radius.full,
+      backgroundColor: t.colors.chipBg,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+    },
+    activePill: {
+      backgroundColor: t.colors.teal,
+      borderColor: t.colors.teal,
+    },
+    pillText: {
+      fontSize: Typography.xs,
+      color: t.colors.textSecondary,
+      fontWeight: Typography.bold,
+    },
+    activePillText: {
+      color: t.colors.white,
+    },
+    generateBtn: {
+      flexDirection: 'row',
+      backgroundColor: t.colors.teal,
+      borderRadius: Radius.sm,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    generateBtnText: {
+      color: t.colors.white,
+      fontSize: Typography.xs + 1,
+      fontWeight: Typography.bold,
+    },
+    codeContainer: {
+      backgroundColor: t.colors.chipBg,
+      borderColor: t.colors.bgCardBorder,
+      borderWidth: 1,
+      borderRadius: Radius.sm,
+      padding: Spacing.base,
+    },
+    codeLabel: {
+      fontSize: Typography.xs - 1,
+      color: t.colors.textMuted,
+      fontWeight: Typography.bold,
+      textAlign: 'center',
+    },
+    codeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: Spacing.xs,
+    },
+    codeText: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.bold,
+      color: t.colors.teal,
+      letterSpacing: 1.5,
+    },
+    copyIconWrap: {
+      marginLeft: Spacing.base,
+      padding: 4,
+    },
+    expiryRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: Spacing.xs,
+    },
+    expiryText: {
+      fontSize: Typography.xs - 1,
+      color: t.colors.textMuted,
+    },
+    redeemCard: {
+      padding: Spacing.base,
+      borderRadius: Radius.md,
+    },
+    textInput: {
+      backgroundColor: t.colors.chipBg,
+      borderColor: t.colors.bgCardBorder,
+      borderWidth: 1,
+      borderRadius: Radius.sm,
+      height: 40,
+      color: t.colors.textPrimary,
+      paddingHorizontal: Spacing.base,
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+      marginBottom: Spacing.base,
+    },
+    redeemBtn: {
+      flexDirection: 'row',
+      backgroundColor: t.colors.teal,
+      borderRadius: Radius.sm,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    redeemBtnText: {
+      color: t.colors.white,
+      fontSize: Typography.xs + 1,
+      fontWeight: Typography.bold,
+    },
+  }));
   const { session } = useAuth();
   const token = session?.access_token || '';
 
@@ -170,7 +422,7 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
+          <ArrowLeft size={22} color={colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Relationships</Text>
         <View style={styles.headerRightPlaceholder} />
@@ -198,7 +450,7 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
                     onPress={() => handleAccept(rel.relationship_id)}
                     activeOpacity={0.8}
                   >
-                    <Check size={14} color={Colors.white} style={{ marginRight: 4 }} />
+                    <Check size={14} color={colors.white} style={{ marginRight: 4 }} />
                     <Text style={styles.btnText}>Accept</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -206,8 +458,8 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
                     onPress={() => handleReject(rel.relationship_id)}
                     activeOpacity={0.8}
                   >
-                    <X size={14} color={Colors.textMuted} style={{ marginRight: 4 }} />
-                    <Text style={[styles.btnText, { color: Colors.textMuted }]}>Decline</Text>
+                    <X size={14} color={colors.textMuted} style={{ marginRight: 4 }} />
+                    <Text style={[styles.btnText, { color: colors.textMuted }]}>Decline</Text>
                   </TouchableOpacity>
                 </View>
               </GlassCardView>
@@ -219,10 +471,10 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
         <View style={styles.section}>
           <SectionHeader title="Active Connections" subtitle="Shared profiles & active health reports" />
           {loading ? (
-            <ActivityIndicator size="small" color={Colors.teal} style={{ marginVertical: Spacing.md }} />
+            <ActivityIndicator size="small" color={colors.teal} style={{ marginVertical: Spacing.md }} />
           ) : activeConnections.length === 0 ? (
             <GlassCardView style={styles.emptyCard}>
-              <UserCheck size={32} color={Colors.textMuted} strokeWidth={1.5} />
+              <UserCheck size={32} color={colors.textMuted} strokeWidth={1.5} />
               <Text style={styles.emptyTitle}>No active connections</Text>
               <Text style={styles.emptyText}>Generate a code to invite a partner or enter their code below.</Text>
             </GlassCardView>
@@ -249,7 +501,7 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
                       onPress={() => onPartnerPress(String(rel.relationship_id))}
                       activeOpacity={0.8}
                     >
-                      <UserCheck size={14} color={Colors.white} style={{ marginRight: 4 }} />
+                      <UserCheck size={14} color={colors.white} style={{ marginRight: 4 }} />
                       <Text style={styles.btnText}>View Report</Text>
                     </TouchableOpacity>
                   ) : rel.role === 'owner' ? (
@@ -262,8 +514,8 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
                       }}
                       activeOpacity={0.8}
                     >
-                      <Shield size={14} color={Colors.teal} style={{ marginRight: 4 }} />
-                      <Text style={[styles.btnText, { color: Colors.teal }]}>Permissions</Text>
+                      <Shield size={14} color={colors.teal} style={{ marginRight: 4 }} />
+                      <Text style={[styles.btnText, { color: colors.teal }]}>Permissions</Text>
                     </TouchableOpacity>
                   ) : null}
 
@@ -272,8 +524,8 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
                     onPress={() => handleRevoke(rel.relationship_id, rel.partner.name)}
                     activeOpacity={0.8}
                   >
-                    <Trash2 size={14} color={Colors.pink} style={{ marginRight: 4 }} />
-                    <Text style={[styles.btnText, { color: Colors.pink }]}>Revoke</Text>
+                    <Trash2 size={14} color={colors.pink} style={{ marginRight: 4 }} />
+                    <Text style={[styles.btnText, { color: colors.pink }]}>Revoke</Text>
                   </TouchableOpacity>
                 </View>
               </GlassCardView>
@@ -309,11 +561,11 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
                 <View style={styles.codeRow}>
                   <Text style={styles.codeText}>{generatedCode}</Text>
                   <TouchableOpacity onPress={copyToClipboard} style={styles.copyIconWrap}>
-                    <Copy size={16} color={Colors.teal} />
+                    <Copy size={16} color={colors.teal} />
                   </TouchableOpacity>
                 </View>
                 <View style={styles.expiryRow}>
-                  <Clock size={12} color={Colors.textMuted} style={{ marginRight: 4 }} />
+                  <Clock size={12} color={colors.textMuted} style={{ marginRight: 4 }} />
                   <Text style={styles.expiryText}>Expires at {inviteExpiry}</Text>
                 </View>
               </View>
@@ -325,10 +577,10 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
                 activeOpacity={0.8}
               >
                 {generating ? (
-                  <ActivityIndicator size="small" color={Colors.white} />
+                  <ActivityIndicator size="small" color={colors.white} />
                 ) : (
                   <>
-                    <Key size={16} color={Colors.white} style={{ marginRight: 6 }} />
+                    <Key size={16} color={colors.white} style={{ marginRight: 6 }} />
                     <Text style={styles.generateBtnText}>Generate Code</Text>
                   </>
                 )}
@@ -344,7 +596,7 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
             <TextInput
               style={styles.textInput}
               placeholder="e.g. REL-8FA29BC"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={redeemCode}
               onChangeText={setRedeemCode}
               autoCapitalize="characters"
@@ -357,10 +609,10 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
               activeOpacity={0.8}
             >
               {redeeming ? (
-                <ActivityIndicator size="small" color={Colors.white} />
+                <ActivityIndicator size="small" color={colors.white} />
               ) : (
                 <>
-                  <UserPlus size={16} color={Colors.white} style={{ marginRight: 6 }} />
+                  <UserPlus size={16} color={colors.white} style={{ marginRight: 6 }} />
                   <Text style={styles.redeemBtnText}>Redeem & Request</Text>
                 </>
               )}
@@ -386,253 +638,3 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: Colors.bg,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.bgCardBorder + '30',
-  },
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: Colors.chipBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pageTitle: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  headerRightPlaceholder: {
-    width: 38,
-  },
-  scrollContent: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: 60,
-  },
-  section: {
-    marginTop: Spacing.base,
-  },
-  relCard: {
-    padding: Spacing.base,
-    borderRadius: Radius.md,
-    marginBottom: Spacing.base,
-  },
-  cardInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.base,
-  },
-  avatarWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.teal + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.teal + '55',
-  },
-  avatarText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.teal,
-  },
-  metaWrap: {
-    flex: 1,
-    marginLeft: Spacing.base,
-  },
-  partnerName: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  partnerRole: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: Spacing.base,
-    borderTopWidth: 1,
-    borderTopColor: Colors.bgCardBorder + '15',
-    paddingTop: Spacing.base,
-  },
-  smallBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.sm,
-    height: 36,
-    flex: 1,
-  },
-  primaryBtn: {
-    backgroundColor: Colors.teal,
-  },
-  secBtn: {
-    backgroundColor: Colors.teal + '20',
-    borderWidth: 1,
-    borderColor: Colors.teal + '45',
-  },
-  acceptBtn: {
-    backgroundColor: Colors.success,
-  },
-  rejectBtn: {
-    backgroundColor: Colors.chipBg,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  btnText: {
-    color: Colors.white,
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-  },
-  emptyCard: {
-    padding: Spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.md,
-  },
-  emptyTitle: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-    marginTop: Spacing.sm,
-  },
-  emptyText: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    marginTop: Spacing.xs,
-    lineHeight: 16,
-  },
-  inviteCard: {
-    padding: Spacing.base,
-    borderRadius: Radius.md,
-  },
-  label: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.bold,
-    marginBottom: Spacing.sm,
-  },
-  pillRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-    marginBottom: Spacing.base,
-  },
-  pill: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.chipBg,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  activePill: {
-    backgroundColor: Colors.teal,
-    borderColor: Colors.teal,
-  },
-  pillText: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.bold,
-  },
-  activePillText: {
-    color: Colors.white,
-  },
-  generateBtn: {
-    flexDirection: 'row',
-    backgroundColor: Colors.teal,
-    borderRadius: Radius.sm,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  generateBtnText: {
-    color: Colors.white,
-    fontSize: Typography.xs + 1,
-    fontWeight: Typography.bold,
-  },
-  codeContainer: {
-    backgroundColor: Colors.chipBg,
-    borderColor: Colors.bgCardBorder,
-    borderWidth: 1,
-    borderRadius: Radius.sm,
-    padding: Spacing.base,
-  },
-  codeLabel: {
-    fontSize: Typography.xs - 1,
-    color: Colors.textMuted,
-    fontWeight: Typography.bold,
-    textAlign: 'center',
-  },
-  codeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: Spacing.xs,
-  },
-  codeText: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.bold,
-    color: Colors.teal,
-    letterSpacing: 1.5,
-  },
-  copyIconWrap: {
-    marginLeft: Spacing.base,
-    padding: 4,
-  },
-  expiryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: Spacing.xs,
-  },
-  expiryText: {
-    fontSize: Typography.xs - 1,
-    color: Colors.textMuted,
-  },
-  redeemCard: {
-    padding: Spacing.base,
-    borderRadius: Radius.md,
-  },
-  textInput: {
-    backgroundColor: Colors.chipBg,
-    borderColor: Colors.bgCardBorder,
-    borderWidth: 1,
-    borderRadius: Radius.sm,
-    height: 40,
-    color: Colors.textPrimary,
-    paddingHorizontal: Spacing.base,
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-    marginBottom: Spacing.base,
-  },
-  redeemBtn: {
-    flexDirection: 'row',
-    backgroundColor: Colors.teal,
-    borderRadius: Radius.sm,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  redeemBtnText: {
-    color: Colors.white,
-    fontSize: Typography.xs + 1,
-    fontWeight: Typography.bold,
-  },
-});

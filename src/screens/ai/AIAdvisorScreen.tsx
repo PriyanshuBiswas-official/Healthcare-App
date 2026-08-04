@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -10,7 +9,8 @@ import {
   BackHandler,
   Animated,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { TabName } from '../../navigation/TabBar';
@@ -27,6 +27,7 @@ const APPOINTMENT_SLOTS = [
 ];
 
 export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, startInChat, initialQuery, originTab, navigateToTab, isTabActive }: { onProfilePress?: () => void; onNotificationsPress?: () => void; startInChat?: boolean; initialQuery?: string; originTab?: TabName; navigateToTab?: (tab: TabName) => void; isTabActive?: boolean }) {
+  const { theme } = useTheme();
   const { messages, input, setInput, isThinking, sendMessage, retryLastMessage, scrollRef } = useChatState();
   const { user } = useAuth();
   const { unreadCount } = useNotifications();
@@ -82,6 +83,300 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
     return () => sub.remove();
   }, [activeTab, navigateToTab, originTab]);
 
+  const styles = useStyles((theme) => ({
+    root: { flex: 1, backgroundColor: theme.colors.bg },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: Spacing.base,
+      paddingTop: Spacing.xl,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.divider,
+    },
+    backBtn: {
+      padding: Spacing.sm,
+      marginRight: Spacing.xs,
+    },
+    backIcon: {
+      fontSize: Typography.xl,
+      color: theme.colors.textPrimary,
+    },
+    headerTextWrap: {
+      flex: 1,
+    },
+    greeting: { fontSize: Typography.xl, fontWeight: Typography.bold, color: theme.colors.textPrimary },
+    subGreeting: { fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: 2 },
+    onlineRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+    onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.colors.success, marginRight: 5, shadowColor: theme.colors.success, shadowRadius: 4, shadowOpacity: 1 },
+    onlineText: { fontSize: Typography.xs, color: theme.colors.textSecondary },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    historyBtn: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.bgCard,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+    },
+    
+    scroll: { padding: Spacing.base },
+    
+    summaryCard: {
+      padding: Spacing.base,
+      marginBottom: Spacing.md,
+    },
+    summaryHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: Spacing.sm,
+    },
+    summaryTitle: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: theme.colors.textPrimary,
+    },
+    aiBadgeIcon: {
+      width: 24, height: 24, borderRadius: 12, backgroundColor: theme.colors.purple + '20',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    summaryText: {
+      fontSize: Typography.sm,
+      color: theme.colors.textSecondary,
+      lineHeight: 20,
+    },
+
+    chatBanner: {
+      padding: Spacing.base,
+      marginBottom: Spacing.md,
+      alignItems: 'center',
+      backgroundColor: theme.colors.bgCard,
+      borderWidth: 1,
+      borderColor: theme.colors.purple + '40',
+    },
+    chatBannerTitle: {
+      fontSize: Typography.base,
+      fontWeight: Typography.semiBold,
+      color: theme.colors.textPrimary,
+      marginBottom: Spacing.sm,
+    },
+    chatBannerBtn: {
+      backgroundColor: theme.colors.purple,
+      paddingVertical: Spacing.sm,
+      paddingHorizontal: Spacing.xl,
+      borderRadius: Radius.full,
+      ...Shadows.teal,
+    },
+    chatBannerBtnText: {
+      color: theme.colors.bg,
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+    },
+
+    cardItem: {
+      padding: Spacing.base,
+      marginBottom: Spacing.sm,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: Spacing.md,
+    },
+    iconWrap: {
+      width: 40, height: 40, borderRadius: 8,
+      alignItems: 'center', justifyContent: 'center',
+    },
+    itemTitle: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: theme.colors.textPrimary,
+      marginBottom: 2,
+    },
+    itemSub: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+    },
+    itemMeta: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+      marginTop: 4,
+    },
+    badgeAI: {
+      paddingHorizontal: 8, paddingVertical: 2,
+      borderRadius: Radius.full,
+    },
+    badgeAIText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+    },
+    badgeTime: {
+      paddingHorizontal: 8, paddingVertical: 2,
+      borderRadius: Radius.full,
+      marginTop: 4,
+    },
+    badgeTimeText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.semiBold,
+    },
+
+    bookBtnAction: {
+      alignItems: 'center',
+      paddingVertical: Spacing.md,
+      marginBottom: Spacing.lg,
+    },
+    bookBtnActionText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+      color: theme.colors.purple,
+    },
+
+    bookingExpanded: {
+      marginBottom: Spacing.lg,
+    },
+    scheduleTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
+    scheduleSub: { fontSize: Typography.sm, color: theme.colors.purple, marginTop: 4, marginBottom: Spacing.md },
+    scheduleSuggestion: { padding: Spacing.base, marginBottom: Spacing.md },
+    scheduleAILabel: { fontSize: 10, fontWeight: Typography.bold, letterSpacing: 1.5, marginBottom: Spacing.sm },
+    scheduleAIText: { fontSize: Typography.sm, color: theme.colors.textSecondary, lineHeight: 20 },
+    slotCard: { padding: Spacing.base, marginBottom: Spacing.sm },
+    slotRow: { flexDirection: 'row', alignItems: 'center' },
+    slotDoctor: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
+    slotSpec: { fontSize: Typography.xs, color: theme.colors.textSecondary, marginTop: 2 },
+    slotMeta: { flexDirection: 'row', marginTop: Spacing.sm },
+    slotTime: { fontSize: Typography.xs, color: theme.colors.textSecondary },
+    slotDate: { fontSize: Typography.xs, color: theme.colors.textSecondary },
+    bookBtnInline: {
+      paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
+      borderRadius: Radius.md, borderWidth: 1,
+    },
+    bookBtnInlineText: { fontSize: Typography.sm, color: theme.colors.purple, fontWeight: Typography.bold },
+    confirmedCard: { padding: Spacing.xl, marginTop: Spacing.base, alignItems: 'center' },
+    confirmedTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.teal, marginTop: Spacing.md, textAlign: 'center' },
+    confirmedSub: { fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: Spacing.sm, textAlign: 'center', lineHeight: 20 },
+
+    toolsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.md,
+      marginBottom: Spacing.lg,
+    },
+    toolCard: {
+      width: '47%',
+      padding: Spacing.base,
+      marginBottom: Spacing.sm,
+    },
+    toolIconWrap: {
+      width: 32, height: 32, borderRadius: 8,
+      marginBottom: Spacing.sm,
+    },
+    toolTitle: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: theme.colors.textPrimary,
+      marginBottom: 4,
+    },
+    toolSub: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+      marginBottom: Spacing.sm,
+      height: 45,
+    },
+    toolActionText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.medium,
+      color: theme.colors.textPrimary,
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    toolTagsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 4,
+      marginTop: 'auto',
+    },
+    toolTag: {
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: Radius.sm,
+      backgroundColor: theme.colors.bgCardBorder,
+    },
+    toolTagText: {
+      fontSize: Typography.micro,
+      color: theme.colors.textSecondary,
+    },
+    toolFlexRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 6,
+    },
+    toolMetaText: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+    },
+    progressBar: {
+      height: 4,
+      backgroundColor: theme.colors.bgCardBorder,
+      borderRadius: 2,
+      marginBottom: Spacing.sm,
+    },
+    progressFill: {
+      height: '100%',
+      borderRadius: 2,
+    },
+    medRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 6,
+    },
+    medText: {
+      fontSize: Typography.xs,
+      color: theme.colors.textPrimary,
+    },
+    chartBars: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+      height: 60,
+      marginBottom: Spacing.sm,
+    },
+    chartBar: {
+      width: 14,
+      borderRadius: 2,
+    },
+
+    insightCard: {
+      padding: Spacing.base,
+      marginBottom: Spacing.sm,
+    },
+    insightRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: Spacing.md,
+    },
+    insightIcon: {
+      width: 32, height: 32, borderRadius: 8,
+    },
+    insightTitle: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: theme.colors.textPrimary,
+      marginBottom: 4,
+    },
+    insightSub: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+      lineHeight: 18,
+    },
+  }));
+
   return (
     <KeyboardAvoidingView
       style={styles.root}
@@ -101,7 +396,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
               }
             }}
             style={styles.backBtn}>
-            <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
+            <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
           </TouchableOpacity>
         )}
         
@@ -119,7 +414,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
         <View style={styles.headerActions}>
           {activeTab === 'chat' ? (
             <TouchableOpacity style={styles.historyBtn} onPress={() => { /* Chat history - future */ }}>
-              <History size={20} color={Colors.textSecondary} strokeWidth={1.5} />
+              <History size={20} color={theme.colors.textSecondary} strokeWidth={1.5} />
             </TouchableOpacity>
           ) : (
             <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
@@ -137,10 +432,10 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
             
             {/* Health Summary Card */}
-            <GlassCardView style={styles.summaryCard} accentColor={Colors.purple}>
+            <GlassCardView style={styles.summaryCard} accentColor={theme.colors.purple}>
                <View style={styles.summaryHeader}>
                  <Text style={styles.summaryTitle}>AI Health Summary</Text>
-                  <View style={styles.aiBadgeIcon}><Text style={{fontSize: Typography.sm, color: Colors.purple}}>✦</Text></View>
+                  <View style={styles.aiBadgeIcon}><Text style={{fontSize: Typography.sm, color: theme.colors.purple}}>✦</Text></View>
                </View>
                <Text style={styles.summaryText}>Your vitals are stable. Based on your activity patterns, prioritizing sleep tonight will optimize your recovery.</Text>
             </GlassCardView>
@@ -157,7 +452,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
             <SectionHeader title="Appointments" />
             <GlassCardView style={styles.cardItem}>
                <View style={styles.row}>
-                  <View style={[styles.iconWrap, { backgroundColor: Colors.purple + '20' }]}>
+                  <View style={[styles.iconWrap, { backgroundColor: theme.colors.purple + '20' }]}>
                      <Text style={{fontSize: Typography.xl}}>🩺</Text>
                   </View>
                   <View style={{flex: 1}}>
@@ -165,8 +460,8 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
                      <Text style={styles.itemSub}>Dr. Mehta · City Heart Clinic</Text>
                   </View>
                   <View style={{alignItems: 'flex-end'}}>
-                     <View style={[styles.badgeAI, { backgroundColor: Colors.purple + '20' }]}><Text style={[styles.badgeAIText, {color: Colors.purple}]}>AI synced</Text></View>
-                     <View style={[styles.badgeTime, { backgroundColor: Colors.amber + '20' }]}><Text style={[styles.badgeTimeText, {color: Colors.amber}]}>Tomorrow, 10:30 AM</Text></View>
+                     <View style={[styles.badgeAI, { backgroundColor: theme.colors.purple + '20' }]}><Text style={[styles.badgeAIText, {color: theme.colors.purple}]}>AI synced</Text></View>
+                     <View style={[styles.badgeTime, { backgroundColor: theme.colors.amber + '20' }]}><Text style={[styles.badgeTimeText, {color: theme.colors.amber}]}>Tomorrow, 10:30 AM</Text></View>
                      <Text style={styles.itemMeta}>Reminder set</Text>
                   </View>
                </View>
@@ -174,7 +469,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
             
             <GlassCardView style={styles.cardItem}>
                <View style={styles.row}>
-                  <View style={[styles.iconWrap, { backgroundColor: Colors.teal + '20' }]}>
+                  <View style={[styles.iconWrap, { backgroundColor: theme.colors.teal + '20' }]}>
                      <Text style={{fontSize: Typography.xl}}>🧪</Text>
                   </View>
                   <View style={{flex: 1}}>
@@ -182,7 +477,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
                      <Text style={styles.itemSub}>Lab Corp · Fasting required</Text>
                   </View>
                   <View style={{alignItems: 'flex-end'}}>
-                     <View style={[styles.badgeTime, { backgroundColor: Colors.teal + '20' }]}><Text style={[styles.badgeTimeText, {color: Colors.teal}]}>Jun 20, 8 AM</Text></View>
+                     <View style={[styles.badgeTime, { backgroundColor: theme.colors.teal + '20' }]}><Text style={[styles.badgeTimeText, {color: theme.colors.teal}]}>Jun 20, 8 AM</Text></View>
                      <Text style={styles.itemMeta}>Pre-prep checklist</Text>
                   </View>
                </View>
@@ -190,7 +485,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
 
             <GlassCardView style={styles.cardItem}>
                <View style={styles.row}>
-                  <View style={[styles.iconWrap, { backgroundColor: Colors.amber + '20' }]}>
+                  <View style={[styles.iconWrap, { backgroundColor: theme.colors.amber + '20' }]}>
                      <Text style={{fontSize: Typography.xl}}>🧠</Text>
                   </View>
                   <View style={{flex: 1}}>
@@ -198,7 +493,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
                      <Text style={styles.itemSub}>Dr. Kapoor · Telehealth</Text>
                   </View>
                   <View style={{alignItems: 'flex-end'}}>
-                     <View style={[styles.badgeTime, { backgroundColor: Colors.teal + '20' }]}><Text style={[styles.badgeTimeText, {color: Colors.teal}]}>Jun 28, 3 PM</Text></View>
+                     <View style={[styles.badgeTime, { backgroundColor: theme.colors.teal + '20' }]}><Text style={[styles.badgeTimeText, {color: theme.colors.teal}]}>Jun 28, 3 PM</Text></View>
                      <Text style={styles.itemMeta}>Video link ready</Text>
                   </View>
                </View>
@@ -212,8 +507,8 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
               <View style={styles.bookingExpanded}>
                 <Text style={styles.scheduleTitle}>Book Appointment</Text>
                 <Text style={styles.scheduleSub}>AI-matched to your cycle & health history</Text>
-                <GlassCardView style={styles.scheduleSuggestion} accentColor={Colors.purple}>
-                  <Text style={[styles.scheduleAILabel, { color: Colors.purple }]}>✦ AI RECOMMENDATION</Text>
+                <GlassCardView style={styles.scheduleSuggestion} accentColor={theme.colors.purple}>
+                  <Text style={[styles.scheduleAILabel, { color: theme.colors.purple }]}>✦ AI RECOMMENDATION</Text>
                   <Text style={styles.scheduleAIText}>
                     Based on your cycle (Day 14 · Ovulation), scheduling a gynecology check-up this week is optimal. Your last visit was 6 months ago.
                   </Text>
@@ -223,7 +518,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
                     key={i}
                     style={[
                       styles.slotCard,
-                      bookedSlot === `${slot.doctor}-${slot.time}` && { borderColor: Colors.teal + '80' },
+                      bookedSlot === `${slot.doctor}-${slot.time}` && { borderColor: theme.colors.teal + '80' },
                       !slot.available && { opacity: 0.5 },
                     ]}>
                     <View style={styles.slotRow}>
@@ -241,14 +536,14 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
                         style={[
                           styles.bookBtnInline,
                           bookedSlot === `${slot.doctor}-${slot.time}`
-                            ? { backgroundColor: Colors.teal + '30', borderColor: Colors.teal }
-                            : { backgroundColor: Colors.purple + '25', borderColor: Colors.purple + '60' },
-                          !slot.available && { backgroundColor: Colors.bgCardBorder, borderColor: Colors.bgCardBorder },
+                            ? { backgroundColor: theme.colors.teal + '30', borderColor: theme.colors.teal }
+                            : { backgroundColor: theme.colors.purple + '25', borderColor: theme.colors.purple + '60' },
+                          !slot.available && { backgroundColor: theme.colors.bgCardBorder, borderColor: theme.colors.bgCardBorder },
                         ]}>
                         <Text style={[
                           styles.bookBtnInlineText,
-                          bookedSlot === `${slot.doctor}-${slot.time}` && { color: Colors.teal },
-                          !slot.available && { color: Colors.textMuted },
+                          bookedSlot === `${slot.doctor}-${slot.time}` && { color: theme.colors.teal },
+                          !slot.available && { color: theme.colors.textMuted },
                         ]}>
                           {!slot.available ? 'Full' : bookedSlot === `${slot.doctor}-${slot.time}` ? '✓ Booked' : 'Book'}
                         </Text>
@@ -257,7 +552,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
                   </GlassCardView>
                 ))}
                 {bookedSlot && (
-                  <GlassCardView style={styles.confirmedCard} accentColor={Colors.teal}>
+                  <GlassCardView style={styles.confirmedCard} accentColor={theme.colors.teal}>
                     <Text style={{ fontSize: Typography.xl, textAlign: 'center' }}>✅</Text>
                     <Text style={styles.confirmedTitle}>Appointment Confirmed!</Text>
                     <Text style={styles.confirmedSub}>A reminder has been set 1 hour before. Your health records will be shared securely with the doctor.</Text>
@@ -270,7 +565,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
             <SectionHeader title="AI Tools" />
             <View style={styles.toolsGrid}>
               <GlassCardView style={styles.toolCard}>
-                <View style={[styles.toolIconWrap, { backgroundColor: Colors.purple + '15' }]} />
+                <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.purple + '15' }]} />
                 <Text style={styles.toolTitle}>OCR scanner</Text>
                 <Text style={styles.toolSub}>Scan prescriptions, reports & lab results instantly</Text>
                 <Text style={styles.toolActionText}>Tap to scan or upload</Text>
@@ -282,14 +577,14 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
               </GlassCardView>
 
               <GlassCardView style={styles.toolCard}>
-                <View style={[styles.toolIconWrap, { backgroundColor: Colors.pink + '15' }]} />
+                <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.pink + '15' }]} />
                 <Text style={styles.toolTitle}>Disease classifier</Text>
                 <Text style={styles.toolSub}>AI image analysis for skin, eye, and X-ray conditions</Text>
                 <View style={styles.toolFlexRow}>
                    <Text style={styles.toolMetaText}>Last scan: skin lesion</Text>
-                   <View style={[styles.badgeAI, { backgroundColor: Colors.teal + '20' }]}><Text style={[styles.badgeAIText, { color: Colors.teal }]}>98%</Text></View>
+                   <View style={[styles.badgeAI, { backgroundColor: theme.colors.teal + '20' }]}><Text style={[styles.badgeAIText, { color: theme.colors.teal }]}>98%</Text></View>
                 </View>
-                <View style={styles.progressBar}><View style={[styles.progressFill, { width: '98%', backgroundColor: Colors.teal }]} /></View>
+                <View style={styles.progressBar}><View style={[styles.progressFill, { width: '98%', backgroundColor: theme.colors.teal }]} /></View>
                 <View style={styles.toolTagsRow}>
                    <View style={styles.toolTag}><Text style={styles.toolTagText}>Dermatology</Text></View>
                    <View style={styles.toolTag}><Text style={styles.toolTagText}>X-ray</Text></View>
@@ -298,26 +593,26 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
               </GlassCardView>
 
               <GlassCardView style={styles.toolCard}>
-                <View style={[styles.toolIconWrap, { backgroundColor: Colors.teal + '15' }]} />
+                <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.teal + '15' }]} />
                 <Text style={styles.toolTitle}>Medication tracker</Text>
                 <Text style={styles.toolSub}>AI reminders, interaction checks & refill alerts</Text>
                 <View style={styles.medRow}>
                    <Text style={styles.medText}>Metformin 500mg</Text>
-                   <View style={[styles.badgeTime, { backgroundColor: Colors.amber + '20' }]}><Text style={[styles.badgeTimeText, {color: Colors.amber}]}>8 PM</Text></View>
+                   <View style={[styles.badgeTime, { backgroundColor: theme.colors.amber + '20' }]}><Text style={[styles.badgeTimeText, {color: theme.colors.amber}]}>8 PM</Text></View>
                 </View>
                 <View style={styles.medRow}>
                    <Text style={styles.medText}>Lisinopril 10mg</Text>
-                   <View style={[styles.badgeTime, { backgroundColor: Colors.teal + '20' }]}><Text style={[styles.badgeTimeText, {color: Colors.teal}]}>Taken</Text></View>
+                   <View style={[styles.badgeTime, { backgroundColor: theme.colors.teal + '20' }]}><Text style={[styles.badgeTimeText, {color: theme.colors.teal}]}>Taken</Text></View>
                 </View>
               </GlassCardView>
 
               <GlassCardView style={styles.toolCard}>
-                <View style={[styles.toolIconWrap, { backgroundColor: Colors.amber + '15' }]} />
+                <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.amber + '15' }]} />
                 <Text style={styles.toolTitle}>Health trends</Text>
                 <Text style={styles.toolSub}>AI pattern recognition across vitals & symptoms</Text>
                 <View style={styles.chartBars}>
                    {[24, 30, 20, 36, 40, 48, 56].map((h, i) => (
-                      <View key={i} style={[styles.chartBar, { height: h, backgroundColor: Colors.teal, opacity: 0.3 + (i * 0.1) }]} />
+                      <View key={i} style={[styles.chartBar, { height: h, backgroundColor: theme.colors.teal, opacity: 0.3 + (i * 0.1) }]} />
                    ))}
                 </View>
                 <View style={styles.toolTagsRow}>
@@ -332,21 +627,21 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
             <SectionHeader title="Recent AI Insights" />
             <GlassCardView style={styles.insightCard}>
                <View style={styles.insightRow}>
-                 <View style={[styles.insightIcon, { backgroundColor: Colors.purple + '15' }]} />
+                 <View style={[styles.insightIcon, { backgroundColor: theme.colors.purple + '15' }]} />
                  <View style={{flex: 1}}>
                    <Text style={styles.insightTitle}>Sleep pattern anomaly detected</Text>
                    <Text style={styles.insightSub}>Your average sleep has dropped 22% this week. AI recommends discussing this at your next cardiology visit.</Text>
-                   <View style={[styles.badgeAI, { alignSelf: 'flex-start', marginTop: 8, backgroundColor: Colors.purple + '20' }]}><Text style={[styles.badgeAIText, {color: Colors.purple}]}>AI recommendation</Text></View>
+                   <View style={[styles.badgeAI, { alignSelf: 'flex-start', marginTop: 8, backgroundColor: theme.colors.purple + '20' }]}><Text style={[styles.badgeAIText, {color: theme.colors.purple}]}>AI recommendation</Text></View>
                  </View>
                </View>
             </GlassCardView>
             <GlassCardView style={styles.insightCard}>
                <View style={styles.insightRow}>
-                 <View style={[styles.insightIcon, { backgroundColor: Colors.pink + '15' }]} />
+                 <View style={[styles.insightIcon, { backgroundColor: theme.colors.pink + '15' }]} />
                  <View style={{flex: 1}}>
                    <Text style={styles.insightTitle}>OCR scan complete — CBC report</Text>
                    <Text style={styles.insightSub}>Hemoglobin: 13.4 g/dL (slightly below range). AI flagged for Dr. Mehta review.</Text>
-                   <View style={[styles.badgeAI, { alignSelf: 'flex-start', marginTop: 8, backgroundColor: Colors.pink + '20' }]}><Text style={[styles.badgeAIText, { color: Colors.pink }]}>Needs attention</Text></View>
+                   <View style={[styles.badgeAI, { alignSelf: 'flex-start', marginTop: 8, backgroundColor: theme.colors.pink + '20' }]}><Text style={[styles.badgeAIText, { color: theme.colors.pink }]}>Needs attention</Text></View>
                  </View>
                </View>
             </GlassCardView>
@@ -370,297 +665,3 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.base,
-    paddingTop: Spacing.xl,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-  },
-  backBtn: {
-    padding: Spacing.sm,
-    marginRight: Spacing.xs,
-  },
-  backIcon: {
-    fontSize: Typography.xl,
-    color: Colors.textPrimary,
-  },
-  headerTextWrap: {
-    flex: 1,
-  },
-  greeting: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.textPrimary },
-  subGreeting: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2 },
-  onlineRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.success, marginRight: 5, shadowColor: Colors.success, shadowRadius: 4, shadowOpacity: 1 },
-  onlineText: { fontSize: Typography.xs, color: Colors.textSecondary },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  historyBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  
-  scroll: { padding: Spacing.base },
-  
-  summaryCard: {
-    padding: Spacing.base,
-    marginBottom: Spacing.md,
-  },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.sm,
-  },
-  summaryTitle: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  aiBadgeIcon: {
-    width: 24, height: 24, borderRadius: 12, backgroundColor: Colors.purple + '20',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  summaryText: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    lineHeight: 20,
-  },
-
-  chatBanner: {
-    padding: Spacing.base,
-    marginBottom: Spacing.md,
-    alignItems: 'center',
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.purple + '40',
-  },
-  chatBannerTitle: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
-  },
-  chatBannerBtn: {
-    backgroundColor: Colors.purple,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.xl,
-    borderRadius: Radius.full,
-    ...Shadows.teal,
-  },
-  chatBannerBtnText: {
-    color: Colors.bg,
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-  },
-
-  cardItem: {
-    padding: Spacing.base,
-    marginBottom: Spacing.sm,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.md,
-  },
-  iconWrap: {
-    width: 40, height: 40, borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  itemTitle: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-    marginBottom: 2,
-  },
-  itemSub: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-  },
-  itemMeta: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginTop: 4,
-  },
-  badgeAI: {
-    paddingHorizontal: 8, paddingVertical: 2,
-    borderRadius: Radius.full,
-  },
-  badgeAIText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-  },
-  badgeTime: {
-    paddingHorizontal: 8, paddingVertical: 2,
-    borderRadius: Radius.full,
-    marginTop: 4,
-  },
-  badgeTimeText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.semiBold,
-  },
-
-  bookBtnAction: {
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
-  bookBtnActionText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-    color: Colors.purple,
-  },
-
-  bookingExpanded: {
-    marginBottom: Spacing.lg,
-  },
-  scheduleTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
-  scheduleSub: { fontSize: Typography.sm, color: Colors.purple, marginTop: 4, marginBottom: Spacing.md },
-  scheduleSuggestion: { padding: Spacing.base, marginBottom: Spacing.md },
-  scheduleAILabel: { fontSize: 10, fontWeight: Typography.bold, letterSpacing: 1.5, marginBottom: Spacing.sm },
-  scheduleAIText: { fontSize: Typography.sm, color: Colors.textSecondary, lineHeight: 20 },
-  slotCard: { padding: Spacing.base, marginBottom: Spacing.sm },
-  slotRow: { flexDirection: 'row', alignItems: 'center' },
-  slotDoctor: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  slotSpec: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 },
-  slotMeta: { flexDirection: 'row', marginTop: Spacing.sm },
-  slotTime: { fontSize: Typography.xs, color: Colors.textSecondary },
-  slotDate: { fontSize: Typography.xs, color: Colors.textSecondary },
-  bookBtnInline: {
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
-    borderRadius: Radius.md, borderWidth: 1,
-  },
-  bookBtnInlineText: { fontSize: Typography.sm, color: Colors.purple, fontWeight: Typography.bold },
-  confirmedCard: { padding: Spacing.xl, marginTop: Spacing.base, alignItems: 'center' },
-  confirmedTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.teal, marginTop: Spacing.md, textAlign: 'center' },
-  confirmedSub: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: Spacing.sm, textAlign: 'center', lineHeight: 20 },
-
-  toolsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
-  toolCard: {
-    width: '47%',
-    padding: Spacing.base,
-    marginBottom: Spacing.sm,
-  },
-  toolIconWrap: {
-    width: 32, height: 32, borderRadius: 8,
-    marginBottom: Spacing.sm,
-  },
-  toolTitle: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-    marginBottom: 4,
-  },
-  toolSub: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.sm,
-    height: 45,
-  },
-  toolActionText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.medium,
-    color: Colors.textPrimary,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  toolTagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginTop: 'auto',
-  },
-  toolTag: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.bgCardBorder,
-  },
-  toolTagText: {
-    fontSize: Typography.micro,
-    color: Colors.textSecondary,
-  },
-  toolFlexRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  toolMetaText: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: Colors.bgCardBorder,
-    borderRadius: 2,
-    marginBottom: Spacing.sm,
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  medRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  medText: {
-    fontSize: Typography.xs,
-    color: Colors.textPrimary,
-  },
-  chartBars: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    height: 60,
-    marginBottom: Spacing.sm,
-  },
-  chartBar: {
-    width: 14,
-    borderRadius: 2,
-  },
-
-  insightCard: {
-    padding: Spacing.base,
-    marginBottom: Spacing.sm,
-  },
-  insightRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.md,
-  },
-  insightIcon: {
-    width: 32, height: 32, borderRadius: 8,
-  },
-  insightTitle: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-    marginBottom: 4,
-  },
-  insightSub: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-  },
-});
