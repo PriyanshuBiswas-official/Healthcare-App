@@ -45,7 +45,7 @@ export async function sendAIChatMessage(
 
 export type AISummaryTag = {
   label: string;
-  color: 'success' | 'purple' | 'amber' | 'pink';
+  color: 'success' | 'accentBlue' | 'amber' | 'pink';
 };
 
 export type AIHealthSummaryResponse = {

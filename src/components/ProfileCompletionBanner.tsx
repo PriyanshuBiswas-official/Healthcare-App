@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, Animated } from 'react-native';
-import { Typography, Spacing, Radius, GlassCard, Shadows } from '../theme/theme';
+import { Typography, Spacing, Radius, Shadows } from '../theme/theme';
 import { useTheme, useStyles } from '../providers/ThemeProvider';
 import { ProgressBar } from './SharedComponents';
 
@@ -42,9 +42,11 @@ export default function ProfileCompletionBanner({
       marginBottom: Spacing.base,
     },
     card: {
-      ...GlassCard,
-      padding: Spacing.lg,
+      backgroundColor: theme.colors.bgCard,
+      borderWidth: 1,
       borderColor: theme.colors.teal + '40',
+      borderRadius: Radius.lg,
+      padding: Spacing.lg,
     },
     header: {
       flexDirection: 'row',

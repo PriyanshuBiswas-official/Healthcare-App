@@ -17,6 +17,7 @@ import {
 import Svg, { Circle } from 'react-native-svg';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { Camera } from 'lucide-react-native';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
@@ -67,10 +68,10 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
 
   const AI_SUGGESTIONS = useMemo(() => [
     { title: 'Baked salmon & broccoli', tags: ['High protein', 'omega-3', 'low carb'], calories: 490, highlight: '38g protein', icon: '🐟', type: 'AI pick', color: colors.teal },
-    { title: 'Lentil soup & roti', tags: ['Low GI', 'high fibre', 'gut friendly'], calories: 420, highlight: '24g fibre', icon: '🍲', type: 'Diabetic', color: colors.purple },
+    { title: 'Lentil soup & roti', tags: ['Low GI', 'high fibre', 'gut friendly'], calories: 420, highlight: '24g fibre', icon: '🍲', type: 'Diabetic', color: colors.accentBlue },
     { title: 'Egg fried brown rice', tags: ['Balanced macros', '15 min prep'], calories: 510, highlight: '28g protein', icon: '🥚', type: 'Quick', color: colors.amber },
     { title: 'Tofu stir fry & noodles', tags: ['Plant-based', 'iron rich', 'anti-inflammatory'], calories: 460, highlight: '22g protein', icon: '🍃', type: 'Vegan', color: colors.pink },
-  ], [colors.teal, colors.purple, colors.amber, colors.pink]);
+  ], [colors.teal, colors.accentBlue, colors.amber, colors.pink]);
 
   const [meals, setMeals] = useState<NutritionLog[]>([]);
   const [waterLogs, setWaterLogs] = useState<any[]>([]);
@@ -406,7 +407,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     { label: 'Protein', val: totalMacros.protein, target: goal?.protein_goal ?? 120, unit: 'g', color: colors.teal },
     { label: 'Carbs', val: totalMacros.carbs, target: goal?.carbs_goal ?? 280, unit: 'g', color: colors.amber },
     { label: 'Fats', val: totalMacros.fat, target: goal?.fat_goal ?? 70, unit: 'g', color: colors.pink },
-    { label: 'Fiber', val: totalMacros.fiber, target: goal?.fiber_goal ?? 25, unit: 'g', color: colors.purple },
+    { label: 'Fiber', val: totalMacros.fiber, target: goal?.fiber_goal ?? 25, unit: 'g', color: colors.accentBlue },
   ];
 
   const waterLiters = (waterTotalMl / 1000).toFixed(1);
@@ -533,7 +534,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
             <GlassCardView style={styles.photoUploadCard}>
               <TouchableOpacity style={styles.photoUploadArea}>
                 <View style={styles.cameraIconWrap}>
-                  <Text style={{ fontSize: Typography.xxl }}>📷</Text>
+                  <Camera size={28} color={colors.teal} strokeWidth={2} />
                 </View>
                 <Text style={styles.photoUploadTitle}>Scan meal with AI</Text>
                 <Text style={styles.photoUploadSub}>Upload or take a photo to automatically log calories and macros.</Text>
@@ -675,17 +676,17 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
             <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl }}>
                 <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary }}>Calorie intake <Text style={{ color: colors.textSecondary, fontWeight: Typography.regular }}>— past 7 days</Text></Text>
-                <View style={{ backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.purple, paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.accentBlue, paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={{ fontSize: Typography.xs, marginRight: 4 }}>✦</Text>
-                  <Text style={{ fontSize: Typography.xs, color: colors.purple, fontWeight: Typography.bold }}>AI analyzed Today</Text>
+                  <Text style={{ fontSize: Typography.xs, color: colors.accentBlue, fontWeight: Typography.bold }}>AI analyzed Today</Text>
                 </View>
               </View>
 
               <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 120, marginBottom: Spacing.sm, paddingHorizontal: Spacing.xs }}>
                 {weeklyTrend.map((day, idx) => (
                   <View key={idx} style={{ alignItems: 'center', width: '12%', height: '100%', justifyContent: 'flex-end' }}>
-                    <View style={{ width: '100%', height: `${(day.val / 3000) * 100}%`, backgroundColor: day.today ? colors.purple : day.val > 2000 ? colors.amber : colors.teal + '80', borderRadius: Radius.sm, minHeight: 20 }} />
-                    <Text style={{ fontSize: Typography.sm, color: day.today ? colors.purple : colors.textSecondary, marginTop: Spacing.sm, fontWeight: day.today ? Typography.bold : Typography.regular }}>{day.day}</Text>
+                    <View style={{ width: '100%', height: `${(day.val / 3000) * 100}%`, backgroundColor: day.today ? colors.accentBlue : day.val > 2000 ? colors.amber : colors.teal + '80', borderRadius: Radius.sm, minHeight: 20 }} />
+                    <Text style={{ fontSize: Typography.sm, color: day.today ? colors.accentBlue : colors.textSecondary, marginTop: Spacing.sm, fontWeight: day.today ? Typography.bold : Typography.regular }}>{day.day}</Text>
                   </View>
                 ))}
               </View>

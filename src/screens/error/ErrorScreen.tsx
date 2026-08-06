@@ -31,7 +31,7 @@ const ILLUSTRATIONS: Record<ErrorType, React.FC<{ size?: number }>> = {
   'no-internet': NoInternetIllustration,
 };
 
-const DEFAULTS: Record<ErrorType, { title: string; message: string; badge: string; badgeStyle: 'default' | 'danger' | 'warning' | 'purple' }> = {
+const DEFAULTS: Record<ErrorType, { title: string; message: string; badge: string; badgeStyle: 'default' | 'danger' | 'warning' | 'accentBlue' }> = {
   '404': {
     title: 'Not Found',
     message: "Whoops! The page you're looking for doesn't exist.",
@@ -54,7 +54,7 @@ const DEFAULTS: Record<ErrorType, { title: string; message: string; badge: strin
     title: 'Access Denied',
     message: "You don't have permission to view this content.",
     badge: 'Contact Support',
-    badgeStyle: 'purple',
+    badgeStyle: 'accentBlue',
   },
   'no-internet': {
     title: 'No Internet',
@@ -89,8 +89,8 @@ const ErrorScreen: React.FC<ErrorScreenProps> = ({
         return { bg: c.danger + '1A', text: c.danger };
       case 'warning':
         return { bg: c.amber + '1A', text: c.amber };
-      case 'purple':
-        return { bg: c.purple + '1A', text: c.purple };
+      case 'accentBlue':
+        return { bg: c.accentBlue + '1A', text: c.accentBlue };
       default:
         return { bg: c.teal + '1A', text: c.teal };
     }

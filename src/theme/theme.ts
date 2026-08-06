@@ -82,13 +82,6 @@ export const Shadows = {
     shadowRadius: 12,
     elevation: 8,
   },
-  card: {
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 12,
-  },
 };
 
 export const GlassCard = {
@@ -96,5 +89,4 @@ export const GlassCard = {
   borderWidth: 1,
   borderColor: Colors.bgCardBorder,
   borderRadius: Radius.lg,
-  ...Shadows.card,
 };

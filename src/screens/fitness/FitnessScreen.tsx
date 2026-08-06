@@ -13,7 +13,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { Colors, Typography, Spacing, Radius, Shadows } from '../../theme/theme';
+import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import { useStyles } from '../../providers/ThemeProvider';
 import { ChevronRight } from 'lucide-react-native';
 import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton, ActivityProgressCard } from '../../components/SharedComponents';
@@ -422,7 +422,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     },
     segmentBtnActive: {
       backgroundColor: theme.colors.bgCardBorder,
-      ...Shadows.card,
     },
     segmentText: {
       fontSize: Typography.xs,
@@ -435,9 +434,9 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     section: { marginBottom: Spacing.lg },
     card: { padding: Spacing.base, marginBottom: Spacing.base },
     setupBanner: {
-      backgroundColor: theme.colors.purple + '15',
+      backgroundColor: theme.colors.accentBlue + '15',
       borderWidth: 1,
-      borderColor: theme.colors.purple + '40',
+      borderColor: theme.colors.accentBlue + '40',
       borderRadius: Radius.md,
       padding: Spacing.base,
       marginBottom: Spacing.lg,
@@ -464,7 +463,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     sectionAction: {
       fontSize: Typography.xs,
       fontWeight: Typography.bold,
-      color: theme.colors.purple,
+      color: theme.colors.accentBlue,
       letterSpacing: Typography.lsWide,
     },
     ringsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.base },
@@ -516,7 +515,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       width: 40,
       height: 40,
       borderRadius: Radius.sm,
-      backgroundColor: theme.colors.purple + '20',
+      backgroundColor: theme.colors.accentBlue + '20',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -571,9 +570,9 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       width: 44,
       height: 44,
       borderRadius: 22,
-      backgroundColor: theme.colors.purple + '25',
+      backgroundColor: theme.colors.accentBlue + '25',
       borderWidth: 2,
-      borderColor: theme.colors.purple,
+      borderColor: theme.colors.accentBlue,
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: Spacing.md,
@@ -637,7 +636,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       width: 36,
       height: 36,
       borderRadius: 18,
-      backgroundColor: theme.colors.purple,
+      backgroundColor: theme.colors.accentBlue,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -849,7 +848,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
 
     const rings = [
       { label: 'Burn', current: summary?.calories_burned ?? 0, target: burnTarget, unit: 'kcal', color: Colors.pink, progress: burnProgress },
-      { label: 'Exercise', current: summary?.exercise_minutes ?? 0, target: exerciseTarget, unit: 'min', color: Colors.purple, progress: exerciseProgress },
+      { label: 'Exercise', current: summary?.exercise_minutes ?? 0, target: exerciseTarget, unit: 'min', color: Colors.accentBlue, progress: exerciseProgress },
       { label: 'Steps', current: summary?.steps ?? 0, target: stepsTarget, unit: 'steps', color: Colors.teal, progress: stepsProgress },
     ];
 
@@ -920,7 +919,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
               {!planName && (
                 <TouchableOpacity
                   onPress={onSetupPlan}
-                  style={{ marginTop: Spacing.md, backgroundColor: Colors.purple, paddingVertical: Spacing.sm + 2, paddingHorizontal: Spacing.xl, borderRadius: Radius.md }}
+                  style={{ marginTop: Spacing.md, backgroundColor: Colors.accentBlue, paddingVertical: Spacing.sm + 2, paddingHorizontal: Spacing.xl, borderRadius: Radius.md }}
                   activeOpacity={0.8}>
                   <Text style={{ color: Colors.bg, fontWeight: Typography.bold, fontSize: Typography.sm }}>Set Up Workout Plan</Text>
                 </TouchableOpacity>
@@ -941,7 +940,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         <SectionLabel title="TODAY'S WORKOUT" action={dayName?.toUpperCase() || ''} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
           {MUSCLE_FILTERS.map(g => (
-            <Chip key={g} label={g} selected={activeFilter === g} color={Colors.purple} onPress={() => setActiveFilter(g)} />
+            <Chip key={g} label={g} selected={activeFilter === g} color={Colors.accentBlue} onPress={() => setActiveFilter(g)} />
           ))}
         </ScrollView>
         {displayExercises.map((ex) => {
@@ -967,8 +966,8 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                         <Text style={[styles.tagText, { color: Colors.teal, fontWeight: Typography.bold }]}>Completed</Text>
                       </View>
                     ) : hasLogged ? (
-                      <View style={[styles.tag, { backgroundColor: Colors.purple + '20', borderColor: Colors.purple + '50' }]}>
-                        <Text style={[styles.tagText, { color: Colors.purple }]}>Logged</Text>
+                      <View style={[styles.tag, { backgroundColor: Colors.accentBlue + '20', borderColor: Colors.accentBlue + '50' }]}>
+                        <Text style={[styles.tagText, { color: Colors.accentBlue }]}>Logged</Text>
                       </View>
                     ) : null}
                   </View>
@@ -1000,8 +999,8 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                 </View>
               )}
               {!hasLogged && ex.last_performance && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: Spacing.sm, backgroundColor: Colors.purple + '10', borderRadius: Radius.sm, paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs }}>
-                  <Text style={{ fontSize: Typography.xs, color: Colors.purple, fontWeight: Typography.semiBold, marginRight: Spacing.xs }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: Spacing.sm, backgroundColor: Colors.accentBlue + '10', borderRadius: Radius.sm, paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs }}>
+                  <Text style={{ fontSize: Typography.xs, color: Colors.accentBlue, fontWeight: Typography.semiBold, marginRight: Spacing.xs }}>
                     Last:
                   </Text>
                   <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary }}>
@@ -1041,10 +1040,10 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         {planDayId && (
           <TouchableOpacity
             onPress={onAddExercise}
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.md, marginTop: Spacing.xs, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.purple + '50', borderStyle: 'dashed', backgroundColor: Colors.purple + '08' }}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.md, marginTop: Spacing.xs, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.accentBlue + '50', borderStyle: 'dashed', backgroundColor: Colors.accentBlue + '08' }}
             activeOpacity={0.7}>
-            <Text style={{ fontSize: Typography.md, marginRight: Spacing.xs, color: Colors.purple }}>+</Text>
-            <Text style={{ fontSize: Typography.sm, color: Colors.purple, fontWeight: Typography.semiBold }}>Add Exercise</Text>
+            <Text style={{ fontSize: Typography.md, marginRight: Spacing.xs, color: Colors.accentBlue }}>+</Text>
+            <Text style={{ fontSize: Typography.sm, color: Colors.accentBlue, fontWeight: Typography.semiBold }}>Add Exercise</Text>
           </TouchableOpacity>
         )}
       </>
@@ -1053,14 +1052,14 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
 
   function AITrainerCard({ onOpenAI }: { onOpenAI?: (from?: string) => void }) {
     return (
-      <GlassCardView style={styles.card} accentColor={Colors.purple}>
+      <GlassCardView style={styles.card} accentColor={Colors.accentBlue}>
         <SectionLabel title="Ask AI about your workout" />
         <View style={{ paddingVertical: Spacing.sm }}>
           <Text style={{ color: Colors.textSecondary, marginBottom: Spacing.sm }}>
             Get quick tips, workout swaps, or recovery advice from AI.
           </Text>
           <TouchableOpacity
-            style={{ backgroundColor: Colors.purple, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, borderRadius: Radius.md, alignSelf: 'stretch', width: '100%', alignItems: 'center', justifyContent: 'center' }}
+            style={{ backgroundColor: Colors.accentBlue, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, borderRadius: Radius.md, alignSelf: 'stretch', width: '100%', alignItems: 'center', justifyContent: 'center' }}
             onPress={() => onOpenAI && onOpenAI('Activity')}
             activeOpacity={0.9}>
             <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Ask AI</Text>
@@ -1093,11 +1092,11 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         <View style={styles.barChart}>
           {days.map((bar, i) => {
             const barVal = maxVal > 0 ? bar.calories / maxVal : 0;
-            const barColor = bar.is_today ? Colors.purple : bar.calories > 0 ? Colors.teal + '90' : Colors.bgCardBorder;
+            const barColor = bar.is_today ? Colors.accentBlue : bar.calories > 0 ? Colors.teal + '90' : Colors.bgCardBorder;
             return (
               <View key={i} style={styles.barCol}>
                 <View style={[styles.bar, { height: Math.max(maxBarH * barVal, 8), backgroundColor: barColor }]} />
-                <Text style={[styles.barLabel, bar.is_today && { color: Colors.purple, fontWeight: Typography.bold }]}>{bar.day}</Text>
+                <Text style={[styles.barLabel, bar.is_today && { color: Colors.accentBlue, fontWeight: Typography.bold }]}>{bar.day}</Text>
               </View>
             );
           })}
@@ -1178,8 +1177,8 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
             <Text style={[styles.recoveryMiniVal, { color: Colors.pink }]}>Chest / Delts</Text>
           </View>
         </View>
-        <View style={[styles.insightBox, { backgroundColor: Colors.purple + '15', borderColor: Colors.purple + '40' }]}>
-          <Text style={[styles.insightLabel, { color: Colors.purple }]}>AI recovery tips</Text>
+        <View style={[styles.insightBox, { backgroundColor: Colors.accentBlue + '15', borderColor: Colors.accentBlue + '40' }]}>
+          <Text style={[styles.insightLabel, { color: Colors.accentBlue }]}>AI recovery tips</Text>
           <Text style={styles.insightText}>
             Prioritize 7.5+ hours sleep tonight. Reduce intensity on shoulders if soreness persists.
           </Text>
@@ -1216,7 +1215,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         {showSetupBanner && (
           <TouchableOpacity style={styles.setupBanner} activeOpacity={0.8} onPress={openPlanModal}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={[styles.setupBannerIcon, { backgroundColor: Colors.purple + '20' }]}>
+              <View style={[styles.setupBannerIcon, { backgroundColor: Colors.accentBlue + '20' }]}>
                 <Text style={{ fontSize: Typography.md }}>💪</Text>
               </View>
               <View style={{ flex: 1, marginLeft: Spacing.md }}>
@@ -1307,7 +1306,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         {/* Step indicator */}
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: Spacing.base }}>
           {[1, 2, 3].map(s => (
-            <View key={s} style={{ width: planStep === s ? 24 : 8, height: 8, borderRadius: 4, backgroundColor: planStep === s ? Colors.purple : Colors.bgCardBorder }} />
+            <View key={s} style={{ width: planStep === s ? 24 : 8, height: 8, borderRadius: 4, backgroundColor: planStep === s ? Colors.accentBlue : Colors.bgCardBorder }} />
           ))}
         </View>
 
@@ -1343,10 +1342,10 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                   onPress={() => setPlanDaysPerWeek(d)}
                   style={{
                     flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.md, alignItems: 'center',
-                    backgroundColor: planDaysPerWeek === d ? Colors.purple + '20' : Colors.bgCardBorder,
-                    borderWidth: planDaysPerWeek === d ? 1 : 0, borderColor: Colors.purple,
+                    backgroundColor: planDaysPerWeek === d ? Colors.accentBlue + '20' : Colors.bgCardBorder,
+                    borderWidth: planDaysPerWeek === d ? 1 : 0, borderColor: Colors.accentBlue,
                   }}>
-                  <Text style={{ fontSize: Typography.sm, color: planDaysPerWeek === d ? Colors.purple : Colors.textSecondary, fontWeight: Typography.bold }}>{d}</Text>
+                  <Text style={{ fontSize: Typography.sm, color: planDaysPerWeek === d ? Colors.accentBlue : Colors.textSecondary, fontWeight: Typography.bold }}>{d}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -1354,7 +1353,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
               <TouchableOpacity onPress={() => setPlanModalVisible(false)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
                 <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setPlanStep(2)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.purple }}>
+              <TouchableOpacity onPress={() => setPlanStep(2)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue }}>
                 <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Next</Text>
               </TouchableOpacity>
             </View>
@@ -1378,8 +1377,8 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                 }}>
                 <View style={{
                   width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center',
-                  borderColor: selectedDays.includes(i) ? Colors.purple : Colors.textMuted,
-                  backgroundColor: selectedDays.includes(i) ? Colors.purple : 'transparent',
+                  borderColor: selectedDays.includes(i) ? Colors.accentBlue : Colors.textMuted,
+                  backgroundColor: selectedDays.includes(i) ? Colors.accentBlue : 'transparent',
                 }}>
                   {selectedDays.includes(i) && <Text style={{ fontSize: Typography.xs, color: Colors.bg, fontWeight: Typography.bold }}>✓</Text>}
                 </View>
@@ -1390,7 +1389,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
               <TouchableOpacity onPress={() => setPlanStep(1)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
                 <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Back</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setPlanStep(3)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.purple }}>
+              <TouchableOpacity onPress={() => setPlanStep(3)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue }}>
                 <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Next</Text>
               </TouchableOpacity>
             </View>
@@ -1407,7 +1406,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
             <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
               {selectedDays.map(dayIndex => (
                 <View key={dayIndex} style={{ marginBottom: Spacing.base }}>
-                  <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.purple, marginBottom: Spacing.sm }}>{DAY_NAMES[dayIndex]}</Text>
+                  <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.accentBlue, marginBottom: Spacing.sm }}>{DAY_NAMES[dayIndex]}</Text>
                   {(dayExercises[dayIndex] || []).map((ex, exIndex) => (
                     <View key={exIndex} style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.sm, alignItems: 'center' }}>
                       <TextInput
@@ -1438,8 +1437,8 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                       </TouchableOpacity>
                     </View>
                   ))}
-                  <TouchableOpacity onPress={() => addExerciseToDay(dayIndex)} style={{ paddingVertical: Spacing.sm, alignItems: 'center', borderWidth: 1, borderColor: Colors.purple + '40', borderRadius: Radius.sm, backgroundColor: Colors.purple + '08' }}>
-                    <Text style={{ fontSize: Typography.xs, color: Colors.purple, fontWeight: Typography.bold }}>+ Add exercise</Text>
+                  <TouchableOpacity onPress={() => addExerciseToDay(dayIndex)} style={{ paddingVertical: Spacing.sm, alignItems: 'center', borderWidth: 1, borderColor: Colors.accentBlue + '40', borderRadius: Radius.sm, backgroundColor: Colors.accentBlue + '08' }}>
+                    <Text style={{ fontSize: Typography.xs, color: Colors.accentBlue, fontWeight: Typography.bold }}>+ Add exercise</Text>
                   </TouchableOpacity>
                 </View>
               ))}
@@ -1451,7 +1450,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
               <TouchableOpacity
                 onPress={handleSavePlan}
                 disabled={planSaving}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.purple, opacity: planSaving ? 0.6 : 1 }}>
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue, opacity: planSaving ? 0.6 : 1 }}>
                 {planSaving ? (
                   <ActivityIndicator size="small" color={Colors.bg} />
                 ) : (
@@ -1516,7 +1515,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
               <TouchableOpacity
                 onPress={handleAddExercise}
                 disabled={addExSaving}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.purple, opacity: addExSaving ? 0.6 : 1 }}>
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue, opacity: addExSaving ? 0.6 : 1 }}>
                 {addExSaving ? (
                   <ActivityIndicator size="small" color={Colors.bg} />
                 ) : (
@@ -1578,7 +1577,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
               <TouchableOpacity
                 onPress={handleUpdateExercise}
                 disabled={editExSaving}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.purple, opacity: editExSaving ? 0.6 : 1 }}>
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue, opacity: editExSaving ? 0.6 : 1 }}>
                 {editExSaving ? (
                   <ActivityIndicator size="small" color={Colors.bg} />
                 ) : (

@@ -264,7 +264,7 @@ function SleepCycleCorrelationChart({ sleepLogs, cycleData }: { sleepLogs: Sleep
       { phase: 'Menstrual', hours: phaseSums.Menstrual.count > 0 ? +(phaseSums.Menstrual.total / phaseSums.Menstrual.count).toFixed(1) : 0, color: theme.colors.pink, count: phaseSums.Menstrual.count },
       { phase: 'Follicular', hours: phaseSums.Follicular.count > 0 ? +(phaseSums.Follicular.total / phaseSums.Follicular.count).toFixed(1) : 0, color: theme.colors.follicular, count: phaseSums.Follicular.count },
       { phase: 'Ovulation', hours: phaseSums.Ovulation.count > 0 ? +(phaseSums.Ovulation.total / phaseSums.Ovulation.count).toFixed(1) : 0, color: theme.colors.amber, count: phaseSums.Ovulation.count },
-      { phase: 'Luteal', hours: phaseSums.Luteal.count > 0 ? +(phaseSums.Luteal.total / phaseSums.Luteal.count).toFixed(1) : 0, color: theme.colors.purple, count: phaseSums.Luteal.count },
+      { phase: 'Luteal', hours: phaseSums.Luteal.count > 0 ? +(phaseSums.Luteal.total / phaseSums.Luteal.count).toFixed(1) : 0, color: theme.colors.accentBlue, count: phaseSums.Luteal.count },
     ];
   }, [sleepLogs, cycleData, theme]);
 
@@ -395,7 +395,7 @@ function WeightFluctuationChart({
         { start: 0, end: periodEnd, color: theme.colors.pink },
         { start: periodEnd, end: ovStart, color: theme.colors.follicular },
         { start: ovStart, end: ovEnd, color: theme.colors.amber },
-        { start: ovEnd, end: cycleLen, color: theme.colors.purple },
+        { start: ovEnd, end: cycleLen, color: theme.colors.accentBlue },
       ];
       for (const phase of phases) {
         const pStart = cycleDay + phase.start * dayMs;
@@ -600,8 +600,8 @@ export default function HealthScreenFemale({
     flowTrack: { width: 26, height: 64, borderRadius: Radius.sm, backgroundColor: t.colors.bgCardBorder, justifyContent: 'flex-end', overflow: 'hidden' },
     flowTrendFill: { width: '100%', backgroundColor: t.colors.pink },
     signalRow: { flexDirection: 'row', alignItems: 'center' },
-    signalIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: t.colors.purple + '20' },
-    signalIconText: { color: t.colors.purple, fontSize: Typography.lg },
+    signalIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: t.colors.accentBlue + '20' },
+    signalIconText: { color: t.colors.accentBlue, fontSize: Typography.lg },
     signalCopy: { flex: 1, marginLeft: Spacing.md },
     signalTitle: { fontSize: Typography.base, color: t.colors.textPrimary, fontWeight: Typography.bold },
     signalText: { fontSize: Typography.xs, color: t.colors.textSecondary, lineHeight: 18, marginTop: 3 },
@@ -898,7 +898,7 @@ export default function HealthScreenFemale({
     ];
     return [
       { label: 'Estrogen', value: h.estrogen.value, status: h.estrogen.status, statusColor: theme.colors.pink, currentPct: h.estrogen.pct },
-      { label: 'Progesterone', value: h.progesterone.value, status: h.progesterone.status, statusColor: theme.colors.purple, currentPct: h.progesterone.pct },
+      { label: 'Progesterone', value: h.progesterone.value, status: h.progesterone.status, statusColor: theme.colors.accentBlue, currentPct: h.progesterone.pct },
       { label: 'LH Surge', value: h.lh_surge.value, status: h.lh_surge.status, statusColor: theme.colors.amber, currentPct: h.lh_surge.pct },
       { label: 'Cortisol', value: h.cortisol.value, status: h.cortisol.status, statusColor: theme.colors.success, currentPct: h.cortisol.pct },
       { label: 'FSH', value: h.fsh.value, status: h.fsh.status, statusColor: theme.colors.pink, currentPct: h.fsh.pct },
@@ -1047,7 +1047,7 @@ export default function HealthScreenFemale({
                 <View style={s.phaseGap} />
                 <QuickActionButton icon="✨" label="Ovulation" color={theme.colors.amber} active={selectedPhase === 'Ovulation'} onPress={() => setSelectedPhase('Ovulation')} />
                 <View style={s.phaseGap} />
-                <QuickActionButton icon="🌙" label="Luteal" color={theme.colors.purple} active={selectedPhase === 'Luteal'} onPress={() => setSelectedPhase('Luteal')} />
+                <QuickActionButton icon="🌙" label="Luteal" color={theme.colors.accentBlue} active={selectedPhase === 'Luteal'} onPress={() => setSelectedPhase('Luteal')} />
               </View>
             </GlassCardView>
 
@@ -1158,8 +1158,8 @@ export default function HealthScreenFemale({
                   <Text style={s.fertTitle}>{fertilityData?.isOvulationPassed ? 'Ovulation passed' : 'Fertile window approaching'}</Text>
                   <Text style={s.fertSub}>{fertilityData ? `Next fertile window: ${fertilityData.fertileStart} - ${fertilityData.fertileEnd}` : 'Log your cycle to see predictions'}</Text>
                 </View>
-                <View style={[s.fertBadge, { backgroundColor: theme.colors.purple + '20', borderColor: theme.colors.purple + '55' }]}>
-                  <Text style={[s.fertBadgeText, { color: theme.colors.purple }]}>% AI predicted</Text>
+                <View style={[s.fertBadge, { backgroundColor: theme.colors.accentBlue + '20', borderColor: theme.colors.accentBlue + '55' }]}>
+                  <Text style={[s.fertBadgeText, { color: theme.colors.accentBlue }]}>% AI predicted</Text>
                 </View>
               </View>
               {fertilityData ? (
@@ -1174,9 +1174,9 @@ export default function HealthScreenFemale({
                     <Text style={[s.fertBoxVal, { color: theme.colors.amber }]}>{fertilityData.fertileStart}-{fertilityData.fertileEnd}</Text>
                     <Text style={s.fertBoxSub}>5-day window</Text>
                   </View>
-                  <View style={[s.fertBox, { backgroundColor: theme.colors.purple + '15', borderColor: theme.colors.purple + '30' }]}>
-                    <Text style={[s.fertBoxTitle, { color: theme.colors.purple }]}>Pregnancy chance</Text>
-                    <Text style={[s.fertBoxVal, { color: theme.colors.purple }]}>{fertilityData.pregnancyChance}</Text>
+                  <View style={[s.fertBox, { backgroundColor: theme.colors.accentBlue + '15', borderColor: theme.colors.accentBlue + '30' }]}>
+                    <Text style={[s.fertBoxTitle, { color: theme.colors.accentBlue }]}>Pregnancy chance</Text>
+                    <Text style={[s.fertBoxVal, { color: theme.colors.accentBlue }]}>{fertilityData.pregnancyChance}</Text>
                     <Text style={s.fertBoxSub}>{fertilityData.isOvulationPassed ? 'Post ovulation' : 'Pre ovulation'}</Text>
                   </View>
                 </View>
@@ -1199,8 +1199,8 @@ export default function HealthScreenFemale({
             <GlassCardView style={s.card}>
               <View style={s.fertHeader}>
                 <Text style={s.promptText}>Cycle phase hormones</Text>
-                <View style={[s.fertBadge, { backgroundColor: theme.colors.purple + '20', borderColor: theme.colors.purple + '55' }]}>
-                  <Text style={[s.fertBadgeText, { color: theme.colors.purple }]}>% AI Modeled</Text>
+                <View style={[s.fertBadge, { backgroundColor: theme.colors.accentBlue + '20', borderColor: theme.colors.accentBlue + '55' }]}>
+                  <Text style={[s.fertBadgeText, { color: theme.colors.accentBlue }]}>% AI Modeled</Text>
                 </View>
               </View>
               {hormoneBars.map(h => (

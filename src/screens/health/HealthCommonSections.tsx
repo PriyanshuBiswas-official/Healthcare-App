@@ -284,14 +284,14 @@ const SleepLogModal: React.FC<{ visible: boolean; onClose: () => void; onSave?: 
           <View style={modalS.chipsRow}>
             {[1, 2, 3, 4].map(q => (
               <TouchableOpacity key={q} onPress={() => setQuality(q)}
-                style={[modalS.chip, quality === q && { backgroundColor: theme.colors.purple + '30', borderColor: theme.colors.purple }]}>
-                <Text style={[modalS.chipText, quality === q && { color: theme.colors.purple }]}>{QUALITY_LABELS[q]}</Text>
+                style={[modalS.chip, quality === q && { backgroundColor: theme.colors.accentBlue + '30', borderColor: theme.colors.accentBlue }]}>
+                <Text style={[modalS.chipText, quality === q && { color: theme.colors.accentBlue }]}>{QUALITY_LABELS[q]}</Text>
               </TouchableOpacity>
             ))}
           </View>
           <View style={modalS.actions}>
             <TouchableOpacity style={modalS.cancelBtn} onPress={onClose}><Text style={modalS.cancelText}>Cancel</Text></TouchableOpacity>
-            <TouchableOpacity style={[modalS.saveBtn, { backgroundColor: theme.colors.purple }]} onPress={() => { onSave?.({ sleep_hr: parseFloat(hours) || 7, sleep_quality: quality }); onClose(); }}><Text style={modalS.saveText}>Save</Text></TouchableOpacity>
+            <TouchableOpacity style={[modalS.saveBtn, { backgroundColor: theme.colors.accentBlue }]} onPress={() => { onSave?.({ sleep_hr: parseFloat(hours) || 7, sleep_quality: quality }); onClose(); }}><Text style={modalS.saveText}>Save</Text></TouchableOpacity>
           </View>
         </View>
       </View>
@@ -356,8 +356,8 @@ export const SleepTrackerSection: React.FC<{ sleepLogs?: SleepLog[] }> = ({ slee
             <Text style={slp.summaryVal}>{avg}</Text>
             <Text style={slp.summaryLbl}>Avg hours</Text>
           </View>
-          <View style={[slp.qualityBadge, { backgroundColor: theme.colors.purple + '22', borderColor: theme.colors.purple + '55' }]}>
-            <Text style={[slp.qualityText, { color: theme.colors.purple }]}>● {qualityLabel}</Text>
+          <View style={[slp.qualityBadge, { backgroundColor: theme.colors.accentBlue + '22', borderColor: theme.colors.accentBlue + '55' }]}>
+            <Text style={[slp.qualityText, { color: theme.colors.accentBlue }]}>● {qualityLabel}</Text>
           </View>
           <View style={slp.summaryItem}>
             <Text style={slp.summaryVal}>{loggedDays.length}</Text>
@@ -367,14 +367,14 @@ export const SleepTrackerSection: React.FC<{ sleepLogs?: SleepLog[] }> = ({ slee
         <View style={slp.chart}>
           {weekData.map((d, i) => {
             const pct = d.hasData ? d.hours / maxH : 0;
-            const col = d.hours >= 7.5 ? theme.colors.purple : d.hours >= 6.5 ? theme.colors.purple + 'BB' : theme.colors.purple + '66';
+            const col = d.hours >= 7.5 ? theme.colors.accentBlue : d.hours >= 6.5 ? theme.colors.accentBlue + 'BB' : theme.colors.accentBlue + '66';
             return (
               <View key={`${d.day}-${i}`} style={slp.barCol}>
                 <Text style={slp.barHrs}>{d.hasData ? `${d.hours}h` : '—'}</Text>
                 <View style={slp.barTrack}>
-                  <View style={[slp.bar, { height: `${pct * 100}%`, backgroundColor: d.hasData ? col : theme.colors.bgCardBorder, borderWidth: d.isToday ? 1 : 0, borderColor: theme.colors.purple }]} />
+                  <View style={[slp.bar, { height: `${pct * 100}%`, backgroundColor: d.hasData ? col : theme.colors.bgCardBorder, borderWidth: d.isToday ? 1 : 0, borderColor: theme.colors.accentBlue }]} />
                 </View>
-                <Text style={[slp.barLbl, d.isToday && { color: theme.colors.purple, fontWeight: Typography.bold }]}>{d.day}</Text>
+                <Text style={[slp.barLbl, d.isToday && { color: theme.colors.accentBlue, fontWeight: Typography.bold }]}>{d.day}</Text>
               </View>
             );
           })}
@@ -681,9 +681,9 @@ export const AIHealthInsightsSection: React.FC<{ mode: 'female' | 'male' }> = ({
   const ai = useStyles((t) => StyleSheet.create({
     card: { padding: Spacing.base, marginBottom: Spacing.base },
     cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.base, paddingBottom: Spacing.base, borderBottomWidth: 1, borderBottomColor: t.colors.divider },
-    iconWrap: { width: 34, height: 34, borderRadius: 17, backgroundColor: t.colors.purple + '30', alignItems: 'center', justifyContent: 'center' },
-    iconText: { fontSize: Typography.base, color: t.colors.purple },
-    label: { fontSize: 11, fontWeight: Typography.bold, color: t.colors.purple, letterSpacing: 1.5 },
+    iconWrap: { width: 34, height: 34, borderRadius: 17, backgroundColor: t.colors.accentBlue + '30', alignItems: 'center', justifyContent: 'center' },
+    iconText: { fontSize: Typography.base, color: t.colors.accentBlue },
+    label: { fontSize: 11, fontWeight: Typography.bold, color: t.colors.accentBlue, letterSpacing: 1.5 },
     date: { fontSize: Typography.xs, color: t.colors.textMuted, marginTop: 1 },
     liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: t.colors.success, shadowColor: t.colors.success, shadowRadius: 6, shadowOpacity: 1, elevation: 4 },
     insightRow: { flexDirection: 'row', paddingVertical: Spacing.md, gap: Spacing.md },
@@ -691,13 +691,13 @@ export const AIHealthInsightsSection: React.FC<{ mode: 'female' | 'male' }> = ({
     insightTitle: { fontSize: Typography.sm, fontWeight: Typography.bold, color: t.colors.textPrimary, marginBottom: 4 },
     insightBody: { fontSize: Typography.sm, color: t.colors.textSecondary, lineHeight: 18 },
     cta: { marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: t.colors.divider },
-    ctaText: { fontSize: Typography.sm, color: t.colors.purple, fontWeight: Typography.semiBold },
+    ctaText: { fontSize: Typography.sm, color: t.colors.accentBlue, fontWeight: Typography.semiBold },
   }));
 
   return (
     <>
       <SectionHeader title="AI Health Insights" />
-      <GlassCardView style={[ai.card, { borderColor: theme.colors.purple + '45', backgroundColor: theme.colors.purpleDim }]}>
+      <GlassCardView style={[ai.card, { borderColor: theme.colors.accentBlue + '45', backgroundColor: theme.colors.accentBlueDim }]}>
         <View style={ai.cardHeader}>
           <View style={ai.iconWrap}><Text style={ai.iconText}>✦</Text></View>
           <View style={{ flex: 1, marginLeft: Spacing.md }}>

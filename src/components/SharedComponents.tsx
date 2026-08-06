@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { Bell } from 'lucide-react-native';
-import { Radius, Spacing, Typography, GlassCard, Shadows } from '../theme/theme';
+import { Radius, Spacing, Typography, Shadows } from '../theme/theme';
 import { useTheme, useStyles } from '../providers/ThemeProvider';
 
 // ─── Glass Card ─────────────────────────────────────────────────────────────
@@ -19,20 +19,32 @@ interface GlassCardProps {
   accentColor?: string;
 }
 
+const glassCardStyles = (theme: { colors: { bgCard: string; bgCardBorder: string } }) => ({
+  card: {
+    backgroundColor: theme.colors.bgCard,
+    borderWidth: 1,
+    borderColor: theme.colors.bgCardBorder,
+    borderRadius: Radius.lg,
+  },
+});
+
 export const GlassCardView: React.FC<GlassCardProps> = React.memo(({
   children,
   style,
   accentColor,
-}) => (
-  <View
-    style={[
-      GlassCard,
-      accentColor && { borderColor: accentColor + '40' },
-      style,
-    ]}>
-    {children}
-  </View>
-));
+}) => {
+  const s = useStyles(glassCardStyles);
+  return (
+    <View
+      style={[
+        s.card,
+        accentColor && { borderColor: accentColor + '40' },
+        style,
+      ]}>
+      {children}
+    </View>
+  );
+});
 
 // ─── Profile Avatar Button ───────────────────────────────────────────────────
 export const ProfileAvatarButton: React.FC<{
@@ -55,15 +67,16 @@ export const ProfileAvatarButton: React.FC<{
 });
 
 // ─── Notification Icon Button ────────────────────────────────────────────────
-export const NotificationIconButton: React.FC<{ onPress?: () => void; unreadCount?: number }> = React.memo(({
+export const NotificationIconButton: React.FC<{ onPress?: () => void; unreadCount?: number; iconColor?: string }> = React.memo(({
   onPress,
   unreadCount = 0,
+  iconColor,
 }) => {
   const { theme } = useTheme();
   const styles = useStyles(notifIconStyles);
   return (
     <TouchableOpacity style={styles.btn} onPress={onPress} activeOpacity={0.8}>
-      <Bell size={30} color={theme.colors.white} strokeWidth={2} />
+      <Bell size={30} color={iconColor || theme.colors.text} strokeWidth={2} />
       {unreadCount > 0 && (
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>

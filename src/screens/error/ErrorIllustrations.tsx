@@ -13,7 +13,7 @@ const COLORS = {
     surface: '#1A1B2E',
     danger: '#FF6B6B',
     warning: '#FFB74D',
-    purple: '#B388FF',
+    accentBlue: '#6B8AFF',
   },
   light: {
     accent: '#00B8A3',
@@ -21,7 +21,7 @@ const COLORS = {
     surface: '#E8EDF5',
     danger: '#FF5252',
     warning: '#FFA726',
-    purple: '#9C6ADE',
+    accentBlue: '#4F78F5',
   },
 };
 
@@ -133,23 +133,23 @@ export const PermissionIllustration: React.FC<IllustrationProps> = ({ size = 180
       {/* Shield */}
       <Path
         d="M90 35 L130 55 L130 95 C130 120 110 140 90 150 C70 140 50 120 50 95 L50 55 Z"
-        fill={c.purple}
+        fill={c.accentBlue}
         opacity={0.15}
       />
       <Path
         d="M90 35 L130 55 L130 95 C130 120 110 140 90 150 C70 140 50 120 50 95 L50 55 Z"
         fill="none"
-        stroke={c.purple}
+        stroke={c.accentBlue}
         strokeWidth={3}
         strokeLinejoin="round"
       />
       {/* Lock body */}
-      <Rect x={78} y={82} width={24} height={20} rx={3} fill={c.purple} opacity={0.8} />
+      <Rect x={78} y={82} width={24} height={20} rx={3} fill={c.accentBlue} opacity={0.8} />
       {/* Lock shackle */}
       <Path
         d="M83 82 L83 74 C83 68 87 64 90 64 C93 64 97 68 97 74 L97 82"
         fill="none"
-        stroke={c.purple}
+        stroke={c.accentBlue}
         strokeWidth={3}
         strokeLinecap="round"
       />

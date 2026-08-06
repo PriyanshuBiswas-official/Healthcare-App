@@ -13,7 +13,7 @@ import {
   ActivityIndicator,
   BackHandler,
 } from 'react-native';
-import { Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { Typography, Spacing, Radius, Shadows } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { ArrowLeft } from 'lucide-react-native';

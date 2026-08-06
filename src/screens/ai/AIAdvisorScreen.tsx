@@ -9,7 +9,7 @@ import {
   BackHandler,
   Animated,
 } from 'react-native';
-import { Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { Typography, Spacing, Radius, Shadows } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
@@ -143,7 +143,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
       color: theme.colors.textPrimary,
     },
     aiBadgeIcon: {
-      width: 24, height: 24, borderRadius: 12, backgroundColor: theme.colors.purple + '20',
+      width: 24, height: 24, borderRadius: 12, backgroundColor: theme.colors.accentBlue + '20',
       alignItems: 'center', justifyContent: 'center',
     },
     summaryText: {
@@ -158,7 +158,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
       alignItems: 'center',
       backgroundColor: theme.colors.bgCard,
       borderWidth: 1,
-      borderColor: theme.colors.purple + '40',
+      borderColor: theme.colors.accentBlue + '40',
     },
     chatBannerTitle: {
       fontSize: Typography.base,
@@ -167,7 +167,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
       marginBottom: Spacing.sm,
     },
     chatBannerBtn: {
-      backgroundColor: theme.colors.purple,
+      backgroundColor: theme.colors.accentBlue,
       paddingVertical: Spacing.sm,
       paddingHorizontal: Spacing.xl,
       borderRadius: Radius.full,
@@ -233,14 +233,14 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
     bookBtnActionText: {
       fontSize: Typography.sm,
       fontWeight: Typography.bold,
-      color: theme.colors.purple,
+      color: theme.colors.accentBlue,
     },
 
     bookingExpanded: {
       marginBottom: Spacing.lg,
     },
     scheduleTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
-    scheduleSub: { fontSize: Typography.sm, color: theme.colors.purple, marginTop: 4, marginBottom: Spacing.md },
+    scheduleSub: { fontSize: Typography.sm, color: theme.colors.accentBlue, marginTop: 4, marginBottom: Spacing.md },
     scheduleSuggestion: { padding: Spacing.base, marginBottom: Spacing.md },
     scheduleAILabel: { fontSize: 10, fontWeight: Typography.bold, letterSpacing: 1.5, marginBottom: Spacing.sm },
     scheduleAIText: { fontSize: Typography.sm, color: theme.colors.textSecondary, lineHeight: 20 },
@@ -255,7 +255,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
       paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
       borderRadius: Radius.md, borderWidth: 1,
     },
-    bookBtnInlineText: { fontSize: Typography.sm, color: theme.colors.purple, fontWeight: Typography.bold },
+    bookBtnInlineText: { fontSize: Typography.sm, color: theme.colors.accentBlue, fontWeight: Typography.bold },
     confirmedCard: { padding: Spacing.xl, marginTop: Spacing.base, alignItems: 'center' },
     confirmedTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.teal, marginTop: Spacing.md, textAlign: 'center' },
     confirmedSub: { fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: Spacing.sm, textAlign: 'center', lineHeight: 20 },
@@ -432,10 +432,10 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
             
             {/* Health Summary Card */}
-            <GlassCardView style={styles.summaryCard} accentColor={theme.colors.purple}>
+            <GlassCardView style={styles.summaryCard} accentColor={theme.colors.accentBlue}>
                <View style={styles.summaryHeader}>
                  <Text style={styles.summaryTitle}>AI Health Summary</Text>
-                  <View style={styles.aiBadgeIcon}><Text style={{fontSize: Typography.sm, color: theme.colors.purple}}>✦</Text></View>
+                  <View style={styles.aiBadgeIcon}><Text style={{fontSize: Typography.sm, color: theme.colors.accentBlue}}>✦</Text></View>
                </View>
                <Text style={styles.summaryText}>Your vitals are stable. Based on your activity patterns, prioritizing sleep tonight will optimize your recovery.</Text>
             </GlassCardView>
@@ -452,7 +452,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
             <SectionHeader title="Appointments" />
             <GlassCardView style={styles.cardItem}>
                <View style={styles.row}>
-                  <View style={[styles.iconWrap, { backgroundColor: theme.colors.purple + '20' }]}>
+                  <View style={[styles.iconWrap, { backgroundColor: theme.colors.accentBlue + '20' }]}>
                      <Text style={{fontSize: Typography.xl}}>🩺</Text>
                   </View>
                   <View style={{flex: 1}}>
@@ -460,7 +460,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
                      <Text style={styles.itemSub}>Dr. Mehta · City Heart Clinic</Text>
                   </View>
                   <View style={{alignItems: 'flex-end'}}>
-                     <View style={[styles.badgeAI, { backgroundColor: theme.colors.purple + '20' }]}><Text style={[styles.badgeAIText, {color: theme.colors.purple}]}>AI synced</Text></View>
+                     <View style={[styles.badgeAI, { backgroundColor: theme.colors.accentBlue + '20' }]}><Text style={[styles.badgeAIText, {color: theme.colors.accentBlue}]}>AI synced</Text></View>
                      <View style={[styles.badgeTime, { backgroundColor: theme.colors.amber + '20' }]}><Text style={[styles.badgeTimeText, {color: theme.colors.amber}]}>Tomorrow, 10:30 AM</Text></View>
                      <Text style={styles.itemMeta}>Reminder set</Text>
                   </View>
@@ -507,8 +507,8 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
               <View style={styles.bookingExpanded}>
                 <Text style={styles.scheduleTitle}>Book Appointment</Text>
                 <Text style={styles.scheduleSub}>AI-matched to your cycle & health history</Text>
-                <GlassCardView style={styles.scheduleSuggestion} accentColor={theme.colors.purple}>
-                  <Text style={[styles.scheduleAILabel, { color: theme.colors.purple }]}>✦ AI RECOMMENDATION</Text>
+                <GlassCardView style={styles.scheduleSuggestion} accentColor={theme.colors.accentBlue}>
+                  <Text style={[styles.scheduleAILabel, { color: theme.colors.accentBlue }]}>✦ AI RECOMMENDATION</Text>
                   <Text style={styles.scheduleAIText}>
                     Based on your cycle (Day 14 · Ovulation), scheduling a gynecology check-up this week is optimal. Your last visit was 6 months ago.
                   </Text>
@@ -537,7 +537,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
                           styles.bookBtnInline,
                           bookedSlot === `${slot.doctor}-${slot.time}`
                             ? { backgroundColor: theme.colors.teal + '30', borderColor: theme.colors.teal }
-                            : { backgroundColor: theme.colors.purple + '25', borderColor: theme.colors.purple + '60' },
+                            : { backgroundColor: theme.colors.accentBlue + '25', borderColor: theme.colors.accentBlue + '60' },
                           !slot.available && { backgroundColor: theme.colors.bgCardBorder, borderColor: theme.colors.bgCardBorder },
                         ]}>
                         <Text style={[
@@ -565,7 +565,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
             <SectionHeader title="AI Tools" />
             <View style={styles.toolsGrid}>
               <GlassCardView style={styles.toolCard}>
-                <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.purple + '15' }]} />
+                <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.accentBlue + '15' }]} />
                 <Text style={styles.toolTitle}>OCR scanner</Text>
                 <Text style={styles.toolSub}>Scan prescriptions, reports & lab results instantly</Text>
                 <Text style={styles.toolActionText}>Tap to scan or upload</Text>
@@ -627,11 +627,11 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
             <SectionHeader title="Recent AI Insights" />
             <GlassCardView style={styles.insightCard}>
                <View style={styles.insightRow}>
-                 <View style={[styles.insightIcon, { backgroundColor: theme.colors.purple + '15' }]} />
+                 <View style={[styles.insightIcon, { backgroundColor: theme.colors.accentBlue + '15' }]} />
                  <View style={{flex: 1}}>
                    <Text style={styles.insightTitle}>Sleep pattern anomaly detected</Text>
                    <Text style={styles.insightSub}>Your average sleep has dropped 22% this week. AI recommends discussing this at your next cardiology visit.</Text>
-                   <View style={[styles.badgeAI, { alignSelf: 'flex-start', marginTop: 8, backgroundColor: theme.colors.purple + '20' }]}><Text style={[styles.badgeAIText, {color: theme.colors.purple}]}>AI recommendation</Text></View>
+                   <View style={[styles.badgeAI, { alignSelf: 'flex-start', marginTop: 8, backgroundColor: theme.colors.accentBlue + '20' }]}><Text style={[styles.badgeAIText, {color: theme.colors.accentBlue}]}>AI recommendation</Text></View>
                  </View>
                </View>
             </GlassCardView>

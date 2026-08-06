@@ -35,7 +35,7 @@ export default function CalendarView({
     textSectionTitleColor: theme.colors.textMuted,
     selectedDayBackgroundColor: theme.colors.teal,
     selectedDayTextColor: theme.colors.white,
-    todayTextColor: theme.colors.purple,
+    todayTextColor: theme.colors.accentBlue,
     dayTextColor: theme.colors.textPrimary,
     textDisabledColor: theme.colors.textMuted + '40',
     dotColor: theme.colors.teal,

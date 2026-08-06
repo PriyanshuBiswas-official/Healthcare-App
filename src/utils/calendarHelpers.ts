@@ -355,8 +355,8 @@ export function generateCalendarMarkings(
     customStyles: {
       container: {
         borderWidth: 1.5,
-        borderColor: Colors.purple,
-        backgroundColor: Colors.purple + '12',
+        borderColor: Colors.accentBlue,
+        backgroundColor: Colors.accentBlue + '12',
       },
       text: {
         fontWeight: 'bold',

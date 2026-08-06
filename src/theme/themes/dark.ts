@@ -23,8 +23,8 @@ const darkThemeColors: ThemeColors = {
   amber: '#FFB347',
   amberDim: 'rgba(255,179,71,0.15)',
   amberGlow: 'rgba(255,179,71,0.35)',
-  purple: '#A78BFA',
-  purpleDim: 'rgba(167,139,250,0.15)',
+  accentBlue: '#6B8AFF',
+  accentBlueDim: 'rgba(107,138,255,0.15)',
   blue: '#3B82F6',
   blueDim: 'rgba(59,130,246,0.15)',
 

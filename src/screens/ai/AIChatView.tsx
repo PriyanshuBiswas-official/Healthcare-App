@@ -11,7 +11,7 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import { Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { Typography, Spacing, Radius, Shadows } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useAuth } from '../../providers/AuthProvider';
 import { sendAIChatMessage, ChatHistoryItem } from '../../services/aiApi';
@@ -175,7 +175,7 @@ function WelcomePlaceholder() {
     },
     sparkle: {
       fontSize: 40,
-      color: theme.colors.purple,
+      color: theme.colors.accentBlue,
       marginBottom: Spacing.md,
     },
     title: {
@@ -246,7 +246,7 @@ function FormattedText({ text, style }: { text: string; style?: any }) {
 
         return (
           <Text key={lineIdx} style={[style, { marginBottom: trimmed === '' ? 6 : 4 }]}>
-            {isBullet && <Text style={{ color: theme.colors.purple, fontWeight: 'bold' }}>• </Text>}
+            {isBullet && <Text style={{ color: theme.colors.accentBlue, fontWeight: 'bold' }}>• </Text>}
             {boldSegments.map((segment, bIdx) => {
               const isBold = bIdx % 2 === 1;
 
@@ -345,7 +345,7 @@ export default function AIChatView({ messages, input, setInput, isThinking, send
     userBubble: {
       maxWidth: '78%',
       padding: Spacing.md,
-      backgroundColor: theme.colors.purple,
+      backgroundColor: theme.colors.accentBlue,
       borderRadius: Radius.lg,
       borderBottomRightRadius: 4,
       ...Shadows.teal,
@@ -377,16 +377,16 @@ export default function AIChatView({ messages, input, setInput, isThinking, send
       width: 22,
       height: 22,
       borderRadius: 11,
-      backgroundColor: theme.colors.purple + '20',
+      backgroundColor: theme.colors.accentBlue + '20',
       borderWidth: 1,
-      borderColor: theme.colors.purple + '50',
+      borderColor: theme.colors.accentBlue + '50',
       alignItems: 'center',
       justifyContent: 'center',
     },
     aiLabel: {
       fontSize: 11,
       fontWeight: Typography.semiBold as any,
-      color: theme.colors.purple,
+      color: theme.colors.accentBlue,
     },
     aiTime: {
       fontSize: 10,
@@ -425,7 +425,9 @@ export default function AIChatView({ messages, input, setInput, isThinking, send
     inputRow: {
       flexDirection: 'row',
       alignItems: 'flex-end',
-      ...GlassCard,
+      backgroundColor: theme.colors.bgCard,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
       borderRadius: Radius.xl,
       paddingHorizontal: Spacing.xs,
       paddingVertical: 3,
@@ -449,7 +451,7 @@ export default function AIChatView({ messages, input, setInput, isThinking, send
       width: 36,
       height: 36,
       borderRadius: 18,
-      backgroundColor: theme.colors.purple,
+      backgroundColor: theme.colors.accentBlue,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 2,
@@ -516,7 +518,7 @@ export default function AIChatView({ messages, input, setInput, isThinking, send
           {isThinking && (
             <View style={styles.aiMsgContainer}>
               <View style={styles.thinkingRow}>
-                <ActivityIndicator size="small" color={theme.colors.purple} />
+                <ActivityIndicator size="small" color={theme.colors.accentBlue} />
                 <Text style={styles.thinkingText}>Analyzing your health metrics...</Text>
               </View>
             </View>

@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';
@@ -44,12 +44,12 @@ export default function EmergencyContactsScreen({ onBack }: Props) {
     backIcon: { fontSize: Typography.lg, color: t.colors.textPrimary },
     pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary },
     editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
-    editBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.purple },
+    editBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.accentBlue },
     editBtnSave: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.success },
     scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
     banner: {
-      flexDirection: 'row', alignItems: 'flex-start', backgroundColor: t.colors.purple + '15',
-      borderWidth: 1, borderColor: t.colors.purple + '40', borderRadius: Radius.md,
+      flexDirection: 'row', alignItems: 'flex-start', backgroundColor: t.colors.accentBlue + '15',
+      borderWidth: 1, borderColor: t.colors.accentBlue + '40', borderRadius: Radius.md,
       padding: Spacing.md, marginBottom: Spacing.lg,
     },
     bannerIcon: { fontSize: Typography.sm, marginRight: Spacing.sm, marginTop: 1 },
@@ -70,10 +70,10 @@ export default function EmergencyContactsScreen({ onBack }: Props) {
       fontSize: Typography.base, color: t.colors.textPrimary, marginBottom: Spacing.md,
     },
     addBtn: {
-      backgroundColor: t.colors.purple + '15', borderWidth: 1, borderColor: t.colors.purple + '40',
+      backgroundColor: t.colors.accentBlue + '15', borderWidth: 1, borderColor: t.colors.accentBlue + '40',
       borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center', marginBottom: Spacing.lg,
     },
-    addBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.purple },
+    addBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.accentBlue },
     emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
     emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
     emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.textPrimary },
@@ -190,7 +190,7 @@ export default function EmergencyContactsScreen({ onBack }: Props) {
               contacts.filter(c => c.name.trim()).map((contact, i) => (
                 <View key={i}>
                   <View style={styles.contactRow}>
-                    <View style={[styles.contactDot, { backgroundColor: theme.colors.purple }]} />
+                    <View style={[styles.contactDot, { backgroundColor: theme.colors.accentBlue }]} />
                     <View style={styles.contactInfo}>
                       <Text style={styles.contactName}>{contact.name}</Text>
                       <Text style={styles.contactDetail}>

@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';

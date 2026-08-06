@@ -2,16 +2,16 @@ import { ThemeColors, AppTheme } from '../types';
 
 const lightThemeColors: ThemeColors = {
   // Backgrounds
-  bg: '#F0F4FA',
-  bgHero: '#D6E4F0',
-  bgCard: 'rgba(0,0,0,0.04)',
+  bg: '#EEF2FC',
+  bgHero: '#2456E8',
+  bgCard: '#FFFFFF',
   bgCardSolid: '#FFFFFF',
-  bgCardBorder: 'rgba(0,0,0,0.08)',
+  bgCardBorder: '#E2EBF6',
 
   // Auth / inputs
-  bgAuth: '#F8FAFC',
+  bgAuth: '#EEF2FC',
   bgInput: '#FFFFFF',
-  inputBorder: '#CBD5E1',
+  inputBorder: '#E2EBF6',
 
   // Accents
   teal: '#0891B2',
@@ -20,25 +20,25 @@ const lightThemeColors: ThemeColors = {
   pink: '#DB2777',
   pinkDim: 'rgba(219,39,119,0.10)',
   pinkGlow: 'rgba(219,39,119,0.20)',
-  amber: '#D97706',
-  amberDim: 'rgba(217,119,6,0.10)',
-  amberGlow: 'rgba(217,119,6,0.20)',
-  purple: '#7C3AED',
-  purpleDim: 'rgba(124,58,237,0.10)',
-  blue: '#2563EB',
-  blueDim: 'rgba(37,99,235,0.10)',
+  amber: '#F59E0B',
+  amberDim: 'rgba(245,158,11,0.10)',
+  amberGlow: 'rgba(245,158,11,0.20)',
+  accentBlue: '#4F78F5',
+  accentBlueDim: 'rgba(79,120,245,0.10)',
+  blue: '#2456EB',
+  blueDim: 'rgba(36,86,235,0.10)',
 
   // Cycle phase
   follicular: '#0EA5E9',
 
   // Text
-  text: '#1E293B',
-  textPrimary: '#0F172A',
-  textSecondary: '#64748B',
-  textMuted: '#94A3B8',
-  textPlaceholder: '#CBD5E1',
-  textInputLabel: '#334155',
-  textHint: '#94A3B8',
+  text: '#0D183E',
+  textPrimary: '#0D183E',
+  textSecondary: '#4A5780',
+  textMuted: '#8E9CC4',
+  textPlaceholder: '#D8EAFE',
+  textInputLabel: '#0D183E',
+  textHint: '#8E9CC4',
 
   // Modals / overlays
   overlay: 'rgba(0,0,0,0.3)',
@@ -49,19 +49,19 @@ const lightThemeColors: ThemeColors = {
   tabBarBg: 'rgba(255,255,255,0.95)',
 
   // Surfaces
-  chipBg: 'rgba(0,0,0,0.05)',
-  chipBorder: 'rgba(0,0,0,0.10)',
-  chartBg: '#F8FAFC',
-  tooltipBg: 'rgba(0,0,0,0.06)',
-  listItemBg: 'rgba(0,0,0,0.03)',
+  chipBg: '#EBF2FF',
+  chipBorder: '#D8EAFE',
+  chartBg: '#F6F9FF',
+  tooltipBg: '#EDF2FF',
+  listItemBg: '#F6F9FF',
 
   // Utility
   white: '#FFFFFF',
   black: '#000000',
-  danger: '#DC2626',
-  success: '#059669',
-  divider: 'rgba(0,0,0,0.08)',
-  shadowColor: '#94A3B8',
+  danger: '#EF4444',
+  success: '#10B981',
+  divider: '#E2EBF6',
+  shadowColor: '#8E9CC4',
 };
 
 export const lightTheme: AppTheme = {

@@ -191,10 +191,10 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
   // ── Hormone config (uses theme colors) ──────────────────────────────
   const HORMONES = useMemo(() => [
     { key: 'fsh' as HormoneKey, label: 'FSH', color: colors.follicular },
-    { key: 'lh' as HormoneKey, label: 'LH', color: colors.purple },
+    { key: 'lh' as HormoneKey, label: 'LH', color: colors.accentBlue },
     { key: 'estrogen' as HormoneKey, label: 'Estrogen', color: colors.pink },
     { key: 'progesterone' as HormoneKey, label: 'Progesterone', color: colors.success },
-  ], [colors.follicular, colors.purple, colors.pink, colors.success]);
+  ], [colors.follicular, colors.accentBlue, colors.pink, colors.success]);
 
   // ── Phase helper (uses theme colors) ────────────────────────────────
   const getPhase = useCallback(
@@ -218,11 +218,11 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
         };
       }
       return {
-        name: 'Luteal', color: colors.purple,
+        name: 'Luteal', color: colors.accentBlue,
         description: 'Progesterone dominates. The body prepares for potential pregnancy; PMS may appear late.',
       };
     },
-    [colors.pink, colors.follicular, colors.amber, colors.purple],
+    [colors.pink, colors.follicular, colors.amber, colors.accentBlue],
   );
 
   // ── Effective graph length extends when cycle runs long ──────────────
@@ -262,8 +262,8 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
     { label: 'Menstruation', start: 0, end: menEnd, color: colors.pink },
     { label: 'Follicular', start: menEnd, end: ovStart, color: colors.follicular },
     { label: 'Ovulation', start: ovStart, end: ovEnd, color: colors.amber },
-    { label: 'Luteal', start: ovEnd, end: effectiveGraphLength, color: colors.purple },
-  ], [menEnd, ovStart, ovEnd, effectiveGraphLength, colors.pink, colors.follicular, colors.amber, colors.purple]);
+    { label: 'Luteal', start: ovEnd, end: effectiveGraphLength, color: colors.accentBlue },
+  ], [menEnd, ovStart, ovEnd, effectiveGraphLength, colors.pink, colors.follicular, colors.amber, colors.accentBlue]);
 
   // ── Tooltip ───────────────────────────────────────────────────────────────
   const focusDay = selectedDay ?? currentDay;
@@ -786,7 +786,7 @@ export const CyclePhaseVisualizer: React.FC<CyclePhaseVisualizerProps> = ({
         </View>
         <View style={cv.countdownDivider} />
         <View style={cv.countdownItem}>
-          <Text style={[cv.countdownVal, { color: colors.purple }]}>
+          <Text style={[cv.countdownVal, { color: colors.accentBlue }]}>
             Day {currentDay}
           </Text>
           <Text style={cv.countdownLbl}>{'Current\nCycle Day'}</Text>

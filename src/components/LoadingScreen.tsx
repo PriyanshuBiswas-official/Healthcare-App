@@ -77,9 +77,8 @@ const LoadingScreen: React.FC = () => {
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      {/* Gradient background */}
-      <View style={[styles.gradient, { backgroundColor: c.bg }]} />
-      <View style={[styles.gradientOverlay, { backgroundColor: c.bgHero }]} />
+      {/* Background */}
+      <View style={[styles.gradient, { backgroundColor: c.white }]} />
 
       <View style={styles.content}>
         <Animated.View style={[styles.quoteContainer, { opacity: quoteFade }]}>
@@ -92,7 +91,7 @@ const LoadingScreen: React.FC = () => {
               style={[
                 styles.barFill,
                 {
-                  backgroundColor: c.teal,
+                  backgroundColor: c.blue,
                   transform: [{ scaleX: barScale }],
                 },
               ]}
@@ -106,7 +105,7 @@ const LoadingScreen: React.FC = () => {
           </View>
         </View>
 
-        <Text style={[styles.tagline, { color: c.textMuted }]}>Loading your health journey...</Text>
+        <Text style={[styles.tagline, { color: c.textSecondary }]}>Loading your health journey...</Text>
       </View>
     </Animated.View>
   );

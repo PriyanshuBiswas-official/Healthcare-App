@@ -231,7 +231,7 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
     },
     pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
     addTopBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
-    addTopBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.purple },
+    addTopBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.accentBlue },
     scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
     card: { padding: Spacing.lg, marginBottom: Spacing.md },
     sectionLabel: {
@@ -254,21 +254,21 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
       borderBottomWidth: 1, borderBottomColor: theme.colors.divider,
     },
     timeRowLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-    timeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.purple },
+    timeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.accentBlue },
     timeValue: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
     timeMilitary: { fontSize: Typography.sm, color: theme.colors.textMuted },
     emptyTimes: { fontSize: Typography.sm, color: theme.colors.textMuted, fontStyle: 'italic', marginBottom: Spacing.md },
     addTimeBtn: {
-      backgroundColor: theme.colors.purple + '15', borderWidth: 1, borderColor: theme.colors.purple + '40',
+      backgroundColor: theme.colors.accentBlue + '15', borderWidth: 1, borderColor: theme.colors.accentBlue + '40',
       borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center',
     },
-    addTimeBtnText: { fontSize: Typography.sm, fontWeight: Typography.semiBold, color: theme.colors.purple },
+    addTimeBtnText: { fontSize: Typography.sm, fontWeight: Typography.semiBold, color: theme.colors.accentBlue },
     hintText: {
       fontSize: Typography.xs, color: theme.colors.textMuted, fontStyle: 'italic',
       textAlign: 'center', marginTop: Spacing.md, marginBottom: Spacing.sm,
     },
     saveBtn: {
-      backgroundColor: theme.colors.purple, borderRadius: Radius.md,
+      backgroundColor: theme.colors.accentBlue, borderRadius: Radius.md,
       paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm,
     },
     saveBtnDisabled: { opacity: 0.6 },
@@ -277,7 +277,7 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
     entryInfo: { flex: 1 },
     entryName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
     entryDetail: { fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: 2 },
-    entrySchedule: { fontSize: Typography.sm, color: theme.colors.purple, marginTop: 2 },
+    entrySchedule: { fontSize: Typography.sm, color: theme.colors.accentBlue, marginTop: 2 },
     entryNoSchedule: { fontSize: Typography.sm, color: theme.colors.textMuted, marginTop: 2, fontStyle: 'italic' },
     entryActions: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
     divider: { height: 1, backgroundColor: theme.colors.divider },
@@ -298,7 +298,7 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
           <View style={{ width: 60 }} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.purple} />
+          <ActivityIndicator size="large" color={theme.colors.accentBlue} />
         </View>
       </View>
     );

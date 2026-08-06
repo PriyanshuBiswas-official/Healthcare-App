@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';
@@ -54,7 +54,8 @@ export default function AllergiesScreen({ onBack, onSaved }: Props) {
     scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
     card: { padding: Spacing.lg, marginBottom: Spacing.lg },
     noAllergyCard: {
-      ...GlassCard, padding: Spacing.lg, marginBottom: Spacing.lg,
+      backgroundColor: t.colors.bgCard, borderWidth: 1, borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.lg, padding: Spacing.lg, marginBottom: Spacing.lg,
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     },
     noAllergyCardSelected: { backgroundColor: t.colors.danger + '15', borderColor: t.colors.danger + '40' },

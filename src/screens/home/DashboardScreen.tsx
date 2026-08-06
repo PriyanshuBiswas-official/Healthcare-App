@@ -17,7 +17,7 @@ import {
   PermissionsAndroid,
   Platform,
 } from 'react-native';
-import { Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
@@ -118,11 +118,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       borderBottomLeftRadius: Radius.xl,
       borderBottomRightRadius: Radius.xl,
       paddingBottom: Spacing.base,
-      shadowColor: theme.colors.shadowColor,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.35,
-      shadowRadius: 16,
-      elevation: 10,
       zIndex: 2,
     },
     heroTopBar: {
@@ -135,7 +130,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     },
     heroDate: {
       fontSize: Typography.xs,
-      color: theme.colors.teal + 'AA',
+      color: theme.colors.white + 'CC',
       fontWeight: Typography.medium,
       marginBottom: 2,
       letterSpacing: Typography.lsWide,
@@ -162,10 +157,10 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     searchBar: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.colors.white + '12',
+      backgroundColor: theme.colors.white + '20',
       borderRadius: Radius.lg,
       borderWidth: 1,
-      borderColor: theme.colors.white + '15',
+      borderColor: theme.colors.white + '30',
     },
     searchBarInput: {
       flex: 1,
@@ -178,7 +173,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     searchPlaceholder: {
       flex: 1,
       fontSize: Typography.sm,
-      color: theme.colors.white + '60',
+      color: theme.colors.white + '80',
     },
     searchActions: {
       flexDirection: 'row',
@@ -215,7 +210,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     },
     heroOverviewSub: {
       fontSize: Typography.xs,
-      color: theme.colors.textSecondary,
+      color: theme.colors.white + 'BB',
       lineHeight: 16,
       marginBottom: Spacing.sm,
     },
@@ -240,9 +235,9 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       marginBottom: Spacing.lg,
       padding: Spacing.md,
       borderRadius: Radius.md,
-      backgroundColor: theme.colors.purpleDim,
+      backgroundColor: theme.colors.white + '15',
       borderWidth: 1,
-      borderColor: theme.colors.purple + '30',
+      borderColor: theme.colors.white + '25',
     },
     heroAiHeader: {
       flexDirection: 'row',
@@ -257,30 +252,30 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     },
     heroAiSparkle: {
       fontSize: Typography.sm,
-      color: theme.colors.purple,
+      color: theme.colors.white,
     },
     heroAiTitle: {
       fontSize: Typography.xs,
       fontWeight: Typography.bold,
-      color: theme.colors.purple,
+      color: theme.colors.white,
       letterSpacing: Typography.lsWider,
     },
     heroAiChatBtn: {
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: Radius.sm,
-      backgroundColor: theme.colors.purple + '22',
+      backgroundColor: theme.colors.white + '20',
       borderWidth: 1,
-      borderColor: theme.colors.purple + '44',
+      borderColor: theme.colors.white + '35',
     },
     heroAiChatText: {
       fontSize: Typography.xs,
       fontWeight: Typography.bold,
-      color: theme.colors.purple,
+      color: theme.colors.white,
     },
     heroAiText: {
       fontSize: Typography.xs,
-      color: theme.colors.textSecondary,
+      color: theme.colors.white + 'BB',
       lineHeight: 16,
       marginBottom: Spacing.sm,
     },
@@ -303,8 +298,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       marginTop: Spacing.lg,
       padding: Spacing.md,
       borderRadius: Radius.md,
-      backgroundColor: theme.colors.purpleDim,
-      borderColor: theme.colors.purple + '33',
+      backgroundColor: theme.colors.white + '15',
+      borderColor: theme.colors.white + '25',
       borderWidth: 1,
     },
     aiSummaryHeader: {
@@ -320,30 +315,30 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     },
     aiSummarySparkle: {
       fontSize: Typography.sm,
-      color: theme.colors.purple,
+      color: theme.colors.white,
     },
     aiSummaryTitle: {
       fontSize: Typography.xs,
       fontWeight: Typography.bold,
-      color: theme.colors.purple,
+      color: theme.colors.white,
       letterSpacing: Typography.lsWider,
     },
     aiSummaryChatBtn: {
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: Radius.sm,
-      backgroundColor: theme.colors.purple + '22',
+      backgroundColor: theme.colors.white + '20',
       borderWidth: 1,
-      borderColor: theme.colors.purple + '44',
+      borderColor: theme.colors.white + '35',
     },
     aiSummaryChatText: {
       fontSize: Typography.xs,
       fontWeight: Typography.bold,
-      color: theme.colors.purple,
+      color: theme.colors.white,
     },
     aiSummaryText: {
       fontSize: Typography.xs,
-      color: theme.colors.textSecondary,
+      color: theme.colors.white + 'BB',
       lineHeight: 16,
       marginBottom: Spacing.sm,
     },
@@ -487,8 +482,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       color: theme.colors.amber,
     },
     badgeUpcoming: {
-      backgroundColor: theme.colors.purple + '15',
-      borderColor: theme.colors.purple + '33',
+      backgroundColor: theme.colors.accentBlue + '15',
+      borderColor: theme.colors.accentBlue + '33',
       borderWidth: 1,
       paddingHorizontal: 8,
       paddingVertical: 3,
@@ -497,7 +492,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     badgeUpcomingText: {
       fontSize: Typography.xs,
       fontWeight: Typography.bold,
-      color: theme.colors.purple,
+      color: theme.colors.accentBlue,
     },
     newTimelineChevron: {
       color: theme.colors.textMuted,
@@ -1121,7 +1116,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       width: '100%',
       height: '100%',
       borderRadius: 30,
-      backgroundColor: theme.colors.purpleDim,
+      backgroundColor: theme.colors.accentBlueDim,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -1167,7 +1162,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           <Defs>
             <SvgLinearGradient id="heroGrad" x1="0" y1="0" x2="1" y2="1">
               <Stop offset="0" stopColor={theme.colors.teal} />
-              <Stop offset="1" stopColor={theme.colors.purple} />
+              <Stop offset="1" stopColor={theme.colors.accentBlue} />
             </SvgLinearGradient>
           </Defs>
           <Circle
@@ -1343,8 +1338,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [showMedModal, setShowMedModal] = useState(false);
   const buildDefaultTimeline = useCallback((c: typeof theme.colors): TimelineEvent[] => {
     const colorMap: Record<TimelineEventType, string> = {
-      medication: c.purple, water: c.blue, meal: c.amber, steps: c.success,
-      workout: c.pink, sleep: c.purple, custom: c.teal,
+      medication: c.accentBlue, water: c.blue, meal: c.amber, steps: c.success,
+      workout: c.pink, sleep: c.accentBlue, custom: c.teal,
     };
     return DEFAULT_TIMELINE_EVENTS.map(evt => ({ ...evt, color: colorMap[evt.type] }));
   }, []);
@@ -1370,12 +1365,12 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [healthScore, setHealthScore] = useState<DashboardHealthScore | null>(null);
   const [aiSummary, setAiSummary] = useState<string>('Analyzing your health metrics to compile summary...');
   const [aiSummaryTags, setAiSummaryTags] = useState<AISummaryTag[]>([
-    { label: 'Analyzing...', color: 'purple' }
+    { label: 'Analyzing...', color: 'accentBlue' }
   ]);
   const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
 
   const medicationsData = useMemo(() => {
-    const medColors = [theme.colors.purple, theme.colors.amber, theme.colors.blue, theme.colors.pink, theme.colors.teal, theme.colors.success, theme.colors.textSecondary];
+    const medColors = [theme.colors.accentBlue, theme.colors.amber, theme.colors.blue, theme.colors.pink, theme.colors.teal, theme.colors.success, theme.colors.textSecondary];
     const logIds = new Set(medicationLogs.map(l => l.medicine_id));
     return medications
       .filter(m => m.is_active)
@@ -1426,7 +1421,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       setAiSummary('Stable metrics today. Add more water, meals, and sleep logs to compile custom health insights.');
       setAiSummaryTags([
         { label: 'Vitals stable', color: 'success' },
-        { label: 'Ready', color: 'purple' }
+        { label: 'Ready', color: 'accentBlue' }
       ]);
     } finally {
       setAiSummaryLoading(false);
@@ -1612,12 +1607,12 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const addTimelineEvent = () => {
     if (!newEventTitle.trim()) return;
     const typeConfig: Record<TimelineEventType, { icon: string; color: string; rightType: TimelineEvent['rightType'] }> = {
-      medication: { icon: '💊', color: theme.colors.purple, rightType: 'upcoming' },
+      medication: { icon: '💊', color: theme.colors.accentBlue, rightType: 'upcoming' },
       water: { icon: '💧', color: theme.colors.blue, rightType: 'value' },
       meal: { icon: '🍽️', color: theme.colors.amber, rightType: 'value' },
       steps: { icon: '👟', color: theme.colors.success, rightType: 'value' },
       workout: { icon: '💪', color: theme.colors.pink, rightType: 'value' },
-      sleep: { icon: '🌙', color: theme.colors.purple, rightType: 'upcoming' },
+      sleep: { icon: '🌙', color: theme.colors.accentBlue, rightType: 'upcoming' },
       custom: { icon: '📌', color: theme.colors.teal, rightType: 'upcoming' },
     };
     const cfg = typeConfig[newEventType];
@@ -1762,7 +1757,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       const avgLast = lastWeek.length > 0 ? lastWeek.reduce((s, l) => s + l.sleep_hr, 0) / lastWeek.length : 0;
       const sleepPct = avgLast > 0 ? Math.round(((avgThis - avgLast) / avgLast) * 100) : 0;
       const sleepSign = sleepPct > 0 ? '↑' : '↓';
-      result.push({ metric: 'Sleep', value: `${avgThis.toFixed(1)} hrs`, change: `${sleepSign} ${Math.abs(sleepPct)}%`, color: theme.colors.purple });
+      result.push({ metric: 'Sleep', value: `${avgThis.toFixed(1)} hrs`, change: `${sleepSign} ${Math.abs(sleepPct)}%`, color: theme.colors.accentBlue });
     }
 
     // Hydration — placeholder until backend endpoint exists
@@ -1790,7 +1785,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               </Text>
             </View>
             <View style={styles.heroTopBarActions}>
-              <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
+              <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} iconColor={theme.colors.white} />
               <ProfileAvatarButton
                 onPress={onProfilePress}
                 userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
@@ -1941,7 +1936,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           {[
             { icon: '🍽️', label: 'Log Meal', desc: 'Record calories', color: theme.colors.amber, onPress: () => setShowMealModal(true) },
             { icon: '💧', label: 'Log Water', desc: 'Add a glass', color: theme.colors.blue, onPress: () => setShowWaterModal(true) },
-            { icon: '💪', label: 'Log Workout', desc: 'Track activity', color: theme.colors.purple, onPress: () => navigateToTab?.('Activity') },
+            { icon: '💪', label: 'Log Workout', desc: 'Track activity', color: theme.colors.accentBlue, onPress: () => navigateToTab?.('Activity') },
             { icon: '💊', label: 'Medicine', desc: 'Check dose', color: theme.colors.pink, onPress: () => setShowMedModal(true) },
             { icon: '⚖️', label: 'Log Weight', desc: 'Record metric', color: theme.colors.teal, onPress: () => setShowWeightModal(true) },
           ].map((action, i) => (
@@ -2148,11 +2143,11 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                 <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Health')}>
                   <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
                     <Text style={styles.progressCardTitle}>🌙 Sleep</Text>
-                    <CompactRing size={82} progress={sleepPct} color={theme.colors.purple}>
+                    <CompactRing size={82} progress={sleepPct} color={theme.colors.accentBlue}>
                       <Text style={styles.progressVal}>{sleepHrs > 0 ? sleepHrs : '—'}</Text>
                       <Text style={styles.progressSub}>/ {sleepTarget} hrs</Text>
                     </CompactRing>
-                    <Text style={[styles.progressPct, { color: theme.colors.purple }]}>{sleepHrs > 0 ? `${Math.round(sleepPct * 100)}%` : '—'}</Text>
+                    <Text style={[styles.progressPct, { color: theme.colors.accentBlue }]}>{sleepHrs > 0 ? `${Math.round(sleepPct * 100)}%` : '—'}</Text>
                   </GlassCardView>
                 </TouchableOpacity>
 

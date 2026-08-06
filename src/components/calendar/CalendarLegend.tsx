@@ -9,7 +9,7 @@ export default function CalendarLegend() {
   const legends = [
     { label: 'Medication', color: theme.colors.teal },
     { label: 'Water', color: theme.colors.blue },
-    { label: 'Workout', color: theme.colors.purple },
+    { label: 'Workout', color: theme.colors.accentBlue },
     { label: 'Appointment', color: theme.colors.blue },
     { label: 'Period', color: theme.colors.pink },
   ];

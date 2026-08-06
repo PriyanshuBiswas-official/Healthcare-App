@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
+import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { ArrowLeft } from 'lucide-react-native';
 import { GlassCardView, SectionHeader, ProgressBar } from '../../components/SharedComponents';
@@ -71,7 +71,7 @@ function getHealthProfile(profileData: ProfileData | null, colors: AppTheme['col
     { icon: '📋', label: 'Medical History', sub: 'Conditions, surgeries', color: colors.pink },
     { icon: '💊', label: 'Medications', sub: medCount > 0 ? `${medCount} active prescription${medCount > 1 ? 's' : ''}` : 'No active medications', color: colors.amber, badge: medCount > 0 ? String(medCount) : undefined },
     { icon: '⚠️', label: 'Allergies', sub: allergyList.length > 0 ? allergyList.slice(0, 2).join(', ') : 'No allergies recorded', color: colors.danger },
-    { icon: '🆘', label: 'Emergency Contacts', sub: 'Emergency contacts', color: colors.purple },
+    { icon: '🆘', label: 'Emergency Contacts', sub: 'Emergency contacts', color: colors.accentBlue },
   ];
 }
 
@@ -313,10 +313,12 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
       right: 0,
     },
     completeCard: {
-      ...GlassCard,
+      backgroundColor: t.colors.bgCard,
+      borderWidth: 1,
+      borderColor: t.colors.teal + '40',
+      borderRadius: Radius.lg,
       padding: Spacing.lg,
       marginBottom: Spacing.xl,
-      borderColor: t.colors.teal + '40',
     },
     completeCardInner: {
       flexDirection: 'row',
@@ -434,7 +436,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
     { icon: '💧', label: 'Water Reminders', sub: 'Hydration intake alerts', color: theme.colors.blue },
     { icon: '💪', label: 'Workouts', sub: 'Exercise schedule & reminders', color: theme.colors.pink },
     { icon: '🏥', label: 'Appointments', sub: 'Upcoming visits & alerts', color: theme.colors.teal },
-    { icon: '🌙', label: 'Sleep', sub: 'Bedtime & wake reminders', color: theme.colors.purple },
+    { icon: '🌙', label: 'Sleep', sub: 'Bedtime & wake reminders', color: theme.colors.accentBlue },
     { icon: '❤️', label: 'Health', sub: 'General health reminders', color: theme.colors.danger },
   ], [theme.colors]);
 

@@ -20,7 +20,7 @@ function TabBar({ activeTab, onTabChange }: TabBarProps) {
   const TABS: { name: TabName; Icon: React.ElementType; activeColor: string }[] = [
     { name: 'Home', Icon: Home, activeColor: theme.colors.teal },
     { name: 'Health', Icon: Stethoscope, activeColor: theme.colors.pink },
-    { name: 'AI', Icon: Bot, activeColor: theme.colors.purple },
+    { name: 'AI', Icon: Bot, activeColor: theme.colors.accentBlue },
     { name: 'Diet', Icon: Utensils, activeColor: theme.colors.amber },
     { name: 'Activity', Icon: Activity, activeColor: theme.colors.teal },
   ];
