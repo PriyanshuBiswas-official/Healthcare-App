@@ -45,7 +45,7 @@ export function useChatState() {
 
     const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     const userMsg: Message = { id: Date.now().toString(), role: 'user', text, time };
-    
+
     // Build chat history for LLM (excluding error messages)
     const history: ChatHistoryItem[] = messages
       .filter(m => !m.text.includes('Google Gemini API error:') && !m.text.includes('having trouble connecting'))
@@ -62,7 +62,7 @@ export function useChatState() {
     try {
       const token = session?.access_token || '';
       const aiResponse = await sendAIChatMessage(token, text, history);
-      
+
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'ai',
@@ -144,7 +144,7 @@ function AIActionRow({ text, onRetry }: { text: string; onRetry?: () => void }) 
   const handleShare = async () => {
     try {
       await Share.share({ message: text });
-    } catch {}
+    } catch { }
   };
 
   return (
@@ -533,7 +533,7 @@ export default function AIChatView({ messages, input, setInput, isThinking, send
             <ArrowLeft size={22} color={theme.colors.textPrimary} strokeWidth={2} />
           </TouchableOpacity>
           <View style={styles.headerTextWrap}>
-            <Text style={styles.greeting}>Chat with AI</Text>
+            <Text style={styles.greeting}>Chat with Cureto</Text>
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.historyBtn} onPress={() => { /* Chat history - future */ }}>

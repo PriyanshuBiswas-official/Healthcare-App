@@ -444,7 +444,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
     { icon: '❓', label: 'Help & Support', sub: 'FAQs, chat support' },
     { icon: '🛡️', label: 'Privacy & Security', sub: 'Data sharing, permissions' },
     { icon: '📄', label: 'Terms & Policies', sub: 'Legal documents' },
-    { icon: 'ℹ️', label: 'About HealthApp', sub: 'Version 0.0.1' },
+    { icon: 'ℹ️', label: 'About Cureto', sub: 'Version 0.0.1' },
   ], []);
 
   // Handle initialSection changes (from notification taps)
@@ -505,7 +505,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
       if (isSignedIn) {
         try {
           await GoogleSignin.revokeAccess();
-        } catch (_) {}
+        } catch (_) { }
         await GoogleSignin.signOut();
       }
     } catch (e) {
@@ -592,227 +592,227 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
           )}
         </>
       ) : (
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
-        onScroll={onScroll}
-        scrollEventThrottle={16}>
-        <View style={styles.topBar}>
-          {onBackPress ? (
-            <TouchableOpacity style={styles.backBtn} onPress={onBackPress} activeOpacity={0.7}>
-              <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.backPlaceholder} />
-          )}
-          <Text style={styles.pageTitle}>Profile</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scroll}
+          onScroll={onScroll}
+          scrollEventThrottle={16}>
+          <View style={styles.topBar}>
+            {onBackPress ? (
+              <TouchableOpacity style={styles.backBtn} onPress={onBackPress} activeOpacity={0.7}>
+                <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.backPlaceholder} />
+            )}
+            <Text style={styles.pageTitle}>Profile</Text>
+            <View style={{ width: 40 }} />
+          </View>
 
-        <GlassCardView style={styles.profileCard} accentColor={theme.colors.teal}>
-          <View style={styles.profileRow}>
-            <View style={styles.avatar}>
-              {avatarUrl ? (
-                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
-              ) : (
-                <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
-              )}
-            </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.name}>{displayName}</Text>
-              <Text style={styles.email}>{displayEmail}</Text>
-              <View style={styles.memberBadge}>
-                <Text style={styles.memberBadgeText}>Free Account</Text>
+          <GlassCardView style={styles.profileCard} accentColor={theme.colors.teal}>
+            <View style={styles.profileRow}>
+              <View style={styles.avatar}>
+                {avatarUrl ? (
+                  <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+                ) : (
+                  <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
+                )}
               </View>
-            </View>
-          </View>
-          <View style={styles.profileMeta}>
-            <Text style={styles.metaItem}>Health Score 78</Text>
-          </View>
-        </GlassCardView>
-
-        <GlassCardView style={styles.statsRow}>
-          {healthStats.map((stat, i) => (
-            <View key={stat.label} style={styles.statItem}>
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-              {i < healthStats.length - 1 && <View style={styles.statDivider} />}
-            </View>
-          ))}
-        </GlassCardView>
-
-        {percentage < 100 && (
-          <>
-            <SectionHeader title="Complete Your Profile" subtitle={`${percentage}% completed`} />
-            <TouchableOpacity
-              style={styles.completeCard}
-              onPress={() => onCompleteProfile?.()}
-              activeOpacity={0.7}>
-              <View style={styles.completeCardInner}>
-                <View style={styles.completeCardLeft}>
-                  <Text style={styles.completeCardIcon}>📝</Text>
-                  <View style={styles.completeCardTextWrap}>
-                    <Text style={styles.completeCardTitle}>Set Up Your Profile</Text>
-                    <Text style={styles.completeCardSub}>
-                      {percentage === 0
-                        ? 'Fill in your health details for a better experience'
-                        : `${6 - Math.round(percentage / 100 * 6)} sections remaining`}
-                    </Text>
-                  </View>
+              <View style={styles.profileInfo}>
+                <Text style={styles.name}>{displayName}</Text>
+                <Text style={styles.email}>{displayEmail}</Text>
+                <View style={styles.memberBadge}>
+                  <Text style={styles.memberBadgeText}>Free Account</Text>
                 </View>
-                <Text style={styles.chevron}>›</Text>
               </View>
-              <View style={styles.completeCardProgress}>
-                <ProgressBar progress={percentage / 100} color={theme.colors.teal} height={4} />
-                <Text style={styles.completeCardPercent}>{percentage}%</Text>
+            </View>
+            <View style={styles.profileMeta}>
+              <Text style={styles.metaItem}>Health Score 78</Text>
+            </View>
+          </GlassCardView>
+
+          <GlassCardView style={styles.statsRow}>
+            {healthStats.map((stat, i) => (
+              <View key={stat.label} style={styles.statItem}>
+                <Text style={styles.statValue}>{stat.value}</Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+                {i < healthStats.length - 1 && <View style={styles.statDivider} />}
               </View>
-            </TouchableOpacity>
-          </>
-        )}
+            ))}
+          </GlassCardView>
 
-        <SectionHeader title="Health Profile" subtitle="Manage your medical information" />
-        <GlassCardView style={styles.menuCard}>
-          {healthProfile.map((item, i) => (
-            <View key={item.label}>
-              <MenuRow
-                item={item}
-                colors={theme.colors}
-                onPress={() => {
-                  const sectionMap: Record<string, HealthSection> = {
-                    'Personal Information': 'personal',
-                    'Medical History': 'medical',
-                    'Medications': 'medications',
-                    'Allergies': 'allergies',
-                    'Emergency Contacts': 'emergency',
-                  };
-                  setActiveSection(sectionMap[item.label] || null);
-                }}
-              />
-              {i < healthProfile.length - 1 && <View style={styles.divider} />}
-            </View>
-          ))}
-        </GlassCardView>
+          {percentage < 100 && (
+            <>
+              <SectionHeader title="Complete Your Profile" subtitle={`${percentage}% completed`} />
+              <TouchableOpacity
+                style={styles.completeCard}
+                onPress={() => onCompleteProfile?.()}
+                activeOpacity={0.7}>
+                <View style={styles.completeCardInner}>
+                  <View style={styles.completeCardLeft}>
+                    <Text style={styles.completeCardIcon}>📝</Text>
+                    <View style={styles.completeCardTextWrap}>
+                      <Text style={styles.completeCardTitle}>Set Up Your Profile</Text>
+                      <Text style={styles.completeCardSub}>
+                        {percentage === 0
+                          ? 'Fill in your health details for a better experience'
+                          : `${6 - Math.round(percentage / 100 * 6)} sections remaining`}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.chevron}>›</Text>
+                </View>
+                <View style={styles.completeCardProgress}>
+                  <ProgressBar progress={percentage / 100} color={theme.colors.teal} height={4} />
+                  <Text style={styles.completeCardPercent}>{percentage}%</Text>
+                </View>
+              </TouchableOpacity>
+            </>
+          )}
 
-        <SectionHeader title="Reminders" subtitle="Manage your daily reminders" />
-        <GlassCardView style={styles.menuCard}>
-          {REMINDER_ITEMS.map((item, i) => (
-            <View key={item.label}>
-              <MenuRow
-                item={item}
-                colors={theme.colors}
-                onPress={() => {
-                  const sectionMap: Record<string, HealthSection> = {
-                    'Medications': 'reminders-medication',
-                    'Water Reminders': 'reminders-water',
-                    'Workouts': 'reminders-workouts',
-                    'Appointments': 'reminders-appointments',
-                    'Sleep': 'reminders-sleep',
-                    'Health': 'reminders-health',
-                  };
-                  setActiveSection(sectionMap[item.label] || null);
-                }}
-              />
-              {i < REMINDER_ITEMS.length - 1 && <View style={styles.divider} />}
-            </View>
-          ))}
-        </GlassCardView>
-
-        <SectionHeader title="Connected Devices" subtitle="Sync wearables & health data" />
-        <GlassCardView style={styles.menuCard}>
-          {CONNECTED_DEVICES.map((item, i) => (
-            <View key={item.label}>
-              <MenuRow item={item} colors={theme.colors} />
-              {i < CONNECTED_DEVICES.length - 1 && <View style={styles.divider} />}
-            </View>
-          ))}
-        </GlassCardView>
-
-        <SectionHeader title="Appearance" subtitle="Choose your app theme" />
-        <GlassCardView style={styles.menuCard}>
-          <View style={styles.themeChipRow}>
-            {([
-              { key: 'system' as const, icon: '🔄', label: 'System' },
-              { key: 'dark' as const, icon: '🌙', label: 'Dark' },
-              { key: 'light' as const, icon: '☀️', label: 'Light' },
-            ]).map((opt) => {
-              const isActive = opt.key === 'system'
-                ? systemSync
-                : !systemSync && themeName === opt.key;
-              return (
-                <TouchableOpacity
-                  key={opt.key}
-                  style={[styles.themeChip, isActive && styles.themeChipActive]}
-                  activeOpacity={0.7}
+          <SectionHeader title="Health Profile" subtitle="Manage your medical information" />
+          <GlassCardView style={styles.menuCard}>
+            {healthProfile.map((item, i) => (
+              <View key={item.label}>
+                <MenuRow
+                  item={item}
+                  colors={theme.colors}
                   onPress={() => {
-                    if (opt.key === 'system') {
-                      setSystemSync(true);
-                    } else {
-                      setSystemSync(false);
-                      setThemeName(opt.key);
-                    }
-                  }}>
-                  <Text style={styles.themeChipIcon}>{opt.icon}</Text>
-                  <Text style={[styles.themeChipText, isActive && styles.themeChipTextActive]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </GlassCardView>
+                    const sectionMap: Record<string, HealthSection> = {
+                      'Personal Information': 'personal',
+                      'Medical History': 'medical',
+                      'Medications': 'medications',
+                      'Allergies': 'allergies',
+                      'Emergency Contacts': 'emergency',
+                    };
+                    setActiveSection(sectionMap[item.label] || null);
+                  }}
+                />
+                {i < healthProfile.length - 1 && <View style={styles.divider} />}
+              </View>
+            ))}
+          </GlassCardView>
 
-        <SectionHeader title="Preferences" />
-        <GlassCardView style={styles.menuCard}>
-          {PREFERENCES.map((item, i) => (
-            <View key={item.key}>
-              <ToggleRow
-                icon={item.icon}
-                label={item.label}
-                sub={item.sub}
-                value={toggles[item.key]}
-                onValueChange={v => setToggle(item.key, v)}
-                colors={theme.colors}
-              />
-              {i < PREFERENCES.length - 1 && <View style={styles.divider} />}
+          <SectionHeader title="Reminders" subtitle="Manage your daily reminders" />
+          <GlassCardView style={styles.menuCard}>
+            {REMINDER_ITEMS.map((item, i) => (
+              <View key={item.label}>
+                <MenuRow
+                  item={item}
+                  colors={theme.colors}
+                  onPress={() => {
+                    const sectionMap: Record<string, HealthSection> = {
+                      'Medications': 'reminders-medication',
+                      'Water Reminders': 'reminders-water',
+                      'Workouts': 'reminders-workouts',
+                      'Appointments': 'reminders-appointments',
+                      'Sleep': 'reminders-sleep',
+                      'Health': 'reminders-health',
+                    };
+                    setActiveSection(sectionMap[item.label] || null);
+                  }}
+                />
+                {i < REMINDER_ITEMS.length - 1 && <View style={styles.divider} />}
+              </View>
+            ))}
+          </GlassCardView>
+
+          <SectionHeader title="Connected Devices" subtitle="Sync wearables & health data" />
+          <GlassCardView style={styles.menuCard}>
+            {CONNECTED_DEVICES.map((item, i) => (
+              <View key={item.label}>
+                <MenuRow item={item} colors={theme.colors} />
+                {i < CONNECTED_DEVICES.length - 1 && <View style={styles.divider} />}
+              </View>
+            ))}
+          </GlassCardView>
+
+          <SectionHeader title="Appearance" subtitle="Choose your app theme" />
+          <GlassCardView style={styles.menuCard}>
+            <View style={styles.themeChipRow}>
+              {([
+                { key: 'system' as const, icon: '🔄', label: 'System' },
+                { key: 'dark' as const, icon: '🌙', label: 'Dark' },
+                { key: 'light' as const, icon: '☀️', label: 'Light' },
+              ]).map((opt) => {
+                const isActive = opt.key === 'system'
+                  ? systemSync
+                  : !systemSync && themeName === opt.key;
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={[styles.themeChip, isActive && styles.themeChipActive]}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      if (opt.key === 'system') {
+                        setSystemSync(true);
+                      } else {
+                        setSystemSync(false);
+                        setThemeName(opt.key);
+                      }
+                    }}>
+                    <Text style={styles.themeChipIcon}>{opt.icon}</Text>
+                    <Text style={[styles.themeChipText, isActive && styles.themeChipTextActive]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-          ))}
-          <View style={styles.divider} />
-          <ToggleRow
-            icon="❤️"
-            label="Hide Vitals"
-            sub="Remove vitals from all health pages"
-            value={hideVitals}
-            onValueChange={setHideVitals}
-            colors={theme.colors}
-          />
-          <View style={styles.divider} />
-          <ToggleRow
-            icon="👥"
-            label="Hide Community Spotlight"
-            sub="Remove community posts from dashboard"
-            value={hideCommunitySpotlight}
-            onValueChange={setHideCommunitySpotlight}
-            colors={theme.colors}
-          />
-        </GlassCardView>
+          </GlassCardView>
 
-        <SectionHeader title="Support" />
-        <GlassCardView style={styles.menuCard}>
-          {SUPPORT.map((item, i) => (
-            <View key={item.label}>
-              <MenuRow item={item} colors={theme.colors} />
-              {i < SUPPORT.length - 1 && <View style={styles.divider} />}
-            </View>
-          ))}
-        </GlassCardView>
+          <SectionHeader title="Preferences" />
+          <GlassCardView style={styles.menuCard}>
+            {PREFERENCES.map((item, i) => (
+              <View key={item.key}>
+                <ToggleRow
+                  icon={item.icon}
+                  label={item.label}
+                  sub={item.sub}
+                  value={toggles[item.key]}
+                  onValueChange={v => setToggle(item.key, v)}
+                  colors={theme.colors}
+                />
+                {i < PREFERENCES.length - 1 && <View style={styles.divider} />}
+              </View>
+            ))}
+            <View style={styles.divider} />
+            <ToggleRow
+              icon="❤️"
+              label="Hide Vitals"
+              sub="Remove vitals from all health pages"
+              value={hideVitals}
+              onValueChange={setHideVitals}
+              colors={theme.colors}
+            />
+            <View style={styles.divider} />
+            <ToggleRow
+              icon="👥"
+              label="Hide Community Spotlight"
+              sub="Remove community posts from dashboard"
+              value={hideCommunitySpotlight}
+              onValueChange={setHideCommunitySpotlight}
+              colors={theme.colors}
+            />
+          </GlassCardView>
 
-        <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8} onPress={handleLogout}>
-          <Text style={styles.logoutIcon}>⏻</Text>
-          <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
+          <SectionHeader title="Support" />
+          <GlassCardView style={styles.menuCard}>
+            {SUPPORT.map((item, i) => (
+              <View key={item.label}>
+                <MenuRow item={item} colors={theme.colors} />
+                {i < SUPPORT.length - 1 && <View style={styles.divider} />}
+              </View>
+            ))}
+          </GlassCardView>
 
-        <Text style={styles.version}>HealthApp v0.0.1 · Build 1</Text>
-      </ScrollView>
+          <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8} onPress={handleLogout}>
+            <Text style={styles.logoutIcon}>⏻</Text>
+            <Text style={styles.logoutText}>Log Out</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.version}>Cureto v0.0.1 · Build 1</Text>
+        </ScrollView>
       )}
     </View>
   );

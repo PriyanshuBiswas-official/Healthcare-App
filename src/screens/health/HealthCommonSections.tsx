@@ -54,7 +54,9 @@ export const InnerTabBar: React.FC<InnerTabBarProps> = ({
     wrapper: { marginBottom: Spacing.xl },
     row: {
       flexDirection: 'row',
-      backgroundColor: t.colors.bgCardBorder,
+      backgroundColor: t.colors.bgCard,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
       borderRadius: Radius.lg,
       padding: 4
     },
@@ -65,11 +67,7 @@ export const InnerTabBar: React.FC<InnerTabBarProps> = ({
       borderRadius: Radius.md
     },
     tabActive: {
-      backgroundColor: t.colors.bgCard,
-      shadowColor: t.colors.shadowColor,
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      elevation: 2
+      backgroundColor: t.colors.bgCardBorder,
     },
     label: {
       fontSize: Typography.sm,
