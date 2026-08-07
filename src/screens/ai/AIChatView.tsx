@@ -15,7 +15,8 @@ import { Typography, Spacing, Radius, Shadows } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useAuth } from '../../providers/AuthProvider';
 import { sendAIChatMessage, ChatHistoryItem } from '../../services/aiApi';
-import { Copy, RotateCcw, Volume2, Share2, Paperclip, Mic, SendHorizonal } from 'lucide-react-native';
+import { Copy, RotateCcw, Volume2, Share2, Paperclip, Mic, SendHorizonal, ArrowLeft, History } from 'lucide-react-native';
+import type { TabName } from '../../navigation/TabBar';
 
 export type Message = {
   id: string;
@@ -111,6 +112,10 @@ type AIChatViewProps = {
   retryLastMessage?: () => void;
   scrollRef: React.RefObject<ScrollView | null>;
   initialQuery?: string;
+  autoFocus?: boolean;
+  onBack?: () => void;
+  originTab?: TabName;
+  navigateToTab?: (tab: TabName) => void;
 };
 
 // ── AI Action Buttons Row ────────────────────────────────────────
@@ -301,8 +306,9 @@ function FormattedText({ text, style }: { text: string; style?: any }) {
 }
 
 // ── Main Chat View ────────────────────────────────────────────
-export default function AIChatView({ messages, input, setInput, isThinking, sendMessage, retryLastMessage, scrollRef, initialQuery }: AIChatViewProps) {
+export default function AIChatView({ messages, input, setInput, isThinking, sendMessage, retryLastMessage, scrollRef, initialQuery, autoFocus, onBack, originTab, navigateToTab }: AIChatViewProps) {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const styles = useStyles((theme) => ({
     // ── Quick Prompts ──
     quickScroll: {
@@ -462,6 +468,44 @@ export default function AIChatView({ messages, input, setInput, isThinking, send
       alignItems: 'center',
       justifyContent: 'center',
     },
+
+    // ── Header (when rendered as overlay) ──
+    root: {
+      flex: 1,
+      backgroundColor: theme.colors.bg,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: Spacing.base,
+      paddingTop: Spacing.xl,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.divider,
+      backgroundColor: theme.colors.bg,
+    },
+    backBtn: {
+      padding: Spacing.sm,
+      marginRight: Spacing.xs,
+    },
+    headerTextWrap: {
+      flex: 1,
+    },
+    greeting: { fontSize: Typography.xl, fontWeight: Typography.bold, color: theme.colors.textPrimary },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    historyBtn: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.bgCard,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+    },
   }));
   const hasSentInitial = useRef(false);
   const hasMessages = messages.length > 0;
@@ -474,7 +518,31 @@ export default function AIChatView({ messages, input, setInput, isThinking, send
   }, [initialQuery]);
 
   return (
-    <>
+    <View style={styles.root}>
+      {/* Header — only when rendered as overlay (onBack provided) */}
+      {onBack && (
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => {
+              if (navigateToTab && originTab && originTab !== 'AI') {
+                navigateToTab(originTab);
+              }
+              onBack();
+            }}
+            style={styles.backBtn}>
+            <ArrowLeft size={22} color={theme.colors.textPrimary} strokeWidth={2} />
+          </TouchableOpacity>
+          <View style={styles.headerTextWrap}>
+            <Text style={styles.greeting}>Chat with AI</Text>
+          </View>
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.historyBtn} onPress={() => { /* Chat history - future */ }}>
+              <History size={20} color={theme.colors.textSecondary} strokeWidth={1.5} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       {/* Messages or Welcome */}
       {!hasMessages && !isThinking ? (
         <View style={styles.chatScroll}>
@@ -563,6 +631,7 @@ export default function AIChatView({ messages, input, setInput, isThinking, send
             returnKeyType="send"
             multiline
             editable={!isThinking}
+            autoFocus={autoFocus}
           />
 
           {/* Mic or Send button */}
@@ -584,6 +653,6 @@ export default function AIChatView({ messages, input, setInput, isThinking, send
           )}
         </View>
       </View>
-    </>
+    </View>
   );
 }

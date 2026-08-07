@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useReducer, useCallback } from 'react';
-import { View, StatusBar, StyleSheet, SafeAreaView, BackHandler } from 'react-native';
+import { View, StatusBar, StyleSheet, SafeAreaView, BackHandler, KeyboardAvoidingView, Platform } from 'react-native';
 import TabBar, { TabName } from './src/navigation/TabBar';
 import { ScrollVisibilityProvider, useScrollVisibility } from './src/navigation/ScrollVisibilityContext';
 import DashboardScreen from './src/screens/home/DashboardScreen';
@@ -7,6 +7,7 @@ import HealthScreen from './src/screens/health/HealthScreen';
 import FitnessScreen from './src/screens/fitness/FitnessScreen';
 import CalorieScreen from './src/screens/diet/CalorieScreen';
 import AIAdvisorScreen from './src/screens/ai/AIAdvisorScreen';
+import AIChatView, { useChatState } from './src/screens/ai/AIChatView';
 import ProfileScreen from './src/screens/profile/ProfileScreen';
 import NotificationsScreen from './src/screens/notifications/NotificationsScreen';
 import ProfileSetupScreen from './src/screens/profile/ProfileSetupScreen';
@@ -30,6 +31,7 @@ import ErrorScreen from './src/screens/error/ErrorScreen';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { NetworkProvider } from './src/services/networkService';
 import OfflineBanner from './src/components/OfflineBanner';
+import { ArrowLeft, History } from 'lucide-react-native';
 const Stack = createNativeStackNavigator();
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
@@ -43,6 +45,7 @@ type AppState = {
   aiStartInChat: boolean;
   aiOrigin: TabName | null;
   aiInitialQuery: string;
+  aiChatVisible: boolean;
   showProfileSetup: boolean;
   profileSection: string | null;
   workoutLogExercise: any;
@@ -53,6 +56,8 @@ type AppState = {
 type AppAction =
   | { type: 'SWITCH_TAB'; tab: TabName }
   | { type: 'OPEN_AI'; from?: TabName; startInChat?: boolean; initialQuery?: string }
+  | { type: 'OPEN_AI_CHAT'; from?: TabName; initialQuery?: string }
+  | { type: 'CLOSE_AI_CHAT' }
   | { type: 'OPEN_PROFILE'; section?: string }
   | { type: 'OPEN_NOTIFICATIONS' }
   | { type: 'OPEN_PROFILE_SETUP' }
@@ -72,6 +77,7 @@ const INITIAL_STATE: AppState = {
   aiStartInChat: false,
   aiOrigin: null,
   aiInitialQuery: '',
+  aiChatVisible: false,
   showProfileSetup: false,
   profileSection: null,
   workoutLogExercise: null,
@@ -85,15 +91,38 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, previousTab: state.activeTab, activeTab: action.tab };
 
     case 'OPEN_AI':
+      // startInChat=true → open as overlay (no tab switch, instant)
+      if (action.startInChat) {
+        return {
+          ...state,
+          aiChatVisible: true,
+          aiOrigin: action.from !== undefined ? action.from : null,
+          aiInitialQuery: action.initialQuery ?? '',
+        };
+      }
+      // startInChat=false → switch to AI tab (overview mode)
       return {
         ...state,
         previousTab: state.activeTab,
         activeTab: 'AI',
-        // Only record a foreign origin when explicitly provided (e.g. Home quick-action → AI).
-        // Direct tab-bar taps pass from=undefined → null, so back returns to AI overview.
         aiOrigin: action.from !== undefined ? action.from : null,
-        aiStartInChat: action.startInChat ?? false,
+        aiStartInChat: false,
+        aiInitialQuery: '',
+      };
+
+    case 'OPEN_AI_CHAT':
+      return {
+        ...state,
+        aiChatVisible: true,
+        aiOrigin: action.from !== undefined ? action.from : null,
         aiInitialQuery: action.initialQuery ?? '',
+      };
+
+    case 'CLOSE_AI_CHAT':
+      return {
+        ...state,
+        aiChatVisible: false,
+        aiInitialQuery: '',
       };
 
     case 'OPEN_PROFILE':
@@ -147,6 +176,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
 const MemoizedDashboard = React.memo(DashboardScreen);
 const MemoizedHealthScreen = React.memo(HealthScreen);
 const MemoizedAIAdvisorScreen = React.memo(AIAdvisorScreen);
+const MemoizedAIChatView = React.memo(AIChatView);
 const MemoizedFitnessScreen = React.memo(FitnessScreen);
 const MemoizedCalorieScreen = React.memo(CalorieScreen);
 const MemoizedProfileScreen = React.memo(ProfileScreen);
@@ -185,6 +215,10 @@ function AppShell() {
   const openRelationships = useCallback(() => dispatch({ type: 'OPEN_RELATIONSHIPS' }), []);
   const closeRelationships = useCallback(() => dispatch({ type: 'CLOSE_OVERLAY' }), []);
   const openAppointments = useCallback(() => dispatch({ type: 'OPEN_PROFILE', section: 'reminders-appointments' }), []);
+  const closeAIChat = useCallback(() => dispatch({ type: 'CLOSE_AI_CHAT' }), []);
+
+  // ── Chat state (lifted to App level for overlay) ─────────────
+  const { messages, input, setInput, isThinking, sendMessage, retryLastMessage, scrollRef } = useChatState();
 
   // ── Notification tap handler ──────────────────────────────────
   const { setOnNotificationTap } = useNotifications();
@@ -222,8 +256,13 @@ function AppShell() {
   }, [setOnNotificationTap]);
 
   const openAI = useCallback((fromTab?: TabName, startInChat = true, initialQuery?: string) => {
-    tabHistory.current.push('AI');
-    dispatch({ type: 'OPEN_AI', from: fromTab, startInChat, initialQuery });
+    console.log('[openAI] from:', fromTab, 'startInChat:', startInChat, 'query:', initialQuery);
+    if (startInChat) {
+      dispatch({ type: 'OPEN_AI_CHAT', from: fromTab, initialQuery });
+    } else {
+      tabHistory.current.push('AI');
+      dispatch({ type: 'OPEN_AI', from: fromTab, startInChat: false });
+    }
   }, []);
 
   const openWorkoutLog = useCallback((exercise: any) => {
@@ -262,12 +301,19 @@ function AppShell() {
   // ── Derive forceHidden from activeTab ─────────────────────────
 
   useEffect(() => {
-    // For overlay tabs: always hide the tab bar
-    // For AI tab: AIAdvisorScreen manages its own visibility (chat sub-view hides it)
-    // For all other main tabs: always show the tab bar
-    if (state.activeTab === 'AI') return;
+    // Hide tab bar when:
+    // 1. An overlay tab is active (Profile, Notifications, etc.)
+    // 2. AI chat overlay is visible
+    // For AI tab in overview: let AIAdvisorScreen manage its own visibility
+    if (state.aiChatVisible) {
+      setForceHidden(true);
+      return;
+    }
+    if (state.activeTab === 'AI') {
+      return;
+    }
     setForceHidden(OVERLAY_TABS.includes(state.activeTab));
-  }, [state.activeTab, setForceHidden]);
+  }, [state.activeTab, state.aiChatVisible, setForceHidden]);
 
   const { theme } = useTheme();
 
@@ -286,6 +332,11 @@ function AppShell() {
   useEffect(() => {
     const onBack = () => {
       const s = stateRef.current;
+      // AI chat overlay: close chat
+      if (s.aiChatVisible) {
+        dispatch({ type: 'CLOSE_AI_CHAT' });
+        return true;
+      }
       // Overlay tabs: close overlay (no history change — overlays are modals)
       if (OVERLAY_TABS.includes(s.activeTab)) {
         if (s.activeTab === 'WorkoutLog') {
@@ -355,11 +406,8 @@ function AppShell() {
                   <MemoizedAIAdvisorScreen
                     onProfilePress={openProfile}
                     onNotificationsPress={openNotifications}
-                    startInChat={state.aiStartInChat}
-                    initialQuery={state.aiInitialQuery}
-                    originTab={state.aiOrigin ?? undefined}
-                    navigateToTab={navigateToTab}
                     isTabActive={state.activeTab === 'AI'}
+                    onOpenChat={() => openAI(undefined, true, '')}
                   />
                 </ErrorBoundary>
               )}
@@ -426,6 +474,29 @@ function AppShell() {
               onBack={closeRelationships}
               onPartnerPress={openPartnerReport}
             />
+          </View>
+        )}
+        {state.aiChatVisible && (
+          <View style={styles.overlayWrapper}>
+            <KeyboardAvoidingView
+              style={{ flex: 1 }}
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              keyboardVerticalOffset={0}>
+              <MemoizedAIChatView
+                messages={messages}
+                input={input}
+                setInput={setInput}
+                isThinking={isThinking}
+                sendMessage={sendMessage}
+                retryLastMessage={retryLastMessage}
+                scrollRef={scrollRef}
+                initialQuery={state.aiInitialQuery}
+                autoFocus
+                onBack={closeAIChat}
+                originTab={state.aiOrigin ?? undefined}
+                navigateToTab={navigateToTab}
+              />
+            </KeyboardAvoidingView>
           </View>
         )}
       </View>
@@ -541,6 +612,15 @@ const styles = StyleSheet.create({
   },
   screenWrapper: {
     flex: 1,
+  },
+  overlayWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
+    elevation: 10,
   },
   screenHidden: {
     display: 'none',
