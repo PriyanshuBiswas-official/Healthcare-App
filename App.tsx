@@ -31,7 +31,7 @@ import ErrorScreen from './src/screens/error/ErrorScreen';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { NetworkProvider } from './src/services/networkService';
 import OfflineBanner from './src/components/OfflineBanner';
-import { ArrowLeft, History } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 const Stack = createNativeStackNavigator();
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
@@ -218,7 +218,13 @@ function AppShell() {
   const closeAIChat = useCallback(() => dispatch({ type: 'CLOSE_AI_CHAT' }), []);
 
   // ── Chat state (lifted to App level for overlay) ─────────────
-  const { messages, input, setInput, isThinking, sendMessage, retryLastMessage, scrollRef } = useChatState();
+  const {
+    messages, input, setInput, isThinking, sendMessage, retryLastMessage, scrollRef,
+    conversationId, conversations, archivedConversations, loadingConversations,
+    loadConversations, loadArchivedConversations, loadConversation, startNewChat,
+    handleDeleteConversation, handlePinConversation, handleArchiveConversation, handleUnarchiveConversation,
+    pendingAttachments, setPendingAttachments,
+  } = useChatState();
 
   // ── Notification tap handler ──────────────────────────────────
   const { setOnNotificationTap } = useNotifications();
@@ -495,6 +501,20 @@ function AppShell() {
                 onBack={closeAIChat}
                 originTab={state.aiOrigin ?? undefined}
                 navigateToTab={navigateToTab}
+                conversationId={conversationId}
+                conversations={conversations}
+                archivedConversations={archivedConversations}
+                loadingConversations={loadingConversations}
+                loadConversations={loadConversations}
+                loadArchivedConversations={loadArchivedConversations}
+                loadConversation={loadConversation}
+                startNewChat={startNewChat}
+                handleDeleteConversation={handleDeleteConversation}
+                handlePinConversation={handlePinConversation}
+                handleArchiveConversation={handleArchiveConversation}
+                handleUnarchiveConversation={handleUnarchiveConversation}
+                pendingAttachments={pendingAttachments}
+                setPendingAttachments={setPendingAttachments}
               />
             </KeyboardAvoidingView>
           </View>

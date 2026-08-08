@@ -161,8 +161,6 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
       alignItems: 'center',
       padding: Spacing.base,
       paddingTop: Spacing.xl,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.divider,
     },
     headerTextWrap: {
       flex: 1,
