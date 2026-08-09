@@ -8,8 +8,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { ArrowLeft } from 'lucide-react-native';
-import { GlassCardView } from '../../components/SharedComponents';
+import { GlassCardView, BackButton } from '../../components/SharedComponents';
 
 interface Props {
   onBack: () => void;
@@ -28,10 +27,6 @@ export default function FeedbackScreen({ onBack, onNext, onSkip, step, totalStep
     topBar: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
       paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
-    },
-    backBtn: {
-      width: 40, height: 40, borderRadius: Radius.md, backgroundColor: t.colors.bgCard,
-      borderWidth: 1, borderColor: t.colors.bgCardBorder, alignItems: 'center', justifyContent: 'center',
     },
     pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary },
     skipBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
@@ -97,9 +92,7 @@ export default function FeedbackScreen({ onBack, onNext, onSkip, step, totalStep
   return (
     <View style={styles.root}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack}>
-          <ArrowLeft size={20} color={theme.colors.textPrimary} />
-        </TouchableOpacity>
+        <BackButton onPress={onBack} color={theme.colors.textPrimary} />
         <Text style={styles.pageTitle}>Delete Account</Text>
         <TouchableOpacity style={styles.skipBtn} onPress={onSkip}>
           <Text style={styles.skipText}>Skip</Text>

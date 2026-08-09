@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  ArrowLeft,
   ShieldCheck,
   Heart,
   Activity as ActivityIcon,
@@ -27,7 +26,7 @@ import {
 } from 'lucide-react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { GlassCardView, SectionHeader, ActivityProgressCard } from '../../components/SharedComponents';
+import { GlassCardView, SectionHeader, ActivityProgressCard, BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import * as relationshipApi from '../../services/relationshipApi';
 
@@ -98,16 +97,7 @@ export default function PartnerHealthReportScreen({
       paddingHorizontal: Spacing.lg,
       paddingVertical: Spacing.md,
     },
-    backBtn: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: t.colors.chipBg,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: t.colors.bgCardBorder,
-    },
+
     headerTitles: {
       flex: 1,
       alignItems: 'center',
@@ -348,9 +338,7 @@ export default function PartnerHealthReportScreen({
     return (
       <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
         <View style={styles.errorHeader}>
-          <TouchableOpacity style={styles.backBtn} onPress={onBack}>
-            <ArrowLeft size={22} color={colors.text} strokeWidth={2} />
-          </TouchableOpacity>
+          <BackButton onPress={onBack} color={colors.textPrimary} />
         </View>
         <ShieldAlert size={48} color={colors.pink} />
         <Text style={styles.errorTitle}>Access Denied or Revoked</Text>
@@ -373,9 +361,7 @@ export default function PartnerHealthReportScreen({
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* HEADER */}
       <View style={[styles.header, { zIndex: 10 }]}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack}>
-          <ArrowLeft size={22} color={colors.text} strokeWidth={2} />
-        </TouchableOpacity>
+        <BackButton onPress={onBack} color={colors.textPrimary} />
         <View style={styles.headerTitles}>
           <Text style={styles.headerTitle}>Health Report</Text>
           <Text style={styles.headerSubtitle}>

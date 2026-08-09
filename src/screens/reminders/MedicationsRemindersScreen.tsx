@@ -11,8 +11,8 @@ import {
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { ArrowLeft, Trash2 } from 'lucide-react-native';
-import { GlassCardView } from '../../components/SharedComponents';
+import { Trash2 } from 'lucide-react-native';
+import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import {
   getMedications,
@@ -210,11 +210,6 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
       paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
     },
-    backBtn: {
-      width: 40, height: 40, borderRadius: Radius.md,
-      backgroundColor: theme.colors.bgCard, borderWidth: 1, borderColor: theme.colors.bgCardBorder,
-      alignItems: 'center', justifyContent: 'center',
-    },
     pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
     scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
     card: { padding: Spacing.lg, marginBottom: Spacing.md },
@@ -291,9 +286,7 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
     return (
       <View style={styles.root}>
         <View style={styles.topBar}>
-          <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-            <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
-          </TouchableOpacity>
+          <BackButton onPress={onBack} color={theme.colors.textPrimary} />
           <Text style={styles.pageTitle}>Medications</Text>
           <View style={{ width: 60 }} />
         </View>
@@ -308,9 +301,7 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
     return (
       <View style={styles.root}>
         <View style={styles.topBar}>
-          <TouchableOpacity style={styles.backBtn} onPress={resetForm} activeOpacity={0.7}>
-            <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
-          </TouchableOpacity>
+          <BackButton onPress={resetForm} color={theme.colors.textPrimary} />
           <Text style={styles.pageTitle}>{selectedMed.name}</Text>
           <View style={{ width: 60 }} />
         </View>
@@ -435,9 +426,7 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
   return (
     <View style={styles.root}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
-        </TouchableOpacity>
+        <BackButton onPress={onBack} color={theme.colors.textPrimary} />
         <Text style={styles.pageTitle}>Medications</Text>
         <View style={{ width: 60 }} />
       </View>

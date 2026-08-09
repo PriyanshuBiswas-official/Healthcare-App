@@ -374,6 +374,7 @@ function AppShell() {
       return;
     }
     if (state.activeTab === 'AI') {
+      setForceHidden(false);
       return;
     }
     setForceHidden(OVERLAY_TABS.includes(state.activeTab));

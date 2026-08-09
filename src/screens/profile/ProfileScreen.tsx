@@ -13,8 +13,8 @@ import {
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { ArrowLeft, User, ClipboardList, Pill, TriangleAlert, Phone, Bell, Flower2, Lock, Watch, Smartphone, Droplets, Dumbbell, Building2, Moon, Heart, CircleQuestionMark, Shield, FileText, Info, PenLine, Monitor, Sun, Users, Crown } from 'lucide-react-native';
-import { GlassCardView, SectionHeader, ProgressBar } from '../../components/SharedComponents';
+import { User, ClipboardList, Pill, TriangleAlert, Phone, Bell, Flower2, Lock, Watch, Smartphone, Droplets, Dumbbell, Building2, Moon, Heart, CircleQuestionMark, Shield, FileText, Info, PenLine, Monitor, Sun, Users, Crown } from 'lucide-react-native';
+import { GlassCardView, SectionHeader, ProgressBar, BackButton } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useAuth } from '../../providers/AuthProvider';
 import { supabase } from '../../lib/supabase';
@@ -221,16 +221,6 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
       alignItems: 'center',
       justifyContent: 'space-between',
       marginBottom: Spacing.xl,
-    },
-    backBtn: {
-      width: 40,
-      height: 40,
-      borderRadius: Radius.md,
-      backgroundColor: t.colors.bgCard,
-      borderWidth: 1,
-      borderColor: t.colors.bgCardBorder,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
     backPlaceholder: { width: 40 },
     backIcon: { fontSize: Typography.lg, color: t.colors.textPrimary },
@@ -683,24 +673,24 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
           )}
         </>
       ) : (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scroll}
-          onScroll={onScroll}
-          scrollEventThrottle={16}>
-          <View style={styles.topBar}>
-            {onBackPress ? (
-              <TouchableOpacity style={styles.backBtn} onPress={onBackPress} activeOpacity={0.7}>
-                <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.backPlaceholder} />
-            )}
-            <Text style={styles.pageTitle}>Profile</Text>
-            <View style={{ width: 40 }} />
-          </View>
+        <>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scroll}
+            onScroll={onScroll}
+            scrollEventThrottle={16}>
 
-          <GlassCardView style={styles.profileCard} accentColor={theme.colors.teal}>
+            <View style={styles.topBar}>
+              {onBackPress ? (
+                <BackButton onPress={onBackPress} color={theme.colors.textPrimary} />
+              ) : (
+                <View style={styles.backPlaceholder} />
+              )}
+              <Text style={styles.pageTitle}>Profile</Text>
+              <View style={{ width: 40 }} />
+            </View>
+
+            <GlassCardView style={styles.profileCard} accentColor={theme.colors.teal}>
             <View style={styles.profileRow}>
               <View style={styles.avatar}>
                 {avatarUrl ? (
@@ -929,6 +919,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
             <Text style={styles.deleteBtnText}>Delete Account</Text>
           </TouchableOpacity>
         </ScrollView>
+        </>
       )}
 
       {loggingOut && (

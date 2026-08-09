@@ -12,8 +12,8 @@ import {
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { ArrowLeft, Trash2, Pencil, Check } from 'lucide-react-native';
-import { GlassCardView } from '../../components/SharedComponents';
+import { Trash2, Pencil, Check } from 'lucide-react-native';
+import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { useReminders } from '../../providers/ReminderContext';
 import type { Reminder, ReminderSchedule, Weekday } from '../../types/reminder';
 
@@ -263,11 +263,6 @@ export default function HealthRemindersScreen({ onBack, onSaved }: Props) {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
       paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
     },
-    backBtn: {
-      width: 40, height: 40, borderRadius: Radius.md,
-      backgroundColor: theme.colors.bgCard, borderWidth: 1, borderColor: theme.colors.bgCardBorder,
-      alignItems: 'center', justifyContent: 'center',
-    },
     pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
     addTopBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
     addTopBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.danger },
@@ -344,9 +339,7 @@ export default function HealthRemindersScreen({ onBack, onSaved }: Props) {
     return (
       <View style={styles.root}>
         <View style={styles.topBar}>
-          <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-            <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
-          </TouchableOpacity>
+          <BackButton onPress={onBack} color={theme.colors.textPrimary} />
           <Text style={styles.pageTitle}>Health Reminders</Text>
           <View style={{ width: 60 }} />
         </View>
@@ -360,9 +353,7 @@ export default function HealthRemindersScreen({ onBack, onSaved }: Props) {
   return (
     <View style={styles.root}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
-        </TouchableOpacity>
+        <BackButton onPress={onBack} color={theme.colors.textPrimary} />
         <Text style={styles.pageTitle}>Health Reminders</Text>
         <TouchableOpacity
           style={styles.addTopBtn}

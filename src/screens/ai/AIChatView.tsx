@@ -34,8 +34,9 @@ import {
   ChatHistoryItem,
   ChatAttachment,
 } from '../../services/aiApi';
-import { Copy, RotateCcw, Volume2, Share2, Paperclip, Mic, SendHorizonal, ArrowLeft, Menu, Plus, X, MessageSquare, Trash2, Pin, Archive, ChevronDown, ChevronRight, Camera, Image as ImageIcon, FileText } from 'lucide-react-native';
+import { Copy, RotateCcw, Volume2, Share2, Paperclip, Mic, SendHorizonal, Menu, Plus, X, MessageSquare, Trash2, Pin, Archive, ChevronDown, ChevronRight, Camera, Image as ImageIcon, FileText } from 'lucide-react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { BackButton } from '../../components/SharedComponents';
 import type { TabName } from '../../navigation/TabBar';
 
 export type Message = {
@@ -1370,14 +1371,11 @@ export default function AIChatView({
       borderBottomColor: theme.colors.divider,
       backgroundColor: theme.colors.bg,
     },
-    backBtn: {
-      padding: Spacing.sm,
-      marginRight: Spacing.xs,
-    },
+
     headerTextWrap: {
       flex: 1,
     },
-    greeting: { fontSize: Typography.xl, fontWeight: Typography.bold, color: theme.colors.textPrimary },
+    greeting: { fontSize: Typography.xl, fontWeight: Typography.bold, color: theme.colors.textPrimary, textAlign: 'center' },
     headerActions: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1445,16 +1443,15 @@ export default function AIChatView({
       {/* Header */}
       {onBack && (
         <View style={styles.header}>
-          <TouchableOpacity
+          <BackButton
             onPress={() => {
               if (navigateToTab && originTab && originTab !== 'AI') {
                 navigateToTab(originTab);
               }
               onBack();
             }}
-            style={styles.backBtn}>
-            <ArrowLeft size={22} color={theme.colors.textPrimary} strokeWidth={2} />
-          </TouchableOpacity>
+            color={theme.colors.textPrimary}
+          />
           <View style={styles.headerTextWrap}>
             <Text style={styles.greeting}>Chat with Cureto</Text>
           </View>

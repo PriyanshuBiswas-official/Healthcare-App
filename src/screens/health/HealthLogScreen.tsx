@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
-import { GlassCardView } from '../../components/SharedComponents';
+import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { usePreferences } from '../../providers/PreferencesContext';
 import { saveMoodLog } from '../../services/healthService';
 import { savePeriodLog } from '../../services/healthService';
@@ -125,17 +125,6 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
     root: { flex: 1, backgroundColor: t.colors.bg },
     scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl },
     header: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.xl },
-    backBtn: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      borderWidth: 1,
-      borderColor: t.colors.bgCardBorder,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: t.colors.bgCard,
-    },
-    backText: { color: t.colors.textPrimary, fontSize: Typography.display, lineHeight: 34 },
     headerCopy: { flex: 1, marginLeft: Spacing.md },
     title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: t.colors.textPrimary },
     subtitle: { fontSize: Typography.sm, color: t.colors.textMuted, marginTop: 2 },
@@ -388,10 +377,9 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
   return (
     <View style={s.root}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+
         <View style={s.header}>
-          <TouchableOpacity style={s.backBtn} onPress={onBack} activeOpacity={0.8}>
-            <Text style={s.backText}>‹</Text>
-          </TouchableOpacity>
+          <BackButton onPress={onBack} color={theme.colors.textPrimary} />
           <View style={s.headerCopy}>
             <Text style={s.title}>Log Health</Text>
             <Text style={s.subtitle}>Today&apos;s cycle, mood, sleep and vitals</Text>

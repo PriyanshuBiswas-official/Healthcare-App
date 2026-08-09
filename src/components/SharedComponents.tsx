@@ -8,7 +8,7 @@ import {
   Image,
 } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { Bell } from 'lucide-react-native';
+import { Bell, ChevronLeft } from 'lucide-react-native';
 import { Radius, Spacing, Typography, Shadows } from '../theme/theme';
 import { useTheme, useStyles } from '../providers/ThemeProvider';
 
@@ -587,4 +587,32 @@ const activityCardStyleCreator = (theme: any) => StyleSheet.create({
     color: theme.colors.textMuted,
     fontWeight: 'normal',
   },
+});
+
+// ─── Back Button ──────────────────────────────────────────────────────────────
+interface BackButtonProps {
+  onPress: () => void;
+  color?: string;
+}
+
+const backBtnStyles = (theme: { colors: { bgCard: string; bgCardBorder: string } }) => ({
+  btn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: theme.colors.bgCard,
+    borderWidth: 1,
+    borderColor: theme.colors.bgCardBorder,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+});
+
+export const BackButton: React.FC<BackButtonProps> = React.memo(({ onPress, color }) => {
+  const s = useStyles(backBtnStyles);
+  return (
+    <TouchableOpacity style={s.btn} activeOpacity={0.7} onPress={onPress}>
+      <ChevronLeft size={25} color={color} strokeWidth={3} />
+    </TouchableOpacity>
+  );
 });

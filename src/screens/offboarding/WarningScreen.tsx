@@ -8,7 +8,7 @@ import {
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { ArrowLeft, TriangleAlert, Check } from 'lucide-react-native';
-import { GlassCardView } from '../../components/SharedComponents';
+import { GlassCardView, BackButton } from '../../components/SharedComponents';
 
 const CONSEQUENCES = [
   'All your health data will be permanently deleted',
@@ -34,10 +34,6 @@ export default function WarningScreen({ onBack, onNext, step, totalSteps }: Prop
     topBar: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
       paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
-    },
-    backBtn: {
-      width: 40, height: 40, borderRadius: Radius.md, backgroundColor: t.colors.bgCard,
-      borderWidth: 1, borderColor: t.colors.bgCardBorder, alignItems: 'center', justifyContent: 'center',
     },
     pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary },
     scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
@@ -112,9 +108,7 @@ export default function WarningScreen({ onBack, onNext, step, totalSteps }: Prop
   return (
     <View style={styles.root}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack}>
-          <ArrowLeft size={20} color={theme.colors.textPrimary} />
-        </TouchableOpacity>
+        <BackButton onPress={onBack} color={theme.colors.textPrimary} />
         <Text style={styles.pageTitle}>Delete Account</Text>
         <View style={{ width: 40 }} />
       </View>

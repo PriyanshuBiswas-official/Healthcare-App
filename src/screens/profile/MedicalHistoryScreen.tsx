@@ -10,8 +10,8 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { ArrowLeft, ClipboardList } from 'lucide-react-native';
-import { GlassCardView } from '../../components/SharedComponents';
+import { ClipboardList } from 'lucide-react-native';
+import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
 
@@ -51,17 +51,6 @@ export default function MedicalHistoryScreen({ onBack, onSaved }: Props) {
       paddingTop: Spacing.xl,
       paddingBottom: Spacing.md,
     },
-    backBtn: {
-      width: 40,
-      height: 40,
-      borderRadius: Radius.md,
-      backgroundColor: t.colors.bgCard,
-      borderWidth: 1,
-      borderColor: t.colors.bgCardBorder,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    backIcon: { fontSize: Typography.lg, color: t.colors.textPrimary },
     pageTitle: {
       fontSize: Typography.lg,
       fontWeight: Typography.bold,
@@ -230,9 +219,7 @@ export default function MedicalHistoryScreen({ onBack, onSaved }: Props) {
   return (
     <View style={styles.root}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
-        </TouchableOpacity>
+        <BackButton onPress={onBack} color={theme.colors.textPrimary} />
         <Text style={styles.pageTitle}>Medical History</Text>
         <TouchableOpacity
           style={styles.editBtn}

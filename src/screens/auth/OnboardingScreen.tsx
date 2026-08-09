@@ -15,7 +15,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { ArrowLeft } from 'lucide-react-native';
+import { BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
 
@@ -224,17 +224,7 @@ export default function OnboardingScreen() {
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.bgCardBorder,
     },
-    backButton: {
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      borderRadius: Radius.sm,
-      backgroundColor: theme.colors.bgCard,
-    },
-    backButtonText: {
-      color: theme.colors.text,
-      fontSize: Typography.sm,
-      fontWeight: Typography.medium,
-    },
+
     progressText: {
       color: theme.colors.textSecondary,
       fontSize: Typography.sm,
@@ -444,9 +434,7 @@ export default function OnboardingScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         {step > 1 && (
-          <TouchableOpacity onPress={prevStep} style={styles.backButton}>
-            <><ArrowLeft size={18} color={theme.colors.teal} strokeWidth={2} /><Text style={styles.backButtonText}> Back</Text></>
-          </TouchableOpacity>
+          <BackButton onPress={prevStep} color={theme.colors.teal} />
         )}
         <Text style={styles.progressText}>Step {step} of 5</Text>
       </View>

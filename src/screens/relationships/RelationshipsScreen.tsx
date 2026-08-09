@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  ArrowLeft,
   UserPlus,
   Key,
   Check,
@@ -25,7 +24,7 @@ import {
 } from 'lucide-react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { GlassCardView, SectionHeader } from '../../components/SharedComponents';
+import { GlassCardView, SectionHeader, BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import * as relationshipApi from '../../services/relationshipApi';
 import PermissionsModal from './PermissionsModal';
@@ -53,14 +52,7 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
       borderBottomWidth: 1,
       borderBottomColor: t.colors.bgCardBorder + '30',
     },
-    backBtn: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
-      backgroundColor: t.colors.chipBg,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
+
     pageTitle: {
       fontSize: Typography.lg,
       fontWeight: Typography.bold,
@@ -421,9 +413,7 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={colors.text} strokeWidth={2} />
-        </TouchableOpacity>
+        <BackButton onPress={onBack} color={colors.textPrimary} />
         <Text style={styles.pageTitle}>Relationships</Text>
         <View style={styles.headerRightPlaceholder} />
       </View>

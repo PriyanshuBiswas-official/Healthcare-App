@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { ArrowLeft } from 'lucide-react-native';
+import { BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import * as activityService from '../../services/activityService';
 import { WorkoutSet } from '../../types/activity';
@@ -183,7 +183,7 @@ export default function WorkoutLogScreen({
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.bgCardBorder,
     },
-    backBtn: { marginRight: Spacing.md, padding: Spacing.xs },
+
     headerTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
     headerSub: { fontSize: Typography.xs, color: theme.colors.textSecondary, marginTop: 2 },
     completedBadge: {
@@ -311,9 +311,7 @@ export default function WorkoutLogScreen({
     <View style={styles.root}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backBtn} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
-        </TouchableOpacity>
+        <BackButton onPress={onBack} color={theme.colors.textPrimary} />
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{exercise.exercise_name}</Text>
           <Text style={styles.headerSub}>

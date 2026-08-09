@@ -16,8 +16,8 @@ import {
 import { Typography, Spacing, Radius, Shadows } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { ArrowLeft, User, ClipboardList, Pill, TriangleAlert, Apple, Dumbbell, Flower2, Stethoscope, Salad, Leaf, Egg, Beef, Check, Shield } from 'lucide-react-native';
-import { GlassCardView, ProgressBar } from '../../components/SharedComponents';
+import { User, ClipboardList, Pill, TriangleAlert, Apple, Dumbbell, Flower2, Stethoscope, Salad, Leaf, Egg, Beef, Check, Shield } from 'lucide-react-native';
+import { GlassCardView, ProgressBar, BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
 
@@ -161,18 +161,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
       borderBottomWidth: 1,
       borderBottomColor: t.colors.bgCardBorder,
     },
-    backBtn: {
-      width: 40,
-      height: 40,
-      borderRadius: Radius.md,
-      backgroundColor: t.colors.bgCard,
-      borderWidth: 1,
-      borderColor: t.colors.bgCardBorder,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
     backPlaceholder: { width: 40 },
-    backIcon: { fontSize: Typography.lg, color: t.colors.textPrimary },
     pageTitle: {
       fontSize: Typography.md,
       fontWeight: Typography.bold,
@@ -1311,9 +1300,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={goBack} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={theme.colors.text} strokeWidth={2} />
-        </TouchableOpacity>
+        <BackButton onPress={goBack} color={theme.colors.textPrimary} />
         <Text style={styles.pageTitle}>Complete Profile</Text>
         <View style={styles.backPlaceholder} />
       </View>

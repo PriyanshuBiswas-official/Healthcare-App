@@ -9,9 +9,9 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { ArrowLeft, Bell, X } from 'lucide-react-native';
+import { Bell, X } from 'lucide-react-native';
 
-import { GlassCardView, SectionHeader } from '../../components/SharedComponents';
+import { GlassCardView, SectionHeader, BackButton } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useNotifications, AppNotification } from '../../providers/NotificationContext';
 import { sendTestNotification } from '../../services/notificationService';
@@ -58,17 +58,6 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
       alignItems: 'center',
       justifyContent: 'space-between',
       marginBottom: Spacing.lg,
-    },
-    backBtn: {
-      width: 40,
-      height: 40,
-      borderRadius: Radius.md,
-      backgroundColor: t.colors.bgCard,
-      borderWidth: 1,
-      borderColor: t.colors.bgCardBorder,
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1,
     },
     backPlaceholder: { width: 40 },
     pageTitle: {
@@ -228,30 +217,29 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
         contentContainerStyle={styles.scroll}
         onScroll={onScroll}
         scrollEventThrottle={16}>
+
         {/* Top Bar */}
         <View style={styles.topBar}>
           {onBackPress ? (
-            <TouchableOpacity style={styles.backBtn} onPress={onBackPress} activeOpacity={0.7}>
-              <ArrowLeft size={22} color={colors.text} strokeWidth={2} />
-            </TouchableOpacity>
+            <BackButton onPress={onBackPress} color={colors.textPrimary} />
           ) : (
             <View style={styles.backPlaceholder} />
           )}
           <Text style={styles.pageTitle} pointerEvents="none">Notifications</Text>
           <View style={styles.topRight}>
-            <TouchableOpacity
-              style={styles.testBtn}
-              activeOpacity={0.7}
-              onPress={async () => {
-                try {
-                  await sendTestNotification();
-                } catch (e: any) {
-                  Alert.alert('Error', e.message || 'Failed to send test notification');
-                }
-              }}>
-              <Text style={styles.testBtnText}>🔔 Test</Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={styles.testBtn}
+                activeOpacity={0.7}
+                onPress={async () => {
+                  try {
+                    await sendTestNotification();
+                  } catch (e: any) {
+                    Alert.alert('Error', e.message || 'Failed to send test notification');
+                  }
+                }}>
+                <Text style={styles.testBtnText}>🔔 Test</Text>
+              </TouchableOpacity>
+            </View>
         </View>
 
         {notifications.length === 0 ? (
