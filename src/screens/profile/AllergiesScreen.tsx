@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Check, TriangleAlert } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
@@ -221,7 +221,7 @@ export default function AllergiesScreen({ onBack, onSaved }: Props) {
               onPress={() => { setNoAllergies(!noAllergies); if (!noAllergies) setAllergies([]); }}
               activeOpacity={0.7}>
               <View style={styles.noAllergyLeft}>
-                <Text style={styles.noAllergyIcon}>✅</Text>
+                <Check size={20} color={noAllergies ? theme.colors.danger : theme.colors.teal} />
                 <View>
                   <Text style={[styles.noAllergyTitle, noAllergies && { color: theme.colors.danger }]}>
                     No known allergies
@@ -297,13 +297,13 @@ export default function AllergiesScreen({ onBack, onSaved }: Props) {
           <GlassCardView style={styles.card}>
             {noAllergies ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>⚠️</Text>
+                <TriangleAlert size={40} color={theme.colors.amber} />
                 <Text style={styles.emptyText}>No known allergies</Text>
                 <Text style={styles.emptySub}>You indicated you have no known allergies</Text>
               </View>
             ) : allergies.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>⚠️</Text>
+                <TriangleAlert size={40} color={theme.colors.amber} />
                 <Text style={styles.emptyText}>No allergies recorded</Text>
                 <Text style={styles.emptySub}>Tap Edit to add your allergies</Text>
               </View>

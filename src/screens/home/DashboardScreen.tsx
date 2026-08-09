@@ -28,6 +28,7 @@ import { usePreferences } from '../../providers/PreferencesContext';
 import { useNotifications } from '../../providers/NotificationContext';
 import { useAppointments } from '../../providers/AppointmentContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pill, Droplets, Utensils, Footprints, Dumbbell, Moon, Pin, Stethoscope, Scale, Calendar, Clock, Flame, UserRound } from 'lucide-react-native';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg';
 import { launchCamera } from 'react-native-image-picker';
 import Voice from '@dev-amirzubair/react-native-voice';
@@ -80,7 +81,7 @@ type TimelineEvent = {
   time: string;
   title: string;
   sub: string;
-  icon: string;
+  icon: React.ReactNode;
   color: string;
   rightText: string;
   rightType: 'taken' | 'value' | 'countdown' | 'upcoming';
@@ -89,16 +90,16 @@ type TimelineEvent = {
 };
 
 const DEFAULT_TIMELINE_EVENTS: Omit<TimelineEvent, 'color'>[] = [
-  { id: '1', time: '08:00 AM', title: 'Medication', sub: 'Vitamin D3 1000 IU', icon: '💊', rightText: 'Taken', rightType: 'taken', type: 'medication', status: 'completed' },
-  { id: '2', time: '09:15 AM', title: 'Water', sub: '400 ml recorded', icon: '💧', rightText: '400 ml', rightType: 'value', type: 'water', status: 'completed' },
-  { id: '3', time: '10:00 AM', title: 'Breakfast', sub: 'Oats with fruits, Almonds', icon: '🍽️', rightText: '450 kcal', rightType: 'value', type: 'meal', status: 'completed' },
-  { id: '4', time: '12:00 PM', title: 'Steps', sub: '2,350 steps', icon: '👟', rightText: '2,350', rightType: 'value', type: 'steps', status: 'completed' },
-  { id: '5', time: '04:30 PM', title: 'Workout', sub: 'Strength Training', icon: '💪', rightText: '45 min', rightType: 'value', type: 'workout', status: 'pending' },
-  { id: '6', time: '08:00 PM', title: 'Medication (Upcoming)', sub: 'Metformin 500 mg', icon: '💊', rightText: '', rightType: 'countdown', type: 'medication', status: 'pending' },
-  { id: '7', time: '10:30 PM', title: 'Sleep Goal', sub: 'Target: 8 hrs', icon: '🌙', rightText: 'Upcoming', rightType: 'upcoming', type: 'sleep', status: 'pending' },
+  { id: '1', time: '08:00 AM', title: 'Medication', sub: 'Vitamin D3 1000 IU', icon: <Pill size={18} color="#FFFFFF" />, rightText: 'Taken', rightType: 'taken', type: 'medication', status: 'completed' },
+  { id: '2', time: '09:15 AM', title: 'Water', sub: '400 ml recorded', icon: <Droplets size={18} color="#FFFFFF" />, rightText: '400 ml', rightType: 'value', type: 'water', status: 'completed' },
+  { id: '3', time: '10:00 AM', title: 'Breakfast', sub: 'Oats with fruits, Almonds', icon: <Utensils size={18} color="#FFFFFF" />, rightText: '450 kcal', rightType: 'value', type: 'meal', status: 'completed' },
+  { id: '4', time: '12:00 PM', title: 'Steps', sub: '2,350 steps', icon: <Footprints size={18} color="#FFFFFF" />, rightText: '2,350', rightType: 'value', type: 'steps', status: 'completed' },
+  { id: '5', time: '04:30 PM', title: 'Workout', sub: 'Strength Training', icon: <Dumbbell size={18} color="#FFFFFF" />, rightText: '45 min', rightType: 'value', type: 'workout', status: 'pending' },
+  { id: '6', time: '08:00 PM', title: 'Medication (Upcoming)', sub: 'Metformin 500 mg', icon: <Pill size={18} color="#FFFFFF" />, rightText: '', rightType: 'countdown', type: 'medication', status: 'pending' },
+  { id: '7', time: '10:30 PM', title: 'Sleep Goal', sub: 'Target: 8 hrs', icon: <Moon size={18} color="#FFFFFF" />, rightText: 'Upcoming', rightType: 'upcoming', type: 'sleep', status: 'pending' },
 ];
 
-export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab, onPartnerPress, onRelationshipsPress, onOpenAI, onOpenAppointments }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void; onPartnerPress?: (partnerId: string) => void; onRelationshipsPress?: () => void; onOpenAI?: (fromTab?: TabName, startInChat?: boolean, initialQuery?: string) => void; onOpenAppointments?: () => void; }) {
+export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab, onPartnerPress, onRelationshipsPress, onOpenAI, onOpenAppointments, onOpenHealthLog, onCaptureImage }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void; onPartnerPress?: (partnerId: string) => void; onRelationshipsPress?: () => void; onOpenAI?: (fromTab?: TabName, startInChat?: boolean, initialQuery?: string) => void; onOpenAppointments?: () => void; onOpenHealthLog?: () => void; onCaptureImage?: (attachment: { uri: string; type: string; name: string }) => void; }) {
   const { theme } = useTheme();
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion, gender } = useAuth();
@@ -622,7 +623,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       fontWeight: Typography.semiBold,
       color: theme.colors.textPrimary,
       marginBottom: Spacing.md,
-      alignSelf: 'flex-start',
     },
     progressVal: {
       fontSize: Typography.md,
@@ -1298,12 +1298,18 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         return;
       }
       if (result.assets?.[0]) {
-        onOpenAI?.('Home', true, 'Analyze this health image');
+        const a = result.assets[0];
+        const attachment = { uri: a.uri || '', type: a.type || 'image/jpeg', name: a.fileName || 'photo.jpg' };
+        if (onCaptureImage) {
+          onCaptureImage(attachment);
+        } else {
+          onOpenAI?.('Home', true, 'Analyze this health image');
+        }
       }
     } catch (e: any) {
       Alert.alert('Camera Error', e.message || 'Could not open camera');
     }
-  }, [onOpenAI]);
+  }, [onOpenAI, onCaptureImage]);
 
   const [medications, setMedications] = useState<Medication[]>([]);
   const [medicationLogs, setMedicationLogs] = useState<MedicationLog[]>([]);
@@ -1431,7 +1437,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const loadData = () => {
     if (session?.access_token) {
       const today = new Date().toISOString().split('T')[0];
-      
+
       loadAiSummary();
 
       getSleepLogs(session.access_token)
@@ -1606,14 +1612,14 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
   const addTimelineEvent = () => {
     if (!newEventTitle.trim()) return;
-    const typeConfig: Record<TimelineEventType, { icon: string; color: string; rightType: TimelineEvent['rightType'] }> = {
-      medication: { icon: '💊', color: theme.colors.accentBlue, rightType: 'upcoming' },
-      water: { icon: '💧', color: theme.colors.blue, rightType: 'value' },
-      meal: { icon: '🍽️', color: theme.colors.amber, rightType: 'value' },
-      steps: { icon: '👟', color: theme.colors.success, rightType: 'value' },
-      workout: { icon: '💪', color: theme.colors.pink, rightType: 'value' },
-      sleep: { icon: '🌙', color: theme.colors.accentBlue, rightType: 'upcoming' },
-      custom: { icon: '📌', color: theme.colors.teal, rightType: 'upcoming' },
+    const typeConfig: Record<TimelineEventType, { icon: React.ReactNode; color: string; rightType: TimelineEvent['rightType'] }> = {
+      medication: { icon: <Pill size={18} color="#FFFFFF" />, color: theme.colors.accentBlue, rightType: 'upcoming' },
+      water: { icon: <Droplets size={18} color="#FFFFFF" />, color: theme.colors.blue, rightType: 'value' },
+      meal: { icon: <Utensils size={18} color="#FFFFFF" />, color: theme.colors.amber, rightType: 'value' },
+      steps: { icon: <Footprints size={18} color="#FFFFFF" />, color: theme.colors.success, rightType: 'value' },
+      workout: { icon: <Dumbbell size={18} color="#FFFFFF" />, color: theme.colors.pink, rightType: 'value' },
+      sleep: { icon: <Moon size={18} color="#FFFFFF" />, color: theme.colors.accentBlue, rightType: 'upcoming' },
+      custom: { icon: <Pin size={18} color="#FFFFFF" />, color: theme.colors.teal, rightType: 'upcoming' },
     };
     const cfg = typeConfig[newEventType];
     const newEvent: TimelineEvent = {
@@ -1827,7 +1833,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                 </View>
               )}
               <TouchableOpacity style={styles.heroReportBtn}>
-                <Text style={styles.heroReportBtnText}>Full Report →</Text>
+                <Text style={styles.heroReportBtnText}>Full Report</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1839,9 +1845,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                 <Text style={styles.heroAiSparkle}>✦</Text>
                 <Text style={styles.heroAiTitle}>AI HEALTH SUMMARY</Text>
               </View>
-              <TouchableOpacity style={styles.heroAiChatBtn} onPress={() => onOpenAI?.('Home', true, '')}>
-                <Text style={styles.heroAiChatText}>💬 Chat</Text>
-              </TouchableOpacity>
             </View>
             {aiSummaryLoading ? (
               <View style={{ paddingVertical: Spacing.sm, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
@@ -1934,15 +1937,16 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         <SectionHeader title="Quick Actions" />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionScroll}>
           {[
-            { icon: '🍽️', label: 'Log Meal', desc: 'Record calories', color: theme.colors.amber, onPress: () => setShowMealModal(true) },
-            { icon: '💧', label: 'Log Water', desc: 'Add a glass', color: theme.colors.blue, onPress: () => setShowWaterModal(true) },
-            { icon: '💪', label: 'Log Workout', desc: 'Track activity', color: theme.colors.accentBlue, onPress: () => navigateToTab?.('Activity') },
-            { icon: '💊', label: 'Medicine', desc: 'Check dose', color: theme.colors.pink, onPress: () => setShowMedModal(true) },
-            { icon: '⚖️', label: 'Log Weight', desc: 'Record metric', color: theme.colors.teal, onPress: () => setShowWeightModal(true) },
+            { icon: <Stethoscope size={20} color={theme.colors.teal} />, label: 'Log Health', desc: 'Add health log', color: theme.colors.teal, onPress: () => onOpenHealthLog?.() },
+            { icon: <Utensils size={20} color={theme.colors.amber} />, label: 'Log Meal', desc: 'Record calories', color: theme.colors.amber, onPress: () => setShowMealModal(true) },
+            { icon: <Droplets size={20} color={theme.colors.blue} />, label: 'Log Water', desc: 'Add a glass', color: theme.colors.blue, onPress: () => setShowWaterModal(true) },
+            { icon: <Dumbbell size={20} color={theme.colors.accentBlue} />, label: 'Log Workout', desc: 'Track activity', color: theme.colors.accentBlue, onPress: () => navigateToTab?.('Activity') },
+            { icon: <Pill size={20} color={theme.colors.pink} />, label: 'Medicine', desc: 'Check dose', color: theme.colors.pink, onPress: () => setShowMedModal(true) },
+            { icon: <Scale size={20} color={theme.colors.teal} />, label: 'Log Weight', desc: 'Record metric', color: theme.colors.teal, onPress: () => setShowWeightModal(true) },
           ].map((action, i) => (
             <TouchableOpacity key={i} style={styles.quickActionCard} onPress={action.onPress}>
               <View style={[styles.quickActionIconBg, { backgroundColor: action.color + '15', borderColor: action.color + '30' }]}>
-                <Text style={styles.quickActionIcon}>{action.icon}</Text>
+                {action.icon}
               </View>
               <View style={styles.quickActionTextContent}>
                 <Text style={styles.quickActionLabel}>{action.label}</Text>
@@ -1963,7 +1967,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
         {timelineEvents.length === 0 && !timelineEditing ? (
           <GlassCardView style={{ padding: Spacing.xl, marginBottom: Spacing.xl, alignItems: 'center' }}>
-            <Text style={{ fontSize: 40, marginBottom: Spacing.md }}>📅</Text>
+            <Calendar size={40} color={theme.colors.textMuted} />
             <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: theme.colors.textPrimary, marginBottom: Spacing.xs }}>
               No Health Timeline
             </Text>
@@ -2016,7 +2020,10 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                     )}
                     {item.rightType === 'countdown' && (
                       <View style={styles.badgeCountdown}>
-                        <Text style={styles.badgeCountdownText}>🕒 {item.rightText || `${getNextDoseHours(20)}h`}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Clock size={12} color={theme.colors.textSecondary} />
+                          <Text style={styles.badgeCountdownText}>{item.rightText || `${getNextDoseHours(20)}h`}</Text>
+                        </View>
                       </View>
                     )}
                     {item.rightType === 'upcoming' && (
@@ -2051,7 +2058,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                   )}
 
                   <View style={[styles.newTimelineIconBg, { backgroundColor: item.color + '15', borderColor: item.color + '30' }]}>
-                    <Text style={styles.newTimelineCardIcon}>{item.icon}</Text>
+                    {item.icon}
                   </View>
 
                   <View style={styles.newTimelineNodeContainer}>
@@ -2120,7 +2127,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               <>
                 <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Diet')}>
                   <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
-                    <Text style={styles.progressCardTitle}>🔥 Calories</Text>
+                    <Text style={styles.progressCardTitle}>Calories</Text>
                     <CompactRing size={82} progress={calPct} color={theme.colors.amber}>
                       <Text style={styles.progressVal}>{consumedCal.toLocaleString()}</Text>
                       <Text style={styles.progressSub}>/ {calorieTarget.toLocaleString()} kcal</Text>
@@ -2131,7 +2138,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
                 <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Diet')}>
                   <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
-                    <Text style={styles.progressCardTitle}>💧 Water</Text>
+                    <Text style={styles.progressCardTitle}>Water</Text>
                     <CompactRing size={82} progress={waterPct} color={theme.colors.blue}>
                       <Text style={styles.progressVal}>{consumedWater.toLocaleString()}</Text>
                       <Text style={styles.progressSub}>/ {waterTarget.toLocaleString()} ml</Text>
@@ -2142,7 +2149,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
                 <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Health')}>
                   <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
-                    <Text style={styles.progressCardTitle}>🌙 Sleep</Text>
+                    <Text style={styles.progressCardTitle}>Sleep</Text>
                     <CompactRing size={82} progress={sleepPct} color={theme.colors.accentBlue}>
                       <Text style={styles.progressVal}>{sleepHrs > 0 ? sleepHrs : '—'}</Text>
                       <Text style={styles.progressSub}>/ {sleepTarget} hrs</Text>
@@ -2153,7 +2160,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
                 <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Activity')}>
                   <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
-                    <Text style={styles.progressCardTitle}>💪 Workout</Text>
+                    <Text style={styles.progressCardTitle}>Workout</Text>
                     <CompactRing size={82} progress={exercisePct} color={theme.colors.teal}>
                       <Text style={styles.progressVal}>{exerciseMin}</Text>
                       <Text style={styles.progressSub}>/ {exerciseTarget} min</Text>
@@ -2169,13 +2176,19 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         {/* SECTION: WEEKLY CHALLENGE */}
         <SectionHeader title="Weekly Challenge" />
         <GlassCardView style={styles.challengeCard} accentColor={theme.colors.amber}>
-          <Text style={styles.challengeTitle}>💧 Hydration Hero</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Droplets size={18} color={theme.colors.amber} />
+            <Text style={styles.challengeTitle}>Hydration Hero</Text>
+          </View>
           <Text style={styles.challengeDesc}>Drink 2.5L water for 5 days in a row.</Text>
           <View style={{ marginTop: Spacing.sm }}>
             <ProgressBar progress={waterChallenge?.progress ?? 0} color={theme.colors.amber} height={8} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
               <Text style={styles.challengeProgressText}>{waterChallenge?.daysComplete ?? 0} / {waterChallenge?.totalDays ?? 5} days complete</Text>
-              <Text style={styles.challengeStreakText}>🔥 {waterChallenge?.streak ?? 0}d streak</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Flame size={12} color={theme.colors.amber} />
+                <Text style={styles.challengeStreakText}>{waterChallenge?.streak ?? 0}d streak</Text>
+              </View>
             </View>
           </View>
         </GlassCardView>
@@ -2259,12 +2272,12 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         {nextAppointment ? (
           <GlassCardView style={styles.aptCard}>
             <View style={styles.aptRow}>
-              <View style={styles.aptAvatar}><Text style={{ fontSize: Typography.xl }}>👨‍⚕️</Text></View>
+              <View style={styles.aptAvatar}><UserRound size={24} color={theme.colors.teal} /></View>
               <View style={styles.aptInfo}>
                 <Text style={styles.aptName}>{nextAppointment.doctor_name}</Text>
                 <Text style={styles.aptSpec}>{nextAppointment.speciality}</Text>
                 <View style={styles.aptTimeBadge}>
-                  <Text style={styles.aptTimeIcon}>📅</Text>
+                  <Calendar size={14} color={theme.colors.teal} />
                   <Text style={styles.aptTimeText}>{formatDashboardDate(nextAppointment.date_with_time)}</Text>
                 </View>
               </View>
@@ -2276,7 +2289,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         ) : (
           <GlassCardView style={styles.aptCard}>
             <View style={styles.aptEmpty}>
-              <Text style={styles.aptEmptyIcon}>📅</Text>
+              <Calendar size={40} color={theme.colors.textMuted} />
               <Text style={styles.aptEmptyText}>No upcoming appointments</Text>
               <TouchableOpacity style={styles.aptAddBtn} onPress={onOpenAppointments} activeOpacity={0.7}>
                 <Text style={styles.aptAddBtnText}>+ Add Appointment</Text>
@@ -2507,14 +2520,23 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md, alignSelf: 'stretch' }}>
                 {(['medication', 'water', 'meal', 'steps', 'workout', 'sleep', 'custom'] as TimelineEventType[]).map(type => {
-                  const typeLabels: Record<TimelineEventType, string> = {
-                    medication: '💊 Meds', water: '💧 Water', meal: '🍽️ Meal', steps: '👟 Steps', workout: '💪 Workout', sleep: '🌙 Sleep', custom: '📌 Custom',
+                  const typeConfig: Record<TimelineEventType, { label: string; icon: React.ReactNode }> = {
+                    medication: { label: 'Meds', icon: <Pill size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
+                    water: { label: 'Water', icon: <Droplets size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
+                    meal: { label: 'Meal', icon: <Utensils size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
+                    steps: { label: 'Steps', icon: <Footprints size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
+                    workout: { label: 'Workout', icon: <Dumbbell size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
+                    sleep: { label: 'Sleep', icon: <Moon size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
+                    custom: { label: 'Custom', icon: <Pin size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
                   };
                   return (
                     <TouchableOpacity
                       key={type}
                       onPress={() => setNewEventType(type)}
                       style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4,
                         paddingHorizontal: Spacing.sm + 2,
                         paddingVertical: Spacing.sm,
                         borderRadius: Radius.sm,
@@ -2522,7 +2544,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                         borderWidth: newEventType === type ? 1 : 0,
                         borderColor: theme.colors.teal,
                       }}>
-                      <Text style={{ fontSize: Typography.xs, color: newEventType === type ? theme.colors.teal : theme.colors.textSecondary, fontWeight: Typography.bold }}>{typeLabels[type]}</Text>
+                      {typeConfig[type].icon}
+                      <Text style={{ fontSize: Typography.xs, color: newEventType === type ? theme.colors.teal : theme.colors.textSecondary, fontWeight: Typography.bold }}>{typeConfig[type].label}</Text>
                     </TouchableOpacity>
                   );
                 })}

@@ -16,7 +16,7 @@ import {
 import { Typography, Spacing, Radius, Shadows } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, User, ClipboardList, Pill, TriangleAlert, Apple, Dumbbell, Flower2, Stethoscope, Salad, Leaf, Egg, Beef, Check, Shield } from 'lucide-react-native';
 import { GlassCardView, ProgressBar } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
@@ -50,10 +50,10 @@ const COMMON_ALLERGIES = [
 ];
 
 const DIET_TYPES = [
-  { label: 'Vegetarian', icon: '🥬' },
-  { label: 'Vegan', icon: '🌱' },
-  { label: 'Eggetarian', icon: '🥚' },
-  { label: 'Non-Vegetarian', icon: '🍗' },
+  { label: 'Vegetarian', icon: <Salad size={22} color="#14B8A6" /> },
+  { label: 'Vegan', icon: <Leaf size={22} color="#22C55E" /> },
+  { label: 'Eggetarian', icon: <Egg size={22} color="#F59E0B" /> },
+  { label: 'Non-Vegetarian', icon: <Beef size={22} color="#EF4444" /> },
 ];
 
 const FITNESS_LEVELS = ['Beginner', 'Intermediate', 'Advanced'];
@@ -205,8 +205,9 @@ export default function ProfileSetupScreen({ onBack }: Props) {
       marginBottom: Spacing.xl,
     },
     stepIcon: {
-      fontSize: Typography.xxl,
       marginBottom: Spacing.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     stepTitle: {
       fontSize: Typography.xl,
@@ -516,8 +517,9 @@ export default function ProfileSetupScreen({ onBack }: Props) {
       backgroundColor: t.colors.tealDim,
     },
     dietIcon: {
-      fontSize: Typography.xxl,
       marginBottom: Spacing.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     dietLabel: {
       fontSize: Typography.sm,
@@ -782,9 +784,9 @@ export default function ProfileSetupScreen({ onBack }: Props) {
     setCustomAllergy('');
   };
 
-  const renderStepHeader = (icon: string, title: string, subtitle: string) => (
+  const renderStepHeader = (icon: React.ReactNode, title: string, subtitle: string) => (
     <View style={styles.stepHeader}>
-      <Text style={styles.stepIcon}>{icon}</Text>
+      <View style={styles.stepIcon}>{icon}</View>
       <Text style={styles.stepTitle}>{title}</Text>
       <Text style={styles.stepSubtitle}>{subtitle}</Text>
     </View>
@@ -862,7 +864,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
 
   const renderBasicInfo = () => (
     <>
-      {renderStepHeader('👤', 'Basic Info', "Let's verify the details from your onboarding.")}
+      {renderStepHeader(<User size={28} color="#14B8A6" />, 'Basic Info', "Let's verify the details from your onboarding.")}
       <GlassCardView style={styles.formCard}>
         <Text style={styles.inputLabel}>Display Name</Text>
         <TextInput
@@ -941,7 +943,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
 
   const renderMedicalConditions = () => (
     <>
-      {renderStepHeader('📋', 'Medical Conditions', 'Do you have any ongoing medical conditions?')}
+      {renderStepHeader(<ClipboardList size={28} color="#EC4899" />, 'Medical Conditions', 'Do you have any ongoing medical conditions?')}
       <GlassCardView style={styles.formCard}>
         {renderChipGrid(MEDICAL_CONDITIONS, data.medicalConditions, v =>
           toggleMultiSelect('medicalConditions', v),
@@ -962,14 +964,14 @@ export default function ProfileSetupScreen({ onBack }: Props) {
 
   const renderMedications = () => (
     <>
-      {renderStepHeader('💊', 'Current Medications', 'Are you currently taking any medications?')}
+      {renderStepHeader(<Pill size={28} color="#F59E0B" />, 'Current Medications', 'Are you currently taking any medications?')}
       <GlassCardView style={styles.formCard}>
         <TouchableOpacity
           style={[styles.skipCard, data.noMedications && styles.skipCardSelected]}
           onPress={() => update({ noMedications: !data.noMedications, medications: data.noMedications ? data.medications : [] })}
           activeOpacity={0.7}>
           <View style={[styles.skipIconWrap, data.noMedications && styles.skipIconWrapSelected]}>
-            <Text style={styles.skipIcon}>✅</Text>
+            <Check size={18} color={data.noMedications ? '#FFFFFF' : '#14B8A6'} />
           </View>
           <View style={styles.skipContent}>
             <Text style={[styles.skipTitle, data.noMedications && styles.skipTitleSelected]}>
@@ -1073,14 +1075,14 @@ export default function ProfileSetupScreen({ onBack }: Props) {
 
   const renderAllergies = () => (
     <>
-      {renderStepHeader('⚠️', 'Allergies', 'Do you have any known allergies?')}
+      {renderStepHeader(<TriangleAlert size={28} color="#F59E0B" />, 'Allergies', 'Do you have any known allergies?')}
       <GlassCardView style={styles.formCard}>
         <TouchableOpacity
           style={[styles.skipCard, data.noAllergies && styles.skipCardSelectedGreen]}
           onPress={() => update({ noAllergies: !data.noAllergies, allergies: data.noAllergies ? data.allergies : [] })}
           activeOpacity={0.7}>
           <View style={[styles.skipIconWrap, data.noAllergies && styles.skipIconWrapSelectedGreen]}>
-            <Text style={styles.skipIcon}>🛡️</Text>
+            <Shield size={18} color={data.noAllergies ? '#FFFFFF' : '#14B8A6'} />
           </View>
           <View style={styles.skipContent}>
             <Text style={[styles.skipTitle, data.noAllergies && styles.skipTitleSelectedGreen]}>
@@ -1137,7 +1139,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
 
   const renderNutrition = () => (
     <>
-      {renderStepHeader('🍏', 'Nutrition Preferences', 'What best describes your diet?')}
+      {renderStepHeader(<Apple size={28} color="#22C55E" />, 'Nutrition Preferences', 'What best describes your diet?')}
       <GlassCardView style={styles.formCard}>
         <View style={styles.dietGrid}>
           {DIET_TYPES.map(d => {
@@ -1148,7 +1150,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
                 style={[styles.dietCard, isSelected && styles.dietCardSelected]}
                 onPress={() => update({ dietType: d.label })}
                 activeOpacity={0.7}>
-                <Text style={styles.dietIcon}>{d.icon}</Text>
+                <View style={styles.dietIcon}>{d.icon}</View>
                 <Text style={[styles.dietLabel, isSelected && styles.dietLabelSelected]}>
                   {d.label}
                 </Text>
@@ -1177,7 +1179,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
 
   const renderFitness = () => (
     <>
-      {renderStepHeader('💪', 'Fitness Profile', 'Help us understand your activity level')}
+      {renderStepHeader(<Dumbbell size={28} color="#EC4899" />, 'Fitness Profile', 'Help us understand your activity level')}
       <GlassCardView style={styles.formCard}>
         <Text style={styles.inputLabel}>Fitness Level</Text>
         {renderOptionGrid(FITNESS_LEVELS, data.fitnessLevel, v => update({ fitnessLevel: v }))}
@@ -1196,7 +1198,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
     return (
       <>
         {renderStepHeader(
-          isFemale ? '🌸' : '🩺',
+          isFemale ? <Flower2 size={28} color="#EC4899" /> : <Stethoscope size={28} color="#3B82F6" />,
           isFemale ? 'Cycle Tracking' : "Men's Health",
           isFemale
             ? 'Track your menstrual cycle for better health insights'

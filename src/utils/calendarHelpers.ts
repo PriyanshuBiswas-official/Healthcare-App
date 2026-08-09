@@ -1,16 +1,18 @@
+import React from 'react';
 import { Reminder, ReminderSchedule, ReminderCategory, CATEGORY_META } from '../types/reminder';
 import { Appointment } from '../types/appointment';
 import type { CycleData, PeriodLog } from '../types/health';
 import type { WorkoutPlanDays } from '../types/activity';
 import { Colors } from '../theme/theme';
+import { Pill, Droplets, Droplet, Dumbbell, Moon, Apple, Heart, Calendar, Bell } from 'lucide-react-native';
 
 export interface CalendarEvent {
   id: string;
   type: 'medication' | 'water' | 'workout' | 'meal' | 'appointment' | 'sleep' | 'period' | 'custom';
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   subtitle?: string;
-  time: string; // e.g. "08:00 AM" or "All day"
+  time: string;
   color: string;
   completed?: boolean;
 }
@@ -90,7 +92,7 @@ export function generateEventsLookup(
         addEvent(dateStr, {
           id: `period_log_${log.period_id}`,
           type: 'period',
-          icon: '🩸',
+          icon: React.createElement(Droplet, { size: 16, color: Colors.pink }),
           title: 'Period Day',
           subtitle: log.flow_intensity ? `Day ${log.day_no} · ${log.flow_intensity}` : `Day ${log.day_no}`,
           time: 'All day',
@@ -126,7 +128,7 @@ export function generateEventsLookup(
             addEvent(dateStr, {
               id: `period_predicted_${dateStr}`,
               type: 'period',
-              icon: '🩸',
+              icon: React.createElement(Droplet, { size: 16, color: Colors.pink }),
               title: 'Period Day',
               subtitle: `Predicted · Day ${d + 1}`,
               time: 'All day',
@@ -151,7 +153,7 @@ export function generateEventsLookup(
         addEvent(dateStr, {
           id: `appt_${appt.appointment_id}`,
           type: 'appointment',
-          icon: '🩺',
+          icon: React.createElement(Calendar, { size: 16, color: Colors.blue }),
           title: `${appt.doctor_name} — ${appt.speciality}`,
           subtitle: appt.notes || undefined,
           time: timeStr,
@@ -183,7 +185,7 @@ export function generateEventsLookup(
         addEvent(dateStr, {
           id: `workout_plan_${dateStr}`,
           type: 'workout',
-          icon: '💪',
+          icon: React.createElement(Dumbbell, { size: 16, color: CATEGORY_META.workout.color }),
           title: 'Workout Day',
           subtitle: workoutPlanDays.plan_name || undefined,
           time: 'All day',
@@ -264,7 +266,7 @@ export function generateEventsLookup(
                   addEvent(dateStr, {
                     id: `reminder_${reminder.reminder_id}_${schedule.reminder_schedule_id}_${hhmm}`,
                     type: reminder.category as any,
-                    icon: '💧',
+                    icon: React.createElement(Droplets, { size: 16, color: meta.color }),
                     title: reminder.title,
                     subtitle: `${reminder.description || ''} (${formatTime12h(hhmm)})`,
                     time: formatTime12h(hhmm),
@@ -305,16 +307,16 @@ export function generateEventsLookup(
   return lookup;
 }
 
-function getCategoryIcon(cat: ReminderCategory): string {
+function getCategoryIcon(cat: ReminderCategory): React.ReactNode {
   switch (cat) {
-    case 'medication': return '💊';
-    case 'water': return '💧';
-    case 'workout': return '💪';
-    case 'sleep': return '🌙';
-    case 'nutrition': return '🍎';
-    case 'health': return '❤️';
-    case 'appointment': return '📅';
-    default: return '🔔';
+    case 'medication': return React.createElement(Pill, { size: 16, color: Colors.accentBlue });
+    case 'water': return React.createElement(Droplets, { size: 16, color: Colors.blue });
+    case 'workout': return React.createElement(Dumbbell, { size: 16, color: Colors.pink });
+    case 'sleep': return React.createElement(Moon, { size: 16, color: Colors.accentBlue });
+    case 'nutrition': return React.createElement(Apple, { size: 16, color: Colors.teal });
+    case 'health': return React.createElement(Heart, { size: 16, color: Colors.pink });
+    case 'appointment': return React.createElement(Calendar, { size: 16, color: Colors.blue });
+    default: return React.createElement(Bell, { size: 16, color: Colors.teal });
   }
 }
 

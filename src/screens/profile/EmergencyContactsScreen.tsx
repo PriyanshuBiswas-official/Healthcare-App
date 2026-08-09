@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Info, Phone } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';
 
 interface EmergencyContact {
@@ -128,7 +128,7 @@ export default function EmergencyContactsScreen({ onBack }: Props) {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <View style={styles.banner}>
-          <Text style={styles.bannerIcon}>ℹ️</Text>
+          <Info size={18} color={theme.colors.accentBlue} />
           <Text style={styles.bannerText}>
             Emergency contacts are stored locally on this device and are not synced to the cloud.
           </Text>
@@ -182,7 +182,7 @@ export default function EmergencyContactsScreen({ onBack }: Props) {
           <GlassCardView style={styles.card}>
             {contacts.filter(c => c.name.trim()).length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>🆘</Text>
+                <Phone size={40} color={theme.colors.danger} />
                 <Text style={styles.emptyText}>No emergency contacts</Text>
                 <Text style={styles.emptySub}>Tap Edit to add emergency contacts</Text>
               </View>

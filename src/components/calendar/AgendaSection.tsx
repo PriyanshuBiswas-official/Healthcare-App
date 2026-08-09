@@ -14,7 +14,7 @@ interface AgendaSectionProps {
 interface GroupedEvent {
   id: string;
   type: string;
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   subtitle?: string;
   times: string[];
@@ -141,7 +141,7 @@ export default function AgendaSection({ selectedDate, events }: AgendaSectionPro
               <View key={group.id} style={styles.eventRow}>
                 <View style={[styles.eventAccentDot, { backgroundColor: group.color }]} />
                 <View style={styles.eventIconWrap}>
-                  <Text style={styles.eventIcon}>{group.icon}</Text>
+                  {group.icon}
                 </View>
                 <View style={styles.eventInfo}>
                   <Text style={styles.eventLabel}>{group.title}</Text>

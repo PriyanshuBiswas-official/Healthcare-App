@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useReducer, useCallback } from 'react';
-import { View, StatusBar, StyleSheet, SafeAreaView, BackHandler, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useEffect, useRef, useReducer, useCallback, useState } from 'react';
+import { View, StatusBar, StyleSheet, SafeAreaView, BackHandler, KeyboardAvoidingView, Platform, TouchableOpacity, Text, Modal, ActivityIndicator } from 'react-native';
 import TabBar, { TabName } from './src/navigation/TabBar';
 import { ScrollVisibilityProvider, useScrollVisibility } from './src/navigation/ScrollVisibilityContext';
 import DashboardScreen from './src/screens/home/DashboardScreen';
@@ -31,11 +31,22 @@ import ErrorScreen from './src/screens/error/ErrorScreen';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { NetworkProvider } from './src/services/networkService';
 import OfflineBanner from './src/components/OfflineBanner';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Camera, Image as ImageIcon, X } from 'lucide-react-native';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import type { ChatAttachment } from './src/services/aiApi';
 const Stack = createNativeStackNavigator();
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
 const OVERLAY_TABS: TabName[] = ['Profile', 'Notifications', 'WorkoutLog', 'HealthLog', 'PartnerReport', 'Relationships'];
+
+const OCR_PROMPT = `Please analyze this medical document image. Extract all visible text and provide:
+1. A clear transcription of all text found
+2. An explanation of what this document contains
+3. Health insights or recommendations based on the information
+
+If this is a prescription: list all medications with dosages and instructions.
+If this is a lab report: explain each value and whether it's within normal range.
+If this is an insurance document: summarize key coverage details.`;
 
 // ── Reducer ──────────────────────────────────────────────────────────
 
@@ -271,6 +282,53 @@ function AppShell() {
     }
   }, []);
 
+  // ── OCR state ────────────────────────────────────────────────
+  const [showOCRModal, setShowOCRModal] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState(false);
+
+  // Dismiss loading overlay when chat view appears
+  useEffect(() => {
+    if (state.aiChatVisible && ocrLoading) {
+      setOcrLoading(false);
+    }
+  }, [state.aiChatVisible, ocrLoading]);
+
+  const openOCR = useCallback(() => {
+    setShowOCRModal(true);
+  }, []);
+
+  const handleOCRImageSelected = useCallback((attachment: ChatAttachment) => {
+    setPendingAttachments([attachment]);
+    setInput(OCR_PROMPT);
+    setShowOCRModal(false);
+    openAI('AI', true);
+  }, [openAI, setPendingAttachments, setInput]);
+
+  const handleOCRCameraSelected = useCallback(async () => {
+    setShowOCRModal(false);
+    try {
+      const { PermissionsAndroid } = require('react-native');
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          { title: 'Camera Permission', message: 'App needs access to your camera', buttonPositive: 'OK' },
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) return;
+      }
+      setOcrLoading(true);
+      const result = await launchCamera({ mediaType: 'photo', quality: 0.8 });
+      if (result.didCancel || result.errorCode || !result.assets?.[0]) {
+        setOcrLoading(false);
+        return;
+      }
+      const a = result.assets[0];
+      handleOCRImageSelected({ uri: a.uri || '', type: a.type || 'image/jpeg', name: a.fileName || 'photo.jpg' });
+    } catch (e: any) {
+      setOcrLoading(false);
+      console.warn('[OCR] Camera:', e.message);
+    }
+  }, [handleOCRImageSelected]);
+
   const openWorkoutLog = useCallback((exercise: any) => {
     dispatch({ type: 'OPEN_WORKOUT_LOG', exercise });
   }, []);
@@ -394,6 +452,13 @@ function AppShell() {
                     onRelationshipsPress={openRelationships}
                     onOpenAI={openAI}
                     onOpenAppointments={openAppointments}
+                    onOpenHealthLog={openHealthLog}
+                    onCaptureImage={(att) => {
+                      setPendingAttachments([att]);
+                      setInput('Analyze this health image');
+                      setOcrLoading(true);
+                      openAI('Home', true);
+                    }}
                   />
                 </ErrorBoundary>
               )}
@@ -414,6 +479,7 @@ function AppShell() {
                     onNotificationsPress={openNotifications}
                     isTabActive={state.activeTab === 'AI'}
                     onOpenChat={() => openAI(undefined, true, '')}
+                    onOpenOCR={openOCR}
                   />
                 </ErrorBoundary>
               )}
@@ -522,6 +588,64 @@ function AppShell() {
       </View>
 
       <MemoizedTabBar activeTab={state.activeTab} onTabChange={handleTabChange} />
+
+      {/* OCR Loading Overlay */}
+      {ocrLoading && (
+        <View style={styles.ocrLoadingOverlay}>
+          <View style={styles.ocrLoadingBox}>
+            <ActivityIndicator size="large" color="#6B8AFF" />
+            <Text style={styles.ocrLoadingText}>Preparing your image...</Text>
+          </View>
+        </View>
+      )}
+
+      {/* OCR Modal */}
+      <Modal visible={showOCRModal} transparent animationType="fade" onRequestClose={() => setShowOCRModal(false)}>
+        <TouchableOpacity activeOpacity={1} onPress={() => setShowOCRModal(false)} style={styles.ocrModalOverlay}>
+          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={styles.ocrModalContent}>
+            <Text style={styles.ocrModalTitle}>Scan Document</Text>
+            <Text style={styles.ocrModalSub}>Choose how to provide the document</Text>
+
+            <TouchableOpacity style={styles.ocrModalOption} onPress={handleOCRCameraSelected} activeOpacity={0.7}>
+              <View style={[styles.ocrModalIcon, { backgroundColor: '#3B82F620' }]}>
+                <Camera size={24} color="#3B82F6" strokeWidth={1.5} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.ocrModalOptionTitle}>Take Photo</Text>
+                <Text style={styles.ocrModalOptionDesc}>Use camera to capture document</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.ocrModalOption}
+              onPress={() => {
+                setShowOCRModal(false);
+                setOcrLoading(true);
+                launchImageLibrary({ mediaType: 'photo', quality: 0.8 }, (result) => {
+                  if (result.didCancel || result.errorCode || !result.assets?.[0]) {
+                    setOcrLoading(false);
+                    return;
+                  }
+                  const a = result.assets[0];
+                  handleOCRImageSelected({ uri: a.uri || '', type: a.type || 'image/jpeg', name: a.fileName || 'photo.jpg' });
+                });
+              }}
+              activeOpacity={0.7}>
+              <View style={[styles.ocrModalIcon, { backgroundColor: '#10B98120' }]}>
+                <ImageIcon size={24} color="#10B981" strokeWidth={1.5} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.ocrModalOptionTitle}>Choose from Gallery</Text>
+                <Text style={styles.ocrModalOptionDesc}>Select an existing photo</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.ocrModalCancel} onPress={() => setShowOCRModal(false)}>
+              <Text style={styles.ocrModalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </>
   );
 }
@@ -644,5 +768,89 @@ const styles = StyleSheet.create({
   },
   screenHidden: {
     display: 'none',
+  },
+  ocrModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  ocrModalContent: {
+    width: '100%',
+    backgroundColor: '#1E1E1E',
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  ocrModalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  ocrModalSub: {
+    fontSize: 14,
+    color: '#999',
+    marginBottom: 20,
+  },
+  ocrModalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: '#2A2A2A',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 10,
+  },
+  ocrModalIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ocrModalOptionTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
+  },
+  ocrModalOptionDesc: {
+    fontSize: 13,
+    color: '#999',
+    marginTop: 2,
+  },
+  ocrModalCancel: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    marginTop: 6,
+  },
+  ocrModalCancelText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#999',
+  },
+  ocrLoadingOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+    elevation: 999,
+  },
+  ocrLoadingBox: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 16,
+    padding: 28,
+    alignItems: 'center',
+    gap: 14,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  ocrLoadingText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#CCC',
   },
 });

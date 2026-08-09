@@ -12,7 +12,7 @@ import {
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { ArrowLeft, Pencil } from 'lucide-react-native';
+import { ArrowLeft, Pencil, Pill } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
@@ -509,7 +509,7 @@ export default function MedicationsScreen({ onBack, onSaved }: Props) {
         <GlassCardView style={styles.card}>
           {medications.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>💊</Text>
+              <Pill size={40} color={theme.colors.amber} />
               <Text style={styles.emptyText}>No medications recorded</Text>
               <Text style={styles.emptySub}>Tap + Add to add your medications</Text>
             </View>

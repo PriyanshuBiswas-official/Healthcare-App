@@ -78,7 +78,7 @@ const LoadingScreen: React.FC = () => {
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       {/* Background */}
-      <View style={[styles.gradient, { backgroundColor: c.white }]} />
+      <View style={[styles.gradient, { backgroundColor: c.bg }]} />
 
       <View style={styles.content}>
         <Animated.View style={[styles.quoteContainer, { opacity: quoteFade }]}>

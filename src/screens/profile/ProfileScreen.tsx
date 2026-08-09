@@ -12,7 +12,7 @@ import {
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, User, ClipboardList, Pill, TriangleAlert, Phone, Bell, Flower2, Lock, Watch, Smartphone, Droplets, Dumbbell, Building2, Moon, Heart, CircleQuestionMark, Shield, FileText, Info, PenLine, Monitor, Sun, Users } from 'lucide-react-native';
 import { GlassCardView, SectionHeader, ProgressBar } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useAuth } from '../../providers/AuthProvider';
@@ -35,7 +35,7 @@ import { AppTheme } from '../../theme';
 type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency' | 'reminders-medication' | 'reminders-water' | 'reminders-workouts' | 'reminders-appointments' | 'reminders-sleep' | 'reminders-health';
 
 type MenuItem = {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   sub?: string;
   color?: string;
@@ -67,11 +67,11 @@ function getHealthProfile(profileData: ProfileData | null, colors: AppTheme['col
     : Array.isArray(allergiesRaw) ? allergiesRaw : [];
 
   return [
-    { icon: '👤', label: 'Personal Information', sub: 'Name, DOB, gender', color: colors.teal },
-    { icon: '📋', label: 'Medical History', sub: 'Conditions, surgeries', color: colors.pink },
-    { icon: '💊', label: 'Medications', sub: medCount > 0 ? `${medCount} active prescription${medCount > 1 ? 's' : ''}` : 'No active medications', color: colors.amber, badge: medCount > 0 ? String(medCount) : undefined },
-    { icon: '⚠️', label: 'Allergies', sub: allergyList.length > 0 ? allergyList.slice(0, 2).join(', ') : 'No allergies recorded', color: colors.danger },
-    { icon: '🆘', label: 'Emergency Contacts', sub: 'Emergency contacts', color: colors.accentBlue },
+    { icon: <User size={20} color={colors.teal} />, label: 'Personal Information', sub: 'Name, DOB, gender', color: colors.teal },
+    { icon: <ClipboardList size={20} color={colors.pink} />, label: 'Medical History', sub: 'Conditions, surgeries', color: colors.pink },
+    { icon: <Pill size={20} color={colors.amber} />, label: 'Medications', sub: medCount > 0 ? `${medCount} active prescription${medCount > 1 ? 's' : ''}` : 'No active medications', color: colors.amber, badge: medCount > 0 ? String(medCount) : undefined },
+    { icon: <TriangleAlert size={20} color={colors.danger} />, label: 'Allergies', sub: allergyList.length > 0 ? allergyList.slice(0, 2).join(', ') : 'No allergies recorded', color: colors.danger },
+    { icon: <Phone size={20} color={colors.accentBlue} />, label: 'Emergency Contacts', sub: 'Emergency contacts', color: colors.accentBlue },
   ];
 }
 
@@ -80,7 +80,7 @@ function MenuRow({ item, onPress, colors }: { item: MenuItem; onPress?: () => vo
   return (
     <TouchableOpacity style={menuStyles.menuRow} onPress={onPress} activeOpacity={0.7}>
       <View style={[menuStyles.menuIcon, { backgroundColor: accent + '20' }]}>
-        <Text style={menuStyles.menuIconText}>{item.icon}</Text>
+        {item.icon}
       </View>
       <View style={menuStyles.menuContent}>
         <Text style={[menuStyles.menuLabel, { color: colors.textPrimary }]}>{item.label}</Text>
@@ -105,7 +105,7 @@ function ToggleRow({
   onValueChange,
   colors,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   sub: string;
   value: boolean;
@@ -115,7 +115,7 @@ function ToggleRow({
   return (
     <View style={menuStyles.menuRow}>
       <View style={[menuStyles.menuIcon, { backgroundColor: colors.teal + '20' }]}>
-        <Text style={menuStyles.menuIconText}>{icon}</Text>
+        {icon}
       </View>
       <View style={menuStyles.menuContent}>
         <Text style={[menuStyles.menuLabel, { color: colors.textPrimary }]}>{label}</Text>
@@ -180,10 +180,10 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
   const { systemSync, setSystemSync, themeName, setThemeName } = useTheme();
 
   const PREFERENCES = useMemo(() => [
-    { key: 'notifications', icon: '🔔', label: 'Push Notifications', sub: 'Appointments & reminders', default: true },
-    { key: 'reminders', icon: '💊', label: 'Medication Reminders', sub: 'Daily dose alerts', default: true },
-    { key: 'cycle', icon: '🌸', label: 'Cycle Tracking Alerts', sub: 'Phase & fertility updates', default: false },
-    { key: 'biometric', icon: '🔒', label: 'Biometric Lock', sub: 'Face ID / fingerprint', default: true },
+    { key: 'notifications', icon: <Bell size={20} color="#F59E0B" />, label: 'Push Notifications', sub: 'Appointments & reminders', default: true },
+    { key: 'reminders', icon: <Pill size={20} color="#EC4899" />, label: 'Medication Reminders', sub: 'Daily dose alerts', default: true },
+    { key: 'cycle', icon: <Flower2 size={20} color="#EC4899" />, label: 'Cycle Tracking Alerts', sub: 'Phase & fertility updates', default: false },
+    { key: 'biometric', icon: <Lock size={20} color="#14B8A6" />, label: 'Biometric Lock', sub: 'Face ID / fingerprint', default: true },
   ] as const, []);
 
   const [toggles, setToggles] = useState(
@@ -194,6 +194,8 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
     initialSection as HealthSection | null
   );
   const cameFromExternal = !!initialSection;
+
+  const appVersion = require('../../../package.json').version as string;
 
   const healthProfile = useMemo(() => getHealthProfile(profileData, theme.colors), [profileData, theme.colors]);
 
@@ -331,8 +333,9 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
       alignItems: 'center',
     },
     completeCardIcon: {
-      fontSize: Typography.xl,
       marginRight: Spacing.md,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     completeCardTextWrap: {
       flex: 1,
@@ -413,8 +416,9 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
       borderColor: t.colors.teal + '60',
     },
     themeChipIcon: {
-      fontSize: Typography.xl,
       marginBottom: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     themeChipText: {
       fontSize: Typography.xs,
@@ -427,25 +431,25 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
   }));
 
   const CONNECTED_DEVICES: MenuItem[] = useMemo(() => [
-    { icon: '⌚', label: 'Apple Watch', sub: 'Synced · Last: 2 min ago', color: theme.colors.teal, badge: 'On' },
-    { icon: '📱', label: 'Health Connect', sub: 'Steps, sleep, heart rate', color: theme.colors.pink },
+    { icon: <Watch size={20} color={theme.colors.teal} />, label: 'Apple Watch', sub: 'Synced · Last: 2 min ago', color: theme.colors.teal, badge: 'On' },
+    { icon: <Smartphone size={20} color={theme.colors.pink} />, label: 'Health Connect', sub: 'Steps, sleep, heart rate', color: theme.colors.pink },
   ], [theme.colors]);
 
   const REMINDER_ITEMS: MenuItem[] = useMemo(() => [
-    { icon: '💊', label: 'Medications', sub: 'Manage medication reminders', color: theme.colors.amber },
-    { icon: '💧', label: 'Water Reminders', sub: 'Hydration intake alerts', color: theme.colors.blue },
-    { icon: '💪', label: 'Workouts', sub: 'Exercise schedule & reminders', color: theme.colors.pink },
-    { icon: '🏥', label: 'Appointments', sub: 'Upcoming visits & alerts', color: theme.colors.teal },
-    { icon: '🌙', label: 'Sleep', sub: 'Bedtime & wake reminders', color: theme.colors.accentBlue },
-    { icon: '❤️', label: 'Health', sub: 'General health reminders', color: theme.colors.danger },
+    { icon: <Pill size={20} color={theme.colors.amber} />, label: 'Medications', sub: 'Manage medication reminders', color: theme.colors.amber },
+    { icon: <Droplets size={20} color={theme.colors.blue} />, label: 'Water Reminders', sub: 'Hydration intake alerts', color: theme.colors.blue },
+    { icon: <Dumbbell size={20} color={theme.colors.pink} />, label: 'Workouts', sub: 'Exercise schedule & reminders', color: theme.colors.pink },
+    { icon: <Building2 size={20} color={theme.colors.teal} />, label: 'Appointments', sub: 'Upcoming visits & alerts', color: theme.colors.teal },
+    { icon: <Moon size={20} color={theme.colors.accentBlue} />, label: 'Sleep', sub: 'Bedtime & wake reminders', color: theme.colors.accentBlue },
+    { icon: <Heart size={20} color={theme.colors.danger} />, label: 'Health', sub: 'General health reminders', color: theme.colors.danger },
   ], [theme.colors]);
 
   const SUPPORT: MenuItem[] = useMemo(() => [
-    { icon: '❓', label: 'Help & Support', sub: 'FAQs, chat support' },
-    { icon: '🛡️', label: 'Privacy & Security', sub: 'Data sharing, permissions' },
-    { icon: '📄', label: 'Terms & Policies', sub: 'Legal documents' },
-    { icon: 'ℹ️', label: 'About Cureto', sub: 'Version 0.0.1' },
-  ], []);
+    { icon: <CircleQuestionMark size={20} color="#14B8A6" />, label: 'Help & Support', sub: 'FAQs, chat support' },
+    { icon: <Shield size={20} color="#3B82F6" />, label: 'Privacy & Security', sub: 'Data sharing, permissions' },
+    { icon: <FileText size={20} color="#F59E0B" />, label: 'Terms & Policies', sub: 'Legal documents' },
+    { icon: <Info size={20} color="#6B8AFF" />, label: 'About Cureto', sub: `Version ${appVersion}` },
+  ], [appVersion]);
 
   // Handle initialSection changes (from notification taps)
   useEffect(() => {
@@ -626,9 +630,6 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
                 </View>
               </View>
             </View>
-            <View style={styles.profileMeta}>
-              <Text style={styles.metaItem}>Health Score 78</Text>
-            </View>
           </GlassCardView>
 
           <GlassCardView style={styles.statsRow}>
@@ -650,7 +651,9 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
                 activeOpacity={0.7}>
                 <View style={styles.completeCardInner}>
                   <View style={styles.completeCardLeft}>
-                    <Text style={styles.completeCardIcon}>📝</Text>
+                    <View style={styles.completeCardIcon}>
+                      <PenLine size={22} color={theme.colors.teal} />
+                    </View>
                     <View style={styles.completeCardTextWrap}>
                       <Text style={styles.completeCardTitle}>Set Up Your Profile</Text>
                       <Text style={styles.completeCardSub}>
@@ -731,9 +734,9 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
           <GlassCardView style={styles.menuCard}>
             <View style={styles.themeChipRow}>
               {([
-                { key: 'system' as const, icon: '🔄', label: 'System' },
-                { key: 'dark' as const, icon: '🌙', label: 'Dark' },
-                { key: 'light' as const, icon: '☀️', label: 'Light' },
+                { key: 'system' as const, icon: <Monitor size={18} color={theme.colors.textSecondary} />, label: 'System' },
+                { key: 'dark' as const, icon: <Moon size={18} color={theme.colors.textSecondary} />, label: 'Dark' },
+                { key: 'light' as const, icon: <Sun size={18} color={theme.colors.textSecondary} />, label: 'Light' },
               ]).map((opt) => {
                 const isActive = opt.key === 'system'
                   ? systemSync
@@ -751,7 +754,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
                         setThemeName(opt.key);
                       }
                     }}>
-                    <Text style={styles.themeChipIcon}>{opt.icon}</Text>
+                    <View style={styles.themeChipIcon}>{opt.icon}</View>
                     <Text style={[styles.themeChipText, isActive && styles.themeChipTextActive]}>
                       {opt.label}
                     </Text>
@@ -778,7 +781,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
             ))}
             <View style={styles.divider} />
             <ToggleRow
-              icon="❤️"
+              icon={<Heart size={20} color="#EC4899" />}
               label="Hide Vitals"
               sub="Remove vitals from all health pages"
               value={hideVitals}
@@ -787,7 +790,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
             />
             <View style={styles.divider} />
             <ToggleRow
-              icon="👥"
+              icon={<Users size={20} color="#14B8A6" />}
               label="Hide Community Spotlight"
               sub="Remove community posts from dashboard"
               value={hideCommunitySpotlight}

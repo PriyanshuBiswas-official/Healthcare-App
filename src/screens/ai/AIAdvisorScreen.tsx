@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   Platform,
   Animated,
   ActivityIndicator,
+  RefreshControl,
+  Alert,
 } from 'react-native';
 import Svg, { Rect, Polyline, Line, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Typography, Spacing, Radius } from '../../theme/theme';
@@ -17,7 +19,7 @@ import { useAuth } from '../../providers/AuthProvider';
 import { useNotifications } from '../../providers/NotificationContext';
 import { getSleepLogs, getWeightLogs, getMoodLogs } from '../../services/healthService';
 import type { SleepLog, WeightEntry, MoodLog } from '../../types/health';
-import { Search } from 'lucide-react-native';
+import { Search, Scan, Microscope, UtensilsCrossed, TrendingUp } from 'lucide-react-native';
 
 type InsightData = {
   sleep: SleepLog[];
@@ -94,7 +96,19 @@ function MiniLineChart({ data, color, height = 48 }: { data: number[]; color: st
   );
 }
 
-export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, isTabActive, onOpenChat }: { onProfilePress?: () => void; onNotificationsPress?: () => void; isTabActive?: boolean; onOpenChat?: () => void }) {
+export default function AIAdvisorScreen({
+  onProfilePress,
+  onNotificationsPress,
+  isTabActive,
+  onOpenChat,
+  onOpenOCR,
+}: {
+  onProfilePress?: () => void;
+  onNotificationsPress?: () => void;
+  isTabActive?: boolean;
+  onOpenChat?: () => void;
+  onOpenOCR?: () => void;
+}) {
   const { theme } = useTheme();
   const { user } = useAuth();
   const { unreadCount } = useNotifications();
@@ -103,6 +117,7 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
   const slideAnim = useRef(new Animated.Value(30)).current;
   const [insightData, setInsightData] = useState<InsightData>({ sleep: [], weight: [], mood: [] });
   const [insightsLoading, setInsightsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (isTabActive) {
@@ -114,36 +129,43 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
     ]).start();
   }, [isTabActive, setForceHidden, fadeAnim, slideAnim]);
 
-  useEffect(() => {
-    const fetchInsights = async () => {
-      try {
-        const token = session?.access_token || '';
-        if (!token) return;
-        const now = new Date();
-        const weekAgo = new Date(now);
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        const twoWeeksAgo = new Date(now);
-        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-        const startStr = weekAgo.toISOString().split('T')[0];
-        const endStr = now.toISOString().split('T')[0];
-        const weightStart = twoWeeksAgo.toISOString().split('T')[0];
+  const fetchInsights = async () => {
+    try {
+      const token = session?.access_token || '';
+      if (!token) return;
+      const now = new Date();
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const twoWeeksAgo = new Date(now);
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+      const startStr = weekAgo.toISOString().split('T')[0];
+      const endStr = now.toISOString().split('T')[0];
+      const weightStart = twoWeeksAgo.toISOString().split('T')[0];
 
-        const [sleep, weight, mood] = await Promise.all([
-          getSleepLogs(token, startStr, endStr).catch(() => []),
-          getWeightLogs(token, weightStart, endStr).catch(() => []),
-          getMoodLogs(token, startStr, endStr).catch(() => []),
-        ]);
-        setInsightData({ sleep, weight, mood });
-      } catch {
-        // silently fail — show empty state
-      } finally {
-        setInsightsLoading(false);
-      }
-    };
+      const [sleep, weight, mood] = await Promise.all([
+        getSleepLogs(token, startStr, endStr).catch(() => []),
+        getWeightLogs(token, weightStart, endStr).catch(() => []),
+        getMoodLogs(token, startStr, endStr).catch(() => []),
+      ]);
+      setInsightData({ sleep, weight, mood });
+    } catch {
+      // silently fail — show empty state
+    } finally {
+      setInsightsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchInsights();
   }, []);
 
   const { session } = useAuth();
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchInsights();
+    setRefreshing(false);
+  }, [session]);
 
   const sleepValues = insightData.sleep.map(s => s.sleep_hr);
   const weightValues = insightData.weight.map(w => w.weight_kg);
@@ -200,9 +222,11 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
       marginBottom: Spacing.lg,
     },
     toolCard: {
-      width: '47%',
+      height: 200,
       padding: Spacing.base,
       marginBottom: Spacing.sm,
+      justifyContent: 'space-between',
+      overflow: 'hidden',
     },
     toolIconWrap: {
       width: 32, height: 32, borderRadius: 8,
@@ -218,14 +242,12 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
       fontSize: Typography.xs,
       color: theme.colors.textSecondary,
       marginBottom: Spacing.sm,
-      height: 45,
     },
     toolActionText: {
       fontSize: Typography.xs,
       fontWeight: Typography.medium,
       color: theme.colors.textPrimary,
       marginBottom: 8,
-      textAlign: 'center',
     },
     toolTagsRow: {
       flexDirection: 'row',
@@ -324,7 +346,8 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
 
   return (
     <View style={styles.root}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[theme.colors.teal, theme.colors.pink]} tintColor={theme.colors.teal} progressBackgroundColor={theme.colors.bgCard} />}>
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           
           {/* Header — scrolls with content */}
@@ -352,58 +375,69 @@ export default function AIAdvisorScreen({ onProfilePress, onNotificationsPress, 
           {/* AI TOOLS */}
           <SectionHeader title="AI Tools" />
           <View style={styles.toolsGrid}>
-            <GlassCardView style={styles.toolCard}>
-              <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.accentBlue + '15' }]} />
-              <Text style={styles.toolTitle}>OCR scanner</Text>
-              <Text style={styles.toolSub}>Scan prescriptions, reports & lab results instantly</Text>
-              <Text style={styles.toolActionText}>Tap to scan or upload</Text>
-              <View style={styles.toolTagsRow}>
-                 <View style={styles.toolTag}><Text style={styles.toolTagText}>Prescriptions</Text></View>
-                 <View style={styles.toolTag}><Text style={styles.toolTagText}>Lab reports</Text></View>
-                 <View style={styles.toolTag}><Text style={styles.toolTagText}>Insurance</Text></View>
-              </View>
-            </GlassCardView>
+            <TouchableOpacity activeOpacity={0.85} onPress={onOpenOCR} style={{ width: '47%' }}>
+              <GlassCardView style={styles.toolCard}>
+                <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.accentBlue + '15', alignItems: 'center', justifyContent: 'center' }]}>
+                  <Scan size={18} color={theme.colors.accentBlue} strokeWidth={1.8} />
+                </View>
+                <Text style={styles.toolTitle}>OCR scanner</Text>
+                <Text numberOfLines={2} style={styles.toolSub}>Scan prescriptions, reports & lab results</Text>
+                <Text style={styles.toolActionText}>Tap to scan or upload</Text>
+                <View style={styles.toolTagsRow}>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Prescriptions</Text></View>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Lab reports</Text></View>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Insurance</Text></View>
+                </View>
+              </GlassCardView>
+            </TouchableOpacity>
 
-            <GlassCardView style={styles.toolCard}>
-              <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.pink + '15' }]} />
-              <Text style={styles.toolTitle}>Disease classifier</Text>
-              <Text style={styles.toolSub}>AI image analysis for skin, eye, and X-ray conditions</Text>
-              <View style={styles.toolFlexRow}>
-                 <Text style={styles.toolMetaText}>Last scan: skin lesion</Text>
-                 <View style={[styles.badgeAI, { backgroundColor: theme.colors.teal + '20' }]}><Text style={[styles.badgeAIText, { color: theme.colors.teal }]}>98%</Text></View>
-              </View>
-              <View style={styles.progressBar}><View style={[styles.progressFill, { width: '98%', backgroundColor: theme.colors.teal }]} /></View>
-              <View style={styles.toolTagsRow}>
-                 <View style={styles.toolTag}><Text style={styles.toolTagText}>Dermatology</Text></View>
-                 <View style={styles.toolTag}><Text style={styles.toolTagText}>X-ray</Text></View>
-                 <View style={styles.toolTag}><Text style={styles.toolTagText}>Retina</Text></View>
-              </View>
-            </GlassCardView>
+            <TouchableOpacity activeOpacity={0.85} onPress={() => Alert.alert('Coming Soon', 'Disease classifier is under development and will be available soon!')} style={{ width: '47%' }}>
+              <GlassCardView style={styles.toolCard}>
+                <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.pink + '15', alignItems: 'center', justifyContent: 'center' }]}>
+                  <Microscope size={18} color={theme.colors.pink} strokeWidth={1.8} />
+                </View>
+                <Text style={styles.toolTitle}>Disease classifier</Text>
+                <Text numberOfLines={2} style={styles.toolSub}>AI image analysis for skin, eye & X-ray conditions</Text>
+                <Text style={styles.toolActionText}>Tap to scan or upload</Text>
+                <View style={styles.toolTagsRow}>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Dermatology</Text></View>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>X-ray</Text></View>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Retina</Text></View>
+                </View>
+              </GlassCardView>
+            </TouchableOpacity>
 
-            <GlassCardView style={styles.toolCard}>
-              <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.teal + '15' }]} />
-              <Text style={styles.toolTitle}>Medication tracker</Text>
-              <Text style={styles.toolSub}>AI reminders, interaction checks & refill alerts</Text>
-              <View style={styles.medRow}>
-                 <Text style={styles.medText}>Metformin 500mg</Text>
-                 <View style={[{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: Radius.full, backgroundColor: theme.colors.amber + '20' }]}><Text style={[{ fontSize: Typography.xs, fontWeight: Typography.semiBold, color: theme.colors.amber }]}>8 PM</Text></View>
-              </View>
-              <View style={styles.medRow}>
-                 <Text style={styles.medText}>Lisinopril 10mg</Text>
-                 <View style={[{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: Radius.full, backgroundColor: theme.colors.teal + '20' }]}><Text style={[{ fontSize: Typography.xs, fontWeight: Typography.semiBold, color: theme.colors.teal }]}>Taken</Text></View>
-              </View>
-            </GlassCardView>
+            <TouchableOpacity activeOpacity={0.85} onPress={() => Alert.alert('Coming Soon', 'Meal scanner is under development and will be available soon!')} style={{ width: '47%' }}>
+              <GlassCardView style={styles.toolCard}>
+                <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.teal + '15', alignItems: 'center', justifyContent: 'center' }]}>
+                  <UtensilsCrossed size={18} color={theme.colors.teal} strokeWidth={1.8} />
+                </View>
+                <Text style={styles.toolTitle}>Meal scanner</Text>
+                <Text numberOfLines={2} style={styles.toolSub}>AI nutritional analysis from photos</Text>
+                <Text style={styles.toolActionText}>Tap to scan or upload</Text>
+                <View style={styles.toolTagsRow}>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Calories</Text></View>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Nutrition</Text></View>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Diet</Text></View>
+                </View>
+              </GlassCardView>
+            </TouchableOpacity>
 
-            <GlassCardView style={styles.toolCard}>
-              <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.amber + '15' }]} />
-              <Text style={styles.toolTitle}>Health trends</Text>
-              <Text style={styles.toolSub}>AI pattern recognition across vitals & symptoms</Text>
-              <View style={styles.toolTagsRow}>
-                 <View style={styles.toolTag}><Text style={styles.toolTagText}>7 days</Text></View>
-                 <View style={styles.toolTag}><Text style={styles.toolTagText}>Monthly</Text></View>
-                 <View style={styles.toolTag}><Text style={styles.toolTagText}>AI report</Text></View>
-              </View>
-            </GlassCardView>
+            <TouchableOpacity activeOpacity={0.85} onPress={() => Alert.alert('Coming Soon', 'Health trends is under development and will be available soon!')} style={{ width: '47%' }}>
+              <GlassCardView style={styles.toolCard}>
+                <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.amber + '15', alignItems: 'center', justifyContent: 'center' }]}>
+                  <TrendingUp size={18} color={theme.colors.amber} strokeWidth={1.8} />
+                </View>
+                <Text style={styles.toolTitle}>Health trends</Text>
+                <Text numberOfLines={2} style={styles.toolSub}>AI pattern recognition across vitals & symptoms</Text>
+                <Text style={styles.toolActionText}>Tap to scan or upload</Text>
+                <View style={styles.toolTagsRow}>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>7 days</Text></View>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Monthly</Text></View>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>AI report</Text></View>
+                </View>
+              </GlassCardView>
+            </TouchableOpacity>
           </View>
 
           {/* RECENT AI INSIGHTS */}

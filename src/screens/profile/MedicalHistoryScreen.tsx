@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, ClipboardList } from 'lucide-react-native';
 import { GlassCardView } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
@@ -288,7 +288,7 @@ export default function MedicalHistoryScreen({ onBack, onSaved }: Props) {
           <GlassCardView style={styles.card}>
             {conditions.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>📋</Text>
+                <ClipboardList size={40} color={theme.colors.pink} />
                 <Text style={styles.emptyText}>No conditions recorded</Text>
                 <Text style={styles.emptySub}>Tap Edit to add your medical conditions</Text>
               </View>
