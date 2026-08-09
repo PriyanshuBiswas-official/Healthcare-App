@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   Alert,
@@ -10,9 +9,10 @@ import {
   Platform,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
-import { ArrowLeft, Trash2 } from 'lucide-react-native';
-import { GlassCardView } from '../../components/SharedComponents';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { Trash2 } from 'lucide-react-native';
+import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import {
   getMedications,
@@ -53,13 +53,13 @@ function formatDisplayDate(d: Date): string {
 }
 
 export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
+  const { theme } = useTheme();
   const { session } = useAuth();
 
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Selected medication for setup (null = show list)
   const [selectedMed, setSelectedMed] = useState<Medication | null>(null);
   const [times, setTimes] = useState<string[]>([]);
   const [repeat, setRepeat] = useState(true);
@@ -67,8 +67,6 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-
-  // ── Load Data ──────────────────────────────────────────────
 
   const loadData = useCallback(async () => {
     if (!session?.access_token) return;
@@ -84,8 +82,6 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
   }, [session?.access_token]);
 
   useEffect(() => { loadData(); }, [loadData]);
-
-  // ── Form Helpers ───────────────────────────────────────────
 
   function resetForm() {
     setSelectedMed(null);
@@ -114,8 +110,6 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
     setTimes(times.filter(t => t !== time));
   }
 
-  // ── Pickers ────────────────────────────────────────────────
-
   const onStartDateChange = (_: DateTimePickerEvent, selected?: Date) => {
     if (Platform.OS === 'android') setShowDatePicker(false);
     if (selected) setStartDate(selected);
@@ -129,8 +123,6 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
       addTimeToList(`${h}:${m}`);
     }
   };
-
-  // ── Tap Medication ─────────────────────────────────────────
 
   const tapMedication = (med: Medication) => {
     setSelectedMed(med);
@@ -151,8 +143,6 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
     setShowTimePicker(false);
     setShowDatePicker(false);
   };
-
-  // ── Save ───────────────────────────────────────────────────
 
   const handleSave = async () => {
     if (!selectedMed || !session?.access_token) return;
@@ -191,8 +181,6 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
     }
   };
 
-  // ── Remove ─────────────────────────────────────────────────
-
   const handleRemove = (med: Medication) => {
     if (!med.reminder || !session?.access_token) return;
     Alert.alert('Remove Reminder', `Remove all notifications for ${med.name}?`, [
@@ -215,40 +203,110 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
     ]);
   };
 
-  // ── Loading ────────────────────────────────────────────────
+  const styles = useStyles(theme => ({
+    root: { flex: 1, backgroundColor: theme.colors.bg },
+    loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    topBar: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
+    },
+    pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
+    scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
+    card: { padding: Spacing.lg, marginBottom: Spacing.md },
+    sectionLabel: {
+      fontSize: Typography.xs, fontWeight: Typography.bold, color: theme.colors.textMuted,
+      letterSpacing: 1, marginBottom: Spacing.sm,
+    },
+    medName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
+    medDetail: { fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: 4 },
+    datePickerBtn: {
+      backgroundColor: theme.colors.bgCardSolid, borderWidth: 1, borderColor: theme.colors.bgCardBorder,
+      borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
+    },
+    datePickerText: { fontSize: Typography.base, color: theme.colors.textPrimary },
+    timeList: { marginBottom: Spacing.md },
+    timeRow: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingVertical: Spacing.md,
+      borderBottomWidth: 1, borderBottomColor: theme.colors.divider,
+    },
+    timeRowLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    timeDot: {
+      width: 8, height: 8, borderRadius: 4,
+      backgroundColor: theme.colors.amber,
+    },
+    timeValue: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
+    timeMilitary: { fontSize: Typography.sm, color: theme.colors.textMuted },
+    emptyTimes: { fontSize: Typography.sm, color: theme.colors.textMuted, fontStyle: 'italic', marginBottom: Spacing.md },
+    addTimeBtn: {
+      backgroundColor: theme.colors.amber + '15', borderWidth: 1, borderColor: theme.colors.amber + '40',
+      borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center',
+    },
+    addTimeBtnText: { fontSize: Typography.sm, fontWeight: Typography.semiBold, color: theme.colors.amber },
+    toggleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm },
+    toggle: {
+      width: 48, height: 28, borderRadius: 14, backgroundColor: theme.colors.bgCardBorder,
+      justifyContent: 'center', paddingHorizontal: 3,
+    },
+    toggleActive: { backgroundColor: theme.colors.amber },
+    toggleKnob: {
+      width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff',
+    },
+    toggleKnobActive: { alignSelf: 'flex-end' },
+    toggleLabel: { fontSize: Typography.base, color: theme.colors.textPrimary, flex: 1 },
+    weekdayRow: { flexDirection: 'row', gap: Spacing.xs, marginTop: Spacing.md },
+    weekdayBtn: {
+      flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.sm,
+      borderWidth: 1, borderColor: theme.colors.bgCardBorder, alignItems: 'center',
+    },
+    weekdayBtnActive: { backgroundColor: theme.colors.amber + '20', borderColor: theme.colors.amber + '50' },
+    weekdayText: { fontSize: Typography.xs, color: theme.colors.textMuted, fontWeight: Typography.semiBold },
+    weekdayTextActive: { color: theme.colors.amber },
+    saveBtn: {
+      backgroundColor: theme.colors.amber, borderRadius: Radius.md,
+      paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm,
+    },
+    saveBtnDisabled: { opacity: 0.6 },
+    saveBtnText: { fontSize: Typography.base, fontWeight: Typography.bold, color: '#fff' },
+    entryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },
+    entryInfo: { flex: 1 },
+    entryName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
+    entryDetail: { fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: 2 },
+    entrySchedule: { fontSize: Typography.sm, color: theme.colors.amber, marginTop: 2 },
+    entryNoReminder: { fontSize: Typography.sm, color: theme.colors.textMuted, marginTop: 2, fontStyle: 'italic' },
+    chevron: { fontSize: Typography.lg, color: theme.colors.textMuted, paddingLeft: Spacing.sm },
+    divider: { height: 1, backgroundColor: theme.colors.divider },
+    emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
+    emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
+    emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
+    emptySub: { fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: Spacing.xs, textAlign: 'center' },
+  }));
 
   if (loading) {
     return (
       <View style={styles.root}>
         <View style={styles.topBar}>
-          <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-            <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
-          </TouchableOpacity>
+          <BackButton onPress={onBack} color={theme.colors.textPrimary} />
           <Text style={styles.pageTitle}>Medications</Text>
           <View style={{ width: 60 }} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.amber} />
+          <ActivityIndicator size="large" color={theme.colors.amber} />
         </View>
       </View>
     );
   }
 
-  // ── Setup Form ─────────────────────────────────────────────
-
   if (selectedMed) {
     return (
       <View style={styles.root}>
         <View style={styles.topBar}>
-          <TouchableOpacity style={styles.backBtn} onPress={resetForm} activeOpacity={0.7}>
-            <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
-          </TouchableOpacity>
+          <BackButton onPress={resetForm} color={theme.colors.textPrimary} />
           <Text style={styles.pageTitle}>{selectedMed.name}</Text>
           <View style={{ width: 60 }} />
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-          {/* Medication Info */}
           <GlassCardView style={styles.card}>
             <Text style={styles.sectionLabel}>MEDICATION</Text>
             <Text style={styles.medName}>{selectedMed.name}</Text>
@@ -259,7 +317,6 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
             )}
           </GlassCardView>
 
-          {/* Start Date */}
           <GlassCardView style={styles.card}>
             <Text style={styles.sectionLabel}>START DATE</Text>
             <TouchableOpacity
@@ -278,11 +335,9 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
             )}
           </GlassCardView>
 
-          {/* Notification Times */}
           <GlassCardView style={styles.card}>
             <Text style={styles.sectionLabel}>NOTIFICATION TIMES</Text>
 
-            {/* Time List */}
             {times.length > 0 && (
               <View style={styles.timeList}>
                 {times.map((t, i) => (
@@ -295,7 +350,7 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
                     <TouchableOpacity
                       onPress={() => removeTimeFromList(t)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                      <Trash2 size={16} color={Colors.textMuted} />
+                      <Trash2 size={16} color={theme.colors.textMuted} />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -306,7 +361,6 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
               <Text style={styles.emptyTimes}>No times added yet</Text>
             )}
 
-            {/* Add Time Picker */}
             <TouchableOpacity
               style={styles.addTimeBtn}
               onPress={() => setShowTimePicker(true)}
@@ -324,7 +378,6 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
             )}
           </GlassCardView>
 
-          {/* Repeat */}
           <GlassCardView style={styles.card}>
             <Text style={styles.sectionLabel}>REPEAT</Text>
             <TouchableOpacity
@@ -358,7 +411,6 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
             )}
           </GlassCardView>
 
-          {/* Save Button */}
           <TouchableOpacity
             style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
             onPress={handleSave}
@@ -371,14 +423,10 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
     );
   }
 
-  // ── List Mode ──────────────────────────────────────────────
-
   return (
     <View style={styles.root}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
-        </TouchableOpacity>
+        <BackButton onPress={onBack} color={theme.colors.textPrimary} />
         <Text style={styles.pageTitle}>Medications</Text>
         <View style={{ width: 60 }} />
       </View>
@@ -427,87 +475,3 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
-  },
-  backBtn: {
-    width: 40, height: 40, borderRadius: Radius.md,
-    backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.bgCardBorder,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
-  scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
-  card: { padding: Spacing.lg, marginBottom: Spacing.md },
-  sectionLabel: {
-    fontSize: Typography.xs, fontWeight: Typography.bold, color: Colors.textMuted,
-    letterSpacing: 1, marginBottom: Spacing.sm,
-  },
-  medName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  medDetail: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 4 },
-  datePickerBtn: {
-    backgroundColor: Colors.bgCardSolid, borderWidth: 1, borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
-  },
-  datePickerText: { fontSize: Typography.base, color: Colors.textPrimary },
-  timeList: { marginBottom: Spacing.md },
-  timeRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1, borderBottomColor: Colors.divider,
-  },
-  timeRowLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  timeDot: {
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: Colors.amber,
-  },
-  timeValue: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  timeMilitary: { fontSize: Typography.sm, color: Colors.textMuted },
-  emptyTimes: { fontSize: Typography.sm, color: Colors.textMuted, fontStyle: 'italic', marginBottom: Spacing.md },
-  addTimeBtn: {
-    backgroundColor: Colors.amber + '15', borderWidth: 1, borderColor: Colors.amber + '40',
-    borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center',
-  },
-  addTimeBtnText: { fontSize: Typography.sm, fontWeight: Typography.semiBold, color: Colors.amber },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm },
-  toggle: {
-    width: 48, height: 28, borderRadius: 14, backgroundColor: Colors.bgCardBorder,
-    justifyContent: 'center', paddingHorizontal: 3,
-  },
-  toggleActive: { backgroundColor: Colors.amber },
-  toggleKnob: {
-    width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff',
-  },
-  toggleKnobActive: { alignSelf: 'flex-end' },
-  toggleLabel: { fontSize: Typography.base, color: Colors.textPrimary, flex: 1 },
-  weekdayRow: { flexDirection: 'row', gap: Spacing.xs, marginTop: Spacing.md },
-  weekdayBtn: {
-    flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.sm,
-    borderWidth: 1, borderColor: Colors.bgCardBorder, alignItems: 'center',
-  },
-  weekdayBtnActive: { backgroundColor: Colors.amber + '20', borderColor: Colors.amber + '50' },
-  weekdayText: { fontSize: Typography.xs, color: Colors.textMuted, fontWeight: Typography.semiBold },
-  weekdayTextActive: { color: Colors.amber },
-  saveBtn: {
-    backgroundColor: Colors.amber, borderRadius: Radius.md,
-    paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm,
-  },
-  saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: { fontSize: Typography.base, fontWeight: Typography.bold, color: '#fff' },
-  entryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },
-  entryInfo: { flex: 1 },
-  entryName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  entryDetail: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2 },
-  entrySchedule: { fontSize: Typography.sm, color: Colors.amber, marginTop: 2 },
-  entryNoReminder: { fontSize: Typography.sm, color: Colors.textMuted, marginTop: 2, fontStyle: 'italic' },
-  chevron: { fontSize: Typography.lg, color: Colors.textMuted, paddingLeft: Spacing.sm },
-  divider: { height: 1, backgroundColor: Colors.divider },
-  emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
-  emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
-  emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  emptySub: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: Spacing.xs, textAlign: 'center' },
-});

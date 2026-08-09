@@ -1,26 +1,29 @@
 import React, { useEffect } from 'react';
 import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { Colors, Typography, Spacing } from '../theme/theme';
+import { Typography, Spacing } from '../theme/theme';
+import { useTheme, useStyles } from '../providers/ThemeProvider';
 import { Home, Stethoscope, Bot, Utensils, Activity } from 'lucide-react-native';
 import { useScrollVisibility } from './ScrollVisibilityContext';
 
-export type TabName = 'Home' | 'Health' | 'Diet' | 'Activity' | 'AI' | 'Profile' | 'Notifications' | 'WorkoutLog' | 'HealthLog' | 'PartnerReport';
+export type TabName = 'Home' | 'Health' | 'Diet' | 'Activity' | 'AI' | 'Profile' | 'Notifications' | 'WorkoutLog' | 'HealthLog' | 'PartnerReport' | 'Relationships';
 
 interface TabBarProps {
   activeTab: TabName;
   onTabChange: (tab: TabName) => void;
 }
 
-const TABS: { name: TabName; Icon: React.ElementType; activeColor: string }[] = [
-  { name: 'Home', Icon: Home, activeColor: Colors.teal },
-  { name: 'Health', Icon: Stethoscope, activeColor: Colors.pink },
-  { name: 'AI', Icon: Bot, activeColor: Colors.purple },
-  { name: 'Diet', Icon: Utensils, activeColor: Colors.amber },
-  { name: 'Activity', Icon: Activity, activeColor: Colors.teal },
-];
-
 function TabBar({ activeTab, onTabChange }: TabBarProps) {
+  const { theme } = useTheme();
+  const styles = useStyles(themeStyles);
   const { visible } = useScrollVisibility();
+
+  const TABS: { name: TabName; Icon: React.ElementType; activeColor: string }[] = [
+    { name: 'Home', Icon: Home, activeColor: theme.colors.teal },
+    { name: 'Health', Icon: Stethoscope, activeColor: theme.colors.pink },
+    { name: 'AI', Icon: Bot, activeColor: theme.colors.accentBlue },
+    { name: 'Diet', Icon: Utensils, activeColor: theme.colors.amber },
+    { name: 'Activity', Icon: Activity, activeColor: theme.colors.teal },
+  ];
   const anim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -46,13 +49,13 @@ function TabBar({ activeTab, onTabChange }: TabBarProps) {
               <View style={styles.iconWrap}>
                 <tab.Icon
                   size={28}
-                  color={isActive ? Colors.teal : Colors.text}
+                  color={isActive ? theme.colors.teal : theme.colors.text}
                   strokeWidth={2}
                   style={styles.icon}
                 />
               </View>
               {isActive && (
-                <View style={[styles.activeIndicator, { backgroundColor: Colors.teal, shadowColor: Colors.teal }]} />
+                <View style={[styles.activeIndicator, { backgroundColor: theme.colors.teal, shadowColor: theme.colors.teal }]} />
               )}
             </TouchableOpacity>
           );
@@ -62,7 +65,7 @@ function TabBar({ activeTab, onTabChange }: TabBarProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const themeStyles = (theme: any) => StyleSheet.create({
   container: {
     position: 'absolute',
     bottom: 12,
@@ -76,10 +79,10 @@ const styles = StyleSheet.create({
     width: '96%',
     borderRadius: 28,
     paddingVertical: Spacing.xs,
-    backgroundColor: Colors.tabBarBg,
+    backgroundColor: theme.colors.tabBarBg,
     borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    shadowColor: Colors.shadowColor,
+    borderColor: theme.colors.bgCardBorder,
+    shadowColor: theme.colors.shadowColor,
     shadowOpacity: 0.35,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 6 },
@@ -112,13 +115,13 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   icon: {
-    color: Colors.text,
+    color: theme.colors.text,
     zIndex: 1,
   },
   label: {
     fontSize: Typography.xs,
     maxWidth: 48,
-    color: Colors.textMuted,
+    color: theme.colors.textMuted,
     fontWeight: Typography.semiBold,
     letterSpacing: Typography.lsNormal,
     textTransform: 'uppercase',

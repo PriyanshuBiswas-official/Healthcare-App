@@ -10,9 +10,11 @@ import {
   TextInput,
   Alert,
   RefreshControl,
+  Platform,
 } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Svg, { Circle, Rect, Line, Polyline, Defs, LinearGradient, Stop, Path, G, Text as SvgText } from 'react-native-svg';
-import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { Typography, Spacing, Radius } from '../../theme/theme';
 import {
   GlassCardView,
   SectionHeader,
@@ -48,6 +50,7 @@ import {
   saveCycle,
 } from '../../services/healthService';
 import type { PeriodLog, MoodLog, DischargeLog, SymptomsLog, CycleInsight, CycleData, CycleHistoryEntry, SleepLog, WeightEntry } from '../../types/health';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -78,6 +81,7 @@ function getMoodValue(mood: string): number {
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function CycleAnalyticsChart({ cycleHistory }: { cycleHistory: CycleHistoryEntry[] }) {
+  const { theme } = useTheme();
   const [selected, setSelected] = useState<number | null>(
     cycleHistory.length > 0 ? cycleHistory.length - 1 : null,
   );
@@ -116,22 +120,21 @@ function CycleAnalyticsChart({ cycleHistory }: { cycleHistory: CycleHistoryEntry
   if (isEmpty) {
     return (
       <View style={{ marginTop: 16, alignItems: 'center', paddingVertical: 30 }}>
-        <Text style={{ fontSize: Typography.sm, color: Colors.textMuted }}>No cycle history yet. Log your periods to see trends.</Text>
+        <Text style={{ fontSize: Typography.sm, color: theme.colors.textMuted }}>No cycle history yet. Log your periods to see trends.</Text>
       </View>
     );
   }
 
   return (
     <View style={{ marginTop: 16 }}>
-      {/* Legend */}
       <View style={{ flexDirection: 'row', gap: 20, marginBottom: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <View style={{ width: 10, height: 10, backgroundColor: Colors.pink + '60', borderRadius: 2 }} />
-          <Text style={{ fontSize: 12, color: Colors.textSecondary, fontWeight: Typography.medium }}>Period</Text>
+          <View style={{ width: 10, height: 10, backgroundColor: theme.colors.pink + '60', borderRadius: 2 }} />
+          <Text style={{ fontSize: 12, color: theme.colors.textSecondary, fontWeight: Typography.medium }}>Period</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <View style={{ width: 14, height: 2.5, backgroundColor: Colors.teal, borderRadius: 1 }} />
-          <Text style={{ fontSize: 12, color: Colors.textSecondary, fontWeight: Typography.medium }}>Cycle</Text>
+          <View style={{ width: 14, height: 2.5, backgroundColor: theme.colors.teal, borderRadius: 1 }} />
+          <Text style={{ fontSize: 12, color: theme.colors.textSecondary, fontWeight: Typography.medium }}>Cycle</Text>
         </View>
       </View>
 
@@ -139,25 +142,23 @@ function CycleAnalyticsChart({ cycleHistory }: { cycleHistory: CycleHistoryEntry
         <Svg width="100%" height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
           <Defs>
             <LinearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0%" stopColor={Colors.pink} stopOpacity={0.7} />
-              <Stop offset="100%" stopColor={Colors.pink} stopOpacity={0.15} />
+              <Stop offset="0%" stopColor={theme.colors.pink} stopOpacity={0.7} />
+              <Stop offset="100%" stopColor={theme.colors.pink} stopOpacity={0.15} />
             </LinearGradient>
           </Defs>
 
-          {/* Y-axis gridlines */}
           {[0, Math.round(periodMax / 2), periodMax].map((v) => {
             const y = getPeriodY(v);
             return (
               <G key={`grid-${v}`}>
-                <Line x1={pl} y1={y} x2={svgWidth - pr} y2={y} stroke={Colors.divider} strokeWidth={0.8} />
-                <SvgText x={pl - 6} y={y + 3.5} fill={Colors.textMuted} fontSize="9" textAnchor="end">
+                <Line x1={pl} y1={y} x2={svgWidth - pr} y2={y} stroke={theme.colors.divider} strokeWidth={0.8} />
+                <SvgText x={pl - 6} y={y + 3.5} fill={theme.colors.textMuted} fontSize="9" textAnchor="end">
                   {v}
                 </SvgText>
               </G>
             );
           })}
 
-          {/* Period bars */}
           {data.map((d, i) => {
             const cx = getX(i);
             const barY = getPeriodY(d.period);
@@ -169,29 +170,25 @@ function CycleAnalyticsChart({ cycleHistory }: { cycleHistory: CycleHistoryEntry
                 y={barY}
                 width={barWidth}
                 height={Math.max(0, barH)}
-                fill={selected === i ? Colors.pink : 'url(#barGrad)'}
+                fill={selected === i ? theme.colors.pink : 'url(#barGrad)'}
                 opacity={selected !== null && selected !== i ? 0.4 : 1}
                 rx={3}
               />
             );
           })}
 
-          {/* Cycle length line */}
-          <Polyline points={linePoints} fill="none" stroke={Colors.teal} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" opacity={selected !== null ? 0.4 : 1} />
+          <Polyline points={linePoints} fill="none" stroke={theme.colors.teal} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" opacity={selected !== null ? 0.4 : 1} />
 
-          {/* Cycle dots */}
           {data.map((d, i) => (
-            <Circle key={`dot-${i}`} cx={getX(i)} cy={getCycleY(d.cycle)} r={3.5} fill={Colors.bg} stroke={Colors.teal} strokeWidth={2} opacity={selected !== null && selected !== i ? 0.4 : 1} />
+            <Circle key={`dot-${i}`} cx={getX(i)} cy={getCycleY(d.cycle)} r={3.5} fill={theme.colors.bg} stroke={theme.colors.teal} strokeWidth={2} opacity={selected !== null && selected !== i ? 0.4 : 1} />
           ))}
 
-          {/* Month labels */}
           {data.map((d, i) => (
-            <SvgText key={`lbl-${i}`} x={getX(i)} y={svgHeight - 6} fill={selected === i ? Colors.textPrimary : Colors.textSecondary} fontSize="11" fontWeight={selected === i ? 'bold' : '600'} textAnchor="middle">
+            <SvgText key={`lbl-${i}`} x={getX(i)} y={svgHeight - 6} fill={selected === i ? theme.colors.textPrimary : theme.colors.textSecondary} fontSize="11" fontWeight={selected === i ? 'bold' : '600'} textAnchor="middle">
               {d.label}
             </SvgText>
           ))}
 
-          {/* Tooltip on selected */}
           {selected !== null && data[selected] && (() => {
             const d = data[selected];
             const cx = getX(selected);
@@ -202,11 +199,11 @@ function CycleAnalyticsChart({ cycleHistory }: { cycleHistory: CycleHistoryEntry
             const tipY = barY - tipH - 8;
             return (
               <G>
-                <Rect x={tipX} y={tipY} width={tipW} height={tipH} rx={6} fill={Colors.modalBg} stroke={Colors.bgCardBorder} strokeWidth={1} />
-                <SvgText x={tipX + 8} y={tipY + 13} fill={Colors.pink} fontSize="10" fontWeight="bold">
+                <Rect x={tipX} y={tipY} width={tipW} height={tipH} rx={6} fill={theme.colors.modalBg} stroke={theme.colors.bgCardBorder} strokeWidth={1} />
+                <SvgText x={tipX + 8} y={tipY + 13} fill={theme.colors.pink} fontSize="10" fontWeight="bold">
                   {d.period}d period
                 </SvgText>
-                <SvgText x={tipX + 8} y={tipY + 27} fill={Colors.teal} fontSize="10" fontWeight="bold">
+                <SvgText x={tipX + 8} y={tipY + 27} fill={theme.colors.teal} fontSize="10" fontWeight="bold">
                   {d.cycle}d cycle
                 </SvgText>
               </G>
@@ -214,7 +211,6 @@ function CycleAnalyticsChart({ cycleHistory }: { cycleHistory: CycleHistoryEntry
           })()}
         </Svg>
 
-        {/* Tap overlay columns */}
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, flexDirection: 'row' }}>
           {data.map((_, i) => (
             <TouchableOpacity
@@ -231,7 +227,8 @@ function CycleAnalyticsChart({ cycleHistory }: { cycleHistory: CycleHistoryEntry
 }
 
 function SleepCycleCorrelationChart({ sleepLogs, cycleData }: { sleepLogs: SleepLog[]; cycleData: CycleData | null }) {
-  // Determine which phase each sleep log falls in based on cycle data
+  const { theme } = useTheme();
+
   const phaseData = useMemo(() => {
     if (!cycleData || sleepLogs.length === 0) return null;
 
@@ -264,12 +261,12 @@ function SleepCycleCorrelationChart({ sleepLogs, cycleData }: { sleepLogs: Sleep
     });
 
     return [
-      { phase: 'Menstrual', hours: phaseSums.Menstrual.count > 0 ? +(phaseSums.Menstrual.total / phaseSums.Menstrual.count).toFixed(1) : 0, color: Colors.pink, count: phaseSums.Menstrual.count },
-      { phase: 'Follicular', hours: phaseSums.Follicular.count > 0 ? +(phaseSums.Follicular.total / phaseSums.Follicular.count).toFixed(1) : 0, color: Colors.follicular, count: phaseSums.Follicular.count },
-      { phase: 'Ovulation', hours: phaseSums.Ovulation.count > 0 ? +(phaseSums.Ovulation.total / phaseSums.Ovulation.count).toFixed(1) : 0, color: Colors.amber, count: phaseSums.Ovulation.count },
-      { phase: 'Luteal', hours: phaseSums.Luteal.count > 0 ? +(phaseSums.Luteal.total / phaseSums.Luteal.count).toFixed(1) : 0, color: Colors.purple, count: phaseSums.Luteal.count },
+      { phase: 'Menstrual', hours: phaseSums.Menstrual.count > 0 ? +(phaseSums.Menstrual.total / phaseSums.Menstrual.count).toFixed(1) : 0, color: theme.colors.pink, count: phaseSums.Menstrual.count },
+      { phase: 'Follicular', hours: phaseSums.Follicular.count > 0 ? +(phaseSums.Follicular.total / phaseSums.Follicular.count).toFixed(1) : 0, color: theme.colors.follicular, count: phaseSums.Follicular.count },
+      { phase: 'Ovulation', hours: phaseSums.Ovulation.count > 0 ? +(phaseSums.Ovulation.total / phaseSums.Ovulation.count).toFixed(1) : 0, color: theme.colors.amber, count: phaseSums.Ovulation.count },
+      { phase: 'Luteal', hours: phaseSums.Luteal.count > 0 ? +(phaseSums.Luteal.total / phaseSums.Luteal.count).toFixed(1) : 0, color: theme.colors.accentBlue, count: phaseSums.Luteal.count },
     ];
-  }, [sleepLogs, cycleData]);
+  }, [sleepLogs, cycleData, theme]);
 
   const svgWidth = 320;
   const svgHeight = 160;
@@ -282,11 +279,11 @@ function SleepCycleCorrelationChart({ sleepLogs, cycleData }: { sleepLogs: Sleep
 
   return (
     <View style={{ marginTop: 20 }}>
-      <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold, marginBottom: 12 }}>
+      <Text style={{ fontSize: Typography.sm, color: theme.colors.textSecondary, fontWeight: Typography.semiBold, marginBottom: 12 }}>
         Sleep Duration vs Cycle Phase
       </Text>
       {!hasData ? (
-        <Text style={{ fontSize: Typography.sm, color: Colors.textMuted, textAlign: 'center', paddingVertical: 20 }}>
+        <Text style={{ fontSize: Typography.sm, color: theme.colors.textMuted, textAlign: 'center', paddingVertical: 20 }}>
           Log sleep across different cycle phases to see correlation.
         </Text>
       ) : (
@@ -299,7 +296,7 @@ function SleepCycleCorrelationChart({ sleepLogs, cycleData }: { sleepLogs: Sleep
                 <SvgText
                   x={labelWidth - 10}
                   y={y + 14}
-                  fill={Colors.textSecondary}
+                  fill={theme.colors.textSecondary}
                   fontSize="12"
                   fontWeight="500"
                   textAnchor="end"
@@ -311,7 +308,7 @@ function SleepCycleCorrelationChart({ sleepLogs, cycleData }: { sleepLogs: Sleep
                   y={y}
                   width={chartWidth}
                   height={barHeight}
-                  fill={Colors.bgCardBorder}
+                  fill={theme.colors.bgCardBorder}
                   rx={barHeight / 2}
                 />
                 <Rect
@@ -325,7 +322,7 @@ function SleepCycleCorrelationChart({ sleepLogs, cycleData }: { sleepLogs: Sleep
                 <SvgText
                   x={labelWidth + progressWidth + 8}
                   y={y + 14}
-                  fill={Colors.textPrimary}
+                  fill={theme.colors.textPrimary}
                   fontSize="12"
                   fontWeight="bold"
                 >
@@ -349,6 +346,7 @@ function WeightFluctuationChart({
   cycleData: CycleData | null;
   onLogWeight: () => void;
 }) {
+  const { theme } = useTheme();
   const svgWidth = 300;
   const svgHeight = 160;
   const pl = 30;
@@ -360,7 +358,6 @@ function WeightFluctuationChart({
 
   const hasData = weightLogs.length >= 2;
 
-  // Compute stats
   const latest = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1] : null;
   const prev = weightLogs.length > 1 ? weightLogs[weightLogs.length - 2] : null;
   const change = latest && prev ? +(latest.weight_kg - prev.weight_kg).toFixed(1) : 0;
@@ -373,14 +370,12 @@ function WeightFluctuationChart({
 
   const linePoints = weightLogs.map((w, i) => `${getX(i)},${getY(w.weight_kg)}`).join(' ');
 
-  // Build area path
   const areaPath = hasData
     ? `M ${getX(0)},${getY(weightLogs[0].weight_kg)} ` +
     weightLogs.slice(1).map((w, i) => `L ${getX(i + 1)},${getY(w.weight_kg)}`).join(' ') +
     ` L ${getX(weightLogs.length - 1)},${svgHeight - pb} L ${getX(0)},${svgHeight - pb} Z`
     : '';
 
-  // Phase background bands
   const phaseBands = useMemo(() => {
     if (!cycleData || weightLogs.length === 0) return [];
     const cycleStart = new Date(cycleData.start_date).getTime();
@@ -394,14 +389,13 @@ function WeightFluctuationChart({
     const logEnd = new Date(weightLogs[weightLogs.length - 1].date).getTime();
     const dayMs = 24 * 60 * 60 * 1000;
 
-    // Find which cycles overlap with our data range
     let cycleDay = cycleStart;
     while (cycleDay < logEnd + cycleLen * dayMs) {
       const phases = [
-        { start: 0, end: periodEnd, color: Colors.pink },
-        { start: periodEnd, end: ovStart, color: Colors.follicular },
-        { start: ovStart, end: ovEnd, color: Colors.amber },
-        { start: ovEnd, end: cycleLen, color: Colors.purple },
+        { start: 0, end: periodEnd, color: theme.colors.pink },
+        { start: periodEnd, end: ovStart, color: theme.colors.follicular },
+        { start: ovStart, end: ovEnd, color: theme.colors.amber },
+        { start: ovEnd, end: cycleLen, color: theme.colors.accentBlue },
       ];
       for (const phase of phases) {
         const pStart = cycleDay + phase.start * dayMs;
@@ -417,7 +411,7 @@ function WeightFluctuationChart({
       cycleDay += cycleLen * dayMs;
     }
     return bands;
-  }, [weightLogs, cycleData]);
+  }, [weightLogs, cycleData, theme]);
 
   return (
     <View style={{ marginTop: 8 }}>
@@ -425,78 +419,72 @@ function WeightFluctuationChart({
         <View>
           {latest && (
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-              <Text style={{ fontSize: Typography.xl, fontWeight: Typography.extraBold, color: Colors.textPrimary }}>
+              <Text style={{ fontSize: Typography.xl, fontWeight: Typography.extraBold, color: theme.colors.textPrimary }}>
                 {latest.weight_kg}
               </Text>
-              <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.medium }}>kg</Text>
+              <Text style={{ fontSize: Typography.sm, color: theme.colors.textSecondary, fontWeight: Typography.medium }}>kg</Text>
               {change !== 0 && (
-                <Text style={{ fontSize: Typography.sm, color: change > 0 ? Colors.amber : Colors.success, fontWeight: Typography.bold }}>
+                <Text style={{ fontSize: Typography.sm, color: change > 0 ? theme.colors.amber : theme.colors.success, fontWeight: Typography.bold }}>
                   {change > 0 ? '+' : ''}{change}
                 </Text>
               )}
             </View>
           )}
-          <Text style={{ fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2 }}>
+          <Text style={{ fontSize: Typography.xs, color: theme.colors.textMuted, marginTop: 2 }}>
             {weightLogs.length} entries logged
           </Text>
         </View>
         <TouchableOpacity
           onPress={onLogWeight}
           activeOpacity={0.7}
-          style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: Colors.teal + '18', borderWidth: 1, borderColor: Colors.teal + '50' }}>
-          <Text style={{ fontSize: Typography.sm, color: Colors.teal, fontWeight: Typography.semiBold }}>+ Log</Text>
+          style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: theme.colors.teal + '18', borderWidth: 1, borderColor: theme.colors.teal + '50' }}>
+          <Text style={{ fontSize: Typography.sm, color: theme.colors.teal, fontWeight: Typography.semiBold }}>+ Log</Text>
         </TouchableOpacity>
       </View>
 
       {!hasData ? (
         <View style={{ alignItems: 'center', paddingVertical: 24 }}>
-          <Text style={{ fontSize: Typography.sm, color: Colors.textMuted }}>Log your weight to see the fluctuation chart.</Text>
+          <Text style={{ fontSize: Typography.sm, color: theme.colors.textMuted }}>Log your weight to see the fluctuation chart.</Text>
         </View>
       ) : (
         <Svg width="100%" height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
           <Defs>
             <LinearGradient id="weightAreaGrad" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0%" stopColor={Colors.teal} stopOpacity={0.2} />
-              <Stop offset="100%" stopColor={Colors.teal} stopOpacity={0.02} />
+              <Stop offset="0%" stopColor={theme.colors.teal} stopOpacity={0.2} />
+              <Stop offset="100%" stopColor={theme.colors.teal} stopOpacity={0.02} />
             </LinearGradient>
           </Defs>
 
-          {/* Phase bands */}
           {phaseBands.map((band, i) => (
             <Rect key={`pb-${i}`} x={band.start} y={pt} width={band.end - band.start} height={ph} fill={band.color} opacity={0.06} />
           ))}
 
-          {/* Y-axis gridlines */}
           {[minW, (minW + maxW) / 2, maxW].map((v, i) => {
             const y = getY(v);
             return (
               <G key={`yg-${i}`}>
-                <Line x1={pl} y1={y} x2={svgWidth - pr} y2={y} stroke={Colors.divider} strokeWidth={0.6} />
-                <SvgText x={pl - 5} y={y + 3} fill={Colors.textMuted} fontSize="9" textAnchor="end">
+                <Line x1={pl} y1={y} x2={svgWidth - pr} y2={y} stroke={theme.colors.divider} strokeWidth={0.6} />
+                <SvgText x={pl - 5} y={y + 3} fill={theme.colors.textMuted} fontSize="9" textAnchor="end">
                   {v.toFixed(0)}
                 </SvgText>
               </G>
             );
           })}
 
-          {/* Area under line */}
           <Path d={areaPath} fill="url(#weightAreaGrad)" />
 
-          {/* Line */}
-          <Polyline points={linePoints} fill="none" stroke={Colors.teal} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+          <Polyline points={linePoints} fill="none" stroke={theme.colors.teal} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
 
-          {/* Dots */}
           {weightLogs.map((w, i) => (
-            <Circle key={`wd-${i}`} cx={getX(i)} cy={getY(w.weight_kg)} r={3} fill={Colors.bg} stroke={Colors.teal} strokeWidth={2} />
+            <Circle key={`wd-${i}`} cx={getX(i)} cy={getY(w.weight_kg)} r={3} fill={theme.colors.bg} stroke={theme.colors.teal} strokeWidth={2} />
           ))}
 
-          {/* Date labels */}
           {weightLogs.map((w, i) => {
             const show = weightLogs.length <= 7 || i % Math.ceil(weightLogs.length / 7) === 0 || i === weightLogs.length - 1;
             if (!show) return null;
             const d = new Date(w.date);
             return (
-              <SvgText key={`wl-${i}`} x={getX(i)} y={svgHeight - 6} fill={Colors.textMuted} fontSize="9" textAnchor="middle">
+              <SvgText key={`wl-${i}`} x={getX(i)} y={svgHeight - 6} fill={theme.colors.textMuted} fontSize="9" textAnchor="middle">
                 {MONTH_SHORT[d.getMonth()]} {d.getDate()}
               </SvgText>
             );
@@ -520,12 +508,14 @@ export default function HealthScreenFemale({
   onOpenHealthLog?: () => void;
   lastHealthLog?: HealthLogDraft | null;
 }) {
+  const { theme } = useTheme();
   const { onScroll } = useScrollVisibility();
   const { user, session } = useAuth();
   const { hideVitals } = usePreferences();
   const { unreadCount } = useNotifications();
   const [activeTab, setActiveTab] = useState('Overview');
   const [selectedPhase, setSelectedPhase] = useState('Luteal');
+  const [hasTodayLog, setHasTodayLog] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   // ── Data state ──────────────────────────────────────────────────────────
@@ -544,6 +534,7 @@ export default function HealthScreenFemale({
   // ── Cycle setup modal state ──────────────────────────────────────────────
   const [showCycleSetup, setShowCycleSetup] = useState(false);
   const [setupStartDate, setSetupStartDate] = useState('');
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [setupCycleLength, setSetupCycleLength] = useState('28');
   const [setupPeriodLength, setSetupPeriodLength] = useState('5');
   const [setupRegularity, setSetupRegularity] = useState<'regular' | 'irregular' | 'not_sure'>('not_sure');
@@ -553,6 +544,155 @@ export default function HealthScreenFemale({
   const [showWeightLog, setShowWeightLog] = useState(false);
   const [weightInput, setWeightInput] = useState('');
   const [savingWeight, setSavingWeight] = useState(false);
+
+  // ── Styles ─────────────────────────────────────────────────────────────
+  const s = useStyles((t) => StyleSheet.create({
+    root: { flex: 1, backgroundColor: t.colors.bg },
+    scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, flexGrow: 1 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl },
+    title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: t.colors.textPrimary },
+    headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+    card: { padding: Spacing.base, marginBottom: Spacing.xl },
+    logCta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: t.colors.pink + '18',
+      borderWidth: 1,
+      borderColor: t.colors.pink + '45',
+      borderRadius: Radius.lg,
+      padding: Spacing.base,
+      marginBottom: Spacing.xl,
+    },
+    logCtaCopy: { flex: 1, paddingRight: Spacing.md },
+    logCtaTitle: { fontSize: Typography.md, color: t.colors.textPrimary, fontWeight: Typography.bold },
+    logCtaSub: { fontSize: Typography.xs, color: t.colors.textSecondary, marginTop: 3 },
+    logCtaIcon: { width: 34, height: 34, borderRadius: 17, overflow: 'hidden', textAlign: 'center', lineHeight: 33, backgroundColor: t.colors.pink, color: t.colors.bg, fontSize: Typography.xl, fontWeight: Typography.bold },
+    cycleTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.lg },
+    cycleRingWrap: { width: 120, height: 120, justifyContent: 'center', alignItems: 'center', position: 'relative' },
+    cycleRing: { position: 'absolute', width: 120, height: 120, borderRadius: 60, borderWidth: 8, borderColor: t.colors.bgCardBorder },
+    cycleRingCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+    ringDay: { fontSize: Typography.base, fontWeight: Typography.bold, color: t.colors.textPrimary },
+    ringSub: { fontSize: Typography.micro, color: t.colors.textSecondary },
+    cycleInfoWrap: { flex: 1, marginLeft: Spacing.lg },
+    cyclePhaseLabel: { fontSize: Typography.xs, color: t.colors.textMuted, textTransform: 'uppercase', marginBottom: 2 },
+    phaseNameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm },
+    phaseDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
+    phaseName: { fontSize: Typography.xl, fontWeight: Typography.extraBold },
+    cycleStatsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+    cycleStatLabel: { width: '50%', fontSize: Typography.xs, color: t.colors.textMuted, marginBottom: 2 },
+    cycleStatVal: { width: '50%', fontSize: Typography.xs, fontWeight: Typography.bold, color: t.colors.textPrimary, marginBottom: 2, textAlign: 'right' },
+    phaseBtnRow: { flexDirection: 'row', gap: Spacing.sm },
+    phaseGap: { width: Spacing.sm },
+
+    trendHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.md },
+    trendTitle: { fontSize: Typography.base, color: t.colors.textPrimary, fontWeight: Typography.bold },
+    trendSub: { fontSize: Typography.xs, color: t.colors.textMuted, marginTop: 2 },
+    trendScore: { fontSize: Typography.sm, color: t.colors.pink, fontWeight: Typography.bold },
+    moodChart: { flexDirection: 'row', alignItems: 'flex-end', height: 92, gap: Spacing.sm },
+    chartCol: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
+    moodTrack: { width: '100%', height: 68, borderRadius: Radius.sm, backgroundColor: t.colors.bgCardBorder, justifyContent: 'flex-end', overflow: 'hidden' },
+    moodBar: { width: '100%', borderRadius: Radius.sm },
+    chartLabel: { fontSize: Typography.xs, color: t.colors.textMuted, marginTop: 5, fontWeight: Typography.semiBold },
+    softDivider: { height: 1, backgroundColor: t.colors.divider, marginVertical: Spacing.lg },
+    flowTrendRow: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.sm },
+    flowTrendItem: { flex: 1, alignItems: 'center' },
+    flowTrack: { width: 26, height: 64, borderRadius: Radius.sm, backgroundColor: t.colors.bgCardBorder, justifyContent: 'flex-end', overflow: 'hidden' },
+    flowTrendFill: { width: '100%', backgroundColor: t.colors.pink },
+    signalRow: { flexDirection: 'row', alignItems: 'center' },
+    signalIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: t.colors.accentBlue + '20' },
+    signalIconText: { color: t.colors.accentBlue, fontSize: Typography.lg },
+    signalCopy: { flex: 1, marginLeft: Spacing.md },
+    signalTitle: { fontSize: Typography.base, color: t.colors.textPrimary, fontWeight: Typography.bold },
+    signalText: { fontSize: Typography.xs, color: t.colors.textSecondary, lineHeight: 18, marginTop: 3 },
+    patternGrid: { flexDirection: 'row', gap: Spacing.sm },
+    patternItem: { flex: 1, borderWidth: 1, borderColor: t.colors.bgCardBorder, borderRadius: Radius.md, padding: Spacing.md, backgroundColor: t.colors.bgCard },
+    patternLabel: { fontSize: Typography.xs, color: t.colors.textMuted, textTransform: 'uppercase', marginBottom: 5 },
+    patternValue: { fontSize: Typography.sm, color: t.colors.textPrimary, fontWeight: Typography.bold },
+    promptText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.textPrimary, marginBottom: Spacing.md },
+    fertHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.base },
+    fertTitle: { fontSize: Typography.md, fontWeight: Typography.bold, color: t.colors.textPrimary },
+    fertSub: { fontSize: Typography.xs, color: t.colors.textMuted, marginTop: 2 },
+    fertBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.full, borderWidth: 1 },
+    fertBadgeText: { fontSize: Typography.xs, fontWeight: Typography.bold },
+    fertGridRow: { flexDirection: 'row', gap: Spacing.sm },
+    fertBox: { flex: 1, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, alignItems: 'center' },
+    fertBoxTitle: { fontSize: Typography.xs, fontWeight: Typography.semiBold, marginBottom: 4, textAlign: 'center' },
+    fertBoxVal: { fontSize: Typography.lg, fontWeight: Typography.bold, marginBottom: 4, textAlign: 'center' },
+    fertBoxSub: { fontSize: Typography.xs, color: t.colors.textMuted, textAlign: 'center' },
+    infoBox: { backgroundColor: t.colors.amber + '10', borderRadius: Radius.md, padding: Spacing.md, marginTop: Spacing.md, borderWidth: 1, borderColor: t.colors.amber + '20' },
+    infoText: { fontSize: Typography.xs, color: t.colors.textSecondary, lineHeight: 18 },
+    aiWrap: { marginTop: Spacing.xl },
+    bottomSpace: { height: 100 },
+
+    // Cycle Setup Banner
+    cycleSetupBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: t.colors.pink + '18',
+      borderWidth: 1,
+      borderColor: t.colors.pink + '45',
+      borderRadius: Radius.lg,
+      padding: Spacing.base,
+      marginBottom: Spacing.xl,
+    },
+    cycleSetupBannerIcon: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: t.colors.pink + '22',
+      marginRight: Spacing.md,
+    },
+    cycleSetupBannerCopy: { flex: 1 },
+    cycleSetupBannerTitle: { fontSize: Typography.md, color: t.colors.textPrimary, fontWeight: Typography.bold },
+    cycleSetupBannerSub: { fontSize: Typography.xs, color: t.colors.textSecondary, marginTop: 2 },
+    cycleSetupBannerArrow: { fontSize: Typography.xxl, color: t.colors.pink, fontWeight: Typography.bold, marginLeft: Spacing.sm },
+
+    // Cycle Setup Modal
+    modalOverlay: { flex: 1, backgroundColor: t.colors.overlayHeavy, justifyContent: 'flex-end' },
+    modalSheet: {
+      backgroundColor: t.colors.modalBg,
+      borderTopLeftRadius: Radius.xl,
+      borderTopRightRadius: Radius.xl,
+      padding: Spacing.xl,
+      paddingBottom: 40,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+    },
+    modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: t.colors.textMuted, alignSelf: 'center', marginBottom: Spacing.lg },
+    modalTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary, marginBottom: Spacing.xs },
+    modalSubtitle: { fontSize: Typography.sm, color: t.colors.textMuted, marginBottom: Spacing.lg },
+    modalLabel: { fontSize: Typography.sm, color: t.colors.textSecondary, fontWeight: Typography.medium, marginBottom: Spacing.sm, marginTop: Spacing.md },
+    modalInput: {
+      backgroundColor: t.colors.bgCard,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.md,
+      padding: Spacing.md,
+      color: t.colors.textPrimary,
+      fontSize: Typography.base,
+    },
+    modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.md, marginTop: Spacing.xl },
+    modalCancelBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, borderWidth: 1, borderColor: t.colors.bgCardBorder },
+    modalCancelText: { color: t.colors.textSecondary, fontSize: Typography.sm, fontWeight: Typography.semiBold },
+    modalSaveBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, backgroundColor: t.colors.pink, alignItems: 'center', minWidth: 80 },
+    modalSaveText: { color: t.colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold },
+    regularityRow: { flexDirection: 'row', gap: Spacing.sm },
+    regularityBtn: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: Spacing.sm,
+      borderRadius: Radius.full,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      backgroundColor: t.colors.bgCard,
+    },
+    regularityBtnActive: { borderColor: t.colors.pink, backgroundColor: t.colors.pink + '18' },
+    regularityBtnText: { fontSize: Typography.sm, color: t.colors.textSecondary, fontWeight: Typography.medium },
+    regularityBtnTextActive: { color: t.colors.pink },
+  }));
 
   // ── Fetch data on mount ─────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -576,6 +716,8 @@ export default function HealthScreenFemale({
       ]);
       setPeriodLogs(periods ?? []);
       setMoodLogs(moods ?? []);
+      const today = new Date().toISOString().split('T')[0];
+      setHasTodayLog((moods ?? []).some((log: any) => log.date === today));
       setDischargeLogs(discharges ?? []);
       setSymptomsLogs(symptoms ?? []);
       setInsights(ins ?? []);
@@ -610,6 +752,8 @@ export default function HealthScreenFemale({
     ]);
     setPeriodLogs(periods ?? []);
     setMoodLogs(moods ?? []);
+    const today = new Date().toISOString().split('T')[0];
+    setHasTodayLog((moods ?? []).some((log: any) => log.date === today));
     setDischargeLogs(discharges ?? []);
     setSymptomsLogs(symptoms ?? []);
     setInsights(ins ?? []);
@@ -624,7 +768,6 @@ export default function HealthScreenFemale({
     fetchData();
   }, [fetchData]);
 
-  // Re-fetch when returning from health log (lastHealthLog changes)
   useEffect(() => {
     if (lastHealthLog) fetchData();
   }, [lastHealthLog, fetchData]);
@@ -664,7 +807,6 @@ export default function HealthScreenFemale({
       await saveWeightLog(token, { weight_kg: weight });
       setShowWeightLog(false);
       setWeightInput('');
-      // Re-fetch weight logs
       const updated = await getWeightLogs(token);
       setWeightLogs(updated);
     } catch (err: any) {
@@ -681,7 +823,7 @@ export default function HealthScreenFemale({
   const periodLen = cycleData?.period_length || 5;
   const cycleDay = cycleData?.current_cycle_day || 1;
   const currentPhase = cycleData?.current_phase || 'Menstrual';
-  const phaseColor = cycleData?.phase_color || Colors.pink;
+  const phaseColor = cycleData?.phase_color || theme.colors.pink;
   const daysUntilNextPeriod = cycleData?.days_until_next_period || cycleLength;
 
   // ── Compute mood trend (last 7 days) ───────────────────────────────────
@@ -691,7 +833,6 @@ export default function HealthScreenFemale({
     const dateStr = d.toISOString().split('T')[0];
     const dayLabel = SHORT_DAYS[d.getDay()];
     const log = moodLogs.find(m => m.date === dateStr);
-    // Also check lastHealthLog for today
     const isToday = i === 6;
     const mood = isToday && lastHealthLog?.mood ? lastHealthLog.mood : log?.mood;
     const value = mood ? getMoodValue(mood) : 0;
@@ -735,7 +876,7 @@ export default function HealthScreenFemale({
   const latestDischarge = lastHealthLog?.discharge ?? dischargeLogs[0]?.discharge_type ?? 'Not logged';
   const latestFlow = lastHealthLog?.flowIntensity ?? periodLogs[0]?.flow_intensity ?? 'None';
 
-  // ── Fertility data from insights (insights predict future windows) ──────
+  // ── Fertility data from insights ────────────────────────────────────────
   const latestInsight = insights.length > 0 ? insights[0] : null;
   const fertilityData = latestInsight ? {
     fertileStart: formatDateShort(latestInsight.predict_fertile_start),
@@ -749,18 +890,18 @@ export default function HealthScreenFemale({
   const hormoneBars = (() => {
     const h = cycleData?.hormone_snapshot;
     if (!h) return [
-      { label: 'Estrogen', value: 'Low', status: 'N/A', statusColor: Colors.amber, currentPct: 0 },
-      { label: 'Progesterone', value: 'Low', status: 'N/A', statusColor: Colors.amber, currentPct: 0 },
-      { label: 'LH Surge', value: 'Low', status: 'N/A', statusColor: Colors.success, currentPct: 0 },
-      { label: 'Cortisol', value: 'Normal', status: 'N/A', statusColor: Colors.success, currentPct: 0 },
-      { label: 'FSH', value: 'Normal', status: 'N/A', statusColor: Colors.success, currentPct: 0 },
+      { label: 'Estrogen', value: 'Low', status: 'N/A', statusColor: theme.colors.amber, currentPct: 0 },
+      { label: 'Progesterone', value: 'Low', status: 'N/A', statusColor: theme.colors.amber, currentPct: 0 },
+      { label: 'LH Surge', value: 'Low', status: 'N/A', statusColor: theme.colors.success, currentPct: 0 },
+      { label: 'Cortisol', value: 'Normal', status: 'N/A', statusColor: theme.colors.success, currentPct: 0 },
+      { label: 'FSH', value: 'Normal', status: 'N/A', statusColor: theme.colors.success, currentPct: 0 },
     ];
     return [
-      { label: 'Estrogen', value: h.estrogen.value, status: h.estrogen.status, statusColor: Colors.pink, currentPct: h.estrogen.pct },
-      { label: 'Progesterone', value: h.progesterone.value, status: h.progesterone.status, statusColor: Colors.purple, currentPct: h.progesterone.pct },
-      { label: 'LH Surge', value: h.lh_surge.value, status: h.lh_surge.status, statusColor: Colors.amber, currentPct: h.lh_surge.pct },
-      { label: 'Cortisol', value: h.cortisol.value, status: h.cortisol.status, statusColor: Colors.success, currentPct: h.cortisol.pct },
-      { label: 'FSH', value: h.fsh.value, status: h.fsh.status, statusColor: Colors.pink, currentPct: h.fsh.pct },
+      { label: 'Estrogen', value: h.estrogen.value, status: h.estrogen.status, statusColor: theme.colors.pink, currentPct: h.estrogen.pct },
+      { label: 'Progesterone', value: h.progesterone.value, status: h.progesterone.status, statusColor: theme.colors.accentBlue, currentPct: h.progesterone.pct },
+      { label: 'LH Surge', value: h.lh_surge.value, status: h.lh_surge.status, statusColor: theme.colors.amber, currentPct: h.lh_surge.pct },
+      { label: 'Cortisol', value: h.cortisol.value, status: h.cortisol.status, statusColor: theme.colors.success, currentPct: h.cortisol.pct },
+      { label: 'FSH', value: h.fsh.value, status: h.fsh.status, statusColor: theme.colors.pink, currentPct: h.fsh.pct },
     ];
   })();
 
@@ -772,7 +913,7 @@ export default function HealthScreenFemale({
   if (loading) {
     return (
       <View style={[s.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={Colors.pink} />
+        <ActivityIndicator size="large" color={theme.colors.pink} />
       </View>
     );
   }
@@ -785,7 +926,7 @@ export default function HealthScreenFemale({
         contentContainerStyle={s.scroll}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[Colors.teal, Colors.pink]} tintColor={Colors.teal} progressBackgroundColor={Colors.bgCard} />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[theme.colors.teal, theme.colors.pink]} tintColor={theme.colors.teal} progressBackgroundColor={theme.colors.bgCard} />}>
         <View style={s.header}>
           <Text style={s.title}>Your Health</Text>
           <View style={s.headerActions}>
@@ -811,16 +952,16 @@ export default function HealthScreenFemale({
           </TouchableOpacity>
         )}
 
-        <InnerTabBar tabs={TABS} active={activeTab} onSelect={setActiveTab} accentColor={Colors.pink} />
+        <InnerTabBar tabs={TABS} active={activeTab} onSelect={setActiveTab} accentColor={theme.colors.pink} />
 
-        {/* Health log banner — common to all tabs */}
-        {lastHealthLog ? (
-          <TouchableOpacity style={[s.logCta, { borderColor: Colors.success + '45', backgroundColor: Colors.success + '12' }]} onPress={onOpenHealthLog} activeOpacity={0.85}>
+        {/* Health log banner */}
+        {lastHealthLog || hasTodayLog ? (
+          <TouchableOpacity style={[s.logCta, { borderColor: theme.colors.success + '45', backgroundColor: theme.colors.success + '12' }]} onPress={onOpenHealthLog} activeOpacity={0.85}>
             <View style={[s.logCtaCopy, { flex: 1 }]}>
-              <Text style={[s.logCtaTitle, { color: Colors.success }]}>Log added today</Text>
+              <Text style={[s.logCtaTitle, { color: theme.colors.success }]}>Log added today</Text>
               <Text style={s.logCtaSub}>Tap here to view or edit your entry</Text>
             </View>
-            <Text style={[s.logCtaIcon, { backgroundColor: Colors.success + '22', color: Colors.success }]}>✓</Text>
+            <Text style={[s.logCtaIcon, { backgroundColor: theme.colors.success + '22', color: theme.colors.success }]}>✓</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={s.logCta} onPress={onOpenHealthLog} activeOpacity={0.85}>
@@ -845,7 +986,6 @@ export default function HealthScreenFemale({
                         <Stop offset="100%" stopColor={phaseColor} stopOpacity={0.55} />
                       </LinearGradient>
                     </Defs>
-                    {/* Outer glowing halo */}
                     <Circle
                       cx={60}
                       cy={60}
@@ -855,16 +995,14 @@ export default function HealthScreenFemale({
                       fill="none"
                       opacity={0.25}
                     />
-                    {/* Background track */}
                     <Circle
                       cx={60}
                       cy={60}
                       r={48}
-                      stroke={Colors.bgCardBorder}
+                      stroke={theme.colors.bgCardBorder}
                       strokeWidth={6}
                       fill="none"
                     />
-                    {/* Active progress */}
                     <Circle
                       cx={60}
                       cy={60}
@@ -880,7 +1018,7 @@ export default function HealthScreenFemale({
                   </Svg>
                   <View style={s.cycleRingCenter}>
                     <Text style={s.ringDay}>Day {cycleDay}</Text>
-                    <Text style={s.ringSub}>of {cycleLength}</Text>
+                    <Text style={s.ringSub}>of {cycleDay > cycleLength ? `${cycleLength}+` : cycleLength}</Text>
                   </View>
                 </View>
                 <View style={s.cycleInfoWrap}>
@@ -891,9 +1029,9 @@ export default function HealthScreenFemale({
                   </View>
                   <View style={s.cycleStatsGrid}>
                     <Text style={s.cycleStatLabel}>Cycle day</Text>
-                    <Text style={s.cycleStatVal}>{cycleDay} / {cycleLength}</Text>
+                    <Text style={s.cycleStatVal}>{cycleDay} / {cycleDay > cycleLength ? `${cycleLength}+` : cycleLength}</Text>
                     <Text style={s.cycleStatLabel}>Next period</Text>
-                    <Text style={[s.cycleStatVal, { color: Colors.pink }]}>{daysUntilNextPeriod} days away</Text>
+                    <Text style={[s.cycleStatVal, { color: theme.colors.pink }]}>{daysUntilNextPeriod <= 0 ? 'Overdue' : `${daysUntilNextPeriod} days away`}</Text>
                     <Text style={s.cycleStatLabel}>Cycle length</Text>
                     <Text style={s.cycleStatVal}>{cycleLength} days</Text>
                     <Text style={s.cycleStatLabel}>Period length</Text>
@@ -903,13 +1041,13 @@ export default function HealthScreenFemale({
               </View>
 
               <View style={s.phaseBtnRow}>
-                <QuickActionButton icon="🩸" label="Menstrual" color={Colors.pink} active={selectedPhase === 'Menstrual'} onPress={() => setSelectedPhase('Menstrual')} />
+                <QuickActionButton icon="🩸" label="Menstrual" color={theme.colors.pink} active={selectedPhase === 'Menstrual'} onPress={() => setSelectedPhase('Menstrual')} />
                 <View style={s.phaseGap} />
-                <QuickActionButton icon="🌸" label="Follicular" color={Colors.pink + 'AA'} active={selectedPhase === 'Follicular'} onPress={() => setSelectedPhase('Follicular')} />
+                <QuickActionButton icon="🌸" label="Follicular" color={theme.colors.pink + 'AA'} active={selectedPhase === 'Follicular'} onPress={() => setSelectedPhase('Follicular')} />
                 <View style={s.phaseGap} />
-                <QuickActionButton icon="✨" label="Ovulation" color={Colors.amber} active={selectedPhase === 'Ovulation'} onPress={() => setSelectedPhase('Ovulation')} />
+                <QuickActionButton icon="✨" label="Ovulation" color={theme.colors.amber} active={selectedPhase === 'Ovulation'} onPress={() => setSelectedPhase('Ovulation')} />
                 <View style={s.phaseGap} />
-                <QuickActionButton icon="🌙" label="Luteal" color={Colors.purple} active={selectedPhase === 'Luteal'} onPress={() => setSelectedPhase('Luteal')} />
+                <QuickActionButton icon="🌙" label="Luteal" color={theme.colors.accentBlue} active={selectedPhase === 'Luteal'} onPress={() => setSelectedPhase('Luteal')} />
               </View>
             </GlassCardView>
 
@@ -994,12 +1132,12 @@ export default function HealthScreenFemale({
                           s.moodBar,
                           {
                             height: item.value > 0 ? `${item.value * 18}%` : '8%',
-                            backgroundColor: i === moodTrend.length - 1 ? Colors.pink : Colors.pink + '70',
+                            backgroundColor: i === moodTrend.length - 1 ? theme.colors.pink : theme.colors.pink + '70',
                           },
                         ]}
                       />
                     </View>
-                    <Text style={[s.chartLabel, i === moodTrend.length - 1 && { color: Colors.pink }]}>{item.day}</Text>
+                    <Text style={[s.chartLabel, i === moodTrend.length - 1 && { color: theme.colors.pink }]}>{item.day}</Text>
                   </View>
                 ))}
               </View>
@@ -1020,33 +1158,33 @@ export default function HealthScreenFemale({
                   <Text style={s.fertTitle}>{fertilityData?.isOvulationPassed ? 'Ovulation passed' : 'Fertile window approaching'}</Text>
                   <Text style={s.fertSub}>{fertilityData ? `Next fertile window: ${fertilityData.fertileStart} - ${fertilityData.fertileEnd}` : 'Log your cycle to see predictions'}</Text>
                 </View>
-                <View style={[s.fertBadge, { backgroundColor: Colors.purple + '20', borderColor: Colors.purple + '55' }]}>
-                  <Text style={[s.fertBadgeText, { color: Colors.purple }]}>% AI predicted</Text>
+                <View style={[s.fertBadge, { backgroundColor: theme.colors.accentBlue + '20', borderColor: theme.colors.accentBlue + '55' }]}>
+                  <Text style={[s.fertBadgeText, { color: theme.colors.accentBlue }]}>% AI predicted</Text>
                 </View>
               </View>
               {fertilityData ? (
                 <View style={s.fertGridRow}>
-                  <View style={[s.fertBox, { backgroundColor: Colors.pink + '15', borderColor: Colors.pink + '30' }]}>
-                    <Text style={[s.fertBoxTitle, { color: Colors.pink }]}>Ovulation day</Text>
-                    <Text style={[s.fertBoxVal, { color: Colors.pink }]}>{fertilityData.ovulationDay}</Text>
+                  <View style={[s.fertBox, { backgroundColor: theme.colors.pink + '15', borderColor: theme.colors.pink + '30' }]}>
+                    <Text style={[s.fertBoxTitle, { color: theme.colors.pink }]}>Ovulation day</Text>
+                    <Text style={[s.fertBoxVal, { color: theme.colors.pink }]}>{fertilityData.ovulationDay}</Text>
                     <Text style={s.fertBoxSub}>Peak fertility</Text>
                   </View>
-                  <View style={[s.fertBox, { backgroundColor: Colors.amber + '15', borderColor: Colors.amber + '30' }]}>
-                    <Text style={[s.fertBoxTitle, { color: Colors.amber }]}>Fertile window</Text>
-                    <Text style={[s.fertBoxVal, { color: Colors.amber }]}>{fertilityData.fertileStart}-{fertilityData.fertileEnd}</Text>
+                  <View style={[s.fertBox, { backgroundColor: theme.colors.amber + '15', borderColor: theme.colors.amber + '30' }]}>
+                    <Text style={[s.fertBoxTitle, { color: theme.colors.amber }]}>Fertile window</Text>
+                    <Text style={[s.fertBoxVal, { color: theme.colors.amber }]}>{fertilityData.fertileStart}-{fertilityData.fertileEnd}</Text>
                     <Text style={s.fertBoxSub}>5-day window</Text>
                   </View>
-                  <View style={[s.fertBox, { backgroundColor: Colors.purple + '15', borderColor: Colors.purple + '30' }]}>
-                    <Text style={[s.fertBoxTitle, { color: Colors.purple }]}>Pregnancy chance</Text>
-                    <Text style={[s.fertBoxVal, { color: Colors.purple }]}>{fertilityData.pregnancyChance}</Text>
+                  <View style={[s.fertBox, { backgroundColor: theme.colors.accentBlue + '15', borderColor: theme.colors.accentBlue + '30' }]}>
+                    <Text style={[s.fertBoxTitle, { color: theme.colors.accentBlue }]}>Pregnancy chance</Text>
+                    <Text style={[s.fertBoxVal, { color: theme.colors.accentBlue }]}>{fertilityData.pregnancyChance}</Text>
                     <Text style={s.fertBoxSub}>{fertilityData.isOvulationPassed ? 'Post ovulation' : 'Pre ovulation'}</Text>
                   </View>
                 </View>
               ) : (
                 <View style={s.fertGridRow}>
-                  <View style={[s.fertBox, { backgroundColor: Colors.bgCardBorder + '50', borderColor: Colors.bgCardBorder }]}>
-                    <Text style={[s.fertBoxTitle, { color: Colors.textMuted }]}>No data</Text>
-                    <Text style={[s.fertBoxVal, { color: Colors.textMuted }]}>—</Text>
+                  <View style={[s.fertBox, { backgroundColor: theme.colors.bgCardBorder + '50', borderColor: theme.colors.bgCardBorder }]}>
+                    <Text style={[s.fertBoxTitle, { color: theme.colors.textMuted }]}>No data</Text>
+                    <Text style={[s.fertBoxVal, { color: theme.colors.textMuted }]}>—</Text>
                     <Text style={s.fertBoxSub}>Log your cycle to see predictions</Text>
                   </View>
                 </View>
@@ -1061,8 +1199,8 @@ export default function HealthScreenFemale({
             <GlassCardView style={s.card}>
               <View style={s.fertHeader}>
                 <Text style={s.promptText}>Cycle phase hormones</Text>
-                <View style={[s.fertBadge, { backgroundColor: Colors.purple + '20', borderColor: Colors.purple + '55' }]}>
-                  <Text style={[s.fertBadgeText, { color: Colors.purple }]}>% AI Modeled</Text>
+                <View style={[s.fertBadge, { backgroundColor: theme.colors.accentBlue + '20', borderColor: theme.colors.accentBlue + '55' }]}>
+                  <Text style={[s.fertBadgeText, { color: theme.colors.accentBlue }]}>% AI Modeled</Text>
                 </View>
               </View>
               {hormoneBars.map(h => (
@@ -1104,14 +1242,31 @@ export default function HealthScreenFemale({
             <Text style={s.modalSubtitle}>Enter your last period start date to get accurate predictions</Text>
 
             <Text style={s.modalLabel}>Last period start date</Text>
-            <TextInput
+            <TouchableOpacity
               style={s.modalInput}
-              value={setupStartDate}
-              onChangeText={setSetupStartDate}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={Colors.textMuted}
-              keyboardType="numbers-and-punctuation"
-            />
+              onPress={() => setShowStartDatePicker(true)}
+              activeOpacity={0.7}>
+              <Text style={{ color: setupStartDate ? theme.colors.text : theme.colors.textMuted, fontSize: Typography.md }}>
+                {setupStartDate || 'Select date'}
+              </Text>
+            </TouchableOpacity>
+            {showStartDatePicker && (
+              <DateTimePicker
+                value={setupStartDate ? new Date(setupStartDate + 'T00:00:00') : new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                maximumDate={new Date()}
+                onChange={(_: DateTimePickerEvent, selected?: Date) => {
+                  if (Platform.OS === 'android') setShowStartDatePicker(false);
+                  if (selected) {
+                    const y = selected.getFullYear();
+                    const m = String(selected.getMonth() + 1).padStart(2, '0');
+                    const d = String(selected.getDate()).padStart(2, '0');
+                    setSetupStartDate(`${y}-${m}-${d}`);
+                  }
+                }}
+              />
+            )}
 
             <Text style={s.modalLabel}>Average cycle length (days)</Text>
             <TextInput
@@ -1119,7 +1274,7 @@ export default function HealthScreenFemale({
               value={setupCycleLength}
               onChangeText={setSetupCycleLength}
               placeholder="28"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="numeric"
             />
 
@@ -1129,7 +1284,7 @@ export default function HealthScreenFemale({
               value={setupPeriodLength}
               onChangeText={setSetupPeriodLength}
               placeholder="5"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="numeric"
             />
 
@@ -1154,7 +1309,7 @@ export default function HealthScreenFemale({
                 onPress={handleCycleSetupSave}
                 disabled={savingCycle || !setupStartDate}>
                 {savingCycle ? (
-                  <ActivityIndicator color={Colors.bg} size="small" />
+                  <ActivityIndicator color={theme.colors.bg} size="small" />
                 ) : (
                   <Text style={s.modalSaveText}>Save</Text>
                 )}
@@ -1178,7 +1333,7 @@ export default function HealthScreenFemale({
               value={weightInput}
               onChangeText={setWeightInput}
               placeholder="e.g. 65.5"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="decimal-pad"
             />
 
@@ -1191,7 +1346,7 @@ export default function HealthScreenFemale({
                 onPress={handleWeightLogSave}
                 disabled={savingWeight || !weightInput}>
                 {savingWeight ? (
-                  <ActivityIndicator color={Colors.bg} size="small" />
+                  <ActivityIndicator color={theme.colors.bg} size="small" />
                 ) : (
                   <Text style={s.modalSaveText}>Save</Text>
                 )}
@@ -1205,151 +1360,3 @@ export default function HealthScreenFemale({
 }
 
 const TABS = ['Overview', 'Hormones', 'Fertility'];
-
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, flexGrow: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl },
-  title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  card: { padding: Spacing.base, marginBottom: Spacing.xl },
-  logCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.pink + '18',
-    borderWidth: 1,
-    borderColor: Colors.pink + '45',
-    borderRadius: Radius.lg,
-    padding: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
-  logCtaCopy: { flex: 1, paddingRight: Spacing.md },
-  logCtaTitle: { fontSize: Typography.md, color: Colors.textPrimary, fontWeight: Typography.bold },
-  logCtaSub: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 3 },
-  logCtaIcon: { width: 34, height: 34, borderRadius: 17, overflow: 'hidden', textAlign: 'center', lineHeight: 33, backgroundColor: Colors.pink, color: Colors.bg, fontSize: Typography.xl, fontWeight: Typography.bold },
-  cycleTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.lg },
-  cycleRingWrap: { width: 120, height: 120, justifyContent: 'center', alignItems: 'center', position: 'relative' },
-  cycleRing: { position: 'absolute', width: 120, height: 120, borderRadius: 60, borderWidth: 8, borderColor: Colors.bgCardBorder },
-  cycleRingCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  ringDay: { fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary },
-  ringSub: { fontSize: Typography.micro, color: Colors.textSecondary },
-  cycleInfoWrap: { flex: 1, marginLeft: Spacing.lg },
-  cyclePhaseLabel: { fontSize: Typography.xs, color: Colors.textMuted, textTransform: 'uppercase', marginBottom: 2 },
-  phaseNameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm },
-  phaseDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
-  phaseName: { fontSize: Typography.xl, fontWeight: Typography.extraBold },
-  cycleStatsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  cycleStatLabel: { width: '50%', fontSize: Typography.xs, color: Colors.textMuted, marginBottom: 2 },
-  cycleStatVal: { width: '50%', fontSize: Typography.xs, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: 2, textAlign: 'right' },
-  phaseBtnRow: { flexDirection: 'row', gap: Spacing.sm },
-  phaseGap: { width: Spacing.sm },
-
-  trendHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.md },
-  trendTitle: { fontSize: Typography.base, color: Colors.textPrimary, fontWeight: Typography.bold },
-  trendSub: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2 },
-  trendScore: { fontSize: Typography.sm, color: Colors.pink, fontWeight: Typography.bold },
-  moodChart: { flexDirection: 'row', alignItems: 'flex-end', height: 92, gap: Spacing.sm },
-  chartCol: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
-  moodTrack: { width: '100%', height: 68, borderRadius: Radius.sm, backgroundColor: Colors.bgCardBorder, justifyContent: 'flex-end', overflow: 'hidden' },
-  moodBar: { width: '100%', borderRadius: Radius.sm },
-  chartLabel: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 5, fontWeight: Typography.semiBold },
-  softDivider: { height: 1, backgroundColor: Colors.divider, marginVertical: Spacing.lg },
-  flowTrendRow: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.sm },
-  flowTrendItem: { flex: 1, alignItems: 'center' },
-  flowTrack: { width: 26, height: 64, borderRadius: Radius.sm, backgroundColor: Colors.bgCardBorder, justifyContent: 'flex-end', overflow: 'hidden' },
-  flowTrendFill: { width: '100%', backgroundColor: Colors.pink },
-  signalRow: { flexDirection: 'row', alignItems: 'center' },
-  signalIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.purple + '20' },
-  signalIconText: { color: Colors.purple, fontSize: Typography.lg },
-  signalCopy: { flex: 1, marginLeft: Spacing.md },
-  signalTitle: { fontSize: Typography.base, color: Colors.textPrimary, fontWeight: Typography.bold },
-  signalText: { fontSize: Typography.xs, color: Colors.textSecondary, lineHeight: 18, marginTop: 3 },
-  patternGrid: { flexDirection: 'row', gap: Spacing.sm },
-  patternItem: { flex: 1, borderWidth: 1, borderColor: Colors.bgCardBorder, borderRadius: Radius.md, padding: Spacing.md, backgroundColor: Colors.bgCard },
-  patternLabel: { fontSize: Typography.xs, color: Colors.textMuted, textTransform: 'uppercase', marginBottom: 5 },
-  patternValue: { fontSize: Typography.sm, color: Colors.textPrimary, fontWeight: Typography.bold },
-  promptText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary, marginBottom: Spacing.md },
-  fertHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.base },
-  fertTitle: { fontSize: Typography.md, fontWeight: Typography.bold, color: Colors.textPrimary },
-  fertSub: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2 },
-  fertBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.full, borderWidth: 1 },
-  fertBadgeText: { fontSize: Typography.xs, fontWeight: Typography.bold },
-  fertGridRow: { flexDirection: 'row', gap: Spacing.sm },
-  fertBox: { flex: 1, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, alignItems: 'center' },
-  fertBoxTitle: { fontSize: Typography.xs, fontWeight: Typography.semiBold, marginBottom: 4, textAlign: 'center' },
-  fertBoxVal: { fontSize: Typography.lg, fontWeight: Typography.bold, marginBottom: 4, textAlign: 'center' },
-  fertBoxSub: { fontSize: Typography.xs, color: Colors.textMuted, textAlign: 'center' },
-  infoBox: { backgroundColor: Colors.amber + '10', borderRadius: Radius.md, padding: Spacing.md, marginTop: Spacing.md, borderWidth: 1, borderColor: Colors.amber + '20' },
-  infoText: { fontSize: Typography.xs, color: Colors.textSecondary, lineHeight: 18 },
-  aiWrap: { marginTop: Spacing.xl },
-  bottomSpace: { height: 100 },
-
-  // Cycle Setup Banner
-  cycleSetupBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.pink + '18',
-    borderWidth: 1,
-    borderColor: Colors.pink + '45',
-    borderRadius: Radius.lg,
-    padding: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
-  cycleSetupBannerIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.pink + '22',
-    marginRight: Spacing.md,
-  },
-  cycleSetupBannerCopy: { flex: 1 },
-  cycleSetupBannerTitle: { fontSize: Typography.md, color: Colors.textPrimary, fontWeight: Typography.bold },
-  cycleSetupBannerSub: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 },
-  cycleSetupBannerArrow: { fontSize: Typography.xxl, color: Colors.pink, fontWeight: Typography.bold, marginLeft: Spacing.sm },
-
-  // Cycle Setup Modal
-  modalOverlay: { flex: 1, backgroundColor: Colors.overlayHeavy, justifyContent: 'flex-end' },
-  modalSheet: {
-    backgroundColor: Colors.modalBg,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    padding: Spacing.xl,
-    paddingBottom: 40,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.textMuted, alignSelf: 'center', marginBottom: Spacing.lg },
-  modalTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: Spacing.xs },
-  modalSubtitle: { fontSize: Typography.sm, color: Colors.textMuted, marginBottom: Spacing.lg },
-  modalLabel: { fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.medium, marginBottom: Spacing.sm, marginTop: Spacing.md },
-  modalInput: {
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-    color: Colors.textPrimary,
-    fontSize: Typography.base,
-  },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.md, marginTop: Spacing.xl },
-  modalCancelBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.bgCardBorder },
-  modalCancelText: { color: Colors.textSecondary, fontSize: Typography.sm, fontWeight: Typography.semiBold },
-  modalSaveBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, backgroundColor: Colors.pink, alignItems: 'center', minWidth: 80 },
-  modalSaveText: { color: Colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold },
-  regularityRow: { flexDirection: 'row', gap: Spacing.sm },
-  regularityBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    backgroundColor: Colors.bgCard,
-  },
-  regularityBtnActive: { borderColor: Colors.pink, backgroundColor: Colors.pink + '18' },
-  regularityBtnText: { fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.medium },
-  regularityBtnTextActive: { color: Colors.pink },
-});

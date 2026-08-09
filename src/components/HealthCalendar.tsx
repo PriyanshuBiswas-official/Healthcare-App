@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../theme/theme';
+import { Typography, Spacing, Radius } from '../theme/theme';
+import { useStyles } from '../providers/ThemeProvider';
 import { useReminders } from '../providers/ReminderContext';
 import { useAppointments } from '../providers/AppointmentContext';
 import { useAuth } from '../providers/AuthProvider';
@@ -26,6 +27,17 @@ export default function HealthCalendar() {
   const token = session?.access_token || '';
 
   // Local state for calendar navigation and selections
+  const styles = useStyles((theme) => ({
+    container: { paddingBottom: Spacing.sm },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
+    sectionTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
+    sectionSubtitle: { fontSize: Typography.xs, color: theme.colors.textMuted },
+    togglePill: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.chipBg, paddingHorizontal: 12, borderRadius: Radius.full, borderWidth: 1, borderColor: theme.colors.bgCardBorder },
+    toggleLabel: { fontSize: Typography.xs, fontWeight: Typography.bold, color: theme.colors.textSecondary },
+    toggleChevron: { fontSize: Typography.xs, color: theme.colors.teal },
+    calendarContainer: { paddingVertical: Spacing.sm, paddingHorizontal: 0, marginBottom: Spacing.md },
+  }));
+
   const [selectedDateStr, setSelectedDateStr] = useState<string>(() => formatDateString(new Date()));
   const [currentMonthStr, setCurrentMonthStr] = useState<string>(() => formatDateString(new Date()));
   const [expanded, setExpanded] = useState<boolean>(true);
@@ -127,51 +139,3 @@ export default function HealthCalendar() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.md,
-    paddingHorizontal: Spacing.xs,
-  },
-  sectionTitle: {
-    fontSize: Typography.md,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  sectionSubtitle: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  togglePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.chipBg,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  toggleLabel: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.textSecondary,
-  },
-  toggleChevron: {
-    fontSize: Typography.xs,
-    color: Colors.teal,
-  },
-  calendarContainer: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: 0,
-    marginBottom: Spacing.md,
-  },
-});

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { View, Text } from 'react-native';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { useStyles } from '../../providers/ThemeProvider';
 import { CalendarEvent } from '../../utils/calendarHelpers';
 import { GlassCardView, SectionHeader } from '../SharedComponents';
 import EmptyState from './EmptyState';
@@ -13,7 +14,7 @@ interface AgendaSectionProps {
 interface GroupedEvent {
   id: string;
   type: string;
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   subtitle?: string;
   times: string[];
@@ -64,6 +65,69 @@ export default function AgendaSection({ selectedDate, events }: AgendaSectionPro
     }
   };
 
+  const styles = useStyles((theme) => ({
+    container: {
+      marginTop: Spacing.md,
+    },
+    agendaCard: {
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.base,
+      marginBottom: Spacing.xl,
+    },
+    list: {
+      gap: Spacing.sm,
+    },
+    eventRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: Spacing.sm,
+    },
+    eventAccentDot: {
+      width: 4,
+      height: 24,
+      borderRadius: Radius.full,
+      marginRight: Spacing.sm,
+    },
+    eventIconWrap: {
+      width: 32,
+      height: 32,
+      borderRadius: Radius.sm,
+      backgroundColor: theme.colors.chipBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: Spacing.md,
+    },
+    eventIcon: {
+      fontSize: Typography.base,
+    },
+    eventInfo: {
+      flex: 1,
+    },
+    eventLabel: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: theme.colors.textPrimary,
+    },
+    eventTime: {
+      fontSize: Typography.xs,
+      color: theme.colors.textMuted,
+      marginTop: 2,
+    },
+    eventBadge: {
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 4,
+      borderRadius: Radius.full,
+      backgroundColor: theme.colors.chipBg,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+    },
+    eventBadgeText: {
+      fontSize: Typography.xs - 1,
+      color: theme.colors.textSecondary,
+      fontWeight: Typography.bold,
+    },
+  }));
+
   return (
     <View style={styles.container}>
       <SectionHeader title={`Agenda — ${dateTitle}`} />
@@ -77,7 +141,7 @@ export default function AgendaSection({ selectedDate, events }: AgendaSectionPro
               <View key={group.id} style={styles.eventRow}>
                 <View style={[styles.eventAccentDot, { backgroundColor: group.color }]} />
                 <View style={styles.eventIconWrap}>
-                  <Text style={styles.eventIcon}>{group.icon}</Text>
+                  {group.icon}
                 </View>
                 <View style={styles.eventInfo}>
                   <Text style={styles.eventLabel}>{group.title}</Text>
@@ -99,66 +163,3 @@ export default function AgendaSection({ selectedDate, events }: AgendaSectionPro
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginTop: Spacing.md,
-  },
-  agendaCard: {
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
-  list: {
-    gap: Spacing.sm,
-  },
-  eventRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  eventAccentDot: {
-    width: 4,
-    height: 24,
-    borderRadius: Radius.full,
-    marginRight: Spacing.sm,
-  },
-  eventIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.chipBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-  },
-  eventIcon: {
-    fontSize: Typography.base,
-  },
-  eventInfo: {
-    flex: 1,
-  },
-  eventLabel: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  eventTime: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  eventBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.chipBg,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  eventBadgeText: {
-    fontSize: Typography.xs - 1,
-    color: Colors.textSecondary,
-    fontWeight: Typography.bold,
-  },
-});

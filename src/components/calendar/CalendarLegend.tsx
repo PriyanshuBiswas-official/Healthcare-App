@@ -1,15 +1,44 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { View, Text } from 'react-native';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 
 export default function CalendarLegend() {
+  const { theme } = useTheme();
+
   const legends = [
-    { label: 'Medication', color: Colors.teal },
-    { label: 'Water', color: Colors.blue },
-    { label: 'Workout', color: Colors.purple },
-    { label: 'Appointment', color: Colors.blue },
-    { label: 'Period', color: Colors.pink },
+    { label: 'Medication', color: theme.colors.teal },
+    { label: 'Water', color: theme.colors.blue },
+    { label: 'Workout', color: theme.colors.accentBlue },
+    { label: 'Appointment', color: theme.colors.blue },
+    { label: 'Period', color: theme.colors.pink },
   ];
+
+  const styles = useStyles((theme) => ({
+    container: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.sm,
+      paddingHorizontal: Spacing.base,
+      marginTop: Spacing.sm,
+      marginBottom: Spacing.md,
+      justifyContent: 'center',
+    },
+    item: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+    },
+    label: {
+      fontSize: Typography.xs,
+      color: theme.colors.textMuted,
+    },
+  }));
 
   return (
     <View style={styles.container}>
@@ -22,29 +51,3 @@ export default function CalendarLegend() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.base,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.md,
-    justifyContent: 'center',
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  label: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-  },
-});

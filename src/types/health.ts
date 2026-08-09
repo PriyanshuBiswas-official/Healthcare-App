@@ -129,3 +129,25 @@ export interface FemaleHealthData {
   dischargeLogs: DischargeLog[];
   symptomsLogs: SymptomsLog[];
 }
+
+export interface HealthScore {
+  score_id: number;
+  user_id: number;
+  activity_score: number | null;
+  nutrition_score: number | null;
+  sleep_score: number | null;
+  hydration_score: number | null;
+  MoodStress_score: number | null;
+  challenge_score: number | null;
+  vitals_score: number | null;
+  total_score: number | null;
+  date: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface DashboardHealthScore {
+  score: number;
+  isLimitedData: boolean;
+  message?: string;
+}

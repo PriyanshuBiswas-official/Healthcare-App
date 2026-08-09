@@ -8,7 +8,7 @@ import {
   Dimensions,
   RefreshControl,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { Typography, Spacing, Radius } from '../../theme/theme';
 import {
   GlassCardView,
   SectionHeader,
@@ -31,6 +31,7 @@ import { useAuth } from '../../providers/AuthProvider';
 import { usePreferences } from '../../providers/PreferencesContext';
 import { getSleepLogs, getMoodLogs } from '../../services/healthService';
 import type { SleepLog, MoodLog } from '../../types/health';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 
 const { width } = Dimensions.get('window');
 
@@ -43,6 +44,7 @@ export default function HealthScreenMale({
   onProfilePress?: () => void;
   onNotificationsPress?: () => void;
 }) {
+  const { theme } = useTheme();
   const { onScroll } = useScrollVisibility();
   const { user } = useAuth();
   const { hideVitals } = usePreferences();
@@ -56,6 +58,79 @@ export default function HealthScreenMale({
   const TABS = hideVitals ? ['Overview', 'Hormones'] : ['Overview', 'Hormones', 'Vitals'];
 
   const { session } = useAuth();
+
+  const s = useStyles((t) => StyleSheet.create({
+    root: { flex: 1, backgroundColor: t.colors.bg },
+    scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, flexGrow: 1 },
+
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: Spacing.xl,
+    },
+    title: {
+      fontSize: Typography.xxl,
+      fontWeight: Typography.extraBold,
+      color: t.colors.textPrimary,
+      letterSpacing: -0.5,
+    },
+    headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+
+    card: { padding: Spacing.base, marginBottom: Spacing.xl },
+
+    scoreTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.xl },
+    gaugeWrap: { width: 100, height: 100, justifyContent: 'center', alignItems: 'center', position: 'relative' },
+    gaugeTrack: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 8, borderColor: t.colors.bgCardBorder, borderBottomColor: 'transparent', transform: [{ rotate: '-45deg' }] },
+    gaugeFill: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 8, borderColor: t.colors.teal, borderBottomColor: 'transparent', borderRightColor: 'transparent', transform: [{ rotate: '-45deg' }] },
+    gaugeScore: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: t.colors.textPrimary },
+    gaugeTotal: { fontSize: Typography.xs, color: t.colors.textMuted, marginTop: -4 },
+
+    scoreInfoWrap: { flex: 1, marginLeft: Spacing.lg },
+    scoreTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary },
+    scorePtsBadge: { backgroundColor: t.colors.success + '30', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, marginLeft: 8 },
+    scorePtsText: { color: t.colors.success, fontSize: 10, fontWeight: Typography.bold },
+    scoreDesc: { fontSize: Typography.xs, color: t.colors.textSecondary, marginBottom: Spacing.sm },
+    scoreTagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    scoreTag: { backgroundColor: t.colors.teal + '15', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+    scoreTagText: { fontSize: 9, color: t.colors.teal, fontWeight: Typography.medium },
+
+    quickStatsRow: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: t.colors.divider, paddingTop: Spacing.md },
+    qStatBox: { alignItems: 'center' },
+    qStatVal: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary },
+    qStatLbl: { fontSize: Typography.xs, color: t.colors.textMuted },
+
+    rowGrid: { flexDirection: 'row', marginBottom: Spacing.xl },
+    cardMiniLabel: { fontSize: Typography.xs, color: t.colors.textMuted, textTransform: 'uppercase', marginBottom: 4 },
+    cardBigVal: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: t.colors.textPrimary },
+    cardUnit: { fontSize: Typography.sm, fontWeight: Typography.medium, color: t.colors.textSecondary },
+    cardSubVal: { fontSize: Typography.xs, color: t.colors.success, marginTop: 4, fontWeight: Typography.medium },
+
+    fertHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.lg },
+    promptText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.textPrimary, marginBottom: 2 },
+    fertBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.full, borderWidth: 1 },
+    fertBadgeText: { fontSize: 9, fontWeight: Typography.bold },
+
+    tBarContainer: { marginBottom: Spacing.xl, marginTop: Spacing.sm },
+    tBarLabels: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 6 },
+    tBarEdge: { fontSize: Typography.xs, color: t.colors.textMuted },
+    tBarCenterVal: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.teal },
+    tBarCenterSub: { fontSize: Typography.xs, color: t.colors.teal },
+    tBarTrack: { height: 12, backgroundColor: t.colors.bgCardBorder, borderRadius: 6, position: 'relative' },
+    tBarFill: { position: 'absolute', left: '15%', right: '15%', height: '100%', backgroundColor: t.colors.teal + '40', borderRadius: 6 },
+    tBarMarker: { position: 'absolute', left: '55%', top: -4, width: 20, height: 20, borderRadius: 10, backgroundColor: t.colors.teal, borderWidth: 3, borderColor: t.colors.bg },
+    tBarLimits: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+    tBarLimitTxt: { fontSize: 9, fontWeight: Typography.bold },
+
+    gridRow: { flexDirection: 'row', marginBottom: Spacing.base },
+    gridItem: { flex: 1, backgroundColor: t.colors.bgCardBorder + '50', padding: Spacing.md, borderRadius: Radius.md, marginRight: Spacing.sm },
+    gridVal: { fontSize: Typography.xl, fontWeight: Typography.bold, color: t.colors.textPrimary },
+    gridUnit: { fontSize: Typography.xs, color: t.colors.textMuted },
+    gridStat: { fontSize: Typography.sm, fontWeight: Typography.semiBold, marginTop: 4 },
+
+    infoBox: { backgroundColor: t.colors.amber + '10', borderRadius: Radius.md, padding: Spacing.md, marginTop: Spacing.md, borderWidth: 1, borderColor: t.colors.amber + '20' },
+    infoText: { fontSize: Typography.xs, color: t.colors.textSecondary, lineHeight: 18 },
+  }));
 
   const fetchData = useCallback(async () => {
     const token = session?.access_token;
@@ -93,7 +168,7 @@ export default function HealthScreenMale({
         contentContainerStyle={s.scroll}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[Colors.teal, Colors.pink]} tintColor={Colors.teal} progressBackgroundColor={Colors.bgCard} />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[theme.colors.teal, theme.colors.pink]} tintColor={theme.colors.teal} progressBackgroundColor={theme.colors.bgCard} />}>
 
         <View style={s.header}>
           <Text style={s.title}>Your Health</Text>
@@ -107,7 +182,7 @@ export default function HealthScreenMale({
           </View>
         </View>
 
-        <InnerTabBar tabs={TABS} active={activeTab} onSelect={setActiveTab} accentColor={Colors.teal} />
+        <InnerTabBar tabs={TABS} active={activeTab} onSelect={setActiveTab} accentColor={theme.colors.teal} />
 
         {activeTab === 'Overview' && (<>
             <SectionHeader title="Health Score" />
@@ -162,7 +237,7 @@ export default function HealthScreenMale({
               </GlassCardView>
               <GlassCardView style={[s.card, { flex: 1, marginLeft: Spacing.sm }]}>
                 <Text style={s.cardMiniLabel}>SPERM HEALTH</Text>
-                <Text style={[s.cardBigVal, { color: Colors.teal }]}>Good</Text>
+                <Text style={[s.cardBigVal, { color: theme.colors.teal }]}>Good</Text>
                 <Text style={s.cardSubVal}>Last checked May</Text>
               </GlassCardView>
             </View>
@@ -180,8 +255,8 @@ export default function HealthScreenMale({
                   <Text style={s.promptText}>Total testosterone</Text>
                   <Text style={s.cardMiniLabel}>Last tested: Jun 10 · Via blood panel</Text>
                 </View>
-                <View style={[s.fertBadge, { backgroundColor: Colors.success + '20', borderColor: Colors.success + '55' }]}>
-                  <Text style={[s.fertBadgeText, { color: Colors.success }]}>✓ Normal range</Text>
+                <View style={[s.fertBadge, { backgroundColor: theme.colors.success + '20', borderColor: theme.colors.success + '55' }]}>
+                  <Text style={[s.fertBadgeText, { color: theme.colors.success }]}>✓ Normal range</Text>
                 </View>
               </View>
 
@@ -199,17 +274,17 @@ export default function HealthScreenMale({
                   <View style={s.tBarMarker} />
                 </View>
                 <View style={s.tBarLimits}>
-                  <Text style={[s.tBarLimitTxt, { color: Colors.pink }]}>Low</Text>
-                  <Text style={[s.tBarLimitTxt, { color: Colors.amber }]}>High</Text>
+                  <Text style={[s.tBarLimitTxt, { color: theme.colors.pink }]}>Low</Text>
+                  <Text style={[s.tBarLimitTxt, { color: theme.colors.amber }]}>High</Text>
                 </View>
               </View>
 
-              <HormoneRangeBar label="Free testosterone" value="Normal" status="Normal" statusColor={Colors.success} currentPct={0.5} />
-              <HormoneRangeBar label="DHEA-S" value="Normal" status="Normal" statusColor={Colors.success} currentPct={0.6} />
-              <HormoneRangeBar label="LH (Luteinizing)" value="Normal" status="Normal" statusColor={Colors.success} currentPct={0.4} />
-              <HormoneRangeBar label="Cortisol" value="Elevated" status="Elevated ↑" statusColor={Colors.amber} currentPct={0.8} />
-              <HormoneRangeBar label="Estradiol (E2)" value="Low Normal" status="Low Normal" statusColor={Colors.success} currentPct={0.2} />
-              <HormoneRangeBar label="PSA (prostate)" value="0.9" unit="ng/mL" status="Optimal ✓" statusColor={Colors.success} currentPct={0.1} />
+              <HormoneRangeBar label="Free testosterone" value="Normal" status="Normal" statusColor={theme.colors.success} currentPct={0.5} />
+              <HormoneRangeBar label="DHEA-S" value="Normal" status="Normal" statusColor={theme.colors.success} currentPct={0.6} />
+              <HormoneRangeBar label="LH (Luteinizing)" value="Normal" status="Normal" statusColor={theme.colors.success} currentPct={0.4} />
+              <HormoneRangeBar label="Cortisol" value="Elevated" status="Elevated ↑" statusColor={theme.colors.amber} currentPct={0.8} />
+              <HormoneRangeBar label="Estradiol (E2)" value="Low Normal" status="Low Normal" statusColor={theme.colors.success} currentPct={0.2} />
+              <HormoneRangeBar label="PSA (prostate)" value="0.9" unit="ng/mL" status="Optimal ✓" statusColor={theme.colors.success} currentPct={0.1} />
 
               <View style={s.infoBox}>
                 <Text style={s.infoText}>💡 Elevated cortisol can suppress testosterone over time. AI recommends reviewing sleep quality and stress load. Upload latest lab report for precise tracking.</Text>
@@ -222,8 +297,8 @@ export default function HealthScreenMale({
             <GlassCardView style={s.card}>
               <View style={s.fertHeader}>
                 <Text style={s.promptText}>10-year heart risk</Text>
-                <View style={[s.fertBadge, { backgroundColor: Colors.success + '20', borderColor: Colors.success + '55' }]}>
-                  <Text style={[s.fertBadgeText, { color: Colors.success }]}>Low risk · 4%</Text>
+                <View style={[s.fertBadge, { backgroundColor: theme.colors.success + '20', borderColor: theme.colors.success + '55' }]}>
+                  <Text style={[s.fertBadgeText, { color: theme.colors.success }]}>Low risk · 4%</Text>
                 </View>
               </View>
 
@@ -231,24 +306,24 @@ export default function HealthScreenMale({
                 <View style={s.gridItem}>
                   <Text style={s.cardMiniLabel}>LDL CHOLESTEROL</Text>
                   <Text style={s.gridVal}>98 <Text style={s.gridUnit}>mg/dL</Text></Text>
-                  <Text style={[s.gridStat, { color: Colors.success }]}>Optimal</Text>
+                  <Text style={[s.gridStat, { color: theme.colors.success }]}>Optimal</Text>
                 </View>
                 <View style={s.gridItem}>
                   <Text style={s.cardMiniLabel}>HDL CHOLESTEROL</Text>
                   <Text style={s.gridVal}>58 <Text style={s.gridUnit}>mg/dL</Text></Text>
-                  <Text style={[s.gridStat, { color: Colors.success }]}>Good</Text>
+                  <Text style={[s.gridStat, { color: theme.colors.success }]}>Good</Text>
                 </View>
               </View>
               <View style={s.gridRow}>
                 <View style={s.gridItem}>
                   <Text style={s.cardMiniLabel}>TRIGLYCERIDES</Text>
                   <Text style={s.gridVal}>142 <Text style={s.gridUnit}>mg/dL</Text></Text>
-                  <Text style={[s.gridStat, { color: Colors.amber }]}>Borderline</Text>
+                  <Text style={[s.gridStat, { color: theme.colors.amber }]}>Borderline</Text>
                 </View>
                 <View style={s.gridItem}>
                   <Text style={s.cardMiniLabel}>BLOOD GLUCOSE</Text>
                   <Text style={s.gridVal}>94 <Text style={s.gridUnit}>mg/dL</Text></Text>
-                  <Text style={[s.gridStat, { color: Colors.success }]}>Normal</Text>
+                  <Text style={[s.gridStat, { color: theme.colors.success }]}>Normal</Text>
                 </View>
               </View>
 
@@ -270,78 +345,3 @@ export default function HealthScreenMale({
     </View>
   );
 }
-
-// ─── Styles ──────────────────────────────────────────────────────────────────
-
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, flexGrow: 1 },
-
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
-  },
-  title: {
-    fontSize: Typography.xxl,
-    fontWeight: Typography.extraBold,
-    color: Colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-
-  card: { padding: Spacing.base, marginBottom: Spacing.xl },
-
-  scoreTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.xl },
-  gaugeWrap: { width: 100, height: 100, justifyContent: 'center', alignItems: 'center', position: 'relative' },
-  gaugeTrack: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 8, borderColor: Colors.bgCardBorder, borderBottomColor: 'transparent', transform: [{ rotate: '-45deg' }] },
-  gaugeFill: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 8, borderColor: Colors.teal, borderBottomColor: 'transparent', borderRightColor: 'transparent', transform: [{ rotate: '-45deg' }] },
-  gaugeScore: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary },
-  gaugeTotal: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: -4 },
-
-  scoreInfoWrap: { flex: 1, marginLeft: Spacing.lg },
-  scoreTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
-  scorePtsBadge: { backgroundColor: Colors.success + '30', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, marginLeft: 8 },
-  scorePtsText: { color: Colors.success, fontSize: 10, fontWeight: Typography.bold },
-  scoreDesc: { fontSize: Typography.xs, color: Colors.textSecondary, marginBottom: Spacing.sm },
-  scoreTagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  scoreTag: { backgroundColor: Colors.teal + '15', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  scoreTagText: { fontSize: 9, color: Colors.teal, fontWeight: Typography.medium },
-
-  quickStatsRow: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: Colors.divider, paddingTop: Spacing.md },
-  qStatBox: { alignItems: 'center' },
-  qStatVal: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
-  qStatLbl: { fontSize: Typography.xs, color: Colors.textMuted },
-
-  rowGrid: { flexDirection: 'row', marginBottom: Spacing.xl },
-  cardMiniLabel: { fontSize: Typography.xs, color: Colors.textMuted, textTransform: 'uppercase', marginBottom: 4 },
-  cardBigVal: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary },
-  cardUnit: { fontSize: Typography.sm, fontWeight: Typography.medium, color: Colors.textSecondary },
-  cardSubVal: { fontSize: Typography.xs, color: Colors.success, marginTop: 4, fontWeight: Typography.medium },
-
-  fertHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.lg },
-  promptText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary, marginBottom: 2 },
-  fertBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.full, borderWidth: 1 },
-  fertBadgeText: { fontSize: 9, fontWeight: Typography.bold },
-
-  tBarContainer: { marginBottom: Spacing.xl, marginTop: Spacing.sm },
-  tBarLabels: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 6 },
-  tBarEdge: { fontSize: Typography.xs, color: Colors.textMuted },
-  tBarCenterVal: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.teal },
-  tBarCenterSub: { fontSize: Typography.xs, color: Colors.teal },
-  tBarTrack: { height: 12, backgroundColor: Colors.bgCardBorder, borderRadius: 6, position: 'relative' },
-  tBarFill: { position: 'absolute', left: '15%', right: '15%', height: '100%', backgroundColor: Colors.teal + '40', borderRadius: 6 },
-  tBarMarker: { position: 'absolute', left: '55%', top: -4, width: 20, height: 20, borderRadius: 10, backgroundColor: Colors.teal, borderWidth: 3, borderColor: Colors.bg },
-  tBarLimits: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
-  tBarLimitTxt: { fontSize: 9, fontWeight: Typography.bold },
-
-  gridRow: { flexDirection: 'row', marginBottom: Spacing.base },
-  gridItem: { flex: 1, backgroundColor: Colors.bgCardBorder + '50', padding: Spacing.md, borderRadius: Radius.md, marginRight: Spacing.sm },
-  gridVal: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.textPrimary },
-  gridUnit: { fontSize: Typography.xs, color: Colors.textMuted },
-  gridStat: { fontSize: Typography.sm, fontWeight: Typography.semiBold, marginTop: 4 },
-
-  infoBox: { backgroundColor: Colors.amber + '10', borderRadius: Radius.md, padding: Spacing.md, marginTop: Spacing.md, borderWidth: 1, borderColor: Colors.amber + '20' },
-  infoText: { fontSize: Typography.xs, color: Colors.textSecondary, lineHeight: 18 },
-});

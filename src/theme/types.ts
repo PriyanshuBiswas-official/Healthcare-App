@@ -21,8 +21,8 @@ export interface ThemeColors {
   amber: string;
   amberDim: string;
   amberGlow: string;
-  purple: string;
-  purpleDim: string;
+  accentBlue: string;
+  accentBlueDim: string;
   blue: string;
   blueDim: string;
 

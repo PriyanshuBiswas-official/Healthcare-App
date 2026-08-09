@@ -13,8 +13,9 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
-import { ArrowLeft } from 'lucide-react-native';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
 
@@ -58,6 +59,7 @@ const AI_FEATURES = [
 export default function OnboardingScreen() {
   const navigation = useNavigation<OnboardingScreenProp>();
   const { session, user, checkProfile } = useAuth();
+  const { theme } = useTheme();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -208,13 +210,231 @@ export default function OnboardingScreen() {
     }
   };
 
+  const styles = useStyles((theme) => ({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.bg,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.xl,
+      paddingVertical: Spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.bgCardBorder,
+    },
+
+    progressText: {
+      color: theme.colors.textSecondary,
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+    },
+    scrollContent: {
+      padding: Spacing.xl,
+      paddingBottom: Spacing.xxl * 2,
+    },
+    stepContainer: {
+      flex: 1,
+    },
+    stepTitle: {
+      fontSize: Typography.xl,
+      fontWeight: Typography.bold,
+      color: theme.colors.text,
+      marginBottom: Spacing.sm,
+    },
+    stepSubtitle: {
+      fontSize: Typography.sm,
+      color: theme.colors.textSecondary,
+      marginBottom: Spacing.xxl,
+      lineHeight: 20,
+    },
+    textInput: {
+      backgroundColor: theme.colors.tooltipBg,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+      borderRadius: Radius.md,
+      color: theme.colors.text,
+      padding: Spacing.base,
+      fontSize: Typography.md,
+    },
+    goalList: {
+      gap: Spacing.md,
+    },
+    goalButton: {
+      backgroundColor: theme.colors.bgCard,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+      borderRadius: Radius.md,
+      padding: Spacing.base,
+      alignItems: 'center',
+    },
+    goalButtonSelected: {
+      borderColor: theme.colors.teal,
+      backgroundColor: theme.colors.tealDim,
+    },
+    goalText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.medium,
+      color: theme.colors.text,
+    },
+    goalTextSelected: {
+      color: theme.colors.teal,
+      fontWeight: Typography.bold,
+    },
+    inputLabel: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: theme.colors.text,
+      marginTop: Spacing.lg,
+      marginBottom: Spacing.sm,
+    },
+    dobContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: Spacing.md,
+    },
+    dobInput: {
+      flex: 1,
+      textAlign: 'center',
+    },
+    rowContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
+    },
+    flexItem: {
+      flex: 1,
+    },
+    badgeOption: {
+      flex: 1,
+      paddingVertical: 14,
+      backgroundColor: theme.colors.bgCard,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+      borderRadius: Radius.md,
+      alignItems: 'center',
+    },
+    badgeOptionSelected: {
+      borderColor: theme.colors.teal,
+      backgroundColor: theme.colors.tealDim,
+    },
+    badgeText: {
+      color: theme.colors.text,
+      fontSize: Typography.base,
+      fontWeight: Typography.medium,
+    },
+    badgeTextSelected: {
+      color: theme.colors.teal,
+      fontWeight: Typography.bold,
+    },
+    bloodScroll: {
+      gap: Spacing.sm,
+      paddingRight: Spacing.xl,
+    },
+    bloodGroupBadge: {
+      width: 60,
+      height: 50,
+      borderRadius: Radius.md,
+      backgroundColor: theme.colors.bgCard,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    bloodGroupBadgeSelected: {
+      borderColor: theme.colors.teal,
+      backgroundColor: theme.colors.tealDim,
+    },
+    bloodGroupText: {
+      color: theme.colors.text,
+      fontSize: Typography.base,
+      fontWeight: Typography.semiBold,
+    },
+    bloodGroupTextSelected: {
+      color: theme.colors.teal,
+      fontWeight: Typography.bold,
+    },
+    activityList: {
+      gap: Spacing.md,
+    },
+    activityButton: {
+      backgroundColor: theme.colors.bgCard,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+      borderRadius: Radius.md,
+      padding: Spacing.base,
+    },
+    activityButtonSelected: {
+      borderColor: theme.colors.teal,
+      backgroundColor: theme.colors.tealDim,
+    },
+    activityLabelText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: theme.colors.text,
+      marginBottom: 4,
+    },
+    activityLabelTextSelected: {
+      color: theme.colors.teal,
+    },
+    activityDescText: {
+      fontSize: Typography.sm,
+      color: theme.colors.textSecondary,
+      lineHeight: 18,
+    },
+    aiFeaturesGrid: {
+      gap: Spacing.lg,
+    },
+    aiFeatureCard: {
+      flexDirection: 'row',
+      backgroundColor: theme.colors.bgCard,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+      borderRadius: Radius.md,
+      padding: Spacing.base,
+      gap: Spacing.base,
+    },
+    aiFeatureIcon: {
+      fontSize: Typography.lg,
+    },
+    aiFeatureContent: {
+      flex: 1,
+    },
+    aiFeatureTitle: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: theme.colors.text,
+      marginBottom: 4,
+    },
+    aiFeatureDesc: {
+      fontSize: Typography.sm,
+      color: theme.colors.textSecondary,
+      lineHeight: 18,
+    },
+    footer: {
+      padding: Spacing.xl,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.bgCardBorder,
+    },
+    nextButton: {
+      backgroundColor: theme.colors.teal,
+      paddingVertical: 18,
+      borderRadius: Radius.md,
+      alignItems: 'center',
+    },
+    nextButtonText: {
+      color: theme.colors.bg,
+      fontSize: Typography.md,
+      fontWeight: Typography.bold,
+    },
+  }));
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         {step > 1 && (
-          <TouchableOpacity onPress={prevStep} style={styles.backButton}>
-            <><ArrowLeft size={18} color={Colors.teal} strokeWidth={2} /><Text style={styles.backButtonText}> Back</Text></>
-          </TouchableOpacity>
+          <BackButton onPress={prevStep} color={theme.colors.teal} />
         )}
         <Text style={styles.progressText}>Step {step} of 5</Text>
       </View>
@@ -227,7 +447,7 @@ export default function OnboardingScreen() {
             <TextInput
               style={styles.textInput}
               placeholder="Your Name"
-              placeholderTextColor={Colors.textPlaceholder}
+              placeholderTextColor={theme.colors.textPlaceholder}
               value={displayName}
               onChangeText={setDisplayName}
               autoFocus
@@ -268,7 +488,7 @@ export default function OnboardingScreen() {
               <TextInput
                 style={[styles.textInput, styles.dobInput]}
                 placeholder="YYYY"
-                placeholderTextColor={Colors.textPlaceholder}
+                placeholderTextColor={theme.colors.textPlaceholder}
                 keyboardType="number-pad"
                 maxLength={4}
                 value={dobYear}
@@ -277,7 +497,7 @@ export default function OnboardingScreen() {
               <TextInput
                 style={[styles.textInput, styles.dobInput]}
                 placeholder="MM"
-                placeholderTextColor={Colors.textPlaceholder}
+                placeholderTextColor={theme.colors.textPlaceholder}
                 keyboardType="number-pad"
                 maxLength={2}
                 value={dobMonth}
@@ -286,7 +506,7 @@ export default function OnboardingScreen() {
               <TextInput
                 style={[styles.textInput, styles.dobInput]}
                 placeholder="DD"
-                placeholderTextColor={Colors.textPlaceholder}
+                placeholderTextColor={theme.colors.textPlaceholder}
                 keyboardType="number-pad"
                 maxLength={2}
                 value={dobDay}
@@ -320,7 +540,7 @@ export default function OnboardingScreen() {
                 <TextInput
                   style={styles.textInput}
                   placeholder="e.g. 175"
-                  placeholderTextColor={Colors.textPlaceholder}
+                  placeholderTextColor={theme.colors.textPlaceholder}
                   keyboardType="decimal-pad"
                   value={height}
                   onChangeText={setHeight}
@@ -331,7 +551,7 @@ export default function OnboardingScreen() {
                 <TextInput
                   style={styles.textInput}
                   placeholder="e.g. 70"
-                  placeholderTextColor={Colors.textPlaceholder}
+                  placeholderTextColor={theme.colors.textPlaceholder}
                   keyboardType="decimal-pad"
                   value={weight}
                   onChangeText={setWeight}
@@ -411,7 +631,7 @@ export default function OnboardingScreen() {
         ) : (
           <TouchableOpacity style={styles.nextButton} onPress={handleFinish} disabled={loading}>
             {loading ? (
-              <ActivityIndicator color={Colors.bg} />
+              <ActivityIndicator color={theme.colors.bg} />
             ) : (
               <Text style={styles.nextButtonText}>
                 {session?.user ? 'Save Profile' : 'Continue to Sign Up'}
@@ -423,233 +643,3 @@ export default function OnboardingScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.bg,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.bgCardBorder,
-  },
-  backButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.bgCard,
-  },
-  backButtonText: {
-    color: Colors.text,
-    fontSize: Typography.sm,
-    fontWeight: Typography.medium,
-  },
-  progressText: {
-    color: Colors.textSecondary,
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-  },
-  scrollContent: {
-    padding: Spacing.xl,
-    paddingBottom: Spacing.xxl * 2,
-  },
-  stepContainer: {
-    flex: 1,
-  },
-  stepTitle: {
-    fontSize: Typography.xl,
-    fontWeight: Typography.bold,
-    color: Colors.text,
-    marginBottom: Spacing.sm,
-  },
-  stepSubtitle: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.xxl,
-    lineHeight: 20,
-  },
-  textInput: {
-    backgroundColor: Colors.tooltipBg,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md,
-    color: Colors.text,
-    padding: Spacing.base,
-    fontSize: Typography.md,
-  },
-  goalList: {
-    gap: Spacing.md,
-  },
-  goalButton: {
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md,
-    padding: Spacing.base,
-    alignItems: 'center',
-  },
-  goalButtonSelected: {
-    borderColor: Colors.teal,
-    backgroundColor: Colors.tealDim,
-  },
-  goalText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.medium,
-    color: Colors.text,
-  },
-  goalTextSelected: {
-    color: Colors.teal,
-    fontWeight: Typography.bold,
-  },
-  inputLabel: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.text,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.sm,
-  },
-  dobContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.md,
-  },
-  dobInput: {
-    flex: 1,
-    textAlign: 'center',
-  },
-  rowContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  flexItem: {
-    flex: 1,
-  },
-  badgeOption: {
-    flex: 1,
-    paddingVertical: 14,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-  },
-  badgeOptionSelected: {
-    borderColor: Colors.teal,
-    backgroundColor: Colors.tealDim,
-  },
-  badgeText: {
-    color: Colors.text,
-    fontSize: Typography.base,
-    fontWeight: Typography.medium,
-  },
-  badgeTextSelected: {
-    color: Colors.teal,
-    fontWeight: Typography.bold,
-  },
-  bloodScroll: {
-    gap: Spacing.sm,
-    paddingRight: Spacing.xl,
-  },
-  bloodGroupBadge: {
-    width: 60,
-    height: 50,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  bloodGroupBadgeSelected: {
-    borderColor: Colors.teal,
-    backgroundColor: Colors.tealDim,
-  },
-  bloodGroupText: {
-    color: Colors.text,
-    fontSize: Typography.base,
-    fontWeight: Typography.semiBold,
-  },
-  bloodGroupTextSelected: {
-    color: Colors.teal,
-    fontWeight: Typography.bold,
-  },
-  activityList: {
-    gap: Spacing.md,
-  },
-  activityButton: {
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md,
-    padding: Spacing.base,
-  },
-  activityButtonSelected: {
-    borderColor: Colors.teal,
-    backgroundColor: Colors.tealDim,
-  },
-  activityLabelText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.text,
-    marginBottom: 4,
-  },
-  activityLabelTextSelected: {
-    color: Colors.teal,
-  },
-  activityDescText: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-  },
-  aiFeaturesGrid: {
-    gap: Spacing.lg,
-  },
-  aiFeatureCard: {
-    flexDirection: 'row',
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md,
-    padding: Spacing.base,
-    gap: Spacing.base,
-  },
-  aiFeatureIcon: {
-    fontSize: Typography.lg,
-  },
-  aiFeatureContent: {
-    flex: 1,
-  },
-  aiFeatureTitle: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.text,
-    marginBottom: 4,
-  },
-  aiFeatureDesc: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-  },
-  footer: {
-    padding: Spacing.xl,
-    borderTopWidth: 1,
-    borderTopColor: Colors.bgCardBorder,
-  },
-  nextButton: {
-    backgroundColor: Colors.teal,
-    paddingVertical: 18,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-  },
-  nextButtonText: {
-    color: Colors.bg,
-    fontSize: Typography.md,
-    fontWeight: Typography.bold,
-  },
-});

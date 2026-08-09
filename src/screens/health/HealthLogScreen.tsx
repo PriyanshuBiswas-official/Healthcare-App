@@ -9,8 +9,8 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
-import { GlassCardView } from '../../components/SharedComponents';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { usePreferences } from '../../providers/PreferencesContext';
 import { saveMoodLog } from '../../services/healthService';
 import { savePeriodLog } from '../../services/healthService';
@@ -18,6 +18,7 @@ import { saveDischargeLog } from '../../services/healthService';
 import { saveSymptomsLog } from '../../services/healthService';
 import { saveSleepLog } from '../../services/healthService';
 import { getPeriodLogs } from '../../services/healthService';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 
 export interface HealthLogDraft {
   createdAt: string;
@@ -91,6 +92,7 @@ const SEVERITY_OPTIONS = [
 ];
 
 export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScreenProps) {
+  const { theme } = useTheme();
   const { hideVitals } = usePreferences();
   const [mood, setMood] = useState('Okay');
   const [energyLevel, setEnergyLevel] = useState('Medium');
@@ -118,6 +120,147 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
   const [bloodPressure, setBloodPressure] = useState('120/80');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const s = useStyles((t) => StyleSheet.create({
+    root: { flex: 1, backgroundColor: t.colors.bg },
+    scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl },
+    header: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.xl },
+    headerCopy: { flex: 1, marginLeft: Spacing.md },
+    title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: t.colors.textPrimary },
+    subtitle: { fontSize: Typography.sm, color: t.colors.textMuted, marginTop: 2 },
+    card: { padding: Spacing.base, marginBottom: Spacing.base },
+    sectionTitle: { fontSize: Typography.md, color: t.colors.textPrimary, fontWeight: Typography.bold, marginBottom: Spacing.md },
+    moodRow: { flexDirection: 'row', gap: Spacing.sm },
+    moodBtn: {
+      flex: 1,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.md,
+      paddingVertical: Spacing.sm,
+      backgroundColor: t.colors.bgCard,
+    },
+    moodBtnActive: { borderColor: t.colors.pink, backgroundColor: t.colors.pink + '18' },
+    moodEmoji: { fontSize: Typography.xl, marginBottom: 3 },
+    moodLabel: { fontSize: Typography.xs, color: t.colors.textMuted, fontWeight: Typography.semiBold },
+    moodLabelActive: { color: t.colors.pink },
+    fieldLabel: { fontSize: Typography.xs, color: t.colors.textMuted, fontWeight: Typography.semiBold, marginBottom: Spacing.sm },
+    segmentRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg },
+    segment: {
+      flex: 1,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.full,
+      paddingVertical: Spacing.sm,
+      backgroundColor: t.colors.bgCard,
+    },
+    segmentActive: { borderColor: t.colors.pink, backgroundColor: t.colors.pink + '18' },
+    segmentText: { fontSize: Typography.xs, color: t.colors.textSecondary, fontWeight: Typography.semiBold },
+    segmentTextActive: { color: t.colors.pink },
+    hintText: { fontSize: Typography.xs, color: t.colors.textMuted, marginTop: Spacing.sm, marginBottom: Spacing.md },
+    horizontalChips: { gap: Spacing.sm, paddingRight: Spacing.base },
+    pill: {
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.full,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      backgroundColor: t.colors.bgCard,
+    },
+    pillActive: { borderColor: t.colors.accentBlue, backgroundColor: t.colors.accentBlue + '18' },
+    pillText: { fontSize: Typography.xs, color: t.colors.textSecondary, fontWeight: Typography.semiBold },
+    pillTextActive: { color: t.colors.accentBlue },
+    rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    countText: { fontSize: Typography.xs, color: t.colors.textMuted, fontWeight: Typography.semiBold, marginBottom: Spacing.md },
+    symptomGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+    symptomChip: {
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.full,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      backgroundColor: t.colors.bgCard,
+    },
+    symptomChipActive: { borderColor: t.colors.pink, backgroundColor: t.colors.pink + '18' },
+    symptomText: { fontSize: Typography.xs, color: t.colors.textSecondary, fontWeight: Typography.semiBold },
+    symptomTextActive: { color: t.colors.pink },
+    symptomSeverityRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: Spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: t.colors.bgCardBorder,
+    },
+    symptomSeverityLabel: { fontSize: Typography.sm, color: t.colors.textPrimary, fontWeight: Typography.semiBold },
+    symptomSeverityChips: { flexDirection: 'row', gap: Spacing.xs },
+    severityChip: {
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.full,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 4,
+    },
+    severityChipActive: { borderColor: t.colors.pink, backgroundColor: t.colors.pink + '18' },
+    severityChipText: { fontSize: Typography.xs, color: t.colors.textSecondary, fontWeight: Typography.semiBold },
+    severityChipTextActive: { color: t.colors.pink },
+    inputRow: { flexDirection: 'row', gap: Spacing.md },
+    inputGroup: { flex: 1 },
+    input: {
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      backgroundColor: t.colors.bgCard,
+      color: t.colors.textPrimary,
+      fontSize: Typography.base,
+    },
+    qualityRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+    qualityChip: {
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.full,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 7,
+    },
+    qualityChipActive: { borderColor: t.colors.accentBlue, backgroundColor: t.colors.accentBlue + '18' },
+    qualityText: { fontSize: Typography.xs, color: t.colors.textSecondary, fontWeight: Typography.semiBold },
+    qualityTextActive: { color: t.colors.accentBlue },
+    notesInput: { minHeight: 110, textAlignVertical: 'top' },
+    toggleRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: Spacing.md,
+    },
+    toggle: {
+      width: 48,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: t.colors.bgCardBorder,
+      justifyContent: 'center',
+      padding: 2,
+    },
+    toggleActive: { backgroundColor: t.colors.pink },
+    toggleKnob: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: t.colors.textMuted,
+    },
+    toggleKnobActive: { alignSelf: 'flex-end', backgroundColor: t.colors.bg },
+    saveBtn: {
+      backgroundColor: t.colors.pink,
+      borderRadius: Radius.full,
+      paddingVertical: Spacing.base,
+      alignItems: 'center',
+      marginTop: Spacing.sm,
+    },
+    saveText: { color: t.colors.bg, fontSize: Typography.base, fontWeight: Typography.bold },
+    bottomSpace: { height: 48 },
+  }));
 
   const toggleSymptom = (symptom: string) => {
     setSymptoms(prev => {
@@ -179,9 +322,6 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
       notes,
     };
 
-    // Always call local save callback for immediate UI feedback
-    onSave?.(draft);
-
     // If token available, persist to backend
     if (token) {
       setSaving(true);
@@ -228,16 +368,18 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
       }
     }
 
+    // Call local save callback AFTER backend persist so re-fetch gets fresh data
+    onSave?.(draft);
+
     if (!onSave) onBack();
   };
 
   return (
     <View style={s.root}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+
         <View style={s.header}>
-          <TouchableOpacity style={s.backBtn} onPress={onBack} activeOpacity={0.8}>
-            <Text style={s.backText}>‹</Text>
-          </TouchableOpacity>
+          <BackButton onPress={onBack} color={theme.colors.textPrimary} />
           <View style={s.headerCopy}>
             <Text style={s.title}>Log Health</Text>
             <Text style={s.subtitle}>Today&apos;s cycle, mood, sleep and vitals</Text>
@@ -416,8 +558,8 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
                   <TouchableOpacity
                     key={item}
                     onPress={() => setTexture(item)}
-                    style={[s.pill, texture === item && { borderColor: Colors.teal, backgroundColor: Colors.teal + '18' }]}>
-                    <Text style={[s.pillText, texture === item && { color: Colors.teal }]}>{item}</Text>
+                    style={[s.pill, texture === item && { borderColor: theme.colors.teal, backgroundColor: theme.colors.teal + '18' }]}>
+                    <Text style={[s.pillText, texture === item && { color: theme.colors.teal }]}>{item}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -428,8 +570,8 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
                   <TouchableOpacity
                     key={item}
                     onPress={() => setDischargeColor(item)}
-                    style={[s.pill, dischargeColor === item && { borderColor: Colors.amber, backgroundColor: Colors.amber + '18' }]}>
-                    <Text style={[s.pillText, dischargeColor === item && { color: Colors.amber }]}>{item}</Text>
+                    style={[s.pill, dischargeColor === item && { borderColor: theme.colors.amber, backgroundColor: theme.colors.amber + '18' }]}>
+                    <Text style={[s.pillText, dischargeColor === item && { color: theme.colors.amber }]}>{item}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -519,7 +661,7 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
                 onChangeText={setSleepHours}
                 keyboardType="decimal-pad"
                 placeholder="7.5"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={theme.colors.textMuted}
                 style={s.input}
               />
             </View>
@@ -550,7 +692,7 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
                 onChangeText={setHeartRate}
                 keyboardType="numeric"
                 placeholder="72"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={theme.colors.textMuted}
                 style={s.input}
               />
             </View>
@@ -560,7 +702,7 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
                 value={bloodPressure}
                 onChangeText={setBloodPressure}
                 placeholder="120/80"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={theme.colors.textMuted}
                 style={s.input}
               />
             </View>
@@ -575,14 +717,14 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
             onChangeText={setNotes}
             multiline
             placeholder="Anything you want to remember about today?"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={theme.colors.textMuted}
             style={[s.input, s.notesInput]}
           />
         </GlassCardView>
 
         <TouchableOpacity style={s.saveBtn} onPress={handleSave} activeOpacity={0.85} disabled={saving}>
           {saving ? (
-            <ActivityIndicator color={Colors.bg} />
+            <ActivityIndicator color={theme.colors.bg} />
           ) : (
             <Text style={s.saveText}>Save log</Text>
           )}
@@ -592,155 +734,3 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
     </View>
   );
 }
-
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.xl },
-  backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.bgCard,
-  },
-  backText: { color: Colors.textPrimary, fontSize: Typography.display, lineHeight: 34 },
-  headerCopy: { flex: 1, marginLeft: Spacing.md },
-  title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary },
-  subtitle: { fontSize: Typography.sm, color: Colors.textMuted, marginTop: 2 },
-  card: { padding: Spacing.base, marginBottom: Spacing.base },
-  sectionTitle: { fontSize: Typography.md, color: Colors.textPrimary, fontWeight: Typography.bold, marginBottom: Spacing.md },
-  moodRow: { flexDirection: 'row', gap: Spacing.sm },
-  moodBtn: {
-    flex: 1,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.bgCard,
-  },
-  moodBtnActive: { borderColor: Colors.pink, backgroundColor: Colors.pink + '18' },
-  moodEmoji: { fontSize: Typography.xl, marginBottom: 3 },
-  moodLabel: { fontSize: Typography.xs, color: Colors.textMuted, fontWeight: Typography.semiBold },
-  moodLabelActive: { color: Colors.pink },
-  fieldLabel: { fontSize: Typography.xs, color: Colors.textMuted, fontWeight: Typography.semiBold, marginBottom: Spacing.sm },
-  segmentRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg },
-  segment: {
-    flex: 1,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.full,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.bgCard,
-  },
-  segmentActive: { borderColor: Colors.pink, backgroundColor: Colors.pink + '18' },
-  segmentText: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: Typography.semiBold },
-  segmentTextActive: { color: Colors.pink },
-  hintText: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: Spacing.sm, marginBottom: Spacing.md },
-  horizontalChips: { gap: Spacing.sm, paddingRight: Spacing.base },
-  pill: {
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.bgCard,
-  },
-  pillActive: { borderColor: Colors.purple, backgroundColor: Colors.purple + '18' },
-  pillText: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: Typography.semiBold },
-  pillTextActive: { color: Colors.purple },
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  countText: { fontSize: Typography.xs, color: Colors.textMuted, fontWeight: Typography.semiBold, marginBottom: Spacing.md },
-  symptomGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  symptomChip: {
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.bgCard,
-  },
-  symptomChipActive: { borderColor: Colors.pink, backgroundColor: Colors.pink + '18' },
-  symptomText: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: Typography.semiBold },
-  symptomTextActive: { color: Colors.pink },
-  symptomSeverityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.bgCardBorder,
-  },
-  symptomSeverityLabel: { fontSize: Typography.sm, color: Colors.textPrimary, fontWeight: Typography.semiBold },
-  symptomSeverityChips: { flexDirection: 'row', gap: Spacing.xs },
-  severityChip: {
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-  },
-  severityChipActive: { borderColor: Colors.pink, backgroundColor: Colors.pink + '18' },
-  severityChipText: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: Typography.semiBold },
-  severityChipTextActive: { color: Colors.pink },
-  inputRow: { flexDirection: 'row', gap: Spacing.md },
-  inputGroup: { flex: 1 },
-  input: {
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.bgCard,
-    color: Colors.textPrimary,
-    fontSize: Typography.base,
-  },
-  qualityRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  qualityChip: {
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 7,
-  },
-  qualityChipActive: { borderColor: Colors.purple, backgroundColor: Colors.purple + '18' },
-  qualityText: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: Typography.semiBold },
-  qualityTextActive: { color: Colors.purple },
-  notesInput: { minHeight: 110, textAlignVertical: 'top' },
-  toggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  toggle: {
-    width: 48,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.bgCardBorder,
-    justifyContent: 'center',
-    padding: 2,
-  },
-  toggleActive: { backgroundColor: Colors.pink },
-  toggleKnob: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: Colors.textMuted,
-  },
-  toggleKnobActive: { alignSelf: 'flex-end', backgroundColor: Colors.bg },
-  saveBtn: {
-    backgroundColor: Colors.pink,
-    borderRadius: Radius.full,
-    paddingVertical: Spacing.base,
-    alignItems: 'center',
-    marginTop: Spacing.sm,
-  },
-  saveText: { color: Colors.bg, fontSize: Typography.base, fontWeight: Typography.bold },
-  bottomSpace: { height: 48 },
-});

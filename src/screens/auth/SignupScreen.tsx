@@ -6,7 +6,8 @@ import { supabase } from '../../lib/supabase';
 import { GoogleSignin } from '../../lib/googleSignin';
 import { API_BASE_URL } from '../../config/api';
 import { useAuth } from '../../providers/AuthProvider';
-import { Colors, Typography } from '../../theme/theme';
+import { Typography } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -22,6 +23,7 @@ const SignupScreen = () => {
   const navigation = useNavigation<SignupScreenProp>();
   const route = useRoute<SignupRouteProp>();
   const { checkProfile } = useAuth();
+  const { theme } = useTheme();
   const onboardingData = route.params?.onboardingData;
 
   const [email, setEmail] = useState('');
@@ -110,6 +112,9 @@ const SignupScreen = () => {
     try {
       setLoading(true);
       await GoogleSignin.hasPlayServices();
+      // Always sign out first so the account picker is shown even if a
+      // Google account was previously cached on this device.
+      try { await GoogleSignin.signOut(); } catch (_) {}
       const { data } = await GoogleSignin.signIn();
       const idToken = data?.idToken;
 
@@ -149,6 +154,52 @@ const SignupScreen = () => {
     }
   };
 
+  const styles = useStyles((theme) => ({
+    container: { flex: 1, backgroundColor: theme.colors.bgAuth },
+    content: { flex: 1, padding: 24, justifyContent: 'center' },
+    title: { fontSize: Typography.xxl, fontWeight: Typography.bold, marginBottom: 32, textAlign: 'center', color: theme.colors.white, letterSpacing: Typography.lsTight },
+    inputContainer: { marginBottom: 20 },
+    inputLabel: { fontSize: Typography.xs, fontWeight: Typography.medium, color: theme.colors.textInputLabel, marginBottom: 8, marginLeft: 2 },
+    input: {
+      borderWidth: 1,
+      borderColor: theme.colors.inputBorder,
+      padding: 16,
+      borderRadius: 12,
+      fontSize: Typography.base,
+      color: theme.colors.white,
+      backgroundColor: theme.colors.bgInput,
+    },
+    hintText: { fontSize: Typography.sm, color: theme.colors.textHint, marginTop: 6, marginLeft: 2 },
+    button: {
+      backgroundColor: theme.colors.blue,
+      paddingVertical: 18,
+      borderRadius: 16,
+      alignItems: 'center',
+      marginTop: 16,
+      shadowColor: theme.colors.blue,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 5,
+    },
+    buttonText: { color: theme.colors.white, fontSize: Typography.base, fontWeight: Typography.semiBold },
+    linkButton: { marginTop: 24, alignItems: 'center' },
+    linkText: { color: theme.colors.textHint, fontSize: Typography.base, fontWeight: Typography.medium },
+    dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 32 },
+    divider: { flex: 1, height: 1, backgroundColor: theme.colors.inputBorder },
+    dividerText: { marginHorizontal: 16, color: theme.colors.textPlaceholder, fontSize: Typography.xs, fontWeight: Typography.medium },
+    socialContainer: { gap: 12 },
+    socialButton: {
+      borderWidth: 1,
+      borderColor: theme.colors.inputBorder,
+      backgroundColor: theme.colors.bgInput,
+      paddingVertical: 16,
+      borderRadius: 16,
+      alignItems: 'center',
+    },
+    socialButtonText: { fontSize: Typography.base, color: theme.colors.textInputLabel, fontWeight: Typography.medium },
+  }));
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -159,7 +210,7 @@ const SignupScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Enter your email"
-            placeholderTextColor={Colors.textPlaceholder}
+            placeholderTextColor={theme.colors.textPlaceholder}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -172,7 +223,7 @@ const SignupScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Enter your password"
-            placeholderTextColor={Colors.textPlaceholder}
+            placeholderTextColor={theme.colors.textPlaceholder}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -209,51 +260,5 @@ const SignupScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bgAuth },
-  content: { flex: 1, padding: 24, justifyContent: 'center' },
-  title: { fontSize: Typography.xxl, fontWeight: Typography.bold, marginBottom: 32, textAlign: 'center', color: Colors.white, letterSpacing: Typography.lsTight },
-  inputContainer: { marginBottom: 20 },
-  inputLabel: { fontSize: Typography.xs, fontWeight: Typography.medium, color: Colors.textInputLabel, marginBottom: 8, marginLeft: 2 },
-  input: {
-    borderWidth: 1,
-    borderColor: Colors.inputBorder,
-    padding: 16,
-    borderRadius: 12,
-    fontSize: Typography.base,
-    color: Colors.white,
-    backgroundColor: Colors.bgInput,
-  },
-  hintText: { fontSize: Typography.sm, color: Colors.textHint, marginTop: 6, marginLeft: 2 },
-  button: {
-    backgroundColor: Colors.blue,
-    paddingVertical: 18,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: 16,
-    shadowColor: Colors.blue,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  buttonText: { color: Colors.white, fontSize: Typography.base, fontWeight: Typography.semiBold },
-  linkButton: { marginTop: 24, alignItems: 'center' },
-  linkText: { color: Colors.textHint, fontSize: Typography.base, fontWeight: Typography.medium },
-  dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 32 },
-  divider: { flex: 1, height: 1, backgroundColor: Colors.inputBorder },
-  dividerText: { marginHorizontal: 16, color: Colors.textPlaceholder, fontSize: Typography.xs, fontWeight: Typography.medium },
-  socialContainer: { gap: 12 },
-  socialButton: {
-    borderWidth: 1,
-    borderColor: Colors.inputBorder,
-    backgroundColor: Colors.bgInput,
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  socialButtonText: { fontSize: Typography.base, color: Colors.textInputLabel, fontWeight: Typography.medium },
-});
 
 export default SignupScreen;

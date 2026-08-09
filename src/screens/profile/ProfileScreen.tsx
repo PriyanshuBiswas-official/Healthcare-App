@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,15 +7,18 @@ import {
   TouchableOpacity,
   Switch,
   Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
-import { ArrowLeft } from 'lucide-react-native';
-import { GlassCardView, SectionHeader, ProgressBar } from '../../components/SharedComponents';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { User, ClipboardList, Pill, TriangleAlert, Phone, Bell, Flower2, Lock, Watch, Smartphone, Droplets, Dumbbell, Building2, Moon, Heart, CircleQuestionMark, Shield, FileText, Info, PenLine, Monitor, Sun, Users, Crown } from 'lucide-react-native';
+import { GlassCardView, SectionHeader, ProgressBar, BackButton } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useAuth } from '../../providers/AuthProvider';
 import { supabase } from '../../lib/supabase';
 import { usePreferences } from '../../providers/PreferencesContext';
-import { useTheme } from '../../providers/ThemeProvider';
 import { API_BASE_URL } from '../../config/api';
 import PersonalInfoScreen from './PersonalInfoScreen';
 import MedicalHistoryScreen from './MedicalHistoryScreen';
@@ -28,11 +31,18 @@ import AppointmentsRemindersScreen from '../reminders/AppointmentsRemindersScree
 import SleepRemindersScreen from '../reminders/SleepRemindersScreen';
 import HealthRemindersScreen from '../reminders/HealthRemindersScreen';
 import MedicationsRemindersScreen from '../reminders/MedicationsRemindersScreen';
+import ManageSubscriptionsScreen from './ManageSubscriptionsScreen';
+import OffboardingReasonScreen from '../offboarding/ReasonScreen';
+import OffboardingFeedbackScreen from '../offboarding/FeedbackScreen';
+import OffboardingDataExportScreen from '../offboarding/DataExportScreen';
+import OffboardingWarningScreen from '../offboarding/WarningScreen';
+import OffboardingConfirmScreen from '../offboarding/ConfirmScreen';
+import { AppTheme } from '../../theme';
 
-type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency' | 'reminders-medication' | 'reminders-water' | 'reminders-workouts' | 'reminders-appointments' | 'reminders-sleep' | 'reminders-health';
+type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency' | 'reminders-medication' | 'reminders-water' | 'reminders-workouts' | 'reminders-appointments' | 'reminders-sleep' | 'reminders-health' | 'subscriptions' | 'offboarding-reason' | 'offboarding-feedback' | 'offboarding-export' | 'offboarding-warning' | 'offboarding-final';
 
 type MenuItem = {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   sub?: string;
   color?: string;
@@ -55,7 +65,7 @@ interface ProfileData {
   medical_profile?: { allergies?: string; conditions?: string };
 }
 
-function getHealthProfile(profileData: ProfileData | null): MenuItem[] {
+function getHealthProfile(profileData: ProfileData | null, colors: AppTheme['colors']): MenuItem[] {
   const meds = profileData?.medications;
   const medCount = Array.isArray(meds) ? meds.length : 0;
   const allergiesRaw = (profileData as any)?.allergies || (profileData as any)?.medical_profile?.allergies || '';
@@ -64,59 +74,31 @@ function getHealthProfile(profileData: ProfileData | null): MenuItem[] {
     : Array.isArray(allergiesRaw) ? allergiesRaw : [];
 
   return [
-    { icon: '👤', label: 'Personal Information', sub: 'Name, DOB, gender', color: Colors.teal },
-    { icon: '📋', label: 'Medical History', sub: 'Conditions, surgeries', color: Colors.pink },
-    { icon: '💊', label: 'Medications', sub: medCount > 0 ? `${medCount} active prescription${medCount > 1 ? 's' : ''}` : 'No active medications', color: Colors.amber, badge: medCount > 0 ? String(medCount) : undefined },
-    { icon: '⚠️', label: 'Allergies', sub: allergyList.length > 0 ? allergyList.slice(0, 2).join(', ') : 'No allergies recorded', color: Colors.danger },
-    { icon: '🆘', label: 'Emergency Contacts', sub: 'Emergency contacts', color: Colors.purple },
+    { icon: <User size={20} color={colors.teal} />, label: 'Personal Information', sub: 'Name, DOB, gender', color: colors.teal },
+    { icon: <ClipboardList size={20} color={colors.pink} />, label: 'Medical History', sub: 'Conditions, surgeries', color: colors.pink },
+    { icon: <Pill size={20} color={colors.amber} />, label: 'Medications', sub: medCount > 0 ? `${medCount} active prescription${medCount > 1 ? 's' : ''}` : 'No active medications', color: colors.amber, badge: medCount > 0 ? String(medCount) : undefined },
+    { icon: <TriangleAlert size={20} color={colors.danger} />, label: 'Allergies', sub: allergyList.length > 0 ? allergyList.slice(0, 2).join(', ') : 'No allergies recorded', color: colors.danger },
+    { icon: <Phone size={20} color={colors.accentBlue} />, label: 'Emergency Contacts', sub: 'Emergency contacts', color: colors.accentBlue },
   ];
 }
 
-const CONNECTED_DEVICES: MenuItem[] = [
-  { icon: '⌚', label: 'Apple Watch', sub: 'Synced · Last: 2 min ago', color: Colors.teal, badge: 'On' },
-  { icon: '📱', label: 'Health Connect', sub: 'Steps, sleep, heart rate', color: Colors.pink },
-];
-
-const REMINDER_ITEMS: MenuItem[] = [
-  { icon: '💊', label: 'Medications', sub: 'Manage medication reminders', color: Colors.amber },
-  { icon: '💧', label: 'Water Reminders', sub: 'Hydration intake alerts', color: Colors.blue },
-  { icon: '💪', label: 'Workouts', sub: 'Exercise schedule & reminders', color: Colors.pink },
-  { icon: '🏥', label: 'Appointments', sub: 'Upcoming visits & alerts', color: Colors.teal },
-  { icon: '🌙', label: 'Sleep', sub: 'Bedtime & wake reminders', color: Colors.purple },
-  { icon: '❤️', label: 'Health', sub: 'General health reminders', color: Colors.danger },
-];
-
-const PREFERENCES = [
-  { key: 'notifications', icon: '🔔', label: 'Push Notifications', sub: 'Appointments & reminders', default: true },
-  { key: 'reminders', icon: '💊', label: 'Medication Reminders', sub: 'Daily dose alerts', default: true },
-  { key: 'cycle', icon: '🌸', label: 'Cycle Tracking Alerts', sub: 'Phase & fertility updates', default: false },
-  { key: 'biometric', icon: '🔒', label: 'Biometric Lock', sub: 'Face ID / fingerprint', default: true },
-] as const;
-
-const SUPPORT: MenuItem[] = [
-  { icon: '❓', label: 'Help & Support', sub: 'FAQs, chat support' },
-  { icon: '🛡️', label: 'Privacy & Security', sub: 'Data sharing, permissions' },
-  { icon: '📄', label: 'Terms & Policies', sub: 'Legal documents' },
-  { icon: 'ℹ️', label: 'About HealthApp', sub: 'Version 0.0.1' },
-];
-
-function MenuRow({ item, onPress }: { item: MenuItem; onPress?: () => void }) {
-  const accent = item.color ?? Colors.teal;
+function MenuRow({ item, onPress, colors }: { item: MenuItem; onPress?: () => void; colors: AppTheme['colors'] }) {
+  const accent = item.color ?? colors.teal;
   return (
-    <TouchableOpacity style={styles.menuRow} onPress={onPress} activeOpacity={0.7}>
-      <View style={[styles.menuIcon, { backgroundColor: accent + '20' }]}>
-        <Text style={styles.menuIconText}>{item.icon}</Text>
+    <TouchableOpacity style={menuStyles.menuRow} onPress={onPress} activeOpacity={0.7}>
+      <View style={[menuStyles.menuIcon, { backgroundColor: accent + '20' }]}>
+        {item.icon}
       </View>
-      <View style={styles.menuContent}>
-        <Text style={styles.menuLabel}>{item.label}</Text>
-        {item.sub && <Text style={styles.menuSub}>{item.sub}</Text>}
+      <View style={menuStyles.menuContent}>
+        <Text style={[menuStyles.menuLabel, { color: colors.textPrimary }]}>{item.label}</Text>
+        {item.sub && <Text style={[menuStyles.menuSub, { color: colors.textSecondary }]}>{item.sub}</Text>}
       </View>
       {item.badge ? (
-        <View style={[styles.badge, { backgroundColor: accent + '25', borderColor: accent + '50' }]}>
-          <Text style={[styles.badgeText, { color: accent }]}>{item.badge}</Text>
+        <View style={[menuStyles.badge, { backgroundColor: accent + '25', borderColor: accent + '50' }]}>
+          <Text style={[menuStyles.badgeText, { color: accent }]}>{item.badge}</Text>
         </View>
       ) : (
-        <Text style={styles.chevron}>›</Text>
+        <Text style={[menuStyles.chevron, { color: colors.textMuted }]}>›</Text>
       )}
     </TouchableOpacity>
   );
@@ -128,37 +110,89 @@ function ToggleRow({
   sub,
   value,
   onValueChange,
+  colors,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   sub: string;
   value: boolean;
   onValueChange: (v: boolean) => void;
+  colors: AppTheme['colors'];
 }) {
   return (
-    <View style={styles.menuRow}>
-      <View style={[styles.menuIcon, { backgroundColor: Colors.teal + '20' }]}>
-        <Text style={styles.menuIconText}>{icon}</Text>
+    <View style={menuStyles.menuRow}>
+      <View style={[menuStyles.menuIcon, { backgroundColor: colors.teal + '20' }]}>
+        {icon}
       </View>
-      <View style={styles.menuContent}>
-        <Text style={styles.menuLabel}>{label}</Text>
-        <Text style={styles.menuSub}>{sub}</Text>
+      <View style={menuStyles.menuContent}>
+        <Text style={[menuStyles.menuLabel, { color: colors.textPrimary }]}>{label}</Text>
+        <Text style={[menuStyles.menuSub, { color: colors.textSecondary }]}>{sub}</Text>
       </View>
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: Colors.bgCardBorder, true: Colors.teal + '60' }}
-        thumbColor={value ? Colors.teal : Colors.textMuted}
+        trackColor={{ false: colors.bgCardBorder, true: colors.teal + '60' }}
+        thumbColor={value ? colors.teal : colors.textMuted}
       />
     </View>
   );
 }
 
+const menuStyles = StyleSheet.create({
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.md,
+  },
+  menuIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuIconText: { fontSize: Typography.md },
+  menuContent: { flex: 1, marginLeft: Spacing.md },
+  menuLabel: {
+    fontSize: Typography.base,
+    fontWeight: Typography.semiBold,
+  },
+  menuSub: {
+    fontSize: Typography.xs,
+    marginTop: 2,
+  },
+  chevron: {
+    fontSize: Typography.xl,
+    fontWeight: Typography.medium,
+    marginLeft: Spacing.sm,
+  },
+  badge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  badgeText: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.bold,
+  },
+});
+
 export default function ProfileScreen({ onBackPress, onCompleteProfile, initialSection }: { onBackPress?: () => void; onCompleteProfile?: () => void; initialSection?: string | null }) {
+  const { theme } = useTheme();
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion } = useAuth();
   const { hideVitals, setHideVitals, hideCommunitySpotlight, setHideCommunitySpotlight } = usePreferences();
   const { systemSync, setSystemSync, themeName, setThemeName } = useTheme();
+
+  const PREFERENCES = useMemo(() => [
+    { key: 'notifications', icon: <Bell size={20} color="#F59E0B" />, label: 'Push Notifications', sub: 'Appointments & reminders', default: true },
+    { key: 'reminders', icon: <Pill size={20} color="#EC4899" />, label: 'Medication Reminders', sub: 'Daily dose alerts', default: true },
+    { key: 'cycle', icon: <Flower2 size={20} color="#EC4899" />, label: 'Cycle Tracking Alerts', sub: 'Phase & fertility updates', default: false },
+    { key: 'biometric', icon: <Lock size={20} color="#14B8A6" />, label: 'Biometric Lock', sub: 'Face ID / fingerprint', default: true },
+  ] as const, []);
+
   const [toggles, setToggles] = useState(
     Object.fromEntries(PREFERENCES.map(p => [p.key, p.default])) as Record<string, boolean>,
   );
@@ -167,6 +201,283 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
     initialSection as HealthSection | null
   );
   const cameFromExternal = !!initialSection;
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [offboardingReason, setOffboardingReason] = useState<string | null>(null);
+  const [offboardingFeedback, setOffboardingFeedback] = useState('');
+
+  const appVersion = require('../../../package.json').version as string;
+
+  const healthProfile = useMemo(() => getHealthProfile(profileData, theme.colors), [profileData, theme.colors]);
+
+  const styles = useStyles((t) => ({
+    root: { flex: 1, backgroundColor: t.colors.bg },
+    scroll: {
+      paddingHorizontal: Spacing.base,
+      paddingTop: Spacing.xl,
+      paddingBottom: 120,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: Spacing.xl,
+    },
+    backPlaceholder: { width: 40 },
+    backIcon: { fontSize: Typography.lg, color: t.colors.textPrimary },
+    pageTitle: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+    },
+    profileCard: { padding: Spacing.lg, marginBottom: Spacing.lg },
+    profileRow: { flexDirection: 'row', alignItems: 'center' },
+    avatar: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: t.colors.teal + '30',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    avatarImage: {
+      width: 68,
+      height: 68,
+      borderRadius: 34,
+    },
+    avatarText: {
+      fontSize: Typography.xl,
+      fontWeight: Typography.extraBold,
+      color: t.colors.teal,
+    },
+    profileInfo: { flex: 1, marginLeft: Spacing.base },
+    name: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.extraBold,
+      color: t.colors.textPrimary,
+      letterSpacing: -0.3,
+    },
+    email: {
+      fontSize: Typography.sm,
+      color: t.colors.textSecondary,
+      marginTop: 2,
+    },
+    memberBadge: {
+      alignSelf: 'flex-start',
+      paddingHorizontal: Spacing.sm + 2,
+      paddingVertical: 3,
+      borderRadius: Radius.full,
+      backgroundColor: t.colors.teal + '20',
+      borderWidth: 1,
+      borderColor: t.colors.teal + '50',
+    },
+    memberBadgeText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.semiBold,
+      color: t.colors.teal,
+      letterSpacing: Typography.lsWide,
+    },
+    upgradeBtn: {
+      paddingHorizontal: Spacing.sm + 2,
+      paddingVertical: 3,
+      borderRadius: Radius.full,
+      backgroundColor: t.colors.amber + '20',
+    },
+    upgradeBtnText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.semiBold,
+      color: t.colors.amber,
+      letterSpacing: Typography.lsWide,
+    },
+    profileMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: Spacing.base,
+      paddingTop: Spacing.base,
+      borderTopWidth: 1,
+      borderTopColor: t.colors.divider,
+    },
+    metaItem: { fontSize: Typography.xs, color: t.colors.textSecondary },
+    statsRow: {
+      flexDirection: 'row',
+      paddingVertical: Spacing.sm + 2,
+      paddingHorizontal: Spacing.base,
+      marginBottom: Spacing.xl,
+    },
+    statItem: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    statValue: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+    },
+    statLabel: {
+      fontSize: Typography.xs,
+      color: t.colors.textSecondary,
+      marginTop: 2,
+    },
+    statDivider: {
+      width: 1,
+      height: '80%',
+      backgroundColor: t.colors.divider,
+      position: 'absolute',
+      right: 0,
+    },
+    completeCard: {
+      backgroundColor: t.colors.bgCard,
+      borderWidth: 1,
+      borderColor: t.colors.teal + '40',
+      borderRadius: Radius.lg,
+      padding: Spacing.lg,
+      marginBottom: Spacing.xl,
+    },
+    completeCardInner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: Spacing.md,
+    },
+    completeCardLeft: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    completeCardIcon: {
+      marginRight: Spacing.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    completeCardTextWrap: {
+      flex: 1,
+    },
+    completeCardTitle: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: t.colors.textPrimary,
+    },
+    completeCardSub: {
+      fontSize: Typography.xs,
+      color: t.colors.textSecondary,
+      marginTop: 2,
+    },
+    completeCardProgress: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    completeCardPercent: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+      color: t.colors.teal,
+      marginLeft: Spacing.sm,
+      minWidth: 30,
+    },
+    menuCard: { paddingVertical: Spacing.xs, marginBottom: Spacing.xl },
+    divider: {
+      height: 1,
+      backgroundColor: t.colors.divider,
+      marginLeft: 68,
+    },
+    logoutBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.lg,
+      backgroundColor: t.colors.bgCard,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      marginBottom: Spacing.md,
+    },
+    logoutIcon: { fontSize: Typography.base, marginRight: Spacing.sm },
+    logoutText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: t.colors.textSecondary,
+    },
+    deleteBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.lg,
+      backgroundColor: t.colors.danger + '15',
+      borderWidth: 1,
+      borderColor: t.colors.danger + '30',
+      marginBottom: Spacing.lg,
+    },
+    deleteBtnText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: t.colors.danger,
+    },
+    chevron: {
+      fontSize: Typography.xl,
+      fontWeight: Typography.medium,
+      marginLeft: Spacing.sm,
+    },
+    version: {
+      textAlign: 'center',
+      fontSize: Typography.xs,
+      color: t.colors.textMuted,
+      marginBottom: Spacing.base,
+    },
+    themeChipRow: {
+      flexDirection: 'row',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.sm,
+      paddingHorizontal: Spacing.xs,
+    },
+    themeChip: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.md,
+      backgroundColor: t.colors.bgCardBorder + '30',
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+    },
+    themeChipActive: {
+      backgroundColor: t.colors.teal + '20',
+      borderColor: t.colors.teal + '60',
+    },
+    themeChipIcon: {
+      marginBottom: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    themeChipText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.semiBold,
+      color: t.colors.textSecondary,
+    },
+    themeChipTextActive: {
+      color: t.colors.teal,
+    },
+  }));
+
+  const CONNECTED_DEVICES: MenuItem[] = useMemo(() => [
+    { icon: <Watch size={20} color={theme.colors.teal} />, label: 'Apple Watch', sub: 'Synced · Last: 2 min ago', color: theme.colors.teal, badge: 'On' },
+    { icon: <Smartphone size={20} color={theme.colors.pink} />, label: 'Health Connect', sub: 'Steps, sleep, heart rate', color: theme.colors.pink },
+  ], [theme.colors]);
+
+  const REMINDER_ITEMS: MenuItem[] = useMemo(() => [
+    { icon: <Pill size={20} color={theme.colors.amber} />, label: 'Medications', sub: 'Manage medication reminders', color: theme.colors.amber },
+    { icon: <Droplets size={20} color={theme.colors.blue} />, label: 'Water Reminders', sub: 'Hydration intake alerts', color: theme.colors.blue },
+    { icon: <Dumbbell size={20} color={theme.colors.pink} />, label: 'Workouts', sub: 'Exercise schedule & reminders', color: theme.colors.pink },
+    { icon: <Building2 size={20} color={theme.colors.teal} />, label: 'Appointments', sub: 'Upcoming visits & alerts', color: theme.colors.teal },
+    { icon: <Moon size={20} color={theme.colors.accentBlue} />, label: 'Sleep', sub: 'Bedtime & wake reminders', color: theme.colors.accentBlue },
+    { icon: <Heart size={20} color={theme.colors.danger} />, label: 'Health', sub: 'General health reminders', color: theme.colors.danger },
+  ], [theme.colors]);
+
+  const SUPPORT: MenuItem[] = useMemo(() => [
+    { icon: <Crown size={20} color="#F59E0B" />, label: 'Manage Subscriptions', sub: 'Plans & billing' },
+    { icon: <CircleQuestionMark size={20} color="#14B8A6" />, label: 'Help & Support', sub: 'FAQs, chat support' },
+    { icon: <Shield size={20} color="#3B82F6" />, label: 'Privacy & Security', sub: 'Data sharing, permissions' },
+    { icon: <FileText size={20} color="#F59E0B" />, label: 'Terms & Policies', sub: 'Legal documents' },
+    { icon: <Info size={20} color="#6B8AFF" />, label: 'About Cureto', sub: `Version ${appVersion}` },
+  ], [appVersion]);
 
   // Handle initialSection changes (from notification taps)
   useEffect(() => {
@@ -220,11 +531,25 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
     setToggles(prev => ({ ...prev, [key]: value }));
 
   const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      const { GoogleSignin } = require('../../lib/googleSignin');
+      const isSignedIn = await GoogleSignin.isSignedIn();
+      if (isSignedIn) {
+        try {
+          await GoogleSignin.revokeAccess();
+        } catch (_) { }
+        await GoogleSignin.signOut();
+      }
+    } catch (e) {
+      console.warn('[ProfileScreen] Google sign-out error:', e);
+    }
     try {
       await supabase.auth.signOut();
     } catch (e) {
-      console.warn('[ProfileScreen] Logout error:', e);
+      console.warn('[ProfileScreen] Supabase sign-out error:', e);
     }
+    setLoggingOut(false);
   };
 
   return (
@@ -299,442 +624,312 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
               onSaved={fetchProfile}
             />
           )}
+          {activeSection === 'subscriptions' && (
+            <ManageSubscriptionsScreen
+              onBack={handleSubScreenBack}
+            />
+          )}
+          {activeSection === 'offboarding-reason' && (
+            <OffboardingReasonScreen
+              onBack={() => setActiveSection(null)}
+              onNext={(reason) => { setOffboardingReason(reason); setActiveSection('offboarding-feedback'); }}
+              step={0}
+              totalSteps={5}
+            />
+          )}
+          {activeSection === 'offboarding-feedback' && (
+            <OffboardingFeedbackScreen
+              onBack={() => setActiveSection('offboarding-reason')}
+              onNext={(feedback) => { setOffboardingFeedback(feedback); setActiveSection('offboarding-export'); }}
+              onSkip={() => setActiveSection('offboarding-export')}
+              step={1}
+              totalSteps={5}
+            />
+          )}
+          {activeSection === 'offboarding-export' && (
+            <OffboardingDataExportScreen
+              onBack={() => setActiveSection('offboarding-feedback')}
+              onNext={() => setActiveSection('offboarding-warning')}
+              onSkip={() => setActiveSection('offboarding-warning')}
+              step={2}
+              totalSteps={5}
+            />
+          )}
+          {activeSection === 'offboarding-warning' && (
+            <OffboardingWarningScreen
+              onBack={() => setActiveSection('offboarding-export')}
+              onNext={() => setActiveSection('offboarding-final')}
+              step={3}
+              totalSteps={5}
+            />
+          )}
+          {activeSection === 'offboarding-final' && (
+            <OffboardingConfirmScreen
+              onBack={() => setActiveSection('offboarding-warning')}
+              onDelete={() => { setActiveSection(null); Alert.alert('Account Deleted', 'This is a simulated feature. Your account has not been deleted.'); }}
+              step={4}
+              totalSteps={5}
+            />
+          )}
         </>
       ) : (
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
-        onScroll={onScroll}
-        scrollEventThrottle={16}>
-        <View style={styles.topBar}>
-          {onBackPress ? (
-            <TouchableOpacity style={styles.backBtn} onPress={onBackPress} activeOpacity={0.7}>
-              <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.backPlaceholder} />
-          )}
-          <Text style={styles.pageTitle}>Profile</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scroll}
+            onScroll={onScroll}
+            scrollEventThrottle={16}>
 
-        <GlassCardView style={styles.profileCard} accentColor={Colors.teal}>
-          <View style={styles.profileRow}>
-            <View style={styles.avatar}>
-              {avatarUrl ? (
-                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+            <View style={styles.topBar}>
+              {onBackPress ? (
+                <BackButton onPress={onBackPress} color={theme.colors.textPrimary} />
               ) : (
-                <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
+                <View style={styles.backPlaceholder} />
               )}
+              <Text style={styles.pageTitle}>Profile</Text>
+              <View style={{ width: 40 }} />
             </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.name}>{displayName}</Text>
-              <Text style={styles.email}>{displayEmail}</Text>
-              <View style={styles.memberBadge}>
-                <Text style={styles.memberBadgeText}>Free Account</Text>
+
+            <GlassCardView style={styles.profileCard} accentColor={theme.colors.teal}>
+            <View style={styles.profileRow}>
+              <View style={styles.avatar}>
+                {avatarUrl ? (
+                  <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+                ) : (
+                  <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
+                )}
               </View>
-            </View>
-          </View>
-          <View style={styles.profileMeta}>
-            <Text style={styles.metaItem}>Health Score 78</Text>
-          </View>
-        </GlassCardView>
-
-        <GlassCardView style={styles.statsRow}>
-          {healthStats.map((stat, i) => (
-            <View key={stat.label} style={styles.statItem}>
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-              {i < healthStats.length - 1 && <View style={styles.statDivider} />}
-            </View>
-          ))}
-        </GlassCardView>
-
-        {percentage < 100 && (
-          <>
-            <SectionHeader title="Complete Your Profile" subtitle={`${percentage}% completed`} />
-            <TouchableOpacity
-              style={styles.completeCard}
-              onPress={() => onCompleteProfile?.()}
-              activeOpacity={0.7}>
-              <View style={styles.completeCardInner}>
-                <View style={styles.completeCardLeft}>
-                  <Text style={styles.completeCardIcon}>📝</Text>
-                  <View style={styles.completeCardTextWrap}>
-                    <Text style={styles.completeCardTitle}>Set Up Your Profile</Text>
-                    <Text style={styles.completeCardSub}>
-                      {percentage === 0
-                        ? 'Fill in your health details for a better experience'
-                        : `${6 - Math.round(percentage / 100 * 6)} sections remaining`}
-                    </Text>
+              <View style={styles.profileInfo}>
+                <Text style={styles.name}>{displayName}</Text>
+                <Text style={styles.email}>{displayEmail}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.sm, minHeight: 22 }}>
+                  <View style={styles.memberBadge}>
+                    <Text style={styles.memberBadgeText}>Free Account</Text>
                   </View>
+                  <TouchableOpacity
+                    style={styles.upgradeBtn}
+                    activeOpacity={0.7}
+                    onPress={() => setActiveSection('subscriptions')}
+                  >
+                    <Text style={styles.upgradeBtnText}>Upgrade Plan</Text>
+                  </TouchableOpacity>
                 </View>
-                <Text style={styles.chevron}>›</Text>
               </View>
-              <View style={styles.completeCardProgress}>
-                <ProgressBar progress={percentage / 100} color={Colors.teal} height={4} />
-                <Text style={styles.completeCardPercent}>{percentage}%</Text>
+            </View>
+          </GlassCardView>
+
+          <GlassCardView style={styles.statsRow}>
+            {healthStats.map((stat, i) => (
+              <View key={stat.label} style={styles.statItem}>
+                <Text style={styles.statValue}>{stat.value}</Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+                {i < healthStats.length - 1 && <View style={styles.statDivider} />}
               </View>
-            </TouchableOpacity>
-          </>
-        )}
+            ))}
+          </GlassCardView>
 
-        <SectionHeader title="Health Profile" subtitle="Manage your medical information" />
-        <GlassCardView style={styles.menuCard}>
-          {getHealthProfile(profileData).map((item, i) => (
-            <View key={item.label}>
-              <MenuRow
-                item={item}
-                onPress={() => {
-                  const sectionMap: Record<string, HealthSection> = {
-                    'Personal Information': 'personal',
-                    'Medical History': 'medical',
-                    'Medications': 'medications',
-                    'Allergies': 'allergies',
-                    'Emergency Contacts': 'emergency',
-                  };
-                  setActiveSection(sectionMap[item.label] || null);
-                }}
-              />
-              {i < getHealthProfile(profileData).length - 1 && <View style={styles.divider} />}
-            </View>
-          ))}
-        </GlassCardView>
-
-        <SectionHeader title="Reminders" subtitle="Manage your daily reminders" />
-        <GlassCardView style={styles.menuCard}>
-          {REMINDER_ITEMS.map((item, i) => (
-            <View key={item.label}>
-              <MenuRow
-                item={item}
-                onPress={() => {
-                  const sectionMap: Record<string, HealthSection> = {
-                    'Medications': 'reminders-medication',
-                    'Water Reminders': 'reminders-water',
-                    'Workouts': 'reminders-workouts',
-                    'Appointments': 'reminders-appointments',
-                    'Sleep': 'reminders-sleep',
-                    'Health': 'reminders-health',
-                  };
-                  setActiveSection(sectionMap[item.label] || null);
-                }}
-              />
-              {i < REMINDER_ITEMS.length - 1 && <View style={styles.divider} />}
-            </View>
-          ))}
-        </GlassCardView>
-
-        <SectionHeader title="Connected Devices" subtitle="Sync wearables & health data" />
-        <GlassCardView style={styles.menuCard}>
-          {CONNECTED_DEVICES.map((item, i) => (
-            <View key={item.label}>
-              <MenuRow item={item} />
-              {i < CONNECTED_DEVICES.length - 1 && <View style={styles.divider} />}
-            </View>
-          ))}
-        </GlassCardView>
-
-        <SectionHeader title="Preferences" />
-        <GlassCardView style={styles.menuCard}>
-          {PREFERENCES.map((item, i) => (
-            <View key={item.key}>
-              <ToggleRow
-                icon={item.icon}
-                label={item.label}
-                sub={item.sub}
-                value={toggles[item.key]}
-                onValueChange={v => setToggle(item.key, v)}
-              />
-              {i < PREFERENCES.length - 1 && <View style={styles.divider} />}
-            </View>
-          ))}
-          <View style={styles.divider} />
-          <ToggleRow
-            icon="🎨"
-            label="System Theme Sync"
-            sub="Match device dark/light mode"
-            value={systemSync}
-            onValueChange={setSystemSync}
-          />
-          {!systemSync && (
+          {percentage < 100 && (
             <>
-              <View style={styles.divider} />
-              <ToggleRow
-                icon="🌗"
-                label="Dark Theme"
-                sub="Use dark appearance manually"
-                value={themeName === 'dark'}
-                onValueChange={v => setThemeName(v ? 'dark' : 'light')}
-              />
+              <SectionHeader title="Complete Your Profile" subtitle={`${percentage}% completed`} />
+              <TouchableOpacity
+                style={styles.completeCard}
+                onPress={() => onCompleteProfile?.()}
+                activeOpacity={0.7}>
+                <View style={styles.completeCardInner}>
+                  <View style={styles.completeCardLeft}>
+                    <View style={styles.completeCardIcon}>
+                      <PenLine size={22} color={theme.colors.teal} />
+                    </View>
+                    <View style={styles.completeCardTextWrap}>
+                      <Text style={styles.completeCardTitle}>Set Up Your Profile</Text>
+                      <Text style={styles.completeCardSub}>
+                        {percentage === 0
+                          ? 'Fill in your health details for a better experience'
+                          : `${6 - Math.round(percentage / 100 * 6)} sections remaining`}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.chevron}>›</Text>
+                </View>
+                <View style={styles.completeCardProgress}>
+                  <ProgressBar progress={percentage / 100} color={theme.colors.teal} height={4} />
+                  <Text style={styles.completeCardPercent}>{percentage}%</Text>
+                </View>
+              </TouchableOpacity>
             </>
           )}
-          <View style={styles.divider} />
-          <ToggleRow
-            icon="❤️"
-            label="Hide Vitals"
-            sub="Remove vitals from all health pages"
-            value={hideVitals}
-            onValueChange={setHideVitals}
-          />
-          <View style={styles.divider} />
-          <ToggleRow
-            icon="👥"
-            label="Hide Community Spotlight"
-            sub="Remove community posts from dashboard"
-            value={hideCommunitySpotlight}
-            onValueChange={setHideCommunitySpotlight}
-          />
-        </GlassCardView>
 
-        <SectionHeader title="Support" />
-        <GlassCardView style={styles.menuCard}>
-          {SUPPORT.map((item, i) => (
-            <View key={item.label}>
-              <MenuRow item={item} />
-              {i < SUPPORT.length - 1 && <View style={styles.divider} />}
+          <SectionHeader title="Health Profile" subtitle="Manage your medical information" />
+          <GlassCardView style={styles.menuCard}>
+            {healthProfile.map((item, i) => (
+              <View key={item.label}>
+                <MenuRow
+                  item={item}
+                  colors={theme.colors}
+                  onPress={() => {
+                    const sectionMap: Record<string, HealthSection> = {
+                      'Personal Information': 'personal',
+                      'Medical History': 'medical',
+                      'Medications': 'medications',
+                      'Allergies': 'allergies',
+                      'Emergency Contacts': 'emergency',
+                    };
+                    setActiveSection(sectionMap[item.label] || null);
+                  }}
+                />
+                {i < healthProfile.length - 1 && <View style={styles.divider} />}
+              </View>
+            ))}
+          </GlassCardView>
+
+          <SectionHeader title="Reminders" subtitle="Manage your daily reminders" />
+          <GlassCardView style={styles.menuCard}>
+            {REMINDER_ITEMS.map((item, i) => (
+              <View key={item.label}>
+                <MenuRow
+                  item={item}
+                  colors={theme.colors}
+                  onPress={() => {
+                    const sectionMap: Record<string, HealthSection> = {
+                      'Medications': 'reminders-medication',
+                      'Water Reminders': 'reminders-water',
+                      'Workouts': 'reminders-workouts',
+                      'Appointments': 'reminders-appointments',
+                      'Sleep': 'reminders-sleep',
+                      'Health': 'reminders-health',
+                    };
+                    setActiveSection(sectionMap[item.label] || null);
+                  }}
+                />
+                {i < REMINDER_ITEMS.length - 1 && <View style={styles.divider} />}
+              </View>
+            ))}
+          </GlassCardView>
+
+          <SectionHeader title="Connected Devices" subtitle="Sync wearables & health data" />
+          <GlassCardView style={styles.menuCard}>
+            {CONNECTED_DEVICES.map((item, i) => (
+              <View key={item.label}>
+                <MenuRow item={item} colors={theme.colors} />
+                {i < CONNECTED_DEVICES.length - 1 && <View style={styles.divider} />}
+              </View>
+            ))}
+          </GlassCardView>
+
+          <SectionHeader title="Appearance" subtitle="Choose your app theme" />
+          <GlassCardView style={styles.menuCard}>
+            <View style={styles.themeChipRow}>
+              {([
+                { key: 'system' as const, icon: <Monitor size={18} color={theme.colors.textSecondary} />, label: 'System' },
+                { key: 'dark' as const, icon: <Moon size={18} color={theme.colors.textSecondary} />, label: 'Dark' },
+                { key: 'light' as const, icon: <Sun size={18} color={theme.colors.textSecondary} />, label: 'Light' },
+              ]).map((opt) => {
+                const isActive = opt.key === 'system'
+                  ? systemSync
+                  : !systemSync && themeName === opt.key;
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={[styles.themeChip, isActive && styles.themeChipActive]}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      if (opt.key === 'system') {
+                        setSystemSync(true);
+                      } else {
+                        setSystemSync(false);
+                        setThemeName(opt.key);
+                      }
+                    }}>
+                    <View style={styles.themeChipIcon}>{opt.icon}</View>
+                    <Text style={[styles.themeChipText, isActive && styles.themeChipTextActive]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-          ))}
-        </GlassCardView>
+          </GlassCardView>
 
-        <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8} onPress={handleLogout}>
-          <Text style={styles.logoutIcon}>⏻</Text>
-          <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
+          <SectionHeader title="Preferences" />
+          <GlassCardView style={styles.menuCard}>
+            {PREFERENCES.map((item, i) => (
+              <View key={item.key}>
+                <ToggleRow
+                  icon={item.icon}
+                  label={item.label}
+                  sub={item.sub}
+                  value={toggles[item.key]}
+                  onValueChange={v => setToggle(item.key, v)}
+                  colors={theme.colors}
+                />
+                {i < PREFERENCES.length - 1 && <View style={styles.divider} />}
+              </View>
+            ))}
+            <View style={styles.divider} />
+            <ToggleRow
+              icon={<Heart size={20} color="#EC4899" />}
+              label="Hide Vitals"
+              sub="Remove vitals from all health pages"
+              value={hideVitals}
+              onValueChange={setHideVitals}
+              colors={theme.colors}
+            />
+            <View style={styles.divider} />
+            <ToggleRow
+              icon={<Users size={20} color="#14B8A6" />}
+              label="Hide Community Spotlight"
+              sub="Remove community posts from dashboard"
+              value={hideCommunitySpotlight}
+              onValueChange={setHideCommunitySpotlight}
+              colors={theme.colors}
+            />
+          </GlassCardView>
 
-        <Text style={styles.version}>HealthApp v0.0.1 · Build 1</Text>
-      </ScrollView>
+          <SectionHeader title="Support" />
+          <GlassCardView style={styles.menuCard}>
+            {SUPPORT.map((item, i) => (
+              <View key={item.label}>
+                <MenuRow
+                  item={item}
+                  colors={theme.colors}
+                  onPress={() => {
+                    const sectionMap: Record<string, HealthSection> = {
+                      'Manage Subscriptions': 'subscriptions',
+                    };
+                    if (sectionMap[item.label]) {
+                      setActiveSection(sectionMap[item.label]);
+                    }
+                  }}
+                />
+                {i < SUPPORT.length - 1 && <View style={styles.divider} />}
+              </View>
+            ))}
+          </GlassCardView>
+
+          <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8} onPress={handleLogout}>
+            <Text style={styles.logoutIcon}>⏻</Text>
+            <Text style={styles.logoutText}>Log Out</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.deleteBtn}
+            activeOpacity={0.8}
+            onPress={() => setActiveSection('offboarding-reason')}
+          >
+            <Text style={styles.deleteBtnText}>Delete Account</Text>
+          </TouchableOpacity>
+        </ScrollView>
+        </>
+      )}
+
+      {loggingOut && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
+          <View style={{ backgroundColor: theme.colors.bgCardSolid, borderRadius: Radius.lg, padding: Spacing.xl, alignItems: 'center', gap: Spacing.md }}>
+            <ActivityIndicator size="large" color={theme.colors.danger} />
+            <Text style={{ fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary }}>Signing out...</Text>
+          </View>
+        </View>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  scroll: {
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.xl,
-    paddingBottom: 120,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.xl,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backPlaceholder: { width: 40 },
-  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
-  pageTitle: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  profileCard: { padding: Spacing.lg, marginBottom: Spacing.lg },
-  profileRow: { flexDirection: 'row', alignItems: 'center' },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.teal + '30',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  avatarImage: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-  },
-  avatarText: {
-    fontSize: Typography.xl,
-    fontWeight: Typography.extraBold,
-    color: Colors.teal,
-  },
-  profileInfo: { flex: 1, marginLeft: Spacing.base },
-  name: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.extraBold,
-    color: Colors.textPrimary,
-    letterSpacing: -0.3,
-  },
-  email: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  memberBadge: {
-    alignSelf: 'flex-start',
-    marginTop: Spacing.sm,
-    paddingHorizontal: Spacing.sm + 2,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.teal + '20',
-    borderWidth: 1,
-    borderColor: Colors.teal + '50',
-  },
-  memberBadgeText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.semiBold,
-    color: Colors.teal,
-    letterSpacing: Typography.lsWide,
-  },
-  profileMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: Spacing.base,
-    paddingTop: Spacing.base,
-    borderTopWidth: 1,
-    borderTopColor: Colors.divider,
-  },
-  metaItem: { fontSize: Typography.xs, color: Colors.textSecondary },
-  statsRow: {
-    flexDirection: 'row',
-    paddingVertical: Spacing.sm + 2,
-    paddingHorizontal: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  statLabel: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  statDivider: {
-    width: 1,
-    height: '80%',
-    backgroundColor: Colors.divider,
-    position: 'absolute',
-    right: 0,
-  },
-  completeCard: {
-    ...GlassCard,
-    padding: Spacing.lg,
-    marginBottom: Spacing.xl,
-    borderColor: Colors.teal + '40',
-  },
-  completeCardInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  completeCardLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  completeCardIcon: {
-    fontSize: Typography.xl,
-    marginRight: Spacing.md,
-  },
-  completeCardTextWrap: {
-    flex: 1,
-  },
-  completeCardTitle: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  completeCardSub: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  completeCardProgress: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  completeCardPercent: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.teal,
-    marginLeft: Spacing.sm,
-    minWidth: 30,
-  },
-  menuCard: { paddingVertical: Spacing.xs, marginBottom: Spacing.xl },
-  menuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-  },
-  menuIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  menuIconText: { fontSize: Typography.md },
-  menuContent: { flex: 1, marginLeft: Spacing.md },
-  menuLabel: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-  },
-  menuSub: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  chevron: {
-    fontSize: Typography.xl,
-    color: Colors.textMuted,
-    fontWeight: Typography.medium,
-    marginLeft: Spacing.sm,
-  },
-  badge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-  },
-  badgeText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.divider,
-    marginLeft: 68,
-  },
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.lg,
-    backgroundColor: Colors.danger + '15',
-    borderWidth: 1,
-    borderColor: Colors.danger + '40',
-    marginBottom: Spacing.lg,
-  },
-  logoutIcon: { fontSize: Typography.base, marginRight: Spacing.sm },
-  logoutText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    color: Colors.danger,
-  },
-  version: {
-    textAlign: 'center',
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    marginBottom: Spacing.base,
-  },
-});

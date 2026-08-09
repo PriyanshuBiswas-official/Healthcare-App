@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useColorScheme, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppTheme, ThemeName } from '../theme/types';
-import { darkTheme } from '../theme/theme';
+import { AppTheme, ThemeName, darkTheme, themes } from '../theme';
 
 interface ThemeContextType {
   theme: AppTheme;
@@ -20,26 +19,19 @@ const ThemeContext = createContext<ThemeContextType>({
   setSystemSync: () => {},
 });
 
-export function useTheme() {
+export function useTheme(): ThemeContextType {
   return useContext(ThemeContext);
 }
 
 export function useStyles<T extends StyleSheet.NamedStyles<T> | StyleSheet.NamedStyles<any>>(
   styleCreator: (theme: AppTheme) => T
 ): T {
-  const { theme } = useTheme();
+  const { theme } = useContext(ThemeContext);
   return useMemo(() => styleCreator(theme), [theme, styleCreator]);
 }
 
 const THEME_PREF_KEY = '@theme_pref';
 const SYSTEM_SYNC_KEY = '@theme_system_sync';
-
-// Temporarily map all themes to darkTheme as requested by user until new palettes are defined
-const themes: Record<ThemeName, AppTheme> = {
-  dark: darkTheme,
-  light: darkTheme, // Placeholder: falls back to dark theme until light palette is defined
-  // neon: neonTheme,   // TODO: add later
-};
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemColorScheme = useColorScheme(); // 'light' | 'dark' | null

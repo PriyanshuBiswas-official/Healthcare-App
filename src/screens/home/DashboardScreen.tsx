@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+﻿import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   Animated,
@@ -18,7 +17,8 @@ import {
   PermissionsAndroid,
   Platform,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, GlassCard, Shadows } from '../../theme/theme';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import ProfileCompletionBanner from '../../components/ProfileCompletionBanner';
@@ -28,21 +28,25 @@ import { usePreferences } from '../../providers/PreferencesContext';
 import { useNotifications } from '../../providers/NotificationContext';
 import { useAppointments } from '../../providers/AppointmentContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pill, Droplets, Utensils, Footprints, Dumbbell, Moon, Pin, Stethoscope, Scale, Calendar, Clock, Flame, UserRound } from 'lucide-react-native';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg';
 import { launchCamera } from 'react-native-image-picker';
 import Voice from '@dev-amirzubair/react-native-voice';
-import { Search, Mic, Camera, Check } from 'lucide-react-native';
+import { Search, Mic, Camera, Check, TriangleAlert } from 'lucide-react-native';
 import { TabName } from '../../navigation/TabBar';
 import { SleepTrackerSection, VitalsDashboardSection } from '../health/HealthCommonSections';
 import { getSleepLogs, getWeightLogs, saveWeightLog } from '../../services/healthService';
 import { getMealsForDate, getWaterForDate, getCalorieGoal, logMeal, logWater, getWaterChallenge, getWeeklyTrend } from '../../services/dietService';
 import { getTodaySummary, getActivityGoal, getWeeklyStats } from '../../services/activityService';
-import type { SleepLog, WeightEntry } from '../../types/health';
+import { getDashboardHealthScore } from '../../services/healthScoreService';
+import * as relationshipApi from '../../services/relationshipApi';
+import type { SleepLog, WeightEntry, DashboardHealthScore } from '../../types/health';
 import type { DayMealsResponse, DayWaterResponse, NutritionGoal, MealType, WaterChallenge, WeeklyTrendDay } from '../../types/diet';
 import type { ActivitySummary, ActivityGoal, WeeklyData } from '../../types/activity';
 import { getMedications, getMedicationLogsForDate, logMedicationTaken, removeMedicationLog } from '../../types/medication';
 import type { Medication, MedicationLog } from '../../types/medication';
 import { formatTime12h } from '../../utils/calendarHelpers';
+import { getAIHealthSummary, AISummaryTag } from '../../services/aiApi';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -50,11 +54,15 @@ function formatDashboardDate(iso: string): string {
   try {
     const d = new Date(iso);
     const now = new Date();
-    const diffDays = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    const dDateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffDays = Math.round((dDateOnly.getTime() - nowDateOnly.getTime()) / (1000 * 60 * 60 * 24));
 
     let dayLabel: string;
-    if (diffDays <= 0) dayLabel = 'Today';
+    if (diffDays === 0) dayLabel = 'Today';
     else if (diffDays === 1) dayLabel = 'Tomorrow';
+    else if (diffDays === -1) dayLabel = 'Yesterday';
     else dayLabel = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 
     const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -73,7 +81,7 @@ type TimelineEvent = {
   time: string;
   title: string;
   sub: string;
-  icon: string;
+  icon: React.ReactNode;
   color: string;
   rightText: string;
   rightType: 'taken' | 'value' | 'countdown' | 'upcoming';
@@ -81,108 +89,1149 @@ type TimelineEvent = {
   status: TimelineEventStatus;
 };
 
-const DEFAULT_TIMELINE: TimelineEvent[] = [
-  { id: '1', time: '08:00 AM', title: 'Medication', sub: 'Vitamin D3 1000 IU', icon: '💊', color: Colors.purple, rightText: 'Taken', rightType: 'taken', type: 'medication', status: 'completed' },
-  { id: '2', time: '09:15 AM', title: 'Water', sub: '400 ml recorded', icon: '💧', color: Colors.blue, rightText: '400 ml', rightType: 'value', type: 'water', status: 'completed' },
-  { id: '3', time: '10:00 AM', title: 'Breakfast', sub: 'Oats with fruits, Almonds', icon: '🍽️', color: Colors.amber, rightText: '450 kcal', rightType: 'value', type: 'meal', status: 'completed' },
-  { id: '4', time: '12:00 PM', title: 'Steps', sub: '2,350 steps', icon: '👟', color: Colors.success, rightText: '2,350', rightType: 'value', type: 'steps', status: 'completed' },
-  { id: '5', time: '04:30 PM', title: 'Workout', sub: 'Strength Training', icon: '💪', color: Colors.pink, rightText: '45 min', rightType: 'value', type: 'workout', status: 'pending' },
-  { id: '6', time: '08:00 PM', title: 'Medication (Upcoming)', sub: 'Metformin 500 mg', icon: '💊', color: Colors.amber, rightText: '', rightType: 'countdown', type: 'medication', status: 'pending' },
-  { id: '7', time: '10:30 PM', title: 'Sleep Goal', sub: 'Target: 8 hrs', icon: '🌙', color: Colors.purple, rightText: 'Upcoming', rightType: 'upcoming', type: 'sleep', status: 'pending' },
+const DEFAULT_TIMELINE_EVENTS: Omit<TimelineEvent, 'color'>[] = [
+  { id: '1', time: '08:00 AM', title: 'Medication', sub: 'Vitamin D3 1000 IU', icon: <Pill size={18} color="#FFFFFF" />, rightText: 'Taken', rightType: 'taken', type: 'medication', status: 'completed' },
+  { id: '2', time: '09:15 AM', title: 'Water', sub: '400 ml recorded', icon: <Droplets size={18} color="#FFFFFF" />, rightText: '400 ml', rightType: 'value', type: 'water', status: 'completed' },
+  { id: '3', time: '10:00 AM', title: 'Breakfast', sub: 'Oats with fruits, Almonds', icon: <Utensils size={18} color="#FFFFFF" />, rightText: '450 kcal', rightType: 'value', type: 'meal', status: 'completed' },
+  { id: '4', time: '12:00 PM', title: 'Steps', sub: '2,350 steps', icon: <Footprints size={18} color="#FFFFFF" />, rightText: '2,350', rightType: 'value', type: 'steps', status: 'completed' },
+  { id: '5', time: '04:30 PM', title: 'Workout', sub: 'Strength Training', icon: <Dumbbell size={18} color="#FFFFFF" />, rightText: '45 min', rightType: 'value', type: 'workout', status: 'pending' },
+  { id: '6', time: '08:00 PM', title: 'Medication (Upcoming)', sub: 'Metformin 500 mg', icon: <Pill size={18} color="#FFFFFF" />, rightText: '', rightType: 'countdown', type: 'medication', status: 'pending' },
+  { id: '7', time: '10:30 PM', title: 'Sleep Goal', sub: 'Target: 8 hrs', icon: <Moon size={18} color="#FFFFFF" />, rightText: 'Upcoming', rightType: 'upcoming', type: 'sleep', status: 'pending' },
 ];
 
-// Custom SVG Ring for Hero
-const HeroScoreRing = ({ score }: { score: number }) => {
-  const size = 100;
-  const strokeWidth = 8;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (score / 100) * circumference;
-
-  return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={size} height={size}>
-        <Defs>
-          <SvgLinearGradient id="heroGrad" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={Colors.teal} />
-            <Stop offset="1" stopColor={Colors.purple} />
-          </SvgLinearGradient>
-        </Defs>
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={Colors.bgCardBorder}
-          strokeWidth={strokeWidth}
-          fill="none"
-        />
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="url(#heroGrad)"
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          rotation="-90"
-          origin={`${size / 2}, ${size / 2}`}
-        />
-      </Svg>
-      <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <Text style={{ fontSize: Typography.xl, fontWeight: Typography.extraBold, color: Colors.white, lineHeight: 28 }}>{score}</Text>
-        <Text style={{ fontSize: Typography.xs, color: Colors.textMuted }}>/100</Text>
-      </View>
-    </View>
-  );
-};
-
-// Compact SVG Ring
-const CompactRing = ({ size, progress, color, children }: any) => {
-  const strokeWidth = 6;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - progress * circumference;
-
-  return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={size} height={size}>
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={Colors.bgCardBorder}
-          strokeWidth={strokeWidth}
-          fill="none"
-        />
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={color}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          rotation="-90"
-          origin={`${size / 2}, ${size / 2}`}
-        />
-      </Svg>
-      <View style={{ position: 'absolute', alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
-        {children}
-      </View>
-    </View>
-  );
-};
-
-export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab, onPartnerPress, onOpenAI, onOpenAppointments }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void; onPartnerPress?: (partnerId: string) => void; onOpenAI?: (fromTab?: TabName, startInChat?: boolean, initialQuery?: string) => void; onOpenAppointments?: () => void; }) {
+export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab, onPartnerPress, onRelationshipsPress, onOpenAI, onOpenAppointments, onOpenHealthLog, onCaptureImage }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void; onPartnerPress?: (partnerId: string) => void; onRelationshipsPress?: () => void; onOpenAI?: (fromTab?: TabName, startInChat?: boolean, initialQuery?: string) => void; onOpenAppointments?: () => void; onOpenHealthLog?: () => void; onCaptureImage?: (attachment: { uri: string; type: string; name: string }) => void; }) {
+  const { theme } = useTheme();
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion, gender } = useAuth();
   const { hideVitals, hideCommunitySpotlight } = usePreferences();
   const { unreadCount } = useNotifications();
   const insets = useSafeAreaInsets();
+
+  const styles = useStyles((theme) => ({
+    root: { flex: 1, backgroundColor: theme.colors.bg },
+    scroll: { paddingHorizontal: Spacing.base, paddingTop: 0 },
+
+    // ─── HERO SURFACE ───
+    heroSurface: {
+      backgroundColor: theme.colors.bgHero,
+      marginHorizontal: -Spacing.base,
+      marginBottom: Spacing.base,
+      borderBottomLeftRadius: Radius.xl,
+      borderBottomRightRadius: Radius.xl,
+      paddingBottom: Spacing.base,
+      zIndex: 2,
+    },
+    heroTopBar: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.lg,
+      paddingTop: Spacing.lg,
+      paddingBottom: Spacing.xs,
+    },
+    heroDate: {
+      fontSize: Typography.xs,
+      color: theme.colors.white + 'CC',
+      fontWeight: Typography.medium,
+      marginBottom: 2,
+      letterSpacing: Typography.lsWide,
+    },
+    heroGreeting: {
+      fontSize: Typography.xl,
+      fontWeight: Typography.extraBold,
+      color: theme.colors.white,
+      letterSpacing: -0.4,
+    },
+    heroTopBarActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      marginTop: Spacing.xs,
+    },
+
+    // ── Search Bar ──
+    searchBarContainer: {
+      paddingHorizontal: Spacing.lg,
+      paddingTop: Spacing.sm,
+      paddingBottom: Spacing.md,
+    },
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.white + '20',
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.white + '30',
+    },
+    searchBarInput: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      gap: Spacing.sm,
+    },
+    searchPlaceholder: {
+      flex: 1,
+      fontSize: Typography.sm,
+      color: theme.colors.white + '80',
+    },
+    searchActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      paddingRight: Spacing.sm,
+    },
+    searchActionBtn: {
+      padding: Spacing.sm,
+    },
+
+    // ── Integrated Score Ring + Overview ──
+    heroOverviewRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.lg,
+      paddingTop: Spacing.md,
+      paddingBottom: Spacing.md,
+      gap: Spacing.lg,
+    },
+    heroScoreArea: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    heroOverviewText: {
+      flex: 1,
+    },
+    heroOverviewLabel: {
+      fontSize: Typography.md,
+      fontWeight: Typography.extraBold,
+      color: theme.colors.white,
+      marginBottom: 3,
+      lineHeight: 22,
+    },
+    heroOverviewSub: {
+      fontSize: Typography.xs,
+      color: theme.colors.white + 'BB',
+      lineHeight: 16,
+      marginBottom: Spacing.sm,
+    },
+    heroReportBtn: {
+      alignSelf: 'flex-start',
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.xs,
+      borderRadius: Radius.sm,
+      backgroundColor: theme.colors.teal + '15',
+      borderWidth: 1,
+      borderColor: theme.colors.teal + '30',
+    },
+    heroReportBtnText: {
+      color: theme.colors.teal,
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+    },
+
+    // ── AI Summary Inset ──
+    heroAiInset: {
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+      padding: Spacing.md,
+      borderRadius: Radius.md,
+      backgroundColor: theme.colors.white + '15',
+      borderWidth: 1,
+      borderColor: theme.colors.white + '25',
+    },
+    heroAiHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: Spacing.sm,
+    },
+    heroAiTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    heroAiSparkle: {
+      fontSize: Typography.sm,
+      color: theme.colors.white,
+    },
+    heroAiTitle: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+      color: theme.colors.white,
+      letterSpacing: Typography.lsWider,
+    },
+    heroAiChatBtn: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: Radius.sm,
+      backgroundColor: theme.colors.white + '20',
+      borderWidth: 1,
+      borderColor: theme.colors.white + '35',
+    },
+    heroAiChatText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+      color: theme.colors.white,
+    },
+    heroAiText: {
+      fontSize: Typography.xs,
+      color: theme.colors.white + 'BB',
+      lineHeight: 16,
+      marginBottom: Spacing.sm,
+    },
+    heroAiTagRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.xs,
+    },
+    heroAiTag: {
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: Radius.full,
+      borderWidth: 0.5,
+    },
+    heroAiTagText: {
+      fontSize: Typography.micro,
+      fontWeight: Typography.bold,
+    },
+    aiSummaryBox: {
+      marginTop: Spacing.lg,
+      padding: Spacing.md,
+      borderRadius: Radius.md,
+      backgroundColor: theme.colors.white + '15',
+      borderColor: theme.colors.white + '25',
+      borderWidth: 1,
+    },
+    aiSummaryHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: Spacing.sm,
+    },
+    aiSummaryTitleWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    aiSummarySparkle: {
+      fontSize: Typography.sm,
+      color: theme.colors.white,
+    },
+    aiSummaryTitle: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+      color: theme.colors.white,
+      letterSpacing: Typography.lsWider,
+    },
+    aiSummaryChatBtn: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: Radius.sm,
+      backgroundColor: theme.colors.white + '20',
+      borderWidth: 1,
+      borderColor: theme.colors.white + '35',
+    },
+    aiSummaryChatText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+      color: theme.colors.white,
+    },
+    aiSummaryText: {
+      fontSize: Typography.xs,
+      color: theme.colors.white + 'BB',
+      lineHeight: 16,
+      marginBottom: Spacing.sm,
+    },
+    aiSummaryTagRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.xs,
+    },
+    aiSummaryTag: {
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: Radius.full,
+      borderWidth: 0.5,
+    },
+    aiSummaryTagText: {
+      fontSize: Typography.micro,
+      fontWeight: Typography.bold,
+    },
+
+    // HEALTH ALERT
+    alertCard: {
+      padding: Spacing.base,
+      marginBottom: Spacing.xl,
+      borderWidth: 1,
+      backgroundColor: theme.colors.danger + '08',
+    },
+    alertHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: Spacing.xs,
+      gap: Spacing.xs,
+    },
+    alertIcon: { fontSize: Typography.md },
+    alertTitle: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+      color: theme.colors.danger,
+      letterSpacing: Typography.lsWider,
+    },
+    alertText: {
+      fontSize: Typography.sm,
+      color: theme.colors.textSecondary,
+      lineHeight: 18,
+    },
+
+    // DAILY HEALTH TIMELINE
+    newTimelineContainer: {
+      position: 'relative',
+      paddingHorizontal: Spacing.xs,
+      marginBottom: Spacing.xl,
+    },
+    newTimelineLine: {
+      position: 'absolute',
+      left: 54,
+      top: 24,
+      bottom: 24,
+      width: 1.5,
+      backgroundColor: theme.colors.bgCardBorder,
+    },
+    newTimelineRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: Spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.divider,
+    },
+    newTimelineIconBg: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    newTimelineCardIcon: {
+      fontSize: Typography.lg,
+    },
+    newTimelineNodeContainer: {
+      width: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    newTimelineNode: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      borderWidth: 1.5,
+      borderColor: theme.colors.bg,
+    },
+    newTimelineContent: {
+      flex: 1,
+      marginLeft: 4,
+    },
+    newTimelineTime: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+      marginBottom: 2,
+    },
+    newTimelineTitle: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+      color: theme.colors.textPrimary,
+    },
+    newTimelineSub: {
+      fontSize: Typography.xs,
+      color: theme.colors.textMuted,
+    },
+    newTimelineRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    badgeTaken: {
+      backgroundColor: theme.colors.success + '15',
+      borderColor: theme.colors.success + '33',
+      borderWidth: 1,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: Radius.full,
+    },
+    badgeTakenText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+      color: theme.colors.success,
+    },
+    badgeValueText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+    },
+    badgeCountdown: {
+      backgroundColor: theme.colors.amber + '15',
+      borderColor: theme.colors.amber + '33',
+      borderWidth: 1,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: Radius.full,
+    },
+    badgeCountdownText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+      color: theme.colors.amber,
+    },
+    badgeUpcoming: {
+      backgroundColor: theme.colors.accentBlue + '15',
+      borderColor: theme.colors.accentBlue + '33',
+      borderWidth: 1,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: Radius.full,
+    },
+    badgeUpcomingText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+      color: theme.colors.accentBlue,
+    },
+    newTimelineChevron: {
+      color: theme.colors.textMuted,
+      fontSize: Typography.xs,
+      marginLeft: 4,
+    },
+    timelineDragHandle: {
+      width: 24,
+      height: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: Spacing.xs,
+    },
+    timelineDeleteBtn: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: theme.colors.danger + '15',
+      borderWidth: 1,
+      borderColor: theme.colors.danger + '30',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginLeft: Spacing.xs,
+    },
+    timelineAddBtn: {
+      backgroundColor: theme.colors.teal + '15',
+      borderWidth: 1,
+      borderColor: theme.colors.teal + '40',
+      borderRadius: Radius.md,
+      paddingVertical: Spacing.md,
+      alignItems: 'center',
+      marginTop: Spacing.md,
+    },
+    timelineAddBtnText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+      color: theme.colors.teal,
+    },
+    badgeStopped: {
+      backgroundColor: theme.colors.danger + '15',
+      borderColor: theme.colors.danger + '33',
+      borderWidth: 1,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: Radius.full,
+    },
+    badgeStoppedText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+      color: theme.colors.danger,
+    },
+    badgeSkipped: {
+      backgroundColor: theme.colors.amber + '15',
+      borderColor: theme.colors.amber + '33',
+      borderWidth: 1,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: Radius.full,
+    },
+    badgeSkippedText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+      color: theme.colors.amber,
+    },
+
+    // QUICK ACTIONS REDESIGNED
+    quickActionScroll: {
+      paddingBottom: Spacing.lg,
+      gap: Spacing.md,
+    },
+    quickActionCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.chartBg,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.chipBg,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      width: 175,
+      marginRight: Spacing.sm,
+    },
+    quickActionIconBg: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      marginRight: Spacing.sm,
+    },
+    quickActionIcon: {
+      fontSize: Typography.base,
+    },
+    quickActionTextContent: {
+      flex: 1,
+    },
+    quickActionLabel: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+      color: theme.colors.textPrimary,
+    },
+    quickActionDesc: {
+      fontSize: Typography.xs,
+      color: theme.colors.textMuted,
+      marginTop: 1,
+    },
+    quickActionPlus: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      marginLeft: 4,
+    },
+
+    // PROGRESS GRID
+    progressGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      marginBottom: Spacing.base,
+    },
+    progressCard: {
+      width: '48%',
+      marginBottom: Spacing.md,
+    },
+    progressCardTitle: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.semiBold,
+      color: theme.colors.textPrimary,
+      marginBottom: Spacing.md,
+    },
+    progressVal: {
+      fontSize: Typography.md,
+      fontWeight: Typography.bold,
+      color: theme.colors.textPrimary,
+    },
+    progressSub: {
+      fontSize: Typography.xs,
+      color: theme.colors.textMuted,
+    },
+    progressPct: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+      marginTop: Spacing.sm,
+    },
+
+    // MEDS LIST
+    medList: {
+      marginBottom: Spacing.sm,
+    },
+    medItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.xs,
+    },
+    medItemBorder: {
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.divider,
+    },
+    medCheck: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: theme.colors.textMuted,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: Spacing.md,
+    },
+    medInfo: {
+      flex: 1,
+    },
+    medName: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: theme.colors.textPrimary,
+    },
+    medPurposeBadge: {
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+      borderRadius: Radius.full,
+      borderWidth: 1,
+      alignSelf: 'flex-start',
+      marginTop: 3,
+      marginBottom: 2,
+    },
+    medPurposeText: {
+      fontSize: 10,
+      fontWeight: Typography.bold,
+    },
+    medDose: {
+      fontSize: Typography.xs,
+      color: theme.colors.textMuted,
+      marginTop: 2,
+    },
+    medIndicator: {
+      width: 4,
+      height: 28,
+      borderRadius: 2,
+    },
+    medShowAllBtn: {
+      paddingVertical: Spacing.md,
+      alignItems: 'center',
+    },
+    medShowAllText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+      color: theme.colors.teal,
+    },
+
+    // WEIGHT CARD
+    weightCard: {
+      padding: Spacing.base,
+      marginBottom: Spacing.xl,
+    },
+    weightHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+    },
+    weightVal: {
+      fontSize: Typography.xl,
+      fontWeight: Typography.extraBold,
+      color: theme.colors.textPrimary,
+    },
+    weightSub: {
+      fontSize: Typography.xs,
+      color: theme.colors.textMuted,
+      marginTop: 2,
+    },
+    weightTrendBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: Radius.full,
+    },
+    sparklinePlaceholder: {
+      height: 80,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    // APPOINTMENT CARD
+    aptCard: {
+      padding: Spacing.base,
+      marginBottom: Spacing.xl,
+    },
+    aptRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: Spacing.md,
+    },
+    aptAvatar: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: theme.colors.bgCardBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: Spacing.md,
+    },
+    aptInfo: {
+      flex: 1,
+    },
+    aptName: {
+      fontSize: Typography.base,
+      color: theme.colors.textPrimary,
+      fontWeight: Typography.bold,
+    },
+    aptSpec: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+      marginBottom: 4,
+    },
+    aptTimeBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    aptTimeIcon: {
+      fontSize: Typography.sm,
+      marginRight: 4,
+    },
+    aptTimeText: {
+      fontSize: Typography.xs,
+      color: theme.colors.teal,
+      fontWeight: Typography.medium,
+    },
+    aptBtn: {
+      alignItems: 'center',
+      paddingVertical: 10,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.divider,
+    },
+    aptBtnText: {
+      fontSize: Typography.sm,
+      color: theme.colors.textSecondary,
+      fontWeight: Typography.medium,
+    },
+    aptEmpty: {
+      alignItems: 'center',
+      paddingVertical: Spacing.lg,
+    },
+    aptEmptyIcon: {
+      fontSize: Typography.xxl,
+      marginBottom: Spacing.sm,
+    },
+    aptEmptyText: {
+      fontSize: Typography.sm,
+      color: theme.colors.textSecondary,
+      marginBottom: Spacing.md,
+    },
+    aptAddBtn: {
+      backgroundColor: theme.colors.teal + '20',
+      borderWidth: 1,
+      borderColor: theme.colors.teal + '50',
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.sm,
+    },
+    aptAddBtnText: {
+      fontSize: Typography.sm,
+      color: theme.colors.teal,
+      fontWeight: Typography.semiBold,
+    },
+
+    // BIOLOGICAL AGE CARD
+    ageCard: {
+      padding: Spacing.base,
+      marginBottom: Spacing.xl,
+    },
+    ageRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
+    },
+    ageBadge: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: theme.colors.tealDim,
+      borderColor: theme.colors.teal + '44',
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ageValue: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.extraBold,
+      color: theme.colors.teal,
+    },
+    ageLabel: {
+      fontSize: Typography.micro,
+      color: theme.colors.teal,
+    },
+    ageInfo: {
+      flex: 1,
+    },
+    ageTitle: {
+      fontSize: Typography.sm,
+      color: theme.colors.textPrimary,
+      fontWeight: Typography.bold,
+      marginBottom: 2,
+    },
+    ageSub: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+      lineHeight: 16,
+    },
+
+    // CHALLENGE CARD
+    challengeCard: {
+      padding: Spacing.base,
+      marginBottom: Spacing.xl,
+    },
+    challengeTitle: {
+      fontSize: Typography.sm,
+      color: theme.colors.textPrimary,
+      fontWeight: Typography.bold,
+      marginBottom: 4,
+    },
+    challengeDesc: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+      marginBottom: Spacing.sm,
+    },
+    challengeProgressText: {
+      fontSize: Typography.xs,
+      color: theme.colors.textMuted,
+    },
+    challengeStreakText: {
+      fontSize: Typography.xs,
+      color: theme.colors.amber,
+      fontWeight: Typography.bold,
+    },
+
+    // COMMUNITY CARD
+    communityCard: {
+      padding: Spacing.base,
+      marginBottom: Spacing.xl,
+    },
+    communityPost: {
+      backgroundColor: theme.colors.bgCard,
+      padding: Spacing.md,
+      borderRadius: Radius.md,
+    },
+    communityPostAuthor: {
+      fontSize: Typography.xs,
+      color: theme.colors.teal,
+      fontWeight: Typography.bold,
+      marginBottom: 4,
+    },
+    communityPostText: {
+      fontSize: Typography.xs,
+      color: theme.colors.textPrimary,
+      lineHeight: 16,
+      marginBottom: Spacing.sm,
+    },
+    communityPostLikes: {
+      fontSize: Typography.xs,
+      color: theme.colors.textMuted,
+    },
+
+    // WEEKLY TRENDS SCROLL
+    trendsScroll: {
+      paddingBottom: Spacing.lg,
+      gap: Spacing.md,
+    },
+    trendMetricCard: {
+      padding: Spacing.md,
+      width: 120,
+      alignItems: 'center',
+    },
+    trendMetricName: {
+      fontSize: Typography.xs,
+      color: theme.colors.textMuted,
+      fontWeight: Typography.medium,
+      marginBottom: 4,
+    },
+    trendMetricValue: {
+      fontSize: Typography.sm,
+      color: theme.colors.textPrimary,
+      fontWeight: Typography.bold,
+      marginBottom: 2,
+    },
+    trendMetricChange: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+    },
+
+    // MODAL STYLING
+    modalBg: {
+      flex: 1,
+      backgroundColor: theme.colors.overlay,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: Spacing.xl,
+    },
+    modalContainer: {
+      alignSelf: 'stretch',
+      padding: Spacing.lg,
+      alignItems: 'stretch',
+      backgroundColor: theme.colors.bgCardSolid,
+    },
+    modalTitle: {
+      fontSize: Typography.md,
+      fontWeight: Typography.bold,
+      color: theme.colors.textPrimary,
+      marginBottom: 4,
+      textAlign: 'center',
+    },
+    modalSub: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+      marginBottom: Spacing.md,
+      textAlign: 'center',
+    },
+    modalInput: {
+      height: 52,
+      flexShrink: 0,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+      backgroundColor: theme.colors.overlay,
+      color: theme.colors.textPrimary,
+      paddingHorizontal: Spacing.md,
+      fontSize: Typography.md,
+      textAlign: 'center',
+      textAlignVertical: 'center',
+      marginBottom: Spacing.lg,
+    },
+    modalActions: {
+      flexDirection: 'row',
+      gap: Spacing.md,
+      alignSelf: 'stretch',
+    },
+    modalCancel: {
+      flex: 1,
+      height: 44,
+      borderRadius: Radius.md,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+    },
+    modalSave: {
+      flex: 1,
+      height: 44,
+      borderRadius: Radius.md,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.colors.teal,
+    },
+
+    agendaCard: {
+      padding: Spacing.base,
+      marginBottom: Spacing.xl,
+    },
+    agendaEventRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: Spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.bgCardBorder,
+      gap: Spacing.md,
+    },
+    agendaEventAccentDot: {
+      width: 3,
+      height: 32,
+      borderRadius: 2,
+    },
+    agendaEventIconWrap: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.bgCardBorder,
+    },
+    agendaEventIcon: {
+      fontSize: Typography.lg,
+    },
+    agendaEventInfo: {
+      flex: 1,
+    },
+    agendaEventLabel: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: theme.colors.textPrimary,
+      marginBottom: 2,
+    },
+    agendaEventTime: {
+      fontSize: Typography.xs,
+      color: theme.colors.textMuted,
+    },
+    agendaEventBadge: {
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 3,
+      borderRadius: Radius.full,
+      backgroundColor: theme.colors.chipBg,
+      borderWidth: 1,
+      borderColor: theme.colors.chipBorder,
+    },
+    agendaEventBadgeText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.semiBold,
+      color: theme.colors.textSecondary,
+      letterSpacing: Typography.lsWide,
+    },
+    agendaEmpty: {
+      alignItems: 'center',
+      paddingVertical: Spacing.xl,
+      gap: Spacing.sm,
+    },
+    agendaEmptyIcon: {
+      fontSize: Typography.xxl,
+    },
+    agendaEmptyText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.semiBold,
+      color: theme.colors.textSecondary,
+    },
+    agendaEmptySubtext: {
+      fontSize: Typography.xs,
+      color: theme.colors.textMuted,
+    },
+    // OLD — kept for reference, may be cleaned up later
+    agendaCardItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: Spacing.sm + 2,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      gap: Spacing.sm,
+    },
+    agendaIconWrap: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    // RELATIONSHIPS
+    relationshipsScroll: {
+      paddingLeft: Spacing.md,
+      paddingRight: Spacing.lg,
+      paddingBottom: Spacing.xl,
+      gap: Spacing.md,
+    },
+    partnerCard: {
+      alignItems: 'center',
+      marginRight: Spacing.sm,
+    },
+    partnerAvatarContainer: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      marginBottom: Spacing.xs,
+      position: 'relative',
+    },
+    partnerAvatarImagePlaceholder: {
+      width: '100%',
+      height: '100%',
+      borderRadius: 30,
+      backgroundColor: theme.colors.accentBlueDim,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    partnerInitials: {
+      fontSize: Typography.lg,
+      color: theme.colors.white,
+      fontWeight: Typography.bold,
+    },
+    partnerStatusDot: {
+      position: 'absolute',
+      bottom: 2,
+      right: 2,
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      borderWidth: 2,
+      borderColor: theme.colors.bg,
+    },
+    partnerName: {
+      fontSize: Typography.xs,
+      color: theme.colors.textPrimary,
+      fontWeight: Typography.semiBold,
+      marginBottom: 2,
+      textAlign: 'center',
+    },
+    partnerRelation: {
+      fontSize: 9,
+      color: theme.colors.textMuted,
+      textAlign: 'center',
+    },
+  }));
+
+  const HeroScoreRing = ({ score }: { score: number }) => {
+    const size = 100;
+    const strokeWidth = 8;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (score / 100) * circumference;
+
+    return (
+      <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+        <Svg width={size} height={size}>
+          <Defs>
+            <SvgLinearGradient id="heroGrad" x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0" stopColor={theme.colors.teal} />
+              <Stop offset="1" stopColor={theme.colors.accentBlue} />
+            </SvgLinearGradient>
+          </Defs>
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={theme.colors.bgCardBorder}
+            strokeWidth={strokeWidth}
+            fill="none"
+          />
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="url(#heroGrad)"
+            strokeWidth={strokeWidth}
+            fill="none"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            rotation="-90"
+            origin={`${size / 2}, ${size / 2}`}
+          />
+        </Svg>
+        <View style={{ position: 'absolute', alignItems: 'center' }}>
+          <Text style={{ fontSize: Typography.xl, fontWeight: Typography.extraBold, color: theme.colors.white, lineHeight: 28 }}>{score}</Text>
+          <Text style={{ fontSize: Typography.xs, color: theme.colors.textMuted }}>/100</Text>
+        </View>
+      </View>
+    );
+  };
+
+  const CompactRing = ({ size, progress, color, children }: any) => {
+    const strokeWidth = 6;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - progress * circumference;
+
+    return (
+      <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+        <Svg width={size} height={size}>
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={theme.colors.bgCardBorder}
+            strokeWidth={strokeWidth}
+            fill="none"
+          />
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={color}
+            strokeWidth={strokeWidth}
+            fill="none"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            rotation="-90"
+            origin={`${size / 2}, ${size / 2}`}
+          />
+        </Svg>
+        <View style={{ position: 'absolute', alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
+          {children}
+        </View>
+      </View>
+    );
+  };
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -190,6 +1239,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
   const [showAllMeds, setShowAllMeds] = useState<boolean>(false);
   const [isListening, setIsListening] = useState(false);
+  const [relationships, setRelationships] = useState<relationshipApi.Relationship[]>([]);
 
   const { appointments } = useAppointments();
   const nextAppointment = useMemo(() => {
@@ -248,12 +1298,18 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         return;
       }
       if (result.assets?.[0]) {
-        onOpenAI?.('Home', true, 'Analyze this health image');
+        const a = result.assets[0];
+        const attachment = { uri: a.uri || '', type: a.type || 'image/jpeg', name: a.fileName || 'photo.jpg' };
+        if (onCaptureImage) {
+          onCaptureImage(attachment);
+        } else {
+          onOpenAI?.('Home', true, 'Analyze this health image');
+        }
       }
     } catch (e: any) {
       Alert.alert('Camera Error', e.message || 'Could not open camera');
     }
-  }, [onOpenAI]);
+  }, [onOpenAI, onCaptureImage]);
 
   const [medications, setMedications] = useState<Medication[]>([]);
   const [medicationLogs, setMedicationLogs] = useState<MedicationLog[]>([]);
@@ -263,9 +1319,9 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     onScroll(e);
     const y = e.nativeEvent.contentOffset.y;
     if (y >= heroHeightRef.current - 80) {
-      StatusBar.setBackgroundColor(Colors.bg, false);
+      StatusBar.setBackgroundColor(theme.colors.bg, false);
     } else {
-      StatusBar.setBackgroundColor(Colors.bgHero, false);
+      StatusBar.setBackgroundColor(theme.colors.bgHero, false);
     }
   }, [onScroll]);
 
@@ -286,7 +1342,14 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [showMealModal, setShowMealModal] = useState(false);
   const [showWaterModal, setShowWaterModal] = useState(false);
   const [showMedModal, setShowMedModal] = useState(false);
-  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>(DEFAULT_TIMELINE);
+  const buildDefaultTimeline = useCallback((c: typeof theme.colors): TimelineEvent[] => {
+    const colorMap: Record<TimelineEventType, string> = {
+      medication: c.accentBlue, water: c.blue, meal: c.amber, steps: c.success,
+      workout: c.pink, sleep: c.accentBlue, custom: c.teal,
+    };
+    return DEFAULT_TIMELINE_EVENTS.map(evt => ({ ...evt, color: colorMap[evt.type] }));
+  }, []);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>(() => buildDefaultTimeline(theme.colors));
   const [timelineEditing, setTimelineEditing] = useState(false);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [draggedEventId, setDraggedEventId] = useState<string | null>(null);
@@ -305,9 +1368,15 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [waterAmount, setWaterAmount] = useState('');
   const [modalSaving, setModalSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [healthScore, setHealthScore] = useState<DashboardHealthScore | null>(null);
+  const [aiSummary, setAiSummary] = useState<string>('Analyzing your health metrics to compile summary...');
+  const [aiSummaryTags, setAiSummaryTags] = useState<AISummaryTag[]>([
+    { label: 'Analyzing...', color: 'accentBlue' }
+  ]);
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
 
   const medicationsData = useMemo(() => {
-    const medColors = [Colors.purple, Colors.amber, Colors.blue, Colors.pink, Colors.teal, Colors.success, Colors.textSecondary];
+    const medColors = [theme.colors.accentBlue, theme.colors.amber, theme.colors.blue, theme.colors.pink, theme.colors.teal, theme.colors.success, theme.colors.textSecondary];
     const logIds = new Set(medicationLogs.map(l => l.medicine_id));
     return medications
       .filter(m => m.is_active)
@@ -346,9 +1415,30 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     };
   }, []);
 
+  const loadAiSummary = useCallback(async () => {
+    if (!session?.access_token) return;
+    setAiSummaryLoading(true);
+    try {
+      const data = await getAIHealthSummary(session.access_token);
+      setAiSummary(data.summary);
+      setAiSummaryTags(data.tags);
+    } catch (err: any) {
+      console.warn('Failed to load AI health summary:', err.message);
+      setAiSummary('Stable metrics today. Add more water, meals, and sleep logs to compile custom health insights.');
+      setAiSummaryTags([
+        { label: 'Vitals stable', color: 'success' },
+        { label: 'Ready', color: 'accentBlue' }
+      ]);
+    } finally {
+      setAiSummaryLoading(false);
+    }
+  }, [session?.access_token]);
+
   const loadData = () => {
     if (session?.access_token) {
       const today = new Date().toISOString().split('T')[0];
+
+      loadAiSummary();
 
       getSleepLogs(session.access_token)
         .then(setSleepLogs)
@@ -397,6 +1487,14 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getMedicationLogsForDate(session.access_token, today)
         .then(setMedicationLogs)
         .catch(err => console.warn('Failed to load medication logs on Dashboard:', err));
+
+      getDashboardHealthScore(session.access_token)
+        .then(setHealthScore)
+        .catch(err => console.warn('Failed to load health score on Dashboard:', err));
+
+      relationshipApi.listRelationships(session.access_token)
+        .then(setRelationships)
+        .catch(err => console.warn('Failed to load relationships on Dashboard:', err));
     }
   };
 
@@ -405,6 +1503,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     setRefreshing(true);
     const today = new Date().toISOString().split('T')[0];
     await Promise.allSettled([
+      loadAiSummary(),
       getSleepLogs(session.access_token).then(setSleepLogs),
       getWeightLogs(session.access_token).then(setWeightLogs),
       getMealsForDate(session.access_token, today).then(setMealsData),
@@ -417,6 +1516,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getWeeklyStats(session.access_token, today).then(setWeeklyActivity),
       getMedications(session.access_token).then(setMedications),
       getMedicationLogsForDate(session.access_token, today).then(setMedicationLogs),
+      getDashboardHealthScore(session.access_token).then(setHealthScore),
+      relationshipApi.listRelationships(session.access_token).then(setRelationships),
     ]);
     setRefreshing(false);
   }, [session?.access_token]);
@@ -511,14 +1612,14 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
   const addTimelineEvent = () => {
     if (!newEventTitle.trim()) return;
-    const typeConfig: Record<TimelineEventType, { icon: string; color: string; rightType: TimelineEvent['rightType'] }> = {
-      medication: { icon: '💊', color: Colors.purple, rightType: 'upcoming' },
-      water: { icon: '💧', color: Colors.blue, rightType: 'value' },
-      meal: { icon: '🍽️', color: Colors.amber, rightType: 'value' },
-      steps: { icon: '👟', color: Colors.success, rightType: 'value' },
-      workout: { icon: '💪', color: Colors.pink, rightType: 'value' },
-      sleep: { icon: '🌙', color: Colors.purple, rightType: 'upcoming' },
-      custom: { icon: '📌', color: Colors.teal, rightType: 'upcoming' },
+    const typeConfig: Record<TimelineEventType, { icon: React.ReactNode; color: string; rightType: TimelineEvent['rightType'] }> = {
+      medication: { icon: <Pill size={18} color="#FFFFFF" />, color: theme.colors.accentBlue, rightType: 'upcoming' },
+      water: { icon: <Droplets size={18} color="#FFFFFF" />, color: theme.colors.blue, rightType: 'value' },
+      meal: { icon: <Utensils size={18} color="#FFFFFF" />, color: theme.colors.amber, rightType: 'value' },
+      steps: { icon: <Footprints size={18} color="#FFFFFF" />, color: theme.colors.success, rightType: 'value' },
+      workout: { icon: <Dumbbell size={18} color="#FFFFFF" />, color: theme.colors.pink, rightType: 'value' },
+      sleep: { icon: <Moon size={18} color="#FFFFFF" />, color: theme.colors.accentBlue, rightType: 'upcoming' },
+      custom: { icon: <Pin size={18} color="#FFFFFF" />, color: theme.colors.teal, rightType: 'upcoming' },
     };
     const cfg = typeConfig[newEventType];
     const newEvent: TimelineEvent = {
@@ -558,7 +1659,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     if (weightLogs.length < 2) {
       return (
         <View style={styles.sparklinePlaceholder}>
-          <Text style={{ color: Colors.textMuted, fontSize: Typography.xs }}>Not enough weight data to show trend</Text>
+          <Text style={{ color: theme.colors.textMuted, fontSize: Typography.xs }}>Not enough weight data to show trend</Text>
         </View>
       );
     }
@@ -585,14 +1686,14 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         <Svg width={width} height={height}>
           <Defs>
             <SvgLinearGradient id="weightGrad" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={Colors.teal} stopOpacity="0.3" />
-              <Stop offset="1" stopColor={Colors.teal} stopOpacity="0" />
+              <Stop offset="0" stopColor={theme.colors.teal} stopOpacity="0.3" />
+              <Stop offset="1" stopColor={theme.colors.teal} stopOpacity="0" />
             </SvgLinearGradient>
           </Defs>
           <Path
             d={pathData}
             fill="none"
-            stroke={Colors.teal}
+            stroke={theme.colors.teal}
             strokeWidth={3}
           />
           <Path
@@ -619,7 +1720,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       const avgSecond = secondHalf.reduce((s, d) => s + d.val, 0) / secondHalf.length;
       const calPct = avgFirst > 0 ? Math.round(((avgSecond - avgFirst) / avgFirst) * 100) : 0;
       const calSign = calPct > 0 ? '↑' : '↓';
-      result.push({ metric: 'Calories', value: `${avgCals.toLocaleString()} kcal`, change: `${calSign} ${Math.abs(calPct)}%`, color: Colors.teal });
+      result.push({ metric: 'Calories', value: `${avgCals.toLocaleString()} kcal`, change: `${calSign} ${Math.abs(calPct)}%`, color: theme.colors.teal });
     }
 
     // Weight — from weightLogs
@@ -634,7 +1735,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       const avgLast = lastWeek.length > 0 ? lastWeek.reduce((s, w) => s + w.weight_kg, 0) / lastWeek.length : 0;
       const weightDiff = avgLast > 0 ? (avgThis - avgLast).toFixed(1) : '0';
       const weightSign = Number(weightDiff) > 0 ? '↑' : '↓';
-      result.push({ metric: 'Weight', value: `${avgThis.toFixed(1)} kg`, change: `${weightSign} ${Math.abs(Number(weightDiff))}kg`, color: Colors.pink });
+      result.push({ metric: 'Weight', value: `${avgThis.toFixed(1)} kg`, change: `${weightSign} ${Math.abs(Number(weightDiff))}kg`, color: theme.colors.pink });
     }
 
     // Steps — from getWeeklyStats API
@@ -647,7 +1748,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       const avgSecond = secondHalf.reduce((s, d) => s + d.steps, 0) / secondHalf.length;
       const stepsPct = avgFirst > 0 ? Math.round(((avgSecond - avgFirst) / avgFirst) * 100) : 0;
       const stepsSign = stepsPct > 0 ? '↑' : '↓';
-      result.push({ metric: 'Steps', value: `${avgSteps.toLocaleString()} steps`, change: `${stepsSign} ${Math.abs(stepsPct)}%`, color: Colors.amber });
+      result.push({ metric: 'Steps', value: `${avgSteps.toLocaleString()} steps`, change: `${stepsSign} ${Math.abs(stepsPct)}%`, color: theme.colors.amber });
     }
 
     // Sleep — from sleepLogs
@@ -662,11 +1763,11 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       const avgLast = lastWeek.length > 0 ? lastWeek.reduce((s, l) => s + l.sleep_hr, 0) / lastWeek.length : 0;
       const sleepPct = avgLast > 0 ? Math.round(((avgThis - avgLast) / avgLast) * 100) : 0;
       const sleepSign = sleepPct > 0 ? '↑' : '↓';
-      result.push({ metric: 'Sleep', value: `${avgThis.toFixed(1)} hrs`, change: `${sleepSign} ${Math.abs(sleepPct)}%`, color: Colors.purple });
+      result.push({ metric: 'Sleep', value: `${avgThis.toFixed(1)} hrs`, change: `${sleepSign} ${Math.abs(sleepPct)}%`, color: theme.colors.accentBlue });
     }
 
     // Hydration — placeholder until backend endpoint exists
-    result.push({ metric: 'Hydration', value: '— L', change: '—', color: Colors.blue });
+    result.push({ metric: 'Hydration', value: '— L', change: '—', color: theme.colors.blue });
 
     return result;
   }, [weeklyTrend, weightLogs, weeklyActivity, sleepLogs]);
@@ -675,7 +1776,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     <View style={styles.root}>
       {/* ─── SCROLLABLE CONTENT ─── */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={handleScroll} scrollEventThrottle={16}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[Colors.teal, Colors.pink]} tintColor={Colors.teal} progressBackgroundColor={Colors.bgCard} />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[theme.colors.teal, theme.colors.pink]} tintColor={theme.colors.teal} progressBackgroundColor={theme.colors.bgCard} />}>
 
         {/* ─── HERO SURFACE — extends from the very top ─── */}
         <Animated.View style={[styles.heroSurface, { marginTop: -insets.top, paddingTop: insets.top, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
@@ -686,11 +1787,11 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             <View style={{ flex: 1 }}>
               <Text style={styles.heroDate}>{todayDateStr}</Text>
               <Text style={styles.heroGreeting} numberOfLines={1}>
-                Hi, {user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'} 👋
+                Hi, {user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'}
               </Text>
             </View>
             <View style={styles.heroTopBarActions}>
-              <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
+              <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} iconColor={theme.colors.white} />
               <ProfileAvatarButton
                 onPress={onProfilePress}
                 userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
@@ -703,15 +1804,15 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           <View style={styles.searchBarContainer}>
             <View style={styles.searchBar}>
               <TouchableOpacity style={styles.searchBarInput} activeOpacity={0.8} onPress={handleSearchPress}>
-                <Search size={18} color={Colors.white + '60'} strokeWidth={2} />
+                <Search size={18} color={theme.colors.white + '60'} strokeWidth={2} />
                 <Text style={styles.searchPlaceholder}>Ask anything about your health...</Text>
               </TouchableOpacity>
               <View style={styles.searchActions}>
                 <TouchableOpacity style={styles.searchActionBtn} onPress={handleVoicePress}>
-                  <Mic size={18} color={isListening ? Colors.pink : Colors.white + '60'} strokeWidth={2} />
+                  <Mic size={18} color={isListening ? theme.colors.pink : theme.colors.white + '60'} strokeWidth={2} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.searchActionBtn} onPress={handleCameraPress}>
-                  <Camera size={18} color={Colors.white + '60'} strokeWidth={2} />
+                  <Camera size={18} color={theme.colors.white + '60'} strokeWidth={2} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -720,13 +1821,19 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           {/* ── Health Score + Overview ── */}
           <View style={styles.heroOverviewRow}>
             <View style={styles.heroScoreArea}>
-              <HeroScoreRing score={86} />
+              <HeroScoreRing score={healthScore?.score ?? 38} />
             </View>
             <View style={styles.heroOverviewText}>
               <Text style={styles.heroOverviewLabel}>Health Record Overview</Text>
-              <Text style={styles.heroOverviewSub}>Showing data from {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</Text>
+              <Text style={[styles.heroOverviewSub, { marginBottom: healthScore?.isLimitedData ? 0 : Spacing.sm }]}>Showing data from past week</Text>
+              {healthScore?.isLimitedData && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm }}>
+                  <TriangleAlert size={12} color={theme.colors.amber} />
+                  <Text style={[styles.heroOverviewSub, { marginBottom: 0, marginLeft: 4 }]}>Limited data available</Text>
+                </View>
+              )}
               <TouchableOpacity style={styles.heroReportBtn}>
-                <Text style={styles.heroReportBtnText}>Full Report →</Text>
+                <Text style={styles.heroReportBtnText}>Full Report</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -738,24 +1845,29 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                 <Text style={styles.heroAiSparkle}>✦</Text>
                 <Text style={styles.heroAiTitle}>AI HEALTH SUMMARY</Text>
               </View>
-              <TouchableOpacity style={styles.heroAiChatBtn}>
-                <Text style={styles.heroAiChatText}>💬 Chat</Text>
-              </TouchableOpacity>
             </View>
-            <Text style={styles.heroAiText}>
-              Vitals stable. Sleep +12% vs last week. Light activity advised today — cortisol elevated from yesterday's session.
-            </Text>
-            <View style={styles.heroAiTagRow}>
-              {[
-                { label: '● Vitals stable', color: Colors.success },
-                { label: '● Sleep +12%', color: Colors.purple },
-                { label: '● Rest advised', color: Colors.amber },
-              ].map((tag, i) => (
-                <View key={i} style={[styles.heroAiTag, { backgroundColor: tag.color + '15', borderColor: tag.color + '40' }]}>
-                  <Text style={[styles.heroAiTagText, { color: tag.color }]}>{tag.label}</Text>
+            {aiSummaryLoading ? (
+              <View style={{ paddingVertical: Spacing.sm, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                <ActivityIndicator size="small" color={theme.colors.white} />
+                <Text style={[styles.heroAiText, { fontStyle: 'italic', marginBottom: 0 }]}>Updating health metrics...</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.heroAiText}>
+                  {aiSummary}
+                </Text>
+                <View style={styles.heroAiTagRow}>
+                  {aiSummaryTags.map((tag, i) => {
+                    const mappedColor = (theme.colors as any)[tag.color] || theme.colors.teal;
+                    return (
+                      <View key={i} style={[styles.heroAiTag, { backgroundColor: mappedColor + '15', borderColor: mappedColor + '40' }]}>
+                        <Text style={[styles.heroAiTagText, { color: mappedColor }]}>● {tag.label}</Text>
+                      </View>
+                    );
+                  })}
                 </View>
-              ))}
-            </View>
+              </>
+            )}
           </View>
 
         </Animated.View>
@@ -771,44 +1883,51 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
 
         {/* SECTION: RELATIONSHIPS */}
-        <SectionHeader title="Active Relationships" subtitle="Shared health & activity" />
+        <SectionHeader
+          title="Active Relationships"
+          subtitle="Shared health &amp; activity"
+          action="Manage"
+          onAction={onRelationshipsPress}
+        />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.relationshipsScroll}>
-          {[
-            { id: '1', name: 'Sarah M.', relation: 'Partner', avatar: 'https://i.pravatar.cc/150?u=sarah', status: 'online' },
-            { id: '2', name: 'Dr. Smith', relation: 'Doctor', avatar: 'https://i.pravatar.cc/150?u=drsmith', status: 'offline' },
-            { id: '3', name: 'Mike T.', relation: 'Coach', avatar: 'https://i.pravatar.cc/150?u=mike', status: 'online' },
-            { id: 'add', name: 'Add New', relation: 'Invite', avatar: '', status: 'none' },
-          ].map((partner, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={styles.partnerCard}
-              onPress={() => {
-                if (partner.id === 'add') {
-                  // handle invite logic
-                } else if (onPartnerPress) {
-                  onPartnerPress(partner.id);
-                }
-              }}
-            >
-              <View style={styles.partnerAvatarContainer}>
-                {partner.avatar ? (
+          {relationships
+            .filter(r => r.status === 'accepted')
+            .map(partner => (
+              <TouchableOpacity
+                key={partner.relationship_id}
+                style={styles.partnerCard}
+                onPress={() => {
+                  if (partner.role === 'viewer' && onPartnerPress) {
+                    onPartnerPress(String(partner.relationship_id));
+                  } else if (partner.role === 'owner' && onRelationshipsPress) {
+                    onRelationshipsPress();
+                  }
+                }}
+              >
+                <View style={styles.partnerAvatarContainer}>
                   <View style={styles.partnerAvatarImagePlaceholder}>
-                    {/* Placeholder for actual image since Image is not imported */}
-                    <Text style={styles.partnerInitials}>{partner.name.substring(0, 1)}</Text>
+                    <Text style={styles.partnerInitials}>{partner.partner.avatar.charAt(0)}</Text>
                   </View>
-                ) : (
-                  <View style={[styles.partnerAvatarImagePlaceholder, { backgroundColor: Colors.teal + '20', borderWidth: 1, borderColor: Colors.teal + '50', borderStyle: 'dashed' }]}>
-                    <Text style={{ fontSize: 20, color: Colors.teal }}>+</Text>
-                  </View>
-                )}
-                {partner.status !== 'none' && (
-                  <View style={[styles.partnerStatusDot, { backgroundColor: partner.status === 'online' ? Colors.success : Colors.textMuted }]} />
-                )}
+                  <View style={[styles.partnerStatusDot, { backgroundColor: theme.colors.success }]} />
+                </View>
+                <Text style={styles.partnerName} numberOfLines={1}>{partner.partner.name}</Text>
+                <Text style={styles.partnerRelation}>
+                  {partner.relationship_type.charAt(0).toUpperCase() + partner.relationship_type.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          <TouchableOpacity
+            style={styles.partnerCard}
+            onPress={onRelationshipsPress}
+          >
+            <View style={styles.partnerAvatarContainer}>
+              <View style={[styles.partnerAvatarImagePlaceholder, { backgroundColor: theme.colors.teal + '20', borderWidth: 1, borderColor: theme.colors.teal + '50', borderStyle: 'dashed' }]}>
+                <Text style={{ fontSize: 20, color: theme.colors.teal }}>+</Text>
               </View>
-              <Text style={styles.partnerName} numberOfLines={1}>{partner.name}</Text>
-              <Text style={styles.partnerRelation}>{partner.relation}</Text>
-            </TouchableOpacity>
-          ))}
+            </View>
+            <Text style={styles.partnerName} numberOfLines={1}>Add New</Text>
+            <Text style={styles.partnerRelation}>Invite</Text>
+          </TouchableOpacity>
         </ScrollView>
 
         {/* SECTION: HEALTH CALENDAR (Self-contained and optimized) */}
@@ -818,15 +1937,16 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         <SectionHeader title="Quick Actions" />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionScroll}>
           {[
-            { icon: '🍽️', label: 'Log Meal', desc: 'Record calories', color: Colors.amber, onPress: () => setShowMealModal(true) },
-            { icon: '💧', label: 'Log Water', desc: 'Add a glass', color: Colors.blue, onPress: () => setShowWaterModal(true) },
-            { icon: '💪', label: 'Log Workout', desc: 'Track activity', color: Colors.purple, onPress: () => navigateToTab?.('Activity') },
-            { icon: '💊', label: 'Medicine', desc: 'Check dose', color: Colors.pink, onPress: () => setShowMedModal(true) },
-            { icon: '⚖️', label: 'Log Weight', desc: 'Record metric', color: Colors.teal, onPress: () => setShowWeightModal(true) },
+            { icon: <Stethoscope size={20} color={theme.colors.teal} />, label: 'Log Health', desc: 'Add health log', color: theme.colors.teal, onPress: () => onOpenHealthLog?.() },
+            { icon: <Utensils size={20} color={theme.colors.amber} />, label: 'Log Meal', desc: 'Record calories', color: theme.colors.amber, onPress: () => setShowMealModal(true) },
+            { icon: <Droplets size={20} color={theme.colors.blue} />, label: 'Log Water', desc: 'Add a glass', color: theme.colors.blue, onPress: () => setShowWaterModal(true) },
+            { icon: <Dumbbell size={20} color={theme.colors.accentBlue} />, label: 'Log Workout', desc: 'Track activity', color: theme.colors.accentBlue, onPress: () => navigateToTab?.('Activity') },
+            { icon: <Pill size={20} color={theme.colors.pink} />, label: 'Medicine', desc: 'Check dose', color: theme.colors.pink, onPress: () => setShowMedModal(true) },
+            { icon: <Scale size={20} color={theme.colors.teal} />, label: 'Log Weight', desc: 'Record metric', color: theme.colors.teal, onPress: () => setShowWeightModal(true) },
           ].map((action, i) => (
             <TouchableOpacity key={i} style={styles.quickActionCard} onPress={action.onPress}>
               <View style={[styles.quickActionIconBg, { backgroundColor: action.color + '15', borderColor: action.color + '30' }]}>
-                <Text style={styles.quickActionIcon}>{action.icon}</Text>
+                {action.icon}
               </View>
               <View style={styles.quickActionTextContent}>
                 <Text style={styles.quickActionLabel}>{action.label}</Text>
@@ -847,18 +1967,18 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
         {timelineEvents.length === 0 && !timelineEditing ? (
           <GlassCardView style={{ padding: Spacing.xl, marginBottom: Spacing.xl, alignItems: 'center' }}>
-            <Text style={{ fontSize: 40, marginBottom: Spacing.md }}>📅</Text>
-            <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: Spacing.xs }}>
+            <Calendar size={40} color={theme.colors.textMuted} />
+            <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: theme.colors.textPrimary, marginBottom: Spacing.xs }}>
               No Health Timeline
             </Text>
-            <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.lg, lineHeight: 20 }}>
+            <Text style={{ fontSize: Typography.sm, color: theme.colors.textSecondary, textAlign: 'center', marginBottom: Spacing.lg, lineHeight: 20 }}>
               Set up your daily health timeline to track medications, workouts, meals, and more.
             </Text>
             <TouchableOpacity
-              style={{ backgroundColor: Colors.teal + '20', borderWidth: 1, borderColor: Colors.teal + '50', borderRadius: Radius.md, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md }}
-              onPress={() => setTimelineEvents(DEFAULT_TIMELINE)}
+              style={{ backgroundColor: theme.colors.teal + '20', borderWidth: 1, borderColor: theme.colors.teal + '50', borderRadius: Radius.md, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md }}
+              onPress={() => setTimelineEvents(buildDefaultTimeline(theme.colors))}
               activeOpacity={0.7}>
-              <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.teal }}>Setup Timeline →</Text>
+              <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: theme.colors.teal }}>Setup Timeline →</Text>
             </TouchableOpacity>
           </GlassCardView>
         ) : (
@@ -900,7 +2020,10 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                     )}
                     {item.rightType === 'countdown' && (
                       <View style={styles.badgeCountdown}>
-                        <Text style={styles.badgeCountdownText}>🕒 {item.rightText || `${getNextDoseHours(20)}h`}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Clock size={12} color={theme.colors.textSecondary} />
+                          <Text style={styles.badgeCountdownText}>{item.rightText || `${getNextDoseHours(20)}h`}</Text>
+                        </View>
                       </View>
                     )}
                     {item.rightType === 'upcoming' && (
@@ -930,12 +2053,12 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                         if (index > 0) moveTimelineEvent(item.id, 'up');
                       }}
                       activeOpacity={0.6}>
-                      <Text style={{ color: Colors.textMuted, fontSize: Typography.sm }}>☰</Text>
+                      <Text style={{ color: theme.colors.textMuted, fontSize: Typography.sm }}>☰</Text>
                     </TouchableOpacity>
                   )}
 
                   <View style={[styles.newTimelineIconBg, { backgroundColor: item.color + '15', borderColor: item.color + '30' }]}>
-                    <Text style={styles.newTimelineCardIcon}>{item.icon}</Text>
+                    {item.icon}
                   </View>
 
                   <View style={styles.newTimelineNodeContainer}>
@@ -960,7 +2083,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                       style={styles.timelineDeleteBtn}
                       onPress={() => removeTimelineEvent(item.id)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                      <Text style={{ color: Colors.danger, fontSize: Typography.md }}>✕</Text>
+                      <Text style={{ color: theme.colors.danger, fontSize: Typography.md }}>✕</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -1004,45 +2127,45 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               <>
                 <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Diet')}>
                   <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
-                    <Text style={styles.progressCardTitle}>🔥 Calories</Text>
-                    <CompactRing size={82} progress={calPct} color={Colors.amber}>
+                    <Text style={styles.progressCardTitle}>Calories</Text>
+                    <CompactRing size={82} progress={calPct} color={theme.colors.amber}>
                       <Text style={styles.progressVal}>{consumedCal.toLocaleString()}</Text>
                       <Text style={styles.progressSub}>/ {calorieTarget.toLocaleString()} kcal</Text>
                     </CompactRing>
-                    <Text style={[styles.progressPct, { color: Colors.amber }]}>{Math.round(calPct * 100)}%</Text>
+                    <Text style={[styles.progressPct, { color: theme.colors.amber }]}>{Math.round(calPct * 100)}%</Text>
                   </GlassCardView>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Diet')}>
                   <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
-                    <Text style={styles.progressCardTitle}>💧 Water</Text>
-                    <CompactRing size={82} progress={waterPct} color={Colors.blue}>
+                    <Text style={styles.progressCardTitle}>Water</Text>
+                    <CompactRing size={82} progress={waterPct} color={theme.colors.blue}>
                       <Text style={styles.progressVal}>{consumedWater.toLocaleString()}</Text>
                       <Text style={styles.progressSub}>/ {waterTarget.toLocaleString()} ml</Text>
                     </CompactRing>
-                    <Text style={[styles.progressPct, { color: Colors.blue }]}>{Math.round(waterPct * 100)}%</Text>
+                    <Text style={[styles.progressPct, { color: theme.colors.blue }]}>{Math.round(waterPct * 100)}%</Text>
                   </GlassCardView>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Health')}>
                   <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
-                    <Text style={styles.progressCardTitle}>🌙 Sleep</Text>
-                    <CompactRing size={82} progress={sleepPct} color={Colors.purple}>
+                    <Text style={styles.progressCardTitle}>Sleep</Text>
+                    <CompactRing size={82} progress={sleepPct} color={theme.colors.accentBlue}>
                       <Text style={styles.progressVal}>{sleepHrs > 0 ? sleepHrs : '—'}</Text>
                       <Text style={styles.progressSub}>/ {sleepTarget} hrs</Text>
                     </CompactRing>
-                    <Text style={[styles.progressPct, { color: Colors.purple }]}>{sleepHrs > 0 ? `${Math.round(sleepPct * 100)}%` : '—'}</Text>
+                    <Text style={[styles.progressPct, { color: theme.colors.accentBlue }]}>{sleepHrs > 0 ? `${Math.round(sleepPct * 100)}%` : '—'}</Text>
                   </GlassCardView>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.progressCard} activeOpacity={0.7} onPress={() => navigateToTab?.('Activity')}>
                   <GlassCardView style={{ padding: Spacing.md, alignItems: 'center' }}>
-                    <Text style={styles.progressCardTitle}>💪 Workout</Text>
-                    <CompactRing size={82} progress={exercisePct} color={Colors.teal}>
+                    <Text style={styles.progressCardTitle}>Workout</Text>
+                    <CompactRing size={82} progress={exercisePct} color={theme.colors.teal}>
                       <Text style={styles.progressVal}>{exerciseMin}</Text>
                       <Text style={styles.progressSub}>/ {exerciseTarget} min</Text>
                     </CompactRing>
-                    <Text style={[styles.progressPct, { color: Colors.teal }]}>{Math.round(exercisePct * 100)}%</Text>
+                    <Text style={[styles.progressPct, { color: theme.colors.teal }]}>{Math.round(exercisePct * 100)}%</Text>
                   </GlassCardView>
                 </TouchableOpacity>
               </>
@@ -1052,14 +2175,20 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
         {/* SECTION: WEEKLY CHALLENGE */}
         <SectionHeader title="Weekly Challenge" />
-        <GlassCardView style={styles.challengeCard} accentColor={Colors.amber}>
-          <Text style={styles.challengeTitle}>💧 Hydration Hero</Text>
+        <GlassCardView style={styles.challengeCard} accentColor={theme.colors.amber}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Droplets size={18} color={theme.colors.amber} />
+            <Text style={styles.challengeTitle}>Hydration Hero</Text>
+          </View>
           <Text style={styles.challengeDesc}>Drink 2.5L water for 5 days in a row.</Text>
           <View style={{ marginTop: Spacing.sm }}>
-            <ProgressBar progress={waterChallenge?.progress ?? 0} color={Colors.amber} height={8} />
+            <ProgressBar progress={waterChallenge?.progress ?? 0} color={theme.colors.amber} height={8} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
               <Text style={styles.challengeProgressText}>{waterChallenge?.daysComplete ?? 0} / {waterChallenge?.totalDays ?? 5} days complete</Text>
-              <Text style={styles.challengeStreakText}>🔥 {waterChallenge?.streak ?? 0}d streak</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Flame size={12} color={theme.colors.amber} />
+                <Text style={styles.challengeStreakText}>{waterChallenge?.streak ?? 0}d streak</Text>
+              </View>
             </View>
           </View>
         </GlassCardView>
@@ -1070,7 +2199,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           {medicationsData.slice(0, showAllMeds ? medicationsData.length : 5).map((med) => (
             <View key={med.id} style={[styles.medItem, styles.medItemBorder]}>
               <TouchableOpacity
-                style={[styles.medCheck, med.taken && { backgroundColor: Colors.success, borderColor: Colors.success }]}
+                style={[styles.medCheck, med.taken && { backgroundColor: theme.colors.success, borderColor: theme.colors.success }]}
                 onPress={() => {
                   const today = new Date().toISOString().split('T')[0];
                   if (med.taken) {
@@ -1085,7 +2214,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                 }}
                 activeOpacity={0.7}
               >
-                {med.taken && <Check size={14} color={Colors.bg} strokeWidth={3} />}
+                {med.taken && <Check size={14} color={theme.colors.bg} strokeWidth={3} />}
               </TouchableOpacity>
               <View style={styles.medInfo}>
                 <Text style={styles.medName}>{med.name}</Text>
@@ -1121,8 +2250,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               <Text style={styles.weightSub}>Current weight</Text>
             </View>
             {weightLogs.length > 1 && (
-              <View style={[styles.weightTrendBadge, { backgroundColor: Colors.success + '15' }]}>
-                <Text style={{ color: Colors.success, fontSize: Typography.xs, fontWeight: Typography.bold }}>
+              <View style={[styles.weightTrendBadge, { backgroundColor: theme.colors.success + '15' }]}>
+                <Text style={{ color: theme.colors.success, fontSize: Typography.xs, fontWeight: Typography.bold }}>
                   {weightLogs[weightLogs.length - 1].weight_kg - weightLogs[0].weight_kg <= 0 ? '↓' : '↑'}{' '}
                   {Math.abs(weightLogs[weightLogs.length - 1].weight_kg - weightLogs[0].weight_kg).toFixed(1)} kg
                 </Text>
@@ -1143,12 +2272,12 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         {nextAppointment ? (
           <GlassCardView style={styles.aptCard}>
             <View style={styles.aptRow}>
-              <View style={styles.aptAvatar}><Text style={{ fontSize: Typography.xl }}>👨‍⚕️</Text></View>
+              <View style={styles.aptAvatar}><UserRound size={24} color={theme.colors.teal} /></View>
               <View style={styles.aptInfo}>
                 <Text style={styles.aptName}>{nextAppointment.doctor_name}</Text>
                 <Text style={styles.aptSpec}>{nextAppointment.speciality}</Text>
                 <View style={styles.aptTimeBadge}>
-                  <Text style={styles.aptTimeIcon}>📅</Text>
+                  <Calendar size={14} color={theme.colors.teal} />
                   <Text style={styles.aptTimeText}>{formatDashboardDate(nextAppointment.date_with_time)}</Text>
                 </View>
               </View>
@@ -1160,7 +2289,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         ) : (
           <GlassCardView style={styles.aptCard}>
             <View style={styles.aptEmpty}>
-              <Text style={styles.aptEmptyIcon}>📅</Text>
+              <Calendar size={40} color={theme.colors.textMuted} />
               <Text style={styles.aptEmptyText}>No upcoming appointments</Text>
               <TouchableOpacity style={styles.aptAddBtn} onPress={onOpenAppointments} activeOpacity={0.7}>
                 <Text style={styles.aptAddBtnText}>+ Add Appointment</Text>
@@ -1171,7 +2300,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
         {/* SECTION: HEALTH AGE CARD
         <SectionHeader title="Biological Age" />
-        <GlassCardView style={styles.ageCard} accentColor={Colors.teal}>
+        <GlassCardView style={styles.ageCard} accentColor={theme.colors.teal}>
           <View style={styles.ageRow}>
             <View style={styles.ageBadge}>
               <Text style={styles.ageValue}>21</Text>
@@ -1191,7 +2320,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             <GlassCardView key={index} style={styles.trendMetricCard}>
               <Text style={styles.trendMetricName}>{item.metric}</Text>
               <Text style={styles.trendMetricValue}>{item.value}</Text>
-              <Text style={[styles.trendMetricChange, { color: item.change.includes('0%') ? Colors.textPrimary : item.change.includes('↑') ? Colors.success : Colors.danger }]}>
+              <Text style={[styles.trendMetricChange, { color: item.change.includes('0%') ? theme.colors.textPrimary : item.change.includes('↑') ? theme.colors.success : theme.colors.danger }]}>
                 {item.change}
               </Text>
             </GlassCardView>
@@ -1226,14 +2355,14 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                 value={weightInput}
                 onChangeText={setWeightInput}
                 placeholder="e.g. 62.5"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={theme.colors.textMuted}
               />
               <View style={styles.modalActions}>
                 <TouchableOpacity style={styles.modalCancel} onPress={() => setShowWeightModal(false)}>
-                  <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
+                  <Text style={{ color: theme.colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.modalSave} onPress={handleSaveWeight}>
-                  <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Save</Text>
+                  <Text style={{ color: theme.colors.bg, fontWeight: Typography.bold }}>Save</Text>
                 </TouchableOpacity>
               </View>
             </GlassCardView>
@@ -1258,33 +2387,33 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                       paddingVertical: Spacing.sm,
                       borderRadius: Radius.md,
                       alignItems: 'center',
-                      backgroundColor: mealType === type ? Colors.teal + '20' : Colors.bgCardBorder,
+                      backgroundColor: mealType === type ? theme.colors.teal + '20' : theme.colors.bgCardBorder,
                       borderWidth: mealType === type ? 1 : 0,
-                      borderColor: Colors.teal,
+                      borderColor: theme.colors.teal,
                     }}>
-                    <Text style={{ fontSize: Typography.xs, color: mealType === type ? Colors.teal : Colors.textSecondary, fontWeight: Typography.bold, textTransform: 'capitalize' }}>{type}</Text>
+                    <Text style={{ fontSize: Typography.xs, color: mealType === type ? theme.colors.teal : theme.colors.textSecondary, fontWeight: Typography.bold, textTransform: 'capitalize' }}>{type}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <TextInput style={[styles.modalInput, { width: '100%' }]} value={mealFood} onChangeText={setMealFood} placeholder="Food name *" placeholderTextColor={Colors.textMuted} />
-              <TextInput style={[styles.modalInput, { width: '100%' }]} value={mealCalories} onChangeText={setMealCalories} keyboardType="number-pad" placeholder="Calories (kcal)" placeholderTextColor={Colors.textMuted} />
+              <TextInput style={[styles.modalInput, { width: '100%' }]} value={mealFood} onChangeText={setMealFood} placeholder="Food name *" placeholderTextColor={theme.colors.textMuted} />
+              <TextInput style={[styles.modalInput, { width: '100%' }]} value={mealCalories} onChangeText={setMealCalories} keyboardType="number-pad" placeholder="Calories (kcal)" placeholderTextColor={theme.colors.textMuted} />
 
               <View style={{ flexDirection: 'row', gap: Spacing.sm, alignSelf: 'stretch' }}>
-                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealProtein} onChangeText={setMealProtein} keyboardType="number-pad" placeholder="Protein (g)" placeholderTextColor={Colors.textMuted} />
-                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealCarbs} onChangeText={setMealCarbs} keyboardType="number-pad" placeholder="Carbs (g)" placeholderTextColor={Colors.textMuted} />
+                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealProtein} onChangeText={setMealProtein} keyboardType="number-pad" placeholder="Protein (g)" placeholderTextColor={theme.colors.textMuted} />
+                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealCarbs} onChangeText={setMealCarbs} keyboardType="number-pad" placeholder="Carbs (g)" placeholderTextColor={theme.colors.textMuted} />
               </View>
               <View style={{ flexDirection: 'row', gap: Spacing.sm, alignSelf: 'stretch' }}>
-                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealFat} onChangeText={setMealFat} keyboardType="number-pad" placeholder="Fat (g)" placeholderTextColor={Colors.textMuted} />
-                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealFiber} onChangeText={setMealFiber} keyboardType="number-pad" placeholder="Fiber (g)" placeholderTextColor={Colors.textMuted} />
+                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealFat} onChangeText={setMealFat} keyboardType="number-pad" placeholder="Fat (g)" placeholderTextColor={theme.colors.textMuted} />
+                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealFiber} onChangeText={setMealFiber} keyboardType="number-pad" placeholder="Fiber (g)" placeholderTextColor={theme.colors.textMuted} />
               </View>
 
               <View style={styles.modalActions}>
                 <TouchableOpacity style={styles.modalCancel} onPress={() => setShowMealModal(false)}>
-                  <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
+                  <Text style={{ color: theme.colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.modalSave} onPress={handleSaveMeal} disabled={modalSaving}>
-                  {modalSaving ? <ActivityIndicator size="small" color={Colors.bg} /> : <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Save</Text>}
+                  {modalSaving ? <ActivityIndicator size="small" color={theme.colors.bg} /> : <Text style={{ color: theme.colors.bg, fontWeight: Typography.bold }}>Save</Text>}
                 </TouchableOpacity>
               </View>
             </GlassCardView>
@@ -1310,23 +2439,23 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                       paddingVertical: Spacing.sm,
                       borderRadius: Radius.md,
                       alignItems: 'center',
-                      backgroundColor: waterAmount === String(amount) ? Colors.blue + '20' : Colors.bgCardBorder,
+                      backgroundColor: waterAmount === String(amount) ? theme.colors.blue + '20' : theme.colors.bgCardBorder,
                       borderWidth: waterAmount === String(amount) ? 1 : 0,
-                      borderColor: Colors.blue,
+                      borderColor: theme.colors.blue,
                     }}>
-                    <Text style={{ fontSize: Typography.xs, color: waterAmount === String(amount) ? Colors.blue : Colors.textSecondary, fontWeight: Typography.bold }}>{amount}</Text>
+                    <Text style={{ fontSize: Typography.xs, color: waterAmount === String(amount) ? theme.colors.blue : theme.colors.textSecondary, fontWeight: Typography.bold }}>{amount}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <TextInput style={[styles.modalInput, { width: '100%' }]} value={waterAmount} onChangeText={setWaterAmount} keyboardType="number-pad" placeholder="Custom amount (ml)" placeholderTextColor={Colors.textMuted} />
+              <TextInput style={[styles.modalInput, { width: '100%' }]} value={waterAmount} onChangeText={setWaterAmount} keyboardType="number-pad" placeholder="Custom amount (ml)" placeholderTextColor={theme.colors.textMuted} />
 
               <View style={styles.modalActions}>
                 <TouchableOpacity style={styles.modalCancel} onPress={() => setShowWaterModal(false)}>
-                  <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
+                  <Text style={{ color: theme.colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.modalSave, { backgroundColor: Colors.blue }]} onPress={handleSaveWater} disabled={modalSaving}>
-                  {modalSaving ? <ActivityIndicator size="small" color={Colors.bg} /> : <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Save</Text>}
+                <TouchableOpacity style={[styles.modalSave, { backgroundColor: theme.colors.blue }]} onPress={handleSaveWater} disabled={modalSaving}>
+                  {modalSaving ? <ActivityIndicator size="small" color={theme.colors.bg} /> : <Text style={{ color: theme.colors.bg, fontWeight: Typography.bold }}>Save</Text>}
                 </TouchableOpacity>
               </View>
             </GlassCardView>
@@ -1342,16 +2471,16 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               <Text style={styles.modalTitle}>Log Medicine</Text>
               <Text style={styles.modalSub}>Track your medication intake</Text>
 
-              <TextInput style={[styles.modalInput, { width: '100%' }]} placeholder="Medicine name" placeholderTextColor={Colors.textMuted} />
-              <TextInput style={[styles.modalInput, { width: '100%' }]} placeholder="Dosage (e.g. 500 mg)" placeholderTextColor={Colors.textMuted} />
+              <TextInput style={[styles.modalInput, { width: '100%' }]} placeholder="Medicine name" placeholderTextColor={theme.colors.textMuted} />
+              <TextInput style={[styles.modalInput, { width: '100%' }]} placeholder="Dosage (e.g. 500 mg)" placeholderTextColor={theme.colors.textMuted} />
 
-              <View style={{ backgroundColor: Colors.pink + '15', borderRadius: Radius.md, padding: Spacing.md, alignSelf: 'stretch', marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.pink + '30' }}>
-                <Text style={{ fontSize: Typography.xs, color: Colors.pink, fontWeight: Typography.bold, textAlign: 'center' }}>Feature coming soon</Text>
+              <View style={{ backgroundColor: theme.colors.pink + '15', borderRadius: Radius.md, padding: Spacing.md, alignSelf: 'stretch', marginBottom: Spacing.md, borderWidth: 1, borderColor: theme.colors.pink + '30' }}>
+                <Text style={{ fontSize: Typography.xs, color: theme.colors.pink, fontWeight: Typography.bold, textAlign: 'center' }}>Feature coming soon</Text>
               </View>
 
               <View style={styles.modalActions}>
                 <TouchableOpacity style={styles.modalCancel} onPress={() => setShowMedModal(false)}>
-                  <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
+                  <Text style={{ color: theme.colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
                 </TouchableOpacity>
               </View>
             </GlassCardView>
@@ -1372,41 +2501,51 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                 value={newEventTitle}
                 onChangeText={setNewEventTitle}
                 placeholder="Event title *"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={theme.colors.textMuted}
               />
               <TextInput
                 style={[styles.modalInput, { width: '100%' }]}
                 value={newEventTime}
                 onChangeText={setNewEventTime}
                 placeholder="Time (e.g. 03:00 PM)"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={theme.colors.textMuted}
               />
               <TextInput
                 style={[styles.modalInput, { width: '100%' }]}
                 value={newEventSub}
                 onChangeText={setNewEventSub}
                 placeholder="Description (optional)"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={theme.colors.textMuted}
               />
 
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md, alignSelf: 'stretch' }}>
                 {(['medication', 'water', 'meal', 'steps', 'workout', 'sleep', 'custom'] as TimelineEventType[]).map(type => {
-                  const typeLabels: Record<TimelineEventType, string> = {
-                    medication: '💊 Meds', water: '💧 Water', meal: '🍽️ Meal', steps: '👟 Steps', workout: '💪 Workout', sleep: '🌙 Sleep', custom: '📌 Custom',
+                  const typeConfig: Record<TimelineEventType, { label: string; icon: React.ReactNode }> = {
+                    medication: { label: 'Meds', icon: <Pill size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
+                    water: { label: 'Water', icon: <Droplets size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
+                    meal: { label: 'Meal', icon: <Utensils size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
+                    steps: { label: 'Steps', icon: <Footprints size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
+                    workout: { label: 'Workout', icon: <Dumbbell size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
+                    sleep: { label: 'Sleep', icon: <Moon size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
+                    custom: { label: 'Custom', icon: <Pin size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
                   };
                   return (
                     <TouchableOpacity
                       key={type}
                       onPress={() => setNewEventType(type)}
                       style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4,
                         paddingHorizontal: Spacing.sm + 2,
                         paddingVertical: Spacing.sm,
                         borderRadius: Radius.sm,
-                        backgroundColor: newEventType === type ? Colors.teal + '20' : Colors.bgCardBorder,
+                        backgroundColor: newEventType === type ? theme.colors.teal + '20' : theme.colors.bgCardBorder,
                         borderWidth: newEventType === type ? 1 : 0,
-                        borderColor: Colors.teal,
+                        borderColor: theme.colors.teal,
                       }}>
-                      <Text style={{ fontSize: Typography.xs, color: newEventType === type ? Colors.teal : Colors.textSecondary, fontWeight: Typography.bold }}>{typeLabels[type]}</Text>
+                      {typeConfig[type].icon}
+                      <Text style={{ fontSize: Typography.xs, color: newEventType === type ? theme.colors.teal : theme.colors.textSecondary, fontWeight: Typography.bold }}>{typeConfig[type].label}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -1414,10 +2553,10 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
               <View style={styles.modalActions}>
                 <TouchableOpacity style={styles.modalCancel} onPress={() => setShowAddEventModal(false)}>
-                  <Text style={{ color: Colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
+                  <Text style={{ color: theme.colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.modalSave} onPress={addTimelineEvent}>
-                  <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Add</Text>
+                  <Text style={{ color: theme.colors.bg, fontWeight: Typography.bold }}>Add</Text>
                 </TouchableOpacity>
               </View>
             </GlassCardView>
@@ -1427,1052 +2566,3 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { paddingHorizontal: Spacing.base, paddingTop: 0 },
-
-  // ─── HERO SURFACE ───
-  heroSurface: {
-    backgroundColor: Colors.bgHero,
-    marginHorizontal: -Spacing.base,
-    marginBottom: Spacing.base,
-    borderBottomLeftRadius: Radius.xl,
-    borderBottomRightRadius: Radius.xl,
-    paddingBottom: Spacing.base,
-    // Shadow underneath the hero
-    shadowColor: Colors.shadowColor,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 10,
-    zIndex: 2,
-  },
-  heroTopBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.xs,
-  },
-  heroDate: {
-    fontSize: Typography.xs,
-    color: Colors.teal + 'AA',
-    fontWeight: Typography.medium,
-    marginBottom: 2,
-    letterSpacing: Typography.lsWide,
-  },
-  heroGreeting: {
-    fontSize: Typography.xl,
-    fontWeight: Typography.extraBold,
-    color: Colors.white,
-    letterSpacing: -0.4,
-  },
-  heroTopBarActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-
-  // ── Search Bar ──
-  searchBarContainer: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.md,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white + '12',
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.white + '15',
-  },
-  searchBarInput: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    gap: Spacing.sm,
-  },
-  searchPlaceholder: {
-    flex: 1,
-    fontSize: Typography.sm,
-    color: Colors.white + '60',
-  },
-  searchActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    paddingRight: Spacing.sm,
-  },
-  searchActionBtn: {
-    padding: Spacing.sm,
-  },
-
-  // ── Integrated Score Ring + Overview ──
-  heroOverviewRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.md,
-    gap: Spacing.lg,
-  },
-  heroScoreArea: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroOverviewText: {
-    flex: 1,
-  },
-  heroOverviewLabel: {
-    fontSize: Typography.md,
-    fontWeight: Typography.extraBold,
-    color: Colors.white,
-    marginBottom: 3,
-    lineHeight: 22,
-  },
-  heroOverviewSub: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    lineHeight: 16,
-    marginBottom: Spacing.sm,
-  },
-  heroReportBtn: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.teal + '15',
-    borderWidth: 1,
-    borderColor: Colors.teal + '30',
-  },
-  heroReportBtnText: {
-    color: Colors.teal,
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-  },
-
-  // ── AI Summary Inset ──
-  heroAiInset: {
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.purpleDim,
-    borderWidth: 1,
-    borderColor: Colors.purple + '30',
-  },
-  heroAiHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  heroAiTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  heroAiSparkle: {
-    fontSize: Typography.sm,
-    color: Colors.purple,
-  },
-  heroAiTitle: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.purple,
-    letterSpacing: Typography.lsWider,
-  },
-  heroAiChatBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.purple + '22',
-    borderWidth: 1,
-    borderColor: Colors.purple + '44',
-  },
-  heroAiChatText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.purple,
-  },
-  heroAiText: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    lineHeight: 16,
-    marginBottom: Spacing.sm,
-  },
-  heroAiTagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-  },
-  heroAiTag: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: Radius.full,
-    borderWidth: 0.5,
-  },
-  heroAiTagText: {
-    fontSize: Typography.micro,
-    fontWeight: Typography.bold,
-  },
-  aiSummaryBox: {
-    marginTop: Spacing.lg,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.purpleDim,
-    borderColor: Colors.purple + '33',
-    borderWidth: 1,
-  },
-  aiSummaryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  aiSummaryTitleWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  aiSummarySparkle: {
-    fontSize: Typography.sm,
-    color: Colors.purple,
-  },
-  aiSummaryTitle: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.purple,
-    letterSpacing: Typography.lsWider,
-  },
-  aiSummaryChatBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.purple + '22',
-    borderWidth: 1,
-    borderColor: Colors.purple + '44',
-  },
-  aiSummaryChatText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.purple,
-  },
-  aiSummaryText: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    lineHeight: 16,
-    marginBottom: Spacing.sm,
-  },
-  aiSummaryTagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-  },
-  aiSummaryTag: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: Radius.full,
-    borderWidth: 0.5,
-  },
-  aiSummaryTagText: {
-    fontSize: Typography.micro,
-    fontWeight: Typography.bold,
-  },
-
-  // HEALTH ALERT
-  alertCard: {
-    padding: Spacing.base,
-    marginBottom: Spacing.xl,
-    borderWidth: 1,
-    backgroundColor: Colors.danger + '08',
-  },
-  alertHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.xs,
-    gap: Spacing.xs,
-  },
-  alertIcon: { fontSize: Typography.md },
-  alertTitle: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.danger,
-    letterSpacing: Typography.lsWider,
-  },
-  alertText: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-  },
-
-  // DAILY HEALTH TIMELINE
-  newTimelineContainer: {
-    position: 'relative',
-    paddingHorizontal: Spacing.xs,
-    marginBottom: Spacing.xl,
-  },
-  newTimelineLine: {
-    position: 'absolute',
-    left: 54,
-    top: 24,
-    bottom: 24,
-    width: 1.5,
-    backgroundColor: Colors.bgCardBorder,
-  },
-  newTimelineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-  },
-  newTimelineIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  newTimelineCardIcon: {
-    fontSize: Typography.lg,
-  },
-  newTimelineNodeContainer: {
-    width: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  newTimelineNode: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    borderColor: Colors.bg,
-  },
-  newTimelineContent: {
-    flex: 1,
-    marginLeft: 4,
-  },
-  newTimelineTime: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    marginBottom: 2,
-  },
-  newTimelineTitle: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  newTimelineSub: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-  },
-  newTimelineRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  badgeTaken: {
-    backgroundColor: Colors.success + '15',
-    borderColor: Colors.success + '33',
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-  },
-  badgeTakenText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.success,
-  },
-  badgeValueText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-  },
-  badgeCountdown: {
-    backgroundColor: Colors.amber + '15',
-    borderColor: Colors.amber + '33',
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-  },
-  badgeCountdownText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.amber,
-  },
-  badgeUpcoming: {
-    backgroundColor: Colors.purple + '15',
-    borderColor: Colors.purple + '33',
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-  },
-  badgeUpcomingText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.purple,
-  },
-  newTimelineChevron: {
-    color: Colors.textMuted,
-    fontSize: Typography.xs,
-    marginLeft: 4,
-  },
-  timelineDragHandle: {
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.xs,
-  },
-  timelineDeleteBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.danger + '15',
-    borderWidth: 1,
-    borderColor: Colors.danger + '30',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: Spacing.xs,
-  },
-  timelineAddBtn: {
-    backgroundColor: Colors.teal + '15',
-    borderWidth: 1,
-    borderColor: Colors.teal + '40',
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.md,
-    alignItems: 'center',
-    marginTop: Spacing.md,
-  },
-  timelineAddBtnText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-    color: Colors.teal,
-  },
-  badgeStopped: {
-    backgroundColor: Colors.danger + '15',
-    borderColor: Colors.danger + '33',
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-  },
-  badgeStoppedText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.danger,
-  },
-  badgeSkipped: {
-    backgroundColor: Colors.amber + '15',
-    borderColor: Colors.amber + '33',
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-  },
-  badgeSkippedText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    color: Colors.amber,
-  },
-
-  // QUICK ACTIONS REDESIGNED
-  quickActionScroll: {
-    paddingBottom: Spacing.lg,
-    gap: Spacing.md,
-  },
-  quickActionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.chartBg,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.chipBg,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    width: 175,
-    marginRight: Spacing.sm,
-  },
-  quickActionIconBg: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    marginRight: Spacing.sm,
-  },
-  quickActionIcon: {
-    fontSize: Typography.base,
-  },
-  quickActionTextContent: {
-    flex: 1,
-  },
-  quickActionLabel: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  quickActionDesc: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    marginTop: 1,
-  },
-  quickActionPlus: {
-    fontSize: Typography.base,
-    fontWeight: Typography.bold,
-    marginLeft: 4,
-  },
-
-  // PROGRESS GRID
-  progressGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.base,
-  },
-  progressCard: {
-    width: '48%',
-    marginBottom: Spacing.md,
-  },
-  progressCardTitle: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.md,
-    alignSelf: 'flex-start',
-  },
-  progressVal: {
-    fontSize: Typography.md,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-  },
-  progressSub: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-  },
-  progressPct: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-    marginTop: Spacing.sm,
-  },
-
-  // MEDS LIST
-  medList: {
-    marginBottom: Spacing.sm,
-  },
-  medItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xs,
-  },
-  medItemBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-  },
-  medCheck: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: Colors.textMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-  },
-  medInfo: {
-    flex: 1,
-  },
-  medName: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-  },
-  medPurposeBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    alignSelf: 'flex-start',
-    marginTop: 3,
-    marginBottom: 2,
-  },
-  medPurposeText: {
-    fontSize: 10,
-    fontWeight: Typography.bold,
-  },
-  medDose: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  medIndicator: {
-    width: 4,
-    height: 28,
-    borderRadius: 2,
-  },
-  medShowAllBtn: {
-    paddingVertical: Spacing.md,
-    alignItems: 'center',
-  },
-  medShowAllText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
-    color: Colors.teal,
-  },
-
-  // WEIGHT CARD
-  weightCard: {
-    padding: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
-  weightHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  weightVal: {
-    fontSize: Typography.xl,
-    fontWeight: Typography.extraBold,
-    color: Colors.textPrimary,
-  },
-  weightSub: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  weightTrendBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: Radius.full,
-  },
-  sparklinePlaceholder: {
-    height: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // APPOINTMENT CARD
-  aptCard: {
-    padding: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
-  aptRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  aptAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.bgCardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-  },
-  aptInfo: {
-    flex: 1,
-  },
-  aptName: {
-    fontSize: Typography.base,
-    color: Colors.textPrimary,
-    fontWeight: Typography.bold,
-  },
-  aptSpec: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginBottom: 4,
-  },
-  aptTimeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  aptTimeIcon: {
-    fontSize: Typography.sm,
-    marginRight: 4,
-  },
-  aptTimeText: {
-    fontSize: Typography.xs,
-    color: Colors.teal,
-    fontWeight: Typography.medium,
-  },
-  aptBtn: {
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: Colors.divider,
-  },
-  aptBtnText: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.medium,
-  },
-  aptEmpty: {
-    alignItems: 'center',
-    paddingVertical: Spacing.lg,
-  },
-  aptEmptyIcon: {
-    fontSize: Typography.xxl,
-    marginBottom: Spacing.sm,
-  },
-  aptEmptyText: {
-    fontSize: Typography.sm,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.md,
-  },
-  aptAddBtn: {
-    backgroundColor: Colors.teal + '20',
-    borderWidth: 1,
-    borderColor: Colors.teal + '50',
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
-  },
-  aptAddBtnText: {
-    fontSize: Typography.sm,
-    color: Colors.teal,
-    fontWeight: Typography.semiBold,
-  },
-
-  // BIOLOGICAL AGE CARD
-  ageCard: {
-    padding: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
-  ageRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  ageBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.tealDim,
-    borderColor: Colors.teal + '44',
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ageValue: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.extraBold,
-    color: Colors.teal,
-  },
-  ageLabel: {
-    fontSize: Typography.micro,
-    color: Colors.teal,
-  },
-  ageInfo: {
-    flex: 1,
-  },
-  ageTitle: {
-    fontSize: Typography.sm,
-    color: Colors.textPrimary,
-    fontWeight: Typography.bold,
-    marginBottom: 2,
-  },
-  ageSub: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    lineHeight: 16,
-  },
-
-  // CHALLENGE CARD
-  challengeCard: {
-    padding: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
-  challengeTitle: {
-    fontSize: Typography.sm,
-    color: Colors.textPrimary,
-    fontWeight: Typography.bold,
-    marginBottom: 4,
-  },
-  challengeDesc: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.sm,
-  },
-  challengeProgressText: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-  },
-  challengeStreakText: {
-    fontSize: Typography.xs,
-    color: Colors.amber,
-    fontWeight: Typography.bold,
-  },
-
-  // COMMUNITY CARD
-  communityCard: {
-    padding: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
-  communityPost: {
-    backgroundColor: Colors.bgCard,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-  },
-  communityPostAuthor: {
-    fontSize: Typography.xs,
-    color: Colors.teal,
-    fontWeight: Typography.bold,
-    marginBottom: 4,
-  },
-  communityPostText: {
-    fontSize: Typography.xs,
-    color: Colors.textPrimary,
-    lineHeight: 16,
-    marginBottom: Spacing.sm,
-  },
-  communityPostLikes: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-  },
-
-  // WEEKLY TRENDS SCROLL
-  trendsScroll: {
-    paddingBottom: Spacing.lg,
-    gap: Spacing.md,
-  },
-  trendMetricCard: {
-    padding: Spacing.md,
-    width: 120,
-    alignItems: 'center',
-  },
-  trendMetricName: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    fontWeight: Typography.medium,
-    marginBottom: 4,
-  },
-  trendMetricValue: {
-    fontSize: Typography.sm,
-    color: Colors.textPrimary,
-    fontWeight: Typography.bold,
-    marginBottom: 2,
-  },
-  trendMetricChange: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
-  },
-
-  // MODAL STYLING
-  modalBg: {
-    flex: 1,
-    backgroundColor: Colors.overlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.xl,
-  },
-  modalContainer: {
-    alignSelf: 'stretch',
-    padding: Spacing.lg,
-    alignItems: 'stretch',
-    backgroundColor: Colors.bgCardSolid,
-  },
-  modalTitle: {
-    fontSize: Typography.md,
-    fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  modalSub: {
-    fontSize: Typography.xs,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.md,
-    textAlign: 'center',
-  },
-  modalInput: {
-    height: 52,
-    flexShrink: 0,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    backgroundColor: Colors.overlay,
-    color: Colors.textPrimary,
-    paddingHorizontal: Spacing.md,
-    fontSize: Typography.md,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    marginBottom: Spacing.lg,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    alignSelf: 'stretch',
-  },
-  modalCancel: {
-    flex: 1,
-    height: 44,
-    borderRadius: Radius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-  },
-  modalSave: {
-    flex: 1,
-    height: 44,
-    borderRadius: Radius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.teal,
-  },
-
-  agendaCard: {
-    padding: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
-  agendaEventRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.bgCardBorder,
-    gap: Spacing.md,
-  },
-  agendaEventAccentDot: {
-    width: 3,
-    height: 32,
-    borderRadius: 2,
-  },
-  agendaEventIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.bgCardBorder,
-  },
-  agendaEventIcon: {
-    fontSize: Typography.lg,
-  },
-  agendaEventInfo: {
-    flex: 1,
-  },
-  agendaEventLabel: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semiBold,
-    color: Colors.textPrimary,
-    marginBottom: 2,
-  },
-  agendaEventTime: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-  },
-  agendaEventBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.chipBg,
-    borderWidth: 1,
-    borderColor: Colors.chipBorder,
-  },
-  agendaEventBadgeText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.semiBold,
-    color: Colors.textSecondary,
-    letterSpacing: Typography.lsWide,
-  },
-  agendaEmpty: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xl,
-    gap: Spacing.sm,
-  },
-  agendaEmptyIcon: {
-    fontSize: Typography.xxl,
-  },
-  agendaEmptyText: {
-    fontSize: Typography.base,
-    fontWeight: Typography.semiBold,
-    color: Colors.textSecondary,
-  },
-  agendaEmptySubtext: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-  },
-  // OLD — kept for reference, may be cleaned up later
-  agendaCardItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.sm + 2,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    gap: Spacing.sm,
-  },
-  agendaIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // RELATIONSHIPS
-  relationshipsScroll: {
-    paddingLeft: Spacing.md,
-    paddingRight: Spacing.lg,
-    paddingBottom: Spacing.xl,
-    gap: Spacing.md,
-  },
-  partnerCard: {
-    alignItems: 'center',
-    marginRight: Spacing.sm,
-  },
-  partnerAvatarContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginBottom: Spacing.xs,
-    position: 'relative',
-  },
-  partnerAvatarImagePlaceholder: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 30,
-    backgroundColor: Colors.purpleDim,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  partnerInitials: {
-    fontSize: Typography.lg,
-    color: Colors.white,
-    fontWeight: Typography.bold,
-  },
-  partnerStatusDot: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: Colors.bg,
-  },
-  partnerName: {
-    fontSize: Typography.xs,
-    color: Colors.textPrimary,
-    fontWeight: Typography.semiBold,
-    marginBottom: 2,
-    textAlign: 'center',
-  },
-  partnerRelation: {
-    fontSize: 9,
-    color: Colors.textMuted,
-    textAlign: 'center',
-  },
-});

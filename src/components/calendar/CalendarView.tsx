@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { Calendar, WeekCalendar, CalendarProvider } from 'react-native-calendars';
-import { Colors, Typography, Spacing } from '../../theme/theme';
+import { Typography, Spacing } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 
 interface CalendarViewProps {
   expanded: boolean;
@@ -20,19 +21,28 @@ export default function CalendarView({
   onDateSelect,
   onMonthChange,
 }: CalendarViewProps) {
+  const { theme } = useTheme();
+
+  const styles = useStyles((theme) => StyleSheet.create({
+    container: { width: '100%', overflow: 'hidden' },
+    calendar: { paddingLeft: 0, paddingRight: 0, backgroundColor: 'transparent' },
+    arrowButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.chipBg, alignItems: 'center', justifyContent: 'center' },
+    arrow: { fontSize: 22, color: theme.colors.teal, fontWeight: '600', marginTop: -2 },
+  }));
+
   const calendarTheme = useMemo(() => ({
     calendarBackground: 'transparent',
-    textSectionTitleColor: Colors.textMuted,
-    selectedDayBackgroundColor: Colors.teal,
-    selectedDayTextColor: Colors.white,
-    todayTextColor: Colors.purple,
-    dayTextColor: Colors.textPrimary,
-    textDisabledColor: Colors.textMuted + '40',
-    dotColor: Colors.teal,
-    selectedDotColor: Colors.white,
+    textSectionTitleColor: theme.colors.textMuted,
+    selectedDayBackgroundColor: theme.colors.teal,
+    selectedDayTextColor: theme.colors.white,
+    todayTextColor: theme.colors.accentBlue,
+    dayTextColor: theme.colors.textPrimary,
+    textDisabledColor: theme.colors.textMuted + '40',
+    dotColor: theme.colors.teal,
+    selectedDotColor: theme.colors.white,
     arrowColor: 'transparent',
-    monthTextColor: Colors.textPrimary,
-    indicatorColor: Colors.teal,
+    monthTextColor: theme.colors.textPrimary,
+    indicatorColor: theme.colors.teal,
     textDayFontSize: 16,
     textDayLineHeight: 60,
     textMonthFontSize: Typography.md,
@@ -40,7 +50,7 @@ export default function CalendarView({
     textDayFontWeight: '600' as const,
     textMonthFontWeight: Typography.bold as '700',
     textDayHeaderFontWeight: '700' as const,
-  }), []);
+  }), [theme]);
 
   const handleDayPress = (day: { dateString: string }) => {
     onDateSelect(day.dateString);
@@ -86,29 +96,3 @@ export default function CalendarView({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    overflow: 'hidden',
-  },
-  calendar: {
-    paddingLeft: 0,
-    paddingRight: 0,
-    backgroundColor: 'transparent',
-  },
-  arrowButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.chipBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  arrow: {
-    fontSize: 22,
-    color: Colors.teal,
-    fontWeight: '600',
-    marginTop: -2,
-  },
-});

@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TextInput,
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radius, GlassCard } from '../../theme/theme';
-import { ArrowLeft } from 'lucide-react-native';
-import { GlassCardView } from '../../components/SharedComponents';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { Info, Phone } from 'lucide-react-native';
+import { GlassCardView, BackButton } from '../../components/SharedComponents';
 
 interface EmergencyContact {
   name: string;
@@ -27,8 +27,59 @@ const INITIAL_CONTACTS: EmergencyContact[] = [
 ];
 
 export default function EmergencyContactsScreen({ onBack }: Props) {
+  const { theme } = useTheme();
   const [contacts, setContacts] = useState<EmergencyContact[]>(INITIAL_CONTACTS);
   const [editing, setEditing] = useState(false);
+
+  const styles = useStyles((t) => ({
+    root: { flex: 1, backgroundColor: t.colors.bg },
+    topBar: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
+    },
+    pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary },
+    editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+    editBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.accentBlue },
+    editBtnSave: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.success },
+    scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
+    banner: {
+      flexDirection: 'row', alignItems: 'flex-start', backgroundColor: t.colors.accentBlue + '15',
+      borderWidth: 1, borderColor: t.colors.accentBlue + '40', borderRadius: Radius.md,
+      padding: Spacing.md, marginBottom: Spacing.lg,
+    },
+    bannerIcon: { fontSize: Typography.sm, marginRight: Spacing.sm, marginTop: 1 },
+    bannerText: { flex: 1, fontSize: Typography.sm, color: t.colors.textSecondary, lineHeight: 18 },
+    card: { padding: Spacing.lg, marginBottom: Spacing.lg },
+    cardHeader: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md,
+    },
+    cardTitle: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.textPrimary },
+    removeBtn: { fontSize: Typography.sm, color: t.colors.danger, fontWeight: Typography.semiBold },
+    label: {
+      fontSize: Typography.sm, fontWeight: Typography.semiBold, color: t.colors.textSecondary,
+      marginBottom: Spacing.xs, textTransform: 'uppercase', letterSpacing: Typography.lsWide,
+    },
+    input: {
+      backgroundColor: t.colors.bgCardSolid, borderWidth: 1, borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
+      fontSize: Typography.base, color: t.colors.textPrimary, marginBottom: Spacing.md,
+    },
+    addBtn: {
+      backgroundColor: t.colors.accentBlue + '15', borderWidth: 1, borderColor: t.colors.accentBlue + '40',
+      borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center', marginBottom: Spacing.lg,
+    },
+    addBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.accentBlue },
+    emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
+    emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
+    emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.textPrimary },
+    emptySub: { fontSize: Typography.sm, color: t.colors.textSecondary, marginTop: Spacing.xs },
+    contactRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },
+    contactDot: { width: 8, height: 8, borderRadius: 4, marginRight: Spacing.md },
+    contactInfo: { flex: 1 },
+    contactName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: t.colors.textPrimary },
+    contactDetail: { fontSize: Typography.sm, color: t.colors.textSecondary, marginTop: 2 },
+    divider: { height: 1, backgroundColor: t.colors.divider },
+  }));
 
   const updateContact = (index: number, field: keyof EmergencyContact, value: string) => {
     setContacts(prev => prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)));
@@ -55,9 +106,7 @@ export default function EmergencyContactsScreen({ onBack }: Props) {
   return (
     <View style={styles.root}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
-        </TouchableOpacity>
+        <BackButton onPress={onBack} color={theme.colors.textPrimary} />
         <Text style={styles.pageTitle}>Emergency Contacts</Text>
         {editing ? (
           <TouchableOpacity style={styles.editBtn} onPress={handleSave} activeOpacity={0.7}>
@@ -72,7 +121,7 @@ export default function EmergencyContactsScreen({ onBack }: Props) {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <View style={styles.banner}>
-          <Text style={styles.bannerIcon}>ℹ️</Text>
+          <Info size={18} color={theme.colors.accentBlue} />
           <Text style={styles.bannerText}>
             Emergency contacts are stored locally on this device and are not synced to the cloud.
           </Text>
@@ -96,7 +145,7 @@ export default function EmergencyContactsScreen({ onBack }: Props) {
                   value={contact.name}
                   onChangeText={v => updateContact(i, 'name', v)}
                   placeholder="Full name"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={theme.colors.textMuted}
                 />
                 <Text style={styles.label}>Relationship</Text>
                 <TextInput
@@ -104,7 +153,7 @@ export default function EmergencyContactsScreen({ onBack }: Props) {
                   value={contact.relationship}
                   onChangeText={v => updateContact(i, 'relationship', v)}
                   placeholder="e.g. Spouse, Parent, Sibling"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={theme.colors.textMuted}
                 />
                 <Text style={styles.label}>Phone Number</Text>
                 <TextInput
@@ -112,7 +161,7 @@ export default function EmergencyContactsScreen({ onBack }: Props) {
                   value={contact.phone}
                   onChangeText={v => updateContact(i, 'phone', v)}
                   placeholder="+1 (555) 000-0000"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={theme.colors.textMuted}
                   keyboardType="phone-pad"
                 />
               </GlassCardView>
@@ -126,7 +175,7 @@ export default function EmergencyContactsScreen({ onBack }: Props) {
           <GlassCardView style={styles.card}>
             {contacts.filter(c => c.name.trim()).length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>🆘</Text>
+                <Phone size={40} color={theme.colors.danger} />
                 <Text style={styles.emptyText}>No emergency contacts</Text>
                 <Text style={styles.emptySub}>Tap Edit to add emergency contacts</Text>
               </View>
@@ -134,7 +183,7 @@ export default function EmergencyContactsScreen({ onBack }: Props) {
               contacts.filter(c => c.name.trim()).map((contact, i) => (
                 <View key={i}>
                   <View style={styles.contactRow}>
-                    <View style={[styles.contactDot, { backgroundColor: Colors.purple }]} />
+                    <View style={[styles.contactDot, { backgroundColor: theme.colors.accentBlue }]} />
                     <View style={styles.contactInfo}>
                       <Text style={styles.contactName}>{contact.name}</Text>
                       <Text style={styles.contactDetail}>
@@ -152,58 +201,3 @@ export default function EmergencyContactsScreen({ onBack }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  topBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
-  },
-  backBtn: {
-    width: 40, height: 40, borderRadius: Radius.md, backgroundColor: Colors.bgCard,
-    borderWidth: 1, borderColor: Colors.bgCardBorder, alignItems: 'center', justifyContent: 'center',
-  },
-  backIcon: { fontSize: Typography.lg, color: Colors.textPrimary },
-  pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
-  editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
-  editBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.purple },
-  editBtnSave: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.success },
-  scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
-  banner: {
-    flexDirection: 'row', alignItems: 'flex-start', backgroundColor: Colors.purple + '15',
-    borderWidth: 1, borderColor: Colors.purple + '40', borderRadius: Radius.md,
-    padding: Spacing.md, marginBottom: Spacing.lg,
-  },
-  bannerIcon: { fontSize: Typography.sm, marginRight: Spacing.sm, marginTop: 1 },
-  bannerText: { flex: 1, fontSize: Typography.sm, color: Colors.textSecondary, lineHeight: 18 },
-  card: { padding: Spacing.lg, marginBottom: Spacing.lg },
-  cardHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md,
-  },
-  cardTitle: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  removeBtn: { fontSize: Typography.sm, color: Colors.danger, fontWeight: Typography.semiBold },
-  label: {
-    fontSize: Typography.sm, fontWeight: Typography.semiBold, color: Colors.textSecondary,
-    marginBottom: Spacing.xs, textTransform: 'uppercase', letterSpacing: Typography.lsWide,
-  },
-  input: {
-    backgroundColor: Colors.bgCardSolid, borderWidth: 1, borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
-    fontSize: Typography.base, color: Colors.textPrimary, marginBottom: Spacing.md,
-  },
-  addBtn: {
-    backgroundColor: Colors.purple + '15', borderWidth: 1, borderColor: Colors.purple + '40',
-    borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center', marginBottom: Spacing.lg,
-  },
-  addBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.purple },
-  emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
-  emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
-  emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  emptySub: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: Spacing.xs },
-  contactRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },
-  contactDot: { width: 8, height: 8, borderRadius: 4, marginRight: Spacing.md },
-  contactInfo: { flex: 1 },
-  contactName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  contactDetail: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2 },
-  divider: { height: 1, backgroundColor: Colors.divider },
-});

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TextInput,
   TouchableOpacity,
@@ -11,9 +10,10 @@ import {
   Platform,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
-import { ArrowLeft, Trash2, Pencil, Check } from 'lucide-react-native';
-import { GlassCardView } from '../../components/SharedComponents';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { Trash2, Pencil, Check } from 'lucide-react-native';
+import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { useReminders } from '../../providers/ReminderContext';
 import type { Reminder, ReminderSchedule } from '../../types/reminder';
 
@@ -60,11 +60,11 @@ function getFireTimesPreview(startHHMM: string, intervalHours: number): string[]
 function isIntervalValid(startHHMM: string, intervalHours: number): boolean {
   const [h] = startHHMM.split(':').map(Number);
   const fireTimes = getFireTimesPreview(startHHMM, intervalHours);
-  // At least 2 fire times (start + one more), and last must be < 24:00
   return fireTimes.length >= 2 && fireTimes.length <= 12;
 }
 
 export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
+  const { theme } = useTheme();
   const { getRemindersByCategory, addReminder, editReminder, removeReminder, addReminderSchedule, removeSchedule, fetchSchedules, getSchedulesForReminder } = useReminders();
 
   const [loading, setLoading] = useState(true);
@@ -72,15 +72,12 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [schedulesMap, setSchedulesMap] = useState<Map<number, ReminderSchedule[]>>(new Map());
 
-  // Add form
   const [showAddForm, setShowAddForm] = useState(false);
   const [amount, setAmount] = useState('');
   const [startTime, setStartTime] = useState('08:00');
   const [intervalHours, setIntervalHours] = useState(2);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
-
-  // ── Load ───────────────────────────────────────────────────
 
   const loadData = useCallback(async () => {
     try {
@@ -102,8 +99,6 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // ── Form Helpers ───────────────────────────────────────────
-
   function resetForm() {
     setAmount('');
     setStartTime('08:00');
@@ -112,8 +107,6 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
     setShowAddForm(false);
     setEditingReminder(null);
   }
-
-  // ── Time Picker ────────────────────────────────────────────
 
   const onTimeChange = (_: DateTimePickerEvent, selected?: Date) => {
     if (Platform.OS === 'android') setShowTimePicker(false);
@@ -124,13 +117,10 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
     }
   };
 
-  // ── Edit ───────────────────────────────────────────────────
-
   const startEdit = (reminder: Reminder) => {
     const scheds = schedulesMap.get(reminder.reminder_id) || [];
     const sched = scheds[0];
     setEditingReminder(reminder);
-    // Parse amount from title (e.g. "250 ml" → "250")
     const amountMatch = reminder.title.match(/^(\d+)/);
     setAmount(amountMatch ? amountMatch[1] : '');
     if (sched) {
@@ -139,8 +129,6 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
     }
     setShowAddForm(true);
   };
-
-  // ── Add ────────────────────────────────────────────────────
 
   const handleAdd = async () => {
     if (!amount.trim()) {
@@ -187,8 +175,6 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
     }
   };
 
-  // ── Update ─────────────────────────────────────────────────
-
   const handleUpdate = async () => {
     if (!editingReminder) return;
     if (!amount.trim()) {
@@ -233,8 +219,6 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
     }
   };
 
-  // ── Remove ─────────────────────────────────────────────────
-
   const handleRemove = (reminder: Reminder) => {
     Alert.alert('Remove', `Remove "${reminder.title}"?`, [
       { text: 'Cancel', style: 'cancel' },
@@ -259,20 +243,93 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
     ]);
   };
 
-  // ── Loading ────────────────────────────────────────────────
+  const styles = useStyles(theme => ({
+    root: { flex: 1, backgroundColor: theme.colors.bg },
+    loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    topBar: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
+    },
+    pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
+    addTopBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+    addTopBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.blue },
+    scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
+    card: { padding: Spacing.lg, marginBottom: Spacing.md },
+    sectionLabel: {
+      fontSize: Typography.xs, fontWeight: Typography.bold, color: theme.colors.textMuted,
+      letterSpacing: 1, marginBottom: Spacing.md,
+    },
+    subLabel: {
+      fontSize: Typography.xs, fontWeight: Typography.bold, color: theme.colors.textMuted,
+      letterSpacing: 0.5, marginBottom: Spacing.sm, marginTop: Spacing.sm,
+    },
+    input: {
+      backgroundColor: theme.colors.bgCardSolid, borderWidth: 1, borderColor: theme.colors.bgCardBorder,
+      borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
+      fontSize: Typography.base, color: theme.colors.textPrimary, marginBottom: Spacing.sm,
+    },
+    timePickerBtn: {
+      flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+      backgroundColor: theme.colors.bgCardSolid, borderWidth: 1, borderColor: theme.colors.bgCardBorder,
+      borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
+      marginBottom: Spacing.sm,
+    },
+    timePickerText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
+    timePickerMilitary: { fontSize: Typography.sm, color: theme.colors.textMuted },
+    intervalList: { marginBottom: Spacing.md },
+    intervalRow: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingVertical: Spacing.md,
+      borderBottomWidth: 1, borderBottomColor: theme.colors.divider,
+    },
+    intervalRowSelected: { backgroundColor: theme.colors.blue + '10', marginHorizontal: -Spacing.md, paddingHorizontal: Spacing.md, borderRadius: Radius.md },
+    intervalRowDisabled: { opacity: 0.4 },
+    intervalLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    intervalRadio: {
+      width: 20, height: 20, borderRadius: 10, borderWidth: 2,
+      borderColor: theme.colors.textMuted, alignItems: 'center', justifyContent: 'center',
+    },
+    intervalRadioSelected: { borderColor: theme.colors.blue, backgroundColor: theme.colors.blue },
+    intervalLabel: { fontSize: Typography.base, color: theme.colors.textPrimary },
+    intervalLabelSelected: { fontWeight: Typography.semiBold },
+    intervalLabelDisabled: { color: theme.colors.textMuted },
+    intervalCount: { fontSize: Typography.sm, color: theme.colors.textMuted },
+    previewRow: {
+      flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md,
+    },
+    previewDot: {
+      backgroundColor: theme.colors.blue + '15', borderRadius: Radius.sm,
+      paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs,
+    },
+    previewTime: { fontSize: Typography.sm, fontWeight: Typography.semiBold, color: theme.colors.blue },
+    saveBtn: {
+      backgroundColor: theme.colors.blue, borderRadius: Radius.md,
+      paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm,
+    },
+    saveBtnDisabled: { opacity: 0.6 },
+    saveBtnText: { fontSize: Typography.base, fontWeight: Typography.bold, color: '#fff' },
+    entryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },
+    entryInfo: { flex: 1 },
+    entryName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
+    entrySchedule: { fontSize: Typography.sm, color: theme.colors.blue, marginTop: 2 },
+    entryActions: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
+    divider: { height: 1, backgroundColor: theme.colors.divider },
+    emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
+    emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
+    emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
+    emptySub: { fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: Spacing.xs },
+  }));
 
   if (loading) {
     return (
       <View style={styles.root}>
         <View style={styles.topBar}>
-          <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-            <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
-          </TouchableOpacity>
+          <BackButton onPress={onBack} color={theme.colors.textPrimary} />
           <Text style={styles.pageTitle}>Water Reminders</Text>
           <View style={{ width: 60 }} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.blue} />
+          <ActivityIndicator size="large" color={theme.colors.blue} />
         </View>
       </View>
     );
@@ -283,9 +340,7 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
   return (
     <View style={styles.root}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
-        </TouchableOpacity>
+        <BackButton onPress={onBack} color={theme.colors.textPrimary} />
         <Text style={styles.pageTitle}>Water Reminders</Text>
         <TouchableOpacity
           style={styles.addTopBtn}
@@ -302,7 +357,6 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {/* ── Add Form ── */}
         {showAddForm && (
           <GlassCardView style={styles.card}>
             <Text style={styles.sectionLabel}>{editingReminder ? 'EDIT REMINDER' : 'NEW WATER REMINDER'}</Text>
@@ -313,7 +367,7 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
               value={amount}
               onChangeText={setAmount}
               placeholder="e.g. 250"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="numeric"
             />
 
@@ -373,7 +427,6 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
               })}
             </View>
 
-            {/* Fire times preview */}
             <Text style={styles.subLabel}>NOTIFICATIONS AT</Text>
             <View style={styles.previewRow}>
               {fireTimes.map(t => (
@@ -393,7 +446,6 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
           </GlassCardView>
         )}
 
-        {/* ── Reminders List ── */}
         <GlassCardView style={styles.card}>
           {reminders.length === 0 ? (
             <View style={styles.emptyState}>
@@ -420,12 +472,12 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
                       <TouchableOpacity
                         onPress={() => startEdit(reminder)}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Pencil size={18} color={Colors.textSecondary} />
+                        <Pencil size={18} color={theme.colors.textSecondary} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => handleRemove(reminder)}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Trash2 size={18} color={Colors.textMuted} />
+                        <Trash2 size={18} color={theme.colors.textMuted} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -439,85 +491,3 @@ export default function WaterRemindersScreen({ onBack, onSaved }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
-  },
-  backBtn: {
-    width: 40, height: 40, borderRadius: Radius.md,
-    backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.bgCardBorder,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
-  addTopBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
-  addTopBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.blue },
-  scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
-  card: { padding: Spacing.lg, marginBottom: Spacing.md },
-  sectionLabel: {
-    fontSize: Typography.xs, fontWeight: Typography.bold, color: Colors.textMuted,
-    letterSpacing: 1, marginBottom: Spacing.md,
-  },
-  subLabel: {
-    fontSize: Typography.xs, fontWeight: Typography.bold, color: Colors.textMuted,
-    letterSpacing: 0.5, marginBottom: Spacing.sm, marginTop: Spacing.sm,
-  },
-  input: {
-    backgroundColor: Colors.bgCardSolid, borderWidth: 1, borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
-    fontSize: Typography.base, color: Colors.textPrimary, marginBottom: Spacing.sm,
-  },
-  timePickerBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-    backgroundColor: Colors.bgCardSolid, borderWidth: 1, borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
-    marginBottom: Spacing.sm,
-  },
-  timePickerText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  timePickerMilitary: { fontSize: Typography.sm, color: Colors.textMuted },
-  intervalList: { marginBottom: Spacing.md },
-  intervalRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1, borderBottomColor: Colors.divider,
-  },
-  intervalRowSelected: { backgroundColor: Colors.blue + '10', marginHorizontal: -Spacing.md, paddingHorizontal: Spacing.md, borderRadius: Radius.md },
-  intervalRowDisabled: { opacity: 0.4 },
-  intervalLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  intervalRadio: {
-    width: 20, height: 20, borderRadius: 10, borderWidth: 2,
-    borderColor: Colors.textMuted, alignItems: 'center', justifyContent: 'center',
-  },
-  intervalRadioSelected: { borderColor: Colors.blue, backgroundColor: Colors.blue },
-  intervalLabel: { fontSize: Typography.base, color: Colors.textPrimary },
-  intervalLabelSelected: { fontWeight: Typography.semiBold },
-  intervalLabelDisabled: { color: Colors.textMuted },
-  intervalCount: { fontSize: Typography.sm, color: Colors.textMuted },
-  previewRow: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md,
-  },
-  previewDot: {
-    backgroundColor: Colors.blue + '15', borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs,
-  },
-  previewTime: { fontSize: Typography.sm, fontWeight: Typography.semiBold, color: Colors.blue },
-  saveBtn: {
-    backgroundColor: Colors.blue, borderRadius: Radius.md,
-    paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm,
-  },
-  saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: { fontSize: Typography.base, fontWeight: Typography.bold, color: '#fff' },
-  entryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },
-  entryInfo: { flex: 1 },
-  entryName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  entrySchedule: { fontSize: Typography.sm, color: Colors.blue, marginTop: 2 },
-  entryActions: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
-  divider: { height: 1, backgroundColor: Colors.divider },
-  emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
-  emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
-  emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  emptySub: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: Spacing.xs },
-});

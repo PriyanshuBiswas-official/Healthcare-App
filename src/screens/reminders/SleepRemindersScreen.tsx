@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TextInput,
   TouchableOpacity,
@@ -11,9 +10,10 @@ import {
   Platform,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
-import { ArrowLeft, Trash2, Pencil } from 'lucide-react-native';
-import { GlassCardView } from '../../components/SharedComponents';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { Trash2, Pencil } from 'lucide-react-native';
+import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { useReminders } from '../../providers/ReminderContext';
 import type { Reminder, ReminderSchedule } from '../../types/reminder';
 
@@ -32,6 +32,7 @@ function formatTime12h(hhmm: string): string {
 }
 
 export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
+  const { theme } = useTheme();
   const { getRemindersByCategory, addReminder, removeReminder, editReminder, addReminderSchedule, removeSchedule, fetchSchedules, getSchedulesForReminder } = useReminders();
 
   const [loading, setLoading] = useState(true);
@@ -39,14 +40,11 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [schedulesMap, setSchedulesMap] = useState<Map<number, ReminderSchedule[]>>(new Map());
 
-  // Add form
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTargetSleep, setNewTargetSleep] = useState('');
   const [times, setTimes] = useState<string[]>([]);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
-
-  // ── Load ───────────────────────────────────────────────────
 
   const loadData = useCallback(async () => {
     try {
@@ -67,8 +65,6 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
   }, [getRemindersByCategory, fetchSchedules]);
 
   useEffect(() => { loadData(); }, [loadData]);
-
-  // ── Form Helpers ───────────────────────────────────────────
 
   function resetForm() {
     setNewTargetSleep('');
@@ -95,8 +91,6 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
     setTimes(times.filter(t => t !== time));
   }
 
-  // ── Time Picker ────────────────────────────────────────────
-
   const onTimeChange = (_: DateTimePickerEvent, selected?: Date) => {
     if (Platform.OS === 'android') setShowTimePicker(false);
     if (selected) {
@@ -106,8 +100,6 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
     }
   };
 
-  // ── Edit ───────────────────────────────────────────────────
-
   const startEdit = (reminder: Reminder) => {
     const scheds = schedulesMap.get(reminder.reminder_id) || [];
     setEditingReminder(reminder);
@@ -116,8 +108,6 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
     setTimes(scheds.map(s => s.notify_at).sort());
     setShowAddForm(true);
   };
-
-  // ── Add ────────────────────────────────────────────────────
 
   const handleAdd = async () => {
     if (times.length === 0) {
@@ -158,8 +148,6 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
       setSaving(false);
     }
   };
-
-  // ── Update ─────────────────────────────────────────────────
 
   const handleUpdate = async () => {
     if (!editingReminder) return;
@@ -205,8 +193,6 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
     }
   };
 
-  // ── Remove ─────────────────────────────────────────────────
-
   const handleRemove = (reminder: Reminder) => {
     Alert.alert('Remove', `Remove "${reminder.title}"?`, [
       { text: 'Cancel', style: 'cancel' },
@@ -231,20 +217,81 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
     ]);
   };
 
-  // ── Loading ────────────────────────────────────────────────
+  const styles = useStyles(theme => ({
+    root: { flex: 1, backgroundColor: theme.colors.bg },
+    loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    topBar: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
+    },
+    pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
+    addTopBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+    addTopBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.accentBlue },
+    scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
+    card: { padding: Spacing.lg, marginBottom: Spacing.md },
+    sectionLabel: {
+      fontSize: Typography.xs, fontWeight: Typography.bold, color: theme.colors.textMuted,
+      letterSpacing: 1, marginBottom: Spacing.md,
+    },
+    subLabel: {
+      fontSize: Typography.xs, fontWeight: Typography.bold, color: theme.colors.textMuted,
+      letterSpacing: 0.5, marginBottom: Spacing.sm,
+    },
+    input: {
+      backgroundColor: theme.colors.bgCardSolid, borderWidth: 1, borderColor: theme.colors.bgCardBorder,
+      borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
+      fontSize: Typography.base, color: theme.colors.textPrimary, marginBottom: Spacing.sm,
+    },
+    timeList: { marginBottom: Spacing.md },
+    timeRow: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingVertical: Spacing.md,
+      borderBottomWidth: 1, borderBottomColor: theme.colors.divider,
+    },
+    timeRowLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    timeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.accentBlue },
+    timeValue: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
+    timeMilitary: { fontSize: Typography.sm, color: theme.colors.textMuted },
+    emptyTimes: { fontSize: Typography.sm, color: theme.colors.textMuted, fontStyle: 'italic', marginBottom: Spacing.md },
+    addTimeBtn: {
+      backgroundColor: theme.colors.accentBlue + '15', borderWidth: 1, borderColor: theme.colors.accentBlue + '40',
+      borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center',
+    },
+    addTimeBtnText: { fontSize: Typography.sm, fontWeight: Typography.semiBold, color: theme.colors.accentBlue },
+    hintText: {
+      fontSize: Typography.xs, color: theme.colors.textMuted, fontStyle: 'italic',
+      textAlign: 'center', marginTop: Spacing.md, marginBottom: Spacing.sm,
+    },
+    saveBtn: {
+      backgroundColor: theme.colors.accentBlue, borderRadius: Radius.md,
+      paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm,
+    },
+    saveBtnDisabled: { opacity: 0.6 },
+    saveBtnText: { fontSize: Typography.base, fontWeight: Typography.bold, color: '#fff' },
+    entryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },
+    entryInfo: { flex: 1 },
+    entryName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
+    entryDetail: { fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: 2 },
+    entrySchedule: { fontSize: Typography.sm, color: theme.colors.accentBlue, marginTop: 2 },
+    entryNoSchedule: { fontSize: Typography.sm, color: theme.colors.textMuted, marginTop: 2, fontStyle: 'italic' },
+    entryActions: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
+    divider: { height: 1, backgroundColor: theme.colors.divider },
+    emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
+    emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
+    emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
+    emptySub: { fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: Spacing.xs },
+  }));
 
   if (loading) {
     return (
       <View style={styles.root}>
         <View style={styles.topBar}>
-          <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-            <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
-          </TouchableOpacity>
+          <BackButton onPress={onBack} color={theme.colors.textPrimary} />
           <Text style={styles.pageTitle}>Sleep Reminders</Text>
           <View style={{ width: 60 }} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.purple} />
+          <ActivityIndicator size="large" color={theme.colors.accentBlue} />
         </View>
       </View>
     );
@@ -253,9 +300,7 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
   return (
     <View style={styles.root}>
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <ArrowLeft size={22} color={Colors.text} strokeWidth={2} />
-        </TouchableOpacity>
+        <BackButton onPress={onBack} color={theme.colors.textPrimary} />
         <Text style={styles.pageTitle}>Sleep Reminders</Text>
         <TouchableOpacity
           style={styles.addTopBtn}
@@ -272,7 +317,6 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {/* ── Add Form ── */}
         {showAddForm && (
           <GlassCardView style={styles.card}>
             <Text style={styles.sectionLabel}>{editingReminder ? 'EDIT REMINDER' : 'NEW SLEEP REMINDER'}</Text>
@@ -283,11 +327,10 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
               value={newTargetSleep}
               onChangeText={setNewTargetSleep}
               placeholder="e.g. 8"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="numeric"
             />
 
-            {/* Time List */}
             <Text style={styles.subLabel}>NOTIFICATION TIMES</Text>
             {times.length > 0 && (
               <View style={styles.timeList}>
@@ -301,7 +344,7 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
                     <TouchableOpacity
                       onPress={() => removeTimeFromList(t)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                      <Trash2 size={16} color={Colors.textMuted} />
+                      <Trash2 size={16} color={theme.colors.textMuted} />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -312,7 +355,6 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
               <Text style={styles.emptyTimes}>No times added yet</Text>
             )}
 
-            {/* Add Time Picker */}
             <TouchableOpacity
               style={styles.addTimeBtn}
               onPress={() => setShowTimePicker(true)}
@@ -341,7 +383,6 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
           </GlassCardView>
         )}
 
-        {/* ── Reminders List ── */}
         <GlassCardView style={styles.card}>
           {reminders.length === 0 ? (
             <View style={styles.emptyState}>
@@ -372,12 +413,12 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
                       <TouchableOpacity
                         onPress={() => startEdit(reminder)}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Pencil size={18} color={Colors.textSecondary} />
+                        <Pencil size={18} color={theme.colors.textSecondary} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => handleRemove(reminder)}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Trash2 size={18} color={Colors.textMuted} />
+                        <Trash2 size={18} color={theme.colors.textMuted} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -391,73 +432,3 @@ export default function SleepRemindersScreen({ onBack, onSaved }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
-  },
-  backBtn: {
-    width: 40, height: 40, borderRadius: Radius.md,
-    backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.bgCardBorder,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary },
-  addTopBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
-  addTopBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.purple },
-  scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
-  card: { padding: Spacing.lg, marginBottom: Spacing.md },
-  sectionLabel: {
-    fontSize: Typography.xs, fontWeight: Typography.bold, color: Colors.textMuted,
-    letterSpacing: 1, marginBottom: Spacing.md,
-  },
-  subLabel: {
-    fontSize: Typography.xs, fontWeight: Typography.bold, color: Colors.textMuted,
-    letterSpacing: 0.5, marginBottom: Spacing.sm,
-  },
-  input: {
-    backgroundColor: Colors.bgCardSolid, borderWidth: 1, borderColor: Colors.bgCardBorder,
-    borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
-    fontSize: Typography.base, color: Colors.textPrimary, marginBottom: Spacing.sm,
-  },
-  timeList: { marginBottom: Spacing.md },
-  timeRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1, borderBottomColor: Colors.divider,
-  },
-  timeRowLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  timeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.purple },
-  timeValue: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  timeMilitary: { fontSize: Typography.sm, color: Colors.textMuted },
-  emptyTimes: { fontSize: Typography.sm, color: Colors.textMuted, fontStyle: 'italic', marginBottom: Spacing.md },
-  addTimeBtn: {
-    backgroundColor: Colors.purple + '15', borderWidth: 1, borderColor: Colors.purple + '40',
-    borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center',
-  },
-  addTimeBtnText: { fontSize: Typography.sm, fontWeight: Typography.semiBold, color: Colors.purple },
-  hintText: {
-    fontSize: Typography.xs, color: Colors.textMuted, fontStyle: 'italic',
-    textAlign: 'center', marginTop: Spacing.md, marginBottom: Spacing.sm,
-  },
-  saveBtn: {
-    backgroundColor: Colors.purple, borderRadius: Radius.md,
-    paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm,
-  },
-  saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: { fontSize: Typography.base, fontWeight: Typography.bold, color: '#fff' },
-  entryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md },
-  entryInfo: { flex: 1 },
-  entryName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  entryDetail: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2 },
-  entrySchedule: { fontSize: Typography.sm, color: Colors.purple, marginTop: 2 },
-  entryNoSchedule: { fontSize: Typography.sm, color: Colors.textMuted, marginTop: 2, fontStyle: 'italic' },
-  entryActions: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
-  divider: { height: 1, backgroundColor: Colors.divider },
-  emptyState: { alignItems: 'center', paddingVertical: Spacing.xl },
-  emptyIcon: { fontSize: Typography.xxl, marginBottom: Spacing.md },
-  emptyText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: Colors.textPrimary },
-  emptySub: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: Spacing.xs },
-});

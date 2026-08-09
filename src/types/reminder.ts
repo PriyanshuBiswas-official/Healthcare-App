@@ -93,7 +93,7 @@ export const CATEGORY_META: Record<ReminderCategory, { label: string; icon: stri
   water: { label: 'Water', icon: 'Droplets', color: '#3B82F6', channel: 'water' },
   workout: { label: 'Workouts', icon: 'Dumbbell', color: '#FF4D8D', channel: 'workout' },
   nutrition: { label: 'Nutrition', icon: 'Apple', color: '#00E5A0', channel: 'nutrition' },
-  sleep: { label: 'Sleep', icon: 'Moon', color: '#A78BFA', channel: 'sleep' },
+  sleep: { label: 'Sleep', icon: 'Moon', color: '#6B8AFF', channel: 'sleep' },
   health: { label: 'Health', icon: 'Heart', color: '#FF5E5E', channel: 'health' },
   appointment: { label: 'Appointments', icon: 'Calendar', color: '#00E5CC', channel: 'appointment' },
   general: { label: 'General', icon: 'Bell', color: '#8B92B4', channel: 'general' },

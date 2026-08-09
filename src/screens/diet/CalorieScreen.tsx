@@ -15,7 +15,9 @@ import {
   RefreshControl,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
+import { Typography, Spacing, Radius } from '../../theme/theme';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { Camera } from 'lucide-react-native';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
@@ -23,27 +25,7 @@ import { useNotifications } from '../../providers/NotificationContext';
 import * as dietService from '../../services/dietService';
 import type { NutritionLog, NutritionGoal, WeeklyTrendDay, MealType } from '../../types/diet';
 
-// ── Meal category definitions ────────────────────────────────
-
-const MEAL_CATEGORIES: { key: MealType; name: string; icon: string; color: string }[] = [
-  { key: 'breakfast', name: 'Breakfast', icon: '☕', color: Colors.amber },
-  { key: 'lunch', name: 'Lunch', icon: '🥗', color: Colors.teal },
-  { key: 'snack', name: 'Snack', icon: '🍎', color: Colors.pink },
-  { key: 'dinner', name: 'Dinner', icon: '🌙', color: Colors.textMuted },
-];
-
 const MEAL_TYPE_OPTIONS: MealType[] = ['breakfast', 'lunch', 'snack', 'dinner'];
-
-// ── AI Suggestions (hardcoded for now) ──────────────────────
-
-const AI_SUGGESTIONS = [
-  { title: 'Baked salmon & broccoli', tags: ['High protein', 'omega-3', 'low carb'], calories: 490, highlight: '38g protein', icon: '🐟', type: 'AI pick', color: Colors.teal },
-  { title: 'Lentil soup & roti', tags: ['Low GI', 'high fibre', 'gut friendly'], calories: 420, highlight: '24g fibre', icon: '🍲', type: 'Diabetic', color: Colors.purple },
-  { title: 'Egg fried brown rice', tags: ['Balanced macros', '15 min prep'], calories: 510, highlight: '28g protein', icon: '🥚', type: 'Quick', color: Colors.amber },
-  { title: 'Tofu stir fry & noodles', tags: ['Plant-based', 'iron rich', 'anti-inflammatory'], calories: 460, highlight: '22g protein', icon: '🍃', type: 'Vegan', color: Colors.pink },
-];
-
-// ── Helpers ──────────────────────────────────────────────────
 
 function formatDateHeader(date: Date): string {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -67,9 +49,9 @@ function formatTime(isoString: string): string {
   return `${hours}:${minutes} ${ampm}`;
 }
 
-// ── Component ────────────────────────────────────────────────
-
 export default function CalorieScreen({ onProfilePress, onNotificationsPress }: { onProfilePress?: () => void; onNotificationsPress?: () => void }) {
+  const { theme } = useTheme();
+  const colors = theme.colors;
   const { onScroll } = useScrollVisibility();
   const { user, session } = useAuth();
   const { unreadCount } = useNotifications();
@@ -77,7 +59,20 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
   const today = useMemo(() => new Date(), []);
   const todayStr = useMemo(() => toDateString(today), [today]);
 
-  // ── Data state ─────────────────────────────────────────────
+  const MEAL_CATEGORIES: { key: MealType; name: string; icon: string; color: string }[] = useMemo(() => [
+    { key: 'breakfast', name: 'Breakfast', icon: '☕', color: colors.amber },
+    { key: 'lunch', name: 'Lunch', icon: '🥗', color: colors.teal },
+    { key: 'snack', name: 'Snack', icon: '🍎', color: colors.pink },
+    { key: 'dinner', name: 'Dinner', icon: '🌙', color: colors.textMuted },
+  ], [colors.amber, colors.teal, colors.pink, colors.textMuted]);
+
+  const AI_SUGGESTIONS = useMemo(() => [
+    { title: 'Baked salmon & broccoli', tags: ['High protein', 'omega-3', 'low carb'], calories: 490, highlight: '38g protein', icon: '🐟', type: 'AI pick', color: colors.teal },
+    { title: 'Lentil soup & roti', tags: ['Low GI', 'high fibre', 'gut friendly'], calories: 420, highlight: '24g fibre', icon: '🍲', type: 'Diabetic', color: colors.accentBlue },
+    { title: 'Egg fried brown rice', tags: ['Balanced macros', '15 min prep'], calories: 510, highlight: '28g protein', icon: '🥚', type: 'Quick', color: colors.amber },
+    { title: 'Tofu stir fry & noodles', tags: ['Plant-based', 'iron rich', 'anti-inflammatory'], calories: 460, highlight: '22g protein', icon: '🍃', type: 'Vegan', color: colors.pink },
+  ], [colors.teal, colors.accentBlue, colors.amber, colors.pink]);
+
   const [meals, setMeals] = useState<NutritionLog[]>([]);
   const [waterLogs, setWaterLogs] = useState<any[]>([]);
   const [waterTotalMl, setWaterTotalMl] = useState(0);
@@ -86,11 +81,9 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // ── Goal edit state ────────────────────────────────────────
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [tempGoal, setTempGoal] = useState('');
 
-  // ── Modal state ────────────────────────────────────────────
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMealType, setModalMealType] = useState<MealType>('breakfast');
   const [modalFood, setModalFood] = useState('');
@@ -101,15 +94,12 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
   const [modalFiber, setModalFiber] = useState('');
   const [modalSaving, setModalSaving] = useState(false);
 
-  // ── Custom water modal state ────────────────────────────────
   const [customWaterVisible, setCustomWaterVisible] = useState(false);
   const [customWaterText, setCustomWaterText] = useState('');
 
-  // ── Computed values ────────────────────────────────────────
   const calorieGoal = goal?.calorie_goal ?? 0;
   const waterGoalMl = goal?.water_goal ?? 0;
 
-  // ── First-time goal setup modal ────────────────────────────
   const [goalSetupVisible, setGoalSetupVisible] = useState(false);
   const [setupCalorieGoal, setSetupCalorieGoal] = useState('');
   const [setupWaterGoal, setSetupWaterGoal] = useState('');
@@ -136,7 +126,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     return Math.round(total / weeklyTrend.length);
   }, [weeklyTrend]);
 
-  // ── Group meals by taken_as ────────────────────────────────
   const mealsByType = useMemo(() => {
     const grouped: Record<MealType, NutritionLog[]> = {
       breakfast: [],
@@ -153,7 +142,105 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     return grouped;
   }, [meals]);
 
-  // ── Data fetching ──────────────────────────────────────────
+  const styles = useStyles(t => ({
+    root: { flex: 1, backgroundColor: t.colors.bg },
+    scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: Spacing.xl,
+    },
+    title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: t.colors.textPrimary, letterSpacing: -0.5 },
+    sub: { fontSize: Typography.sm, color: t.colors.amber, marginTop: 4, fontWeight: Typography.medium },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    aiCard: { padding: Spacing.base, marginBottom: Spacing.lg },
+    noGoalBanner: {
+      backgroundColor: t.colors.amber + '15',
+      borderWidth: 1,
+      borderColor: t.colors.amber + '40',
+      borderRadius: Radius.md,
+      padding: Spacing.base,
+      marginBottom: Spacing.lg,
+    },
+    iconWrapSm: { alignItems: 'center', justifyContent: 'center' },
+    aiLabel: { fontSize: Typography.xs, fontWeight: Typography.bold, letterSpacing: 1.5 },
+    aiText: { fontSize: Typography.sm, color: t.colors.textSecondary, lineHeight: 20 },
+    photoUploadCard: { marginBottom: Spacing.lg, padding: Spacing.base },
+    photoUploadArea: {
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: t.colors.teal + '60',
+      backgroundColor: t.colors.teal + '10',
+      borderRadius: Radius.lg,
+      padding: Spacing.xl,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cameraIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: t.colors.teal + '20', alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.md },
+    photoUploadTitle: { fontSize: Typography.base, fontWeight: Typography.bold, color: t.colors.textPrimary, marginBottom: 4 },
+    photoUploadSub: { fontSize: Typography.xs, color: t.colors.textSecondary, textAlign: 'center', paddingHorizontal: Spacing.lg },
+    calorieCard: { padding: Spacing.lg, marginBottom: Spacing.xl },
+    calorieRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    gaugeWrap: { width: 140, height: 140, alignItems: 'center', justifyContent: 'center' },
+    gaugeCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+    gaugeValue: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: t.colors.textPrimary },
+    gaugeUnit: { fontSize: Typography.xs, color: t.colors.textMuted, marginTop: 2 },
+    calorieStats: { flex: 1, marginLeft: Spacing.lg },
+    calorieStat: { marginBottom: Spacing.xs },
+    goalHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    editBtn: { paddingHorizontal: 6, paddingVertical: 2, backgroundColor: t.colors.bgCardBorder, borderRadius: Radius.sm },
+    editBtnText: { fontSize: Typography.xs, color: t.colors.textSecondary },
+    editGoalRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+    editGoalInput: { flex: 1, backgroundColor: t.colors.bg, color: t.colors.textPrimary, fontSize: Typography.base, fontWeight: Typography.bold, borderRadius: Radius.sm, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: t.colors.teal },
+    saveGoalBtn: { marginLeft: 8, backgroundColor: t.colors.teal, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    saveGoalBtnText: { color: t.colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold },
+    calorieStatLabel: { fontSize: Typography.xs, color: t.colors.textSecondary, marginBottom: 2 },
+    calorieStatVal: { fontSize: Typography.base, fontWeight: Typography.bold },
+    calorieDivider: { height: 1, backgroundColor: t.colors.bgCardBorder, marginVertical: Spacing.xs },
+    calorieProgressLabel: { fontSize: Typography.xs, color: t.colors.textSecondary, textAlign: 'center', marginTop: Spacing.sm },
+    macroCard: { padding: Spacing.base, marginBottom: Spacing.xl },
+    macroGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
+    macroItem: { width: '47%', borderWidth: 1, borderRadius: Radius.md, padding: Spacing.base },
+    macroVal: { fontSize: Typography.lg, fontWeight: Typography.bold, marginBottom: 2 },
+    macroLabel: { fontSize: Typography.xs, color: t.colors.textSecondary, marginBottom: Spacing.xs },
+    macroTarget: { fontSize: Typography.xs, color: t.colors.textMuted, marginTop: 4, alignSelf: 'flex-end' },
+    modalOverlay: { flex: 1, backgroundColor: t.colors.overlay, justifyContent: 'flex-end' },
+    modalContent: {
+      backgroundColor: t.colors.bgCardSolid,
+      borderTopLeftRadius: Radius.xl,
+      borderTopRightRadius: Radius.xl,
+      padding: Spacing.lg,
+      paddingBottom: Platform.OS === 'ios' ? 40 : Spacing.lg,
+    },
+    modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: t.colors.bgCardBorder, alignSelf: 'center', marginBottom: Spacing.base },
+    modalTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary, marginBottom: Spacing.base },
+    modalLabel: { fontSize: Typography.xs, color: t.colors.textSecondary, marginBottom: 4, marginTop: Spacing.sm },
+    modalInput: {
+      backgroundColor: t.colors.bg,
+      color: t.colors.textPrimary,
+      fontSize: Typography.base,
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      marginBottom: Spacing.xs,
+    },
+    customWaterBox: {
+      backgroundColor: t.colors.bgCardSolid,
+      borderRadius: Radius.xl,
+      padding: Spacing.lg,
+      marginHorizontal: Spacing.xl,
+      marginTop: 'auto',
+      marginBottom: Spacing.xl,
+    },
+  }));
+
   const fetchData = useCallback(async () => {
     if (!session?.access_token) return;
     setLoading(true);
@@ -203,7 +290,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     fetchData();
   }, [fetchData]);
 
-  // ── Show goal setup for first-time users ───────────────────
   useEffect(() => {
     if (!loading && goal === null) {
       setSetupCalorieGoal('');
@@ -216,7 +302,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     }
   }, [loading, goal]);
 
-  // ── Handle goal setup save ─────────────────────────────────
   const handleSaveGoalSetup = async () => {
     if (!session?.access_token) return;
     const calorie = parseInt(setupCalorieGoal, 10) || 0;
@@ -242,7 +327,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     }
   };
 
-  // ── Goal save ──────────────────────────────────────────────
   const handleSaveGoal = async () => {
     if (!session?.access_token) return;
     const parsed = parseInt(tempGoal, 10);
@@ -261,7 +345,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     setIsEditingGoal(false);
   };
 
-  // ── Water logging ──────────────────────────────────────────
   const handleLogWater = async (amountMl: number) => {
     if (!session?.access_token) return;
     try {
@@ -273,7 +356,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     }
   };
 
-  // ── Meal logging modal ─────────────────────────────────────
   const openMealModal = (mealType: MealType) => {
     setModalMealType(mealType);
     setModalFood('');
@@ -311,7 +393,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     }
   };
 
-  // ── Delete meal ────────────────────────────────────────────
   const handleDeleteMeal = async (nutritionId: number) => {
     if (!session?.access_token) return;
     try {
@@ -322,13 +403,11 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────
-
   const macros = [
-    { label: 'Protein', val: totalMacros.protein, target: goal?.protein_goal ?? 120, unit: 'g', color: Colors.teal },
-    { label: 'Carbs', val: totalMacros.carbs, target: goal?.carbs_goal ?? 280, unit: 'g', color: Colors.amber },
-    { label: 'Fats', val: totalMacros.fat, target: goal?.fat_goal ?? 70, unit: 'g', color: Colors.pink },
-    { label: 'Fiber', val: totalMacros.fiber, target: goal?.fiber_goal ?? 25, unit: 'g', color: Colors.purple },
+    { label: 'Protein', val: totalMacros.protein, target: goal?.protein_goal ?? 120, unit: 'g', color: colors.teal },
+    { label: 'Carbs', val: totalMacros.carbs, target: goal?.carbs_goal ?? 280, unit: 'g', color: colors.amber },
+    { label: 'Fats', val: totalMacros.fat, target: goal?.fat_goal ?? 70, unit: 'g', color: colors.pink },
+    { label: 'Fiber', val: totalMacros.fiber, target: goal?.fiber_goal ?? 25, unit: 'g', color: colors.accentBlue },
   ];
 
   const waterLiters = (waterTotalMl / 1000).toFixed(1);
@@ -341,8 +420,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[Colors.teal, Colors.pink]} tintColor={Colors.teal} progressBackgroundColor={Colors.bgCard} />}>
-        {/* Header */}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[colors.teal, colors.pink]} tintColor={colors.teal} progressBackgroundColor={colors.bgCard} />}>
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>Diet</Text>
@@ -360,11 +438,10 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
 
         {loading ? (
           <View style={{ paddingVertical: 60, alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={Colors.teal} />
+            <ActivityIndicator size="large" color={colors.teal} />
           </View>
         ) : (
           <>
-            {/* No Goals Banner */}
             {goal === null && (
               <TouchableOpacity
                 onPress={() => {
@@ -378,33 +455,18 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                 }}
                 style={styles.noGoalBanner}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={[styles.iconWrapSm, { backgroundColor: Colors.amber + '20', width: 36, height: 36, borderRadius: 18 }]}>
+                  <View style={[styles.iconWrapSm, { backgroundColor: colors.amber + '20', width: 36, height: 36, borderRadius: 18 }]}>
                     <Text style={{ fontSize: Typography.base }}>🎯</Text>
                   </View>
                   <View style={{ flex: 1, marginLeft: Spacing.md }}>
-                    <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textPrimary }}>Set up your diet goals</Text>
-                    <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 }}>Track calories, macros, and water intake</Text>
+                    <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: colors.textPrimary }}>Set up your diet goals</Text>
+                    <Text style={{ fontSize: Typography.xs, color: colors.textSecondary, marginTop: 2 }}>Track calories, macros, and water intake</Text>
                   </View>
-                  <Text style={{ fontSize: Typography.lg, color: Colors.textMuted }}>›</Text>
+                  <Text style={{ fontSize: Typography.lg, color: colors.textMuted }}>›</Text>
                 </View>
               </TouchableOpacity>
             )}
 
-            {/* AI Nutrition Insight 
-            <GlassCardView style={styles.aiCard} accentColor={Colors.amber}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm }}>
-                <View style={[styles.iconWrapSm, { backgroundColor: Colors.amber + '20' }]}>
-                  <Text style={{ fontSize: Typography.sm }}>✦</Text>
-                </View>
-                <Text style={[styles.aiLabel, { color: Colors.amber, marginLeft: Spacing.sm, marginBottom: 0 }]}>AI NUTRITION INSIGHT</Text>
-              </View>
-              <Text style={styles.aiText}>
-                Your protein intake is 32% below your daily goal. Adding a protein shake or an egg-white omelette at dinner could close the gap. Fiber is also trending low this week — consider adding spinach or flaxseed to your meals.
-              </Text>
-            </GlassCardView>
-            */}
-
-            {/* Calorie Ring Card */}
             <GlassCardView style={styles.calorieCard}>
               <View style={styles.calorieRow}>
                 <View style={styles.gaugeWrap}>
@@ -415,29 +477,11 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                     const circumference = 2 * Math.PI * radius;
                     const clampedProgress = Math.min(progress, 1);
                     const offset = circumference - clampedProgress * circumference;
-                    const color = progress > 1 ? Colors.pink : Colors.teal;
+                    const color = progress > 1 ? colors.pink : colors.teal;
                     return (
                       <Svg width={size} height={size}>
-                        <Circle
-                          cx={size / 2}
-                          cy={size / 2}
-                          r={radius}
-                          stroke={Colors.bgCardBorder}
-                          strokeWidth={stroke}
-                          fill="none"
-                        />
-                        <Circle
-                          cx={size / 2}
-                          cy={size / 2}
-                          r={radius}
-                          stroke={color}
-                          strokeWidth={stroke}
-                          fill="none"
-                          strokeDasharray={circumference}
-                          strokeDashoffset={offset}
-                          strokeLinecap="round"
-                          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                        />
+                        <Circle cx={size / 2} cy={size / 2} r={radius} stroke={colors.bgCardBorder} strokeWidth={stroke} fill="none" />
+                        <Circle cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={stroke} fill="none" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" transform={`rotate(-90 ${size / 2} ${size / 2})`} />
                       </Svg>
                     );
                   })()}
@@ -459,52 +503,44 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                     </View>
                     {isEditingGoal ? (
                       <View style={styles.editGoalRow}>
-                        <TextInput
-                          style={styles.editGoalInput}
-                          value={tempGoal}
-                          onChangeText={setTempGoal}
-                          keyboardType="number-pad"
-                          autoFocus
-                        />
+                        <TextInput style={styles.editGoalInput} value={tempGoal} onChangeText={setTempGoal} keyboardType="number-pad" autoFocus />
                         <TouchableOpacity onPress={handleSaveGoal} style={styles.saveGoalBtn}>
                           <Text style={styles.saveGoalBtnText}>✓</Text>
                         </TouchableOpacity>
                       </View>
                     ) : (
-                      <Text style={[styles.calorieStatVal, { color: Colors.textPrimary }]}>{calorieGoal.toLocaleString()}</Text>
+                      <Text style={[styles.calorieStatVal, { color: colors.textPrimary }]}>{calorieGoal.toLocaleString()}</Text>
                     )}
                   </View>
                   <View style={[styles.calorieDivider]} />
                   <View style={styles.calorieStat}>
                     <Text style={styles.calorieStatLabel}>Remaining</Text>
-                    <Text style={[styles.calorieStatVal, { color: remaining > 0 ? Colors.teal : Colors.pink }]}>
+                    <Text style={[styles.calorieStatVal, { color: remaining > 0 ? colors.teal : colors.pink }]}>
                       {remaining > 0 ? remaining.toLocaleString() : `+${Math.abs(remaining)}`}
                     </Text>
                   </View>
                   <View style={[styles.calorieDivider]} />
                   <View style={styles.calorieStat}>
                     <Text style={styles.calorieStatLabel}>Burned</Text>
-                    <Text style={[styles.calorieStatVal, { color: Colors.amber }]}>0</Text>
+                    <Text style={[styles.calorieStatVal, { color: colors.amber }]}>0</Text>
                   </View>
                 </View>
               </View>
-              <ProgressBar progress={progress} color={progress > 1 ? Colors.pink : Colors.teal} height={8} style={{ marginTop: Spacing.md }} />
+              <ProgressBar progress={progress} color={progress > 1 ? colors.pink : colors.teal} height={8} style={{ marginTop: Spacing.md }} />
               <Text style={styles.calorieProgressLabel}>{Math.round(progress * 100)}% of daily goal</Text>
             </GlassCardView>
 
-            {/* Track Calorie with a Photo */}
             <SectionHeader title="Track Calorie with a photo" />
             <GlassCardView style={styles.photoUploadCard}>
               <TouchableOpacity style={styles.photoUploadArea}>
                 <View style={styles.cameraIconWrap}>
-                  <Text style={{ fontSize: Typography.xxl }}>📷</Text>
+                  <Camera size={28} color={colors.teal} strokeWidth={2} />
                 </View>
                 <Text style={styles.photoUploadTitle}>Scan meal with AI</Text>
                 <Text style={styles.photoUploadSub}>Upload or take a photo to automatically log calories and macros.</Text>
               </TouchableOpacity>
             </GlassCardView>
 
-            {/* Macros */}
             <SectionHeader title="Macronutrients" />
             <GlassCardView style={styles.macroCard}>
               <View style={styles.macroGrid}>
@@ -519,10 +555,9 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               </View>
             </GlassCardView>
 
-            {/* TODAY'S MEALS */}
             <SectionHeader title="TODAY'S MEALS" />
             <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
-              {MEAL_CATEGORIES.map((cat, index) => {
+              {MEAL_CATEGORIES.map((cat) => {
                 const catMeals = mealsByType[cat.key];
                 const hasMeals = catMeals.length > 0;
                 const totalCals = catMeals.reduce((s, m) => s + (m.calories || 0), 0);
@@ -534,32 +569,32 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                     key={cat.key}
                     onPress={() => openMealModal(cat.key)}
                     style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.sm }, pressed && { opacity: 0.5 }]}>
-                    <View style={[styles.iconWrapSm, { backgroundColor: hasMeals ? cat.color + '20' : Colors.bgCardBorder, width: 44, height: 44, borderRadius: Radius.md }]}>
+                    <View style={[styles.iconWrapSm, { backgroundColor: hasMeals ? cat.color + '20' : colors.bgCardBorder, width: 44, height: 44, borderRadius: Radius.md }]}>
                       <Text style={{ fontSize: Typography.xl, opacity: hasMeals ? 1 : 0.5 }}>{cat.icon}</Text>
                     </View>
                     <View style={{ flex: 1, marginLeft: Spacing.md }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: hasMeals ? Colors.textPrimary : Colors.textSecondary }}>{cat.name}</Text>
+                        <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: hasMeals ? colors.textPrimary : colors.textSecondary }}>{cat.name}</Text>
                         {hasMeals && (
-                          <View style={{ backgroundColor: Colors.teal + '30', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, marginLeft: Spacing.sm }}>
-                            <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.bold }}>Logged</Text>
+                          <View style={{ backgroundColor: colors.teal + '30', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, marginLeft: Spacing.sm }}>
+                            <Text style={{ fontSize: Typography.xs, color: colors.teal, fontWeight: Typography.bold }}>Logged</Text>
                           </View>
                         )}
                       </View>
-                      <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 4 }} numberOfLines={1}>
+                      <Text style={{ fontSize: Typography.xs, color: colors.textSecondary, marginTop: 4 }} numberOfLines={1}>
                         {hasMeals ? foodNames : 'Not logged yet - tap to log'}
                       </Text>
                     </View>
                     <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
                       {hasMeals ? (
                         <>
-                          <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary }}>{totalCals}</Text>
-                          <Text style={{ fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2 }}>kcal · {timeStr}</Text>
+                          <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary }}>{totalCals}</Text>
+                          <Text style={{ fontSize: Typography.xs, color: colors.textMuted, marginTop: 2 }}>kcal · {timeStr}</Text>
                         </>
                       ) : (
-                        <View style={{ paddingHorizontal: Spacing.md, paddingVertical: 6, backgroundColor: Colors.bgCardBorder, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={{ fontSize: Typography.xs, color: Colors.textPrimary, fontWeight: Typography.bold, marginRight: 4 }}>Log</Text>
-                          <Text style={{ fontSize: Typography.sm, color: Colors.textPrimary }}>↗</Text>
+                        <View style={{ paddingHorizontal: Spacing.md, paddingVertical: 6, backgroundColor: colors.bgCardBorder, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center' }}>
+                          <Text style={{ fontSize: Typography.xs, color: colors.textPrimary, fontWeight: Typography.bold, marginRight: 4 }}>Log</Text>
+                          <Text style={{ fontSize: Typography.sm, color: colors.textPrimary }}>↗</Text>
                         </View>
                       )}
                     </View>
@@ -568,54 +603,49 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               })}
             </GlassCardView>
 
-            {/* WATER INTAKE */}
             <SectionHeader title="WATER INTAKE" />
             <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
                 <View>
                   <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                    <Text style={{ fontSize: Typography.xl, fontWeight: Typography.extraBold, color: Colors.textPrimary }}>{waterLiters}</Text>
-                    <Text style={{ fontSize: Typography.sm, color: Colors.textMuted, marginLeft: 2 }}>/ {waterGoalLiters} L</Text>
+                    <Text style={{ fontSize: Typography.xl, fontWeight: Typography.extraBold, color: colors.textPrimary }}>{waterLiters}</Text>
+                    <Text style={{ fontSize: Typography.sm, color: colors.textMuted, marginLeft: 2 }}>/ {waterGoalLiters} L</Text>
                   </View>
-                  <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary }}>{waterPercent}% of daily goal</Text>
+                  <Text style={{ fontSize: Typography.xs, color: colors.textSecondary }}>{waterPercent}% of daily goal</Text>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.teal + '15', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.teal + '30' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.teal + '15', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: colors.teal + '30' }}>
                   <Text style={{ fontSize: Typography.sm, marginRight: 6 }}>💧</Text>
-                  <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.bold }}>{waterTotalMl} ml</Text>
+                  <Text style={{ fontSize: Typography.xs, color: colors.teal, fontWeight: Typography.bold }}>{waterTotalMl} ml</Text>
                 </View>
               </View>
 
-              {/* Water progress bar */}
-              <View style={{ height: 8, borderRadius: 4, backgroundColor: Colors.bgCardBorder, marginBottom: Spacing.sm, overflow: 'hidden' }}>
-                <View style={{ height: '100%', borderRadius: 4, width: `${Math.min(waterPercent, 100)}%`, backgroundColor: Colors.teal }} />
+              <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.bgCardBorder, marginBottom: Spacing.sm, overflow: 'hidden' }}>
+                <View style={{ height: '100%', borderRadius: 4, width: `${Math.min(waterPercent, 100)}%`, backgroundColor: colors.teal }} />
               </View>
-              <Text style={{ fontSize: Typography.xs, color: Colors.textMuted, marginBottom: Spacing.base, textAlign: 'right' }}>{waterTotalMl} / {waterGoalMl} ml</Text>
+              <Text style={{ fontSize: Typography.xs, color: colors.textMuted, marginBottom: Spacing.base, textAlign: 'right' }}>{waterTotalMl} / {waterGoalMl} ml</Text>
 
-              {/* Quick add buttons */}
               <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
                 {[200, 250, 300, 500].map((ml) => (
                   <TouchableOpacity
                     key={ml}
                     onPress={() => handleLogWater(ml)}
-                    style={{ flex: 1, backgroundColor: Colors.bgCardBorder, paddingVertical: Spacing.sm, borderRadius: Radius.md, alignItems: 'center', borderWidth: 1, borderColor: Colors.bgCardBorder }}>
-                    <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.bold }}>+{ml}</Text>
-                    <Text style={{ fontSize: Typography.xs, color: Colors.textMuted }}>ml</Text>
+                    style={{ flex: 1, backgroundColor: colors.bgCardBorder, paddingVertical: Spacing.sm, borderRadius: Radius.md, alignItems: 'center', borderWidth: 1, borderColor: colors.bgCardBorder }}>
+                    <Text style={{ fontSize: Typography.xs, color: colors.teal, fontWeight: Typography.bold }}>+{ml}</Text>
+                    <Text style={{ fontSize: Typography.xs, color: colors.textMuted }}>ml</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              {/* Custom amount */}
               <TouchableOpacity
                 onPress={() => {
                   setCustomWaterText('');
                   setCustomWaterVisible(true);
                 }}
-                style={{ marginTop: Spacing.sm, borderWidth: 1, borderColor: Colors.teal + '40', backgroundColor: Colors.teal + '08', paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center' }}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.teal, fontWeight: Typography.semiBold }}>+ Custom amount</Text>
+                style={{ marginTop: Spacing.sm, borderWidth: 1, borderColor: colors.teal + '40', backgroundColor: colors.teal + '08', paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center' }}>
+                <Text style={{ fontSize: Typography.sm, color: colors.teal, fontWeight: Typography.semiBold }}>+ Custom amount</Text>
               </TouchableOpacity>
             </GlassCardView>
 
-            {/* AI MEAL SUGGESTIONS */}
             <SectionHeader title="AI MEAL SUGGESTIONS - DINNER" />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xl, justifyContent: 'space-between' }}>
               {AI_SUGGESTIONS.map((item, idx) => (
@@ -624,16 +654,16 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                     <Text style={{ fontSize: Typography.xxl }}>{item.icon}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                    <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textPrimary, flex: 1, marginRight: Spacing.xs, lineHeight: 18 }} numberOfLines={2}>{item.title}</Text>
-                    <View style={{ backgroundColor: Colors.bgCardBorder, paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full }}>
+                    <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: colors.textPrimary, flex: 1, marginRight: Spacing.xs, lineHeight: 18 }} numberOfLines={2}>{item.title}</Text>
+                    <View style={{ backgroundColor: colors.bgCardBorder, paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full }}>
                       <Text style={{ fontSize: Typography.xs, color: item.color, fontWeight: Typography.bold }}>{item.type}</Text>
                     </View>
                   </View>
-                  <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginBottom: Spacing.lg, lineHeight: 14 }} numberOfLines={2}>
+                  <Text style={{ fontSize: Typography.xs, color: colors.textSecondary, marginBottom: Spacing.lg, lineHeight: 14 }} numberOfLines={2}>
                     {item.tags.join(' - ')}
                   </Text>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                    <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary }}>~{item.calories} <Text style={{ fontSize: Typography.xs, color: Colors.textMuted, fontWeight: Typography.regular }}>kcal</Text></Text>
+                    <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary }}>~{item.calories} <Text style={{ fontSize: Typography.xs, color: colors.textMuted, fontWeight: Typography.regular }}>kcal</Text></Text>
                     <View style={{ backgroundColor: item.color + '15', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, borderWidth: 1, borderColor: item.color + '30' }}>
                       <Text style={{ fontSize: Typography.xs, color: item.color, fontWeight: Typography.bold }}>{item.highlight}</Text>
                     </View>
@@ -642,32 +672,31 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               ))}
             </View>
 
-            {/* WEEKLY NUTRITION TREND */}
             <SectionHeader title="WEEKLY NUTRITION TREND" />
             <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl }}>
-                <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary }}>Calorie intake <Text style={{ color: Colors.textSecondary, fontWeight: Typography.regular }}>— past 7 days</Text></Text>
-                <View style={{ backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.purple, paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary }}>Calorie intake <Text style={{ color: colors.textSecondary, fontWeight: Typography.regular }}>— past 7 days</Text></Text>
+                <View style={{ backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.accentBlue, paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={{ fontSize: Typography.xs, marginRight: 4 }}>✦</Text>
-                  <Text style={{ fontSize: Typography.xs, color: Colors.purple, fontWeight: Typography.bold }}>AI analyzed Today</Text>
+                  <Text style={{ fontSize: Typography.xs, color: colors.accentBlue, fontWeight: Typography.bold }}>AI analyzed Today</Text>
                 </View>
               </View>
 
               <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 120, marginBottom: Spacing.sm, paddingHorizontal: Spacing.xs }}>
                 {weeklyTrend.map((day, idx) => (
                   <View key={idx} style={{ alignItems: 'center', width: '12%', height: '100%', justifyContent: 'flex-end' }}>
-                    <View style={{ width: '100%', height: `${(day.val / 3000) * 100}%`, backgroundColor: day.today ? Colors.purple : day.val > 2000 ? Colors.amber : Colors.teal + '80', borderRadius: Radius.sm, minHeight: 20 }} />
-                    <Text style={{ fontSize: Typography.sm, color: day.today ? Colors.purple : Colors.textSecondary, marginTop: Spacing.sm, fontWeight: day.today ? Typography.bold : Typography.regular }}>{day.day}</Text>
+                    <View style={{ width: '100%', height: `${(day.val / 3000) * 100}%`, backgroundColor: day.today ? colors.accentBlue : day.val > 2000 ? colors.amber : colors.teal + '80', borderRadius: Radius.sm, minHeight: 20 }} />
+                    <Text style={{ fontSize: Typography.sm, color: day.today ? colors.accentBlue : colors.textSecondary, marginTop: Spacing.sm, fontWeight: day.today ? Typography.bold : Typography.regular }}>{day.day}</Text>
                   </View>
                 ))}
               </View>
 
-              <View style={{ height: 1, backgroundColor: Colors.bgCardBorder, marginVertical: Spacing.md }} />
+              <View style={{ height: 1, backgroundColor: colors.bgCardBorder, marginVertical: Spacing.md }} />
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary }}>Avg this week: <Text style={{ color: Colors.textPrimary, fontWeight: Typography.bold }}>{weeklyAvg.toLocaleString()} kcal</Text></Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.teal + '20', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.teal + '50' }}>
-                  <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.bold }}>✓ {weeklyAvg <= calorieGoal ? 'Within goal' : 'Over goal'}</Text>
+                <Text style={{ fontSize: Typography.sm, color: colors.textSecondary }}>Avg this week: <Text style={{ color: colors.textPrimary, fontWeight: Typography.bold }}>{weeklyAvg.toLocaleString()} kcal</Text></Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.teal + '20', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: colors.teal + '50' }}>
+                  <Text style={{ fontSize: Typography.xs, color: colors.teal, fontWeight: Typography.bold }}>✓ {weeklyAvg <= calorieGoal ? 'Within goal' : 'Over goal'}</Text>
                 </View>
               </View>
             </GlassCardView>
@@ -677,18 +706,13 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* ── Meal Logging Modal ─────────────────────────────────── */}
       {modalVisible && <Modal visible={modalVisible} animationType="slide" transparent>
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => setModalVisible(false)}
-          style={styles.modalOverlay}>
+        <TouchableOpacity activeOpacity={1} onPress={() => setModalVisible(false)} style={styles.modalOverlay}>
           <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
               <View style={styles.modalHandle} />
               <Text style={styles.modalTitle}>Log Meal</Text>
 
-              {/* Meal type selector */}
               <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.base }}>
                 {MEAL_TYPE_OPTIONS.map(type => (
                   <TouchableOpacity
@@ -699,71 +723,54 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                       paddingVertical: Spacing.sm,
                       borderRadius: Radius.md,
                       alignItems: 'center',
-                      backgroundColor: modalMealType === type ? Colors.teal + '20' : Colors.bgCardBorder,
+                      backgroundColor: modalMealType === type ? colors.teal + '20' : colors.bgCardBorder,
                       borderWidth: modalMealType === type ? 1 : 0,
-                      borderColor: Colors.teal,
+                      borderColor: colors.teal,
                     }}>
-                    <Text style={{ fontSize: Typography.xs, color: modalMealType === type ? Colors.teal : Colors.textSecondary, fontWeight: Typography.bold, textTransform: 'capitalize' }}>{type}</Text>
+                    <Text style={{ fontSize: Typography.xs, color: modalMealType === type ? colors.teal : colors.textSecondary, fontWeight: Typography.bold, textTransform: 'capitalize' }}>{type}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              {/* Food name */}
               <Text style={styles.modalLabel}>Food name *</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={modalFood}
-                onChangeText={setModalFood}
-                placeholder="e.g. Grilled chicken salad"
-                placeholderTextColor={Colors.textMuted}
-              />
+              <TextInput style={styles.modalInput} value={modalFood} onChangeText={setModalFood} placeholder="e.g. Grilled chicken salad" placeholderTextColor={colors.textMuted} />
 
-              {/* Calories */}
               <Text style={styles.modalLabel}>Calories (kcal)</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={modalCalories}
-                onChangeText={setModalCalories}
-                keyboardType="number-pad"
-                placeholder="0"
-                placeholderTextColor={Colors.textMuted}
-              />
+              <TextInput style={styles.modalInput} value={modalCalories} onChangeText={setModalCalories} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
 
-              {/* Macros row */}
               <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.modalLabel}>Protein (g)</Text>
-                  <TextInput style={styles.modalInput} value={modalProtein} onChangeText={setModalProtein} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
+                  <TextInput style={styles.modalInput} value={modalProtein} onChangeText={setModalProtein} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.modalLabel}>Carbs (g)</Text>
-                  <TextInput style={styles.modalInput} value={modalCarbs} onChangeText={setModalCarbs} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
+                  <TextInput style={styles.modalInput} value={modalCarbs} onChangeText={setModalCarbs} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
                 </View>
               </View>
               <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.modalLabel}>Fat (g)</Text>
-                  <TextInput style={styles.modalInput} value={modalFat} onChangeText={setModalFat} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
+                  <TextInput style={styles.modalInput} value={modalFat} onChangeText={setModalFat} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.modalLabel}>Fiber (g)</Text>
-                  <TextInput style={styles.modalInput} value={modalFiber} onChangeText={setModalFiber} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
+                  <TextInput style={styles.modalInput} value={modalFiber} onChangeText={setModalFiber} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
                 </View>
               </View>
 
-              {/* Actions */}
               <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
-                <TouchableOpacity onPress={() => setModalVisible(false)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
-                  <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
+                <TouchableOpacity onPress={() => setModalVisible(false)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: colors.bgCardBorder }}>
+                  <Text style={{ fontSize: Typography.sm, color: colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleSaveMeal}
                   disabled={modalSaving}
-                  style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.teal, opacity: modalSaving ? 0.6 : 1 }}>
+                  style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: colors.teal, opacity: modalSaving ? 0.6 : 1 }}>
                   {modalSaving ? (
-                    <ActivityIndicator size="small" color={Colors.bg} />
+                    <ActivityIndicator size="small" color={colors.bg} />
                   ) : (
-                    <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Save Meal</Text>
+                    <Text style={{ fontSize: Typography.sm, color: colors.bg, fontWeight: Typography.bold }}>Save Meal</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -772,27 +779,15 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
         </TouchableOpacity>
       </Modal>}
 
-      {/* ── Custom Water Modal ────────────────────────────────── */}
       {customWaterVisible && <Modal visible={customWaterVisible} animationType="fade" transparent>
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => setCustomWaterVisible(false)}
-          style={styles.modalOverlay}>
+        <TouchableOpacity activeOpacity={1} onPress={() => setCustomWaterVisible(false)} style={styles.modalOverlay}>
           <TouchableOpacity activeOpacity={1} style={styles.customWaterBox}>
             <Text style={styles.modalTitle}>Add Water</Text>
             <Text style={styles.modalLabel}>Amount (ml)</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={customWaterText}
-              onChangeText={setCustomWaterText}
-              keyboardType="number-pad"
-              placeholder="e.g. 300"
-              placeholderTextColor={Colors.textMuted}
-              autoFocus
-            />
+            <TextInput style={styles.modalInput} value={customWaterText} onChangeText={setCustomWaterText} keyboardType="number-pad" placeholder="e.g. 300" placeholderTextColor={colors.textMuted} autoFocus />
             <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.base }}>
-              <TouchableOpacity onPress={() => setCustomWaterVisible(false)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
+              <TouchableOpacity onPress={() => setCustomWaterVisible(false)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: colors.bgCardBorder }}>
+                <Text style={{ fontSize: Typography.sm, color: colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
@@ -802,83 +797,64 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                     setCustomWaterVisible(false);
                   }
                 }}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.teal }}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Add</Text>
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: colors.teal }}>
+                <Text style={{ fontSize: Typography.sm, color: colors.bg, fontWeight: Typography.bold }}>Add</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>}
 
-      {/* ── Goal Setup Modal (first-time users) ──────────────── */}
       {goalSetupVisible && <Modal visible={goalSetupVisible} animationType="slide" transparent>
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => setGoalSetupVisible(false)}
-          style={styles.modalOverlay}>
+        <TouchableOpacity activeOpacity={1} onPress={() => setGoalSetupVisible(false)} style={styles.modalOverlay}>
           <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>Set Your Nutrition Goals</Text>
-            <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, marginBottom: Spacing.base }}>
+            <Text style={{ fontSize: Typography.sm, color: colors.textSecondary, marginBottom: Spacing.base }}>
               Set your daily goals to track your progress. You can update these anytime.
             </Text>
 
             <Text style={styles.modalLabel}>Calorie goal (kcal) *</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={setupCalorieGoal}
-              onChangeText={setSetupCalorieGoal}
-              keyboardType="number-pad"
-              placeholder="e.g. 2500"
-              placeholderTextColor={Colors.textMuted}
-              autoFocus
-            />
+            <TextInput style={styles.modalInput} value={setupCalorieGoal} onChangeText={setSetupCalorieGoal} keyboardType="number-pad" placeholder="e.g. 2500" placeholderTextColor={colors.textMuted} autoFocus />
 
             <Text style={styles.modalLabel}>Water goal (ml)</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={setupWaterGoal}
-              onChangeText={setSetupWaterGoal}
-              keyboardType="number-pad"
-              placeholder="e.g. 2500"
-              placeholderTextColor={Colors.textMuted}
-            />
+            <TextInput style={styles.modalInput} value={setupWaterGoal} onChangeText={setSetupWaterGoal} keyboardType="number-pad" placeholder="e.g. 2500" placeholderTextColor={colors.textMuted} />
 
             <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalLabel}>Protein (g)</Text>
-                <TextInput style={styles.modalInput} value={setupProteinGoal} onChangeText={setSetupProteinGoal} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
+                <TextInput style={styles.modalInput} value={setupProteinGoal} onChangeText={setSetupProteinGoal} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalLabel}>Carbs (g)</Text>
-                <TextInput style={styles.modalInput} value={setupCarbsGoal} onChangeText={setSetupCarbsGoal} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
+                <TextInput style={styles.modalInput} value={setupCarbsGoal} onChangeText={setSetupCarbsGoal} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
               </View>
             </View>
             <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalLabel}>Fat (g)</Text>
-                <TextInput style={styles.modalInput} value={setupFatGoal} onChangeText={setSetupFatGoal} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
+                <TextInput style={styles.modalInput} value={setupFatGoal} onChangeText={setSetupFatGoal} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalLabel}>Fiber (g)</Text>
-                <TextInput style={styles.modalInput} value={setupFiberGoal} onChangeText={setSetupFiberGoal} keyboardType="number-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
+                <TextInput style={styles.modalInput} value={setupFiberGoal} onChangeText={setSetupFiberGoal} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
               </View>
             </View>
 
             <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
               <TouchableOpacity
                 onPress={() => setGoalSetupVisible(false)}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Skip for now</Text>
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: colors.bgCardBorder }}>
+                <Text style={{ fontSize: Typography.sm, color: colors.textSecondary, fontWeight: Typography.semiBold }}>Skip for now</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleSaveGoalSetup}
                 disabled={setupSaving}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.teal, opacity: setupSaving ? 0.6 : 1 }}>
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: colors.teal, opacity: setupSaving ? 0.6 : 1 }}>
                 {setupSaving ? (
-                  <ActivityIndicator size="small" color={Colors.bg} />
+                  <ActivityIndicator size="small" color={colors.bg} />
                 ) : (
-                  <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Save Goals</Text>
+                  <Text style={{ fontSize: Typography.sm, color: colors.bg, fontWeight: Typography.bold }}>Save Goals</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -888,108 +864,3 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
-  },
-  title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary, letterSpacing: -0.5 },
-  sub: { fontSize: Typography.sm, color: Colors.amber, marginTop: 4, fontWeight: Typography.medium },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-
-  aiCard: { padding: Spacing.base, marginBottom: Spacing.lg },
-  noGoalBanner: {
-    backgroundColor: Colors.amber + '15',
-    borderWidth: 1,
-    borderColor: Colors.amber + '40',
-    borderRadius: Radius.md,
-    padding: Spacing.base,
-    marginBottom: Spacing.lg,
-  },
-  iconWrapSm: { alignItems: 'center', justifyContent: 'center' },
-  aiLabel: { fontSize: Typography.xs, fontWeight: Typography.bold, letterSpacing: 1.5 },
-  aiText: { fontSize: Typography.sm, color: Colors.textSecondary, lineHeight: 20 },
-
-  photoUploadCard: { marginBottom: Spacing.lg, padding: Spacing.base },
-  photoUploadArea: {
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: Colors.teal + '60',
-    backgroundColor: Colors.teal + '10',
-    borderRadius: Radius.lg,
-    padding: Spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cameraIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.teal + '20', alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.md },
-  photoUploadTitle: { fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: 4 },
-  photoUploadSub: { fontSize: Typography.xs, color: Colors.textSecondary, textAlign: 'center', paddingHorizontal: Spacing.lg },
-
-  calorieCard: { padding: Spacing.lg, marginBottom: Spacing.xl },
-  calorieRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  gaugeWrap: { width: 140, height: 140, alignItems: 'center', justifyContent: 'center' },
-  gaugeCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  gaugeValue: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: Colors.textPrimary },
-  gaugeUnit: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 2 },
-  calorieStats: { flex: 1, marginLeft: Spacing.lg },
-  calorieStat: { marginBottom: Spacing.xs },
-  goalHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  editBtn: { paddingHorizontal: 6, paddingVertical: 2, backgroundColor: Colors.bgCardBorder, borderRadius: Radius.sm },
-  editBtnText: { fontSize: Typography.xs, color: Colors.textSecondary },
-  editGoalRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  editGoalInput: { flex: 1, backgroundColor: Colors.bg, color: Colors.textPrimary, fontSize: Typography.base, fontWeight: Typography.bold, borderRadius: Radius.sm, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: Colors.teal },
-  saveGoalBtn: { marginLeft: 8, backgroundColor: Colors.teal, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  saveGoalBtnText: { color: Colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold },
-  calorieStatLabel: { fontSize: Typography.xs, color: Colors.textSecondary, marginBottom: 2 },
-  calorieStatVal: { fontSize: Typography.base, fontWeight: Typography.bold },
-  calorieDivider: { height: 1, backgroundColor: Colors.bgCardBorder, marginVertical: Spacing.xs },
-  calorieProgressLabel: { fontSize: Typography.xs, color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.sm },
-
-  macroCard: { padding: Spacing.base, marginBottom: Spacing.xl },
-  macroGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
-  macroItem: { width: '47%', borderWidth: 1, borderRadius: Radius.md, padding: Spacing.base },
-  macroVal: { fontSize: Typography.lg, fontWeight: Typography.bold, marginBottom: 2 },
-  macroLabel: { fontSize: Typography.xs, color: Colors.textSecondary, marginBottom: Spacing.xs },
-  macroTarget: { fontSize: Typography.xs, color: Colors.textMuted, marginTop: 4, alignSelf: 'flex-end' },
-
-  // Modal styles
-  modalOverlay: { flex: 1, backgroundColor: Colors.overlay, justifyContent: 'flex-end' },
-  modalContent: {
-    backgroundColor: Colors.bgCardSolid,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    padding: Spacing.lg,
-    paddingBottom: Platform.OS === 'ios' ? 40 : Spacing.lg,
-  },
-  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.bgCardBorder, alignSelf: 'center', marginBottom: Spacing.base },
-  modalTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.textPrimary, marginBottom: Spacing.base },
-  modalLabel: { fontSize: Typography.xs, color: Colors.textSecondary, marginBottom: 4, marginTop: Spacing.sm },
-  modalInput: {
-    backgroundColor: Colors.bg,
-    color: Colors.textPrimary,
-    fontSize: Typography.base,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.bgCardBorder,
-    marginBottom: Spacing.xs,
-  },
-  customWaterBox: {
-    backgroundColor: Colors.bgCardSolid,
-    borderRadius: Radius.xl,
-    padding: Spacing.lg,
-    marginHorizontal: Spacing.xl,
-    marginTop: 'auto',
-    marginBottom: Spacing.xl,
-  },
-});
