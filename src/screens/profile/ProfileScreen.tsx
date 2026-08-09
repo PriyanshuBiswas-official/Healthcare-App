@@ -8,11 +8,12 @@ import {
   Switch,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { ArrowLeft, User, ClipboardList, Pill, TriangleAlert, Phone, Bell, Flower2, Lock, Watch, Smartphone, Droplets, Dumbbell, Building2, Moon, Heart, CircleQuestionMark, Shield, FileText, Info, PenLine, Monitor, Sun, Users } from 'lucide-react-native';
+import { ArrowLeft, User, ClipboardList, Pill, TriangleAlert, Phone, Bell, Flower2, Lock, Watch, Smartphone, Droplets, Dumbbell, Building2, Moon, Heart, CircleQuestionMark, Shield, FileText, Info, PenLine, Monitor, Sun, Users, Crown } from 'lucide-react-native';
 import { GlassCardView, SectionHeader, ProgressBar } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useAuth } from '../../providers/AuthProvider';
@@ -30,9 +31,15 @@ import AppointmentsRemindersScreen from '../reminders/AppointmentsRemindersScree
 import SleepRemindersScreen from '../reminders/SleepRemindersScreen';
 import HealthRemindersScreen from '../reminders/HealthRemindersScreen';
 import MedicationsRemindersScreen from '../reminders/MedicationsRemindersScreen';
+import ManageSubscriptionsScreen from './ManageSubscriptionsScreen';
+import OffboardingReasonScreen from '../offboarding/ReasonScreen';
+import OffboardingFeedbackScreen from '../offboarding/FeedbackScreen';
+import OffboardingDataExportScreen from '../offboarding/DataExportScreen';
+import OffboardingWarningScreen from '../offboarding/WarningScreen';
+import OffboardingConfirmScreen from '../offboarding/ConfirmScreen';
 import { AppTheme } from '../../theme';
 
-type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency' | 'reminders-medication' | 'reminders-water' | 'reminders-workouts' | 'reminders-appointments' | 'reminders-sleep' | 'reminders-health';
+type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency' | 'reminders-medication' | 'reminders-water' | 'reminders-workouts' | 'reminders-appointments' | 'reminders-sleep' | 'reminders-health' | 'subscriptions' | 'offboarding-reason' | 'offboarding-feedback' | 'offboarding-export' | 'offboarding-warning' | 'offboarding-final';
 
 type MenuItem = {
   icon: React.ReactNode;
@@ -194,6 +201,9 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
     initialSection as HealthSection | null
   );
   const cameFromExternal = !!initialSection;
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [offboardingReason, setOffboardingReason] = useState<string | null>(null);
+  const [offboardingFeedback, setOffboardingFeedback] = useState('');
 
   const appVersion = require('../../../package.json').version as string;
 
@@ -264,7 +274,6 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
     },
     memberBadge: {
       alignSelf: 'flex-start',
-      marginTop: Spacing.sm,
       paddingHorizontal: Spacing.sm + 2,
       paddingVertical: 3,
       borderRadius: Radius.full,
@@ -276,6 +285,18 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
       fontSize: Typography.xs,
       fontWeight: Typography.semiBold,
       color: t.colors.teal,
+      letterSpacing: Typography.lsWide,
+    },
+    upgradeBtn: {
+      paddingHorizontal: Spacing.sm + 2,
+      paddingVertical: 3,
+      borderRadius: Radius.full,
+      backgroundColor: t.colors.amber + '20',
+    },
+    upgradeBtnText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.semiBold,
+      color: t.colors.amber,
       letterSpacing: Typography.lsWide,
     },
     profileMeta: {
@@ -373,13 +394,29 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
       justifyContent: 'center',
       paddingVertical: Spacing.md,
       borderRadius: Radius.lg,
-      backgroundColor: t.colors.danger + '15',
+      backgroundColor: t.colors.bgCard,
       borderWidth: 1,
-      borderColor: t.colors.danger + '40',
-      marginBottom: Spacing.lg,
+      borderColor: t.colors.bgCardBorder,
+      marginBottom: Spacing.md,
     },
     logoutIcon: { fontSize: Typography.base, marginRight: Spacing.sm },
     logoutText: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: t.colors.textSecondary,
+    },
+    deleteBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.lg,
+      backgroundColor: t.colors.danger + '15',
+      borderWidth: 1,
+      borderColor: t.colors.danger + '30',
+      marginBottom: Spacing.lg,
+    },
+    deleteBtnText: {
       fontSize: Typography.base,
       fontWeight: Typography.bold,
       color: t.colors.danger,
@@ -445,6 +482,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
   ], [theme.colors]);
 
   const SUPPORT: MenuItem[] = useMemo(() => [
+    { icon: <Crown size={20} color="#F59E0B" />, label: 'Manage Subscriptions', sub: 'Plans & billing' },
     { icon: <CircleQuestionMark size={20} color="#14B8A6" />, label: 'Help & Support', sub: 'FAQs, chat support' },
     { icon: <Shield size={20} color="#3B82F6" />, label: 'Privacy & Security', sub: 'Data sharing, permissions' },
     { icon: <FileText size={20} color="#F59E0B" />, label: 'Terms & Policies', sub: 'Legal documents' },
@@ -503,6 +541,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
     setToggles(prev => ({ ...prev, [key]: value }));
 
   const handleLogout = async () => {
+    setLoggingOut(true);
     try {
       const { GoogleSignin } = require('../../lib/googleSignin');
       const isSignedIn = await GoogleSignin.isSignedIn();
@@ -520,6 +559,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
     } catch (e) {
       console.warn('[ProfileScreen] Supabase sign-out error:', e);
     }
+    setLoggingOut(false);
   };
 
   return (
@@ -594,6 +634,53 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
               onSaved={fetchProfile}
             />
           )}
+          {activeSection === 'subscriptions' && (
+            <ManageSubscriptionsScreen
+              onBack={handleSubScreenBack}
+            />
+          )}
+          {activeSection === 'offboarding-reason' && (
+            <OffboardingReasonScreen
+              onBack={() => setActiveSection(null)}
+              onNext={(reason) => { setOffboardingReason(reason); setActiveSection('offboarding-feedback'); }}
+              step={0}
+              totalSteps={5}
+            />
+          )}
+          {activeSection === 'offboarding-feedback' && (
+            <OffboardingFeedbackScreen
+              onBack={() => setActiveSection('offboarding-reason')}
+              onNext={(feedback) => { setOffboardingFeedback(feedback); setActiveSection('offboarding-export'); }}
+              onSkip={() => setActiveSection('offboarding-export')}
+              step={1}
+              totalSteps={5}
+            />
+          )}
+          {activeSection === 'offboarding-export' && (
+            <OffboardingDataExportScreen
+              onBack={() => setActiveSection('offboarding-feedback')}
+              onNext={() => setActiveSection('offboarding-warning')}
+              onSkip={() => setActiveSection('offboarding-warning')}
+              step={2}
+              totalSteps={5}
+            />
+          )}
+          {activeSection === 'offboarding-warning' && (
+            <OffboardingWarningScreen
+              onBack={() => setActiveSection('offboarding-export')}
+              onNext={() => setActiveSection('offboarding-final')}
+              step={3}
+              totalSteps={5}
+            />
+          )}
+          {activeSection === 'offboarding-final' && (
+            <OffboardingConfirmScreen
+              onBack={() => setActiveSection('offboarding-warning')}
+              onDelete={() => { setActiveSection(null); Alert.alert('Account Deleted', 'This is a simulated feature. Your account has not been deleted.'); }}
+              step={4}
+              totalSteps={5}
+            />
+          )}
         </>
       ) : (
         <ScrollView
@@ -625,8 +712,17 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
               <View style={styles.profileInfo}>
                 <Text style={styles.name}>{displayName}</Text>
                 <Text style={styles.email}>{displayEmail}</Text>
-                <View style={styles.memberBadge}>
-                  <Text style={styles.memberBadgeText}>Free Account</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.sm, minHeight: 22 }}>
+                  <View style={styles.memberBadge}>
+                    <Text style={styles.memberBadgeText}>Free Account</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.upgradeBtn}
+                    activeOpacity={0.7}
+                    onPress={() => setActiveSection('subscriptions')}
+                  >
+                    <Text style={styles.upgradeBtnText}>Upgrade Plan</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -803,7 +899,18 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
           <GlassCardView style={styles.menuCard}>
             {SUPPORT.map((item, i) => (
               <View key={item.label}>
-                <MenuRow item={item} colors={theme.colors} />
+                <MenuRow
+                  item={item}
+                  colors={theme.colors}
+                  onPress={() => {
+                    const sectionMap: Record<string, HealthSection> = {
+                      'Manage Subscriptions': 'subscriptions',
+                    };
+                    if (sectionMap[item.label]) {
+                      setActiveSection(sectionMap[item.label]);
+                    }
+                  }}
+                />
                 {i < SUPPORT.length - 1 && <View style={styles.divider} />}
               </View>
             ))}
@@ -814,8 +921,23 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
             <Text style={styles.logoutText}>Log Out</Text>
           </TouchableOpacity>
 
-          <Text style={styles.version}>Cureto v0.0.1 · Build 1</Text>
+          <TouchableOpacity
+            style={styles.deleteBtn}
+            activeOpacity={0.8}
+            onPress={() => setActiveSection('offboarding-reason')}
+          >
+            <Text style={styles.deleteBtnText}>Delete Account</Text>
+          </TouchableOpacity>
         </ScrollView>
+      )}
+
+      {loggingOut && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
+          <View style={{ backgroundColor: theme.colors.bgCardSolid, borderRadius: Radius.lg, padding: Spacing.xl, alignItems: 'center', gap: Spacing.md }}>
+            <ActivityIndicator size="large" color={theme.colors.danger} />
+            <Text style={{ fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary }}>Signing out...</Text>
+          </View>
+        </View>
       )}
     </View>
   );
