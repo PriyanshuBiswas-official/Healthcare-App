@@ -61,7 +61,14 @@ export interface WeeklyTrendDay {
   val: number;
   date: string;
   today: boolean;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
 }
+
+export type WeeklyWaterDay = WeeklyTrendDay;
 
 export type MealType = 'breakfast' | 'lunch' | 'snack' | 'dinner';
 

@@ -6,6 +6,7 @@ import type {
   DayMealsResponse,
   DayWaterResponse,
   WeeklyTrendDay,
+  WeeklyWaterDay,
   WaterChallenge,
   MealSuggestion,
   MealSuggestionQuery,
@@ -138,6 +139,16 @@ export async function getWeeklyTrend(token: string, date?: string): Promise<Week
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.error || 'Failed to fetch weekly trend');
+  return json.data;
+}
+
+export async function getWeeklyWaterTrend(token: string, date?: string): Promise<WeeklyWaterDay[]> {
+  const query = date ? `?date=${date}` : '';
+  const res = await fetch(`${API_BASE_URL}/api/diet/water/weekly${query}`, {
+    headers: authHeaders(token),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch weekly water trend');
   return json.data;
 }
 
