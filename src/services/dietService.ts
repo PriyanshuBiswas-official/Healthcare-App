@@ -7,6 +7,8 @@ import type {
   DayWaterResponse,
   WeeklyTrendDay,
   WaterChallenge,
+  MealSuggestion,
+  MealSuggestionQuery,
 } from '../types/diet';
 
 function authHeaders(token: string) {
@@ -136,5 +138,40 @@ export async function getWeeklyTrend(token: string, date?: string): Promise<Week
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.error || 'Failed to fetch weekly trend');
+  return json.data;
+}
+
+// ── Meal Suggestions (Spoonacular) ──────────────────────
+
+export async function getMealSuggestions(
+  token: string,
+  params: MealSuggestionQuery = {},
+): Promise<{ suggestions: MealSuggestion[]; totalResults: number }> {
+  const query = new URLSearchParams();
+  if (params.diet) query.append('diet', params.diet);
+  if (params.maxCalories) query.append('maxCalories', String(params.maxCalories));
+  if (params.minCalories) query.append('minCalories', String(params.minCalories));
+  if (params.excludeAllergens) query.append('excludeAllergens', params.excludeAllergens);
+  if (params.number) query.append('number', String(params.number));
+  if (params.offset) query.append('offset', String(params.offset));
+
+  const qs = query.toString();
+  const res = await fetch(`${API_BASE_URL}/api/diet/meal-suggestions${qs ? `?${qs}` : ''}`, {
+    headers: authHeaders(token),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch meal suggestions');
+  return json.data;
+}
+
+export async function getMealDetail(
+  token: string,
+  id: number,
+): Promise<MealSuggestion & { extendedIngredients: any[]; analyzedInstructions: any[] }> {
+  const res = await fetch(`${API_BASE_URL}/api/diet/meal-suggestions/${id}`, {
+    headers: authHeaders(token),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch meal detail');
   return json.data;
 }

@@ -24,6 +24,7 @@ import PersonalInfoScreen from './PersonalInfoScreen';
 import MedicalHistoryScreen from './MedicalHistoryScreen';
 import MedicationsScreen from './MedicationsScreen';
 import AllergiesScreen from './AllergiesScreen';
+import DietTypeScreen from './DietTypeScreen';
 import EmergencyContactsScreen from './EmergencyContactsScreen';
 import WaterRemindersScreen from '../reminders/WaterRemindersScreen';
 import WorkoutsRemindersScreen from '../reminders/WorkoutsRemindersScreen';
@@ -39,7 +40,7 @@ import OffboardingWarningScreen from '../offboarding/WarningScreen';
 import OffboardingConfirmScreen from '../offboarding/ConfirmScreen';
 import { AppTheme } from '../../theme';
 
-type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'emergency' | 'reminders-medication' | 'reminders-water' | 'reminders-workouts' | 'reminders-appointments' | 'reminders-sleep' | 'reminders-health' | 'subscriptions' | 'offboarding-reason' | 'offboarding-feedback' | 'offboarding-export' | 'offboarding-warning' | 'offboarding-final';
+type HealthSection = 'personal' | 'medical' | 'medications' | 'allergies' | 'diet-type' | 'emergency' | 'reminders-medication' | 'reminders-water' | 'reminders-workouts' | 'reminders-appointments' | 'reminders-sleep' | 'reminders-health' | 'subscriptions' | 'offboarding-reason' | 'offboarding-feedback' | 'offboarding-export' | 'offboarding-warning' | 'offboarding-final';
 
 type MenuItem = {
   icon: React.ReactNode;
@@ -78,6 +79,7 @@ function getHealthProfile(profileData: ProfileData | null, colors: AppTheme['col
     { icon: <ClipboardList size={20} color={colors.pink} />, label: 'Medical History', sub: 'Conditions, surgeries', color: colors.pink },
     { icon: <Pill size={20} color={colors.amber} />, label: 'Medications', sub: medCount > 0 ? `${medCount} active prescription${medCount > 1 ? 's' : ''}` : 'No active medications', color: colors.amber, badge: medCount > 0 ? String(medCount) : undefined },
     { icon: <TriangleAlert size={20} color={colors.danger} />, label: 'Allergies', sub: allergyList.length > 0 ? allergyList.slice(0, 2).join(', ') : 'No allergies recorded', color: colors.danger },
+    { icon: <ClipboardList size={20} color={colors.accentBlue} />, label: 'Diet Type', sub: (profileData as any)?.diet_type || 'Not set', color: colors.accentBlue },
     { icon: <Phone size={20} color={colors.accentBlue} />, label: 'Emergency Contacts', sub: 'Emergency contacts', color: colors.accentBlue },
   ];
 }
@@ -583,6 +585,12 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
               onSaved={fetchProfile}
             />
           )}
+          {activeSection === 'diet-type' && (
+            <DietTypeScreen
+              onBack={() => { setActiveSection(null); fetchProfile(); }}
+              onSaved={fetchProfile}
+            />
+          )}
           {activeSection === 'emergency' && (
             <EmergencyContactsScreen
               onBack={handleSubScreenBack}
@@ -772,6 +780,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
                       'Medical History': 'medical',
                       'Medications': 'medications',
                       'Allergies': 'allergies',
+                      'Diet Type': 'diet-type',
                       'Emergency Contacts': 'emergency',
                     };
                     setActiveSection(sectionMap[item.label] || null);

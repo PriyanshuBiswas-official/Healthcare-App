@@ -13,6 +13,7 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Image,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Typography, Spacing, Radius } from '../../theme/theme';
@@ -23,7 +24,8 @@ import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, Notific
 import { useAuth } from '../../providers/AuthProvider';
 import { useNotifications } from '../../providers/NotificationContext';
 import * as dietService from '../../services/dietService';
-import type { NutritionLog, NutritionGoal, WeeklyTrendDay, MealType } from '../../types/diet';
+import type { NutritionLog, NutritionGoal, WeeklyTrendDay, MealType, MealSuggestion } from '../../types/diet';
+import MealSuggestionDetailModal from '../../components/diet/MealSuggestionDetailModal';
 
 const MEAL_TYPE_OPTIONS: MealType[] = ['breakfast', 'lunch', 'snack', 'dinner'];
 
@@ -66,13 +68,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     { key: 'dinner', name: 'Dinner', icon: '🌙', color: colors.textMuted },
   ], [colors.amber, colors.teal, colors.pink, colors.textMuted]);
 
-  const AI_SUGGESTIONS = useMemo(() => [
-    { title: 'Baked salmon & broccoli', tags: ['High protein', 'omega-3', 'low carb'], calories: 490, highlight: '38g protein', icon: '🐟', type: 'AI pick', color: colors.teal },
-    { title: 'Lentil soup & roti', tags: ['Low GI', 'high fibre', 'gut friendly'], calories: 420, highlight: '24g fibre', icon: '🍲', type: 'Diabetic', color: colors.accentBlue },
-    { title: 'Egg fried brown rice', tags: ['Balanced macros', '15 min prep'], calories: 510, highlight: '28g protein', icon: '🥚', type: 'Quick', color: colors.amber },
-    { title: 'Tofu stir fry & noodles', tags: ['Plant-based', 'iron rich', 'anti-inflammatory'], calories: 460, highlight: '22g protein', icon: '🍃', type: 'Vegan', color: colors.pink },
-  ], [colors.teal, colors.accentBlue, colors.amber, colors.pink]);
-
   const [meals, setMeals] = useState<NutritionLog[]>([]);
   const [waterLogs, setWaterLogs] = useState<any[]>([]);
   const [waterTotalMl, setWaterTotalMl] = useState(0);
@@ -80,6 +75,10 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
   const [weeklyTrend, setWeeklyTrend] = useState<WeeklyTrendDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const [suggestions, setSuggestions] = useState<MealSuggestion[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState<MealSuggestion | null>(null);
 
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [tempGoal, setTempGoal] = useState('');
@@ -302,6 +301,15 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     }
   }, [loading, goal]);
 
+  useEffect(() => {
+    if (!session?.access_token) return;
+    setSuggestionsLoading(true);
+    dietService.getMealSuggestions(session.access_token, { maxCalories: 600, number: 4 })
+      .then(res => setSuggestions(res.suggestions))
+      .catch(() => {})
+      .finally(() => setSuggestionsLoading(false));
+  }, [session?.access_token]);
+
   const handleSaveGoalSetup = async () => {
     if (!session?.access_token) return;
     const calorie = parseInt(setupCalorieGoal, 10) || 0;
@@ -403,6 +411,32 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     }
   };
 
+  const getMealTypeByTime = (): MealType => {
+    const hour = new Date().getHours();
+    if (hour < 11) return 'breakfast';
+    if (hour < 15) return 'lunch';
+    if (hour < 18) return 'snack';
+    return 'dinner';
+  };
+
+  const handleLogSuggestionMeal = async (data: { food: string; calories: number; protein: number; carbs: number; fat: number; fiber: number }) => {
+    if (!session?.access_token) return;
+    try {
+      const newMeal = await dietService.logMeal(session.access_token, {
+        food: data.food,
+        taken_as: getMealTypeByTime(),
+        calories: data.calories,
+        protein: data.protein,
+        carbs: data.carbs,
+        fat: data.fat,
+        fiber: data.fiber,
+      });
+      setMeals(prev => [...prev, newMeal]);
+    } catch (e) {
+      console.warn('[CalorieScreen] Log suggestion meal failed:', e);
+    }
+  };
+
   const macros = [
     { label: 'Protein', val: totalMacros.protein, target: goal?.protein_goal ?? 120, unit: 'g', color: colors.teal },
     { label: 'Carbs', val: totalMacros.carbs, target: goal?.carbs_goal ?? 280, unit: 'g', color: colors.amber },
@@ -424,7 +458,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>Diet</Text>
-            <Text style={styles.sub}>{formatDateHeader(today)}</Text>
           </View>
           <View style={styles.headerActions}>
             <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
@@ -646,30 +679,42 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               </TouchableOpacity>
             </GlassCardView>
 
-            <SectionHeader title="AI MEAL SUGGESTIONS - DINNER" />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xl, justifyContent: 'space-between' }}>
-              {AI_SUGGESTIONS.map((item, idx) => (
-                <GlassCardView key={idx} style={{ width: '48.5%', padding: Spacing.sm, marginBottom: Spacing.sm }}>
-                  <View style={{ backgroundColor: item.color + '20', height: 70, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.md }}>
-                    <Text style={{ fontSize: Typography.xxl }}>{item.icon}</Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                    <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: colors.textPrimary, flex: 1, marginRight: Spacing.xs, lineHeight: 18 }} numberOfLines={2}>{item.title}</Text>
-                    <View style={{ backgroundColor: colors.bgCardBorder, paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full }}>
-                      <Text style={{ fontSize: Typography.xs, color: item.color, fontWeight: Typography.bold }}>{item.type}</Text>
-                    </View>
-                  </View>
-                  <Text style={{ fontSize: Typography.xs, color: colors.textSecondary, marginBottom: Spacing.lg, lineHeight: 14 }} numberOfLines={2}>
-                    {item.tags.join(' - ')}
-                  </Text>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                    <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary }}>~{item.calories} <Text style={{ fontSize: Typography.xs, color: colors.textMuted, fontWeight: Typography.regular }}>kcal</Text></Text>
-                    <View style={{ backgroundColor: item.color + '15', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, borderWidth: 1, borderColor: item.color + '30' }}>
-                      <Text style={{ fontSize: Typography.xs, color: item.color, fontWeight: Typography.bold }}>{item.highlight}</Text>
-                    </View>
-                  </View>
-                </GlassCardView>
-              ))}
+            <SectionHeader title="AI MEAL SUGGESTIONS" />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xl }}>
+              {suggestionsLoading ? (
+                <View style={{ width: '100%', alignItems: 'center', paddingVertical: Spacing.lg }}>
+                  <ActivityIndicator size="small" color={colors.teal} />
+                  <Text style={{ fontSize: Typography.xs, color: colors.textSecondary, marginTop: Spacing.sm }}>Fetching suggestions...</Text>
+                </View>
+              ) : suggestions.length > 0 ? (
+                suggestions.map((item, idx) => (
+                  <TouchableOpacity key={item.id || idx} onPress={() => setSelectedMeal(item)} activeOpacity={0.7} style={{ width: '48%', height: 220 }}>
+                    <GlassCardView style={{ padding: Spacing.sm, flex: 1 }}>
+                      {item.image ? (
+                        <Image source={{ uri: item.image }} style={{ height: 80, borderRadius: Radius.sm, marginBottom: Spacing.sm }} resizeMode="cover" />
+                      ) : (
+                        <View style={{ backgroundColor: colors.teal + '20', height: 80, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm }}>
+                          <Text style={{ fontSize: Typography.xxl, color: colors.teal }}>🍽</Text>
+                        </View>
+                      )}
+                      <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: colors.textPrimary, marginBottom: 4 }} numberOfLines={2}>{item.title}</Text>
+                      <Text style={{ fontSize: Typography.xs, color: colors.textSecondary, marginBottom: Spacing.sm }} numberOfLines={1}>
+                        {item.diets?.[0] || item.dishTypes?.[0] || 'Balanced meal'}
+                      </Text>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                        <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: colors.textPrimary }}>~{item.calories} <Text style={{ fontSize: Typography.xs, color: colors.textMuted, fontWeight: Typography.regular }}>kcal</Text></Text>
+                        <View style={{ backgroundColor: colors.teal + '15', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, borderWidth: 1, borderColor: colors.teal + '30' }}>
+                          <Text style={{ fontSize: Typography.xs, color: colors.teal, fontWeight: Typography.bold }}>{item.protein}g P</Text>
+                        </View>
+                      </View>
+                    </GlassCardView>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View style={{ width: '100%', alignItems: 'center', paddingVertical: Spacing.lg }}>
+                  <Text style={{ fontSize: Typography.xs, color: colors.textSecondary }}>No suggestions available</Text>
+                </View>
+              )}
             </View>
 
             <SectionHeader title="WEEKLY NUTRITION TREND" />
@@ -861,6 +906,13 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>}
+
+      <MealSuggestionDetailModal
+        visible={!!selectedMeal}
+        meal={selectedMeal}
+        onClose={() => setSelectedMeal(null)}
+        onLogMeal={handleLogSuggestionMeal}
+      />
     </KeyboardAvoidingView>
   );
 }

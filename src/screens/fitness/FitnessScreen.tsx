@@ -15,7 +15,7 @@ import {
 import Svg, { Circle } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import { useStyles } from '../../providers/ThemeProvider';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight, Dumbbell, Check, Pencil, Trophy, Target } from 'lucide-react-native';
 import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton, ActivityProgressCard } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useNotifications } from '../../providers/NotificationContext';
@@ -912,7 +912,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           <SectionLabel title="TODAY'S WORKOUT" action={dayName?.toUpperCase() || ''} />
           <GlassCardView style={styles.card}>
             <View style={{ paddingVertical: Spacing.lg, alignItems: 'center' }}>
-              <Text style={{ fontSize: Typography.xxl, marginBottom: Spacing.sm }}>🏋️</Text>
+              <Dumbbell size={Typography.xxl} color={Colors.textSecondary} />
               <Text style={{ color: Colors.textSecondary, fontSize: Typography.sm }}>
                 {planName ? `No workout planned for ${dayName || 'today'}` : 'No workout plan set up yet'}
               </Text>
@@ -949,92 +949,90 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           const topWeight = loggedSets.length > 0 ? Math.max(...loggedSets.map(s => s.weight || 0)) : 0;
           const isCompleted = ex.completed;
 
-          const cardContent = (
-            <GlassCardView style={[styles.exerciseCard, isCompleted && { borderColor: Colors.teal + '40', borderWidth: 1 }]}>
-              <View style={styles.exerciseHeader}>
-                <View style={styles.exerciseIconWrap}>
-                  <Text style={{ fontSize: Typography.md }}>{isCompleted ? '✅' : '💪'}</Text>
-                </View>
-                <View style={styles.exerciseTitleWrap}>
-                  <Text style={styles.exerciseName}>{ex.exercise_name}</Text>
-                  <View style={styles.tagRow}>
-                    <View style={[styles.tag, { backgroundColor: Colors.teal + '20', borderColor: Colors.teal + '50' }]}>
-                      <Text style={[styles.tagText, { color: Colors.teal }]}>{ex.target_sets}×{ex.target_reps}</Text>
-                    </View>
-                    {isCompleted ? (
-                      <View style={[styles.tag, { backgroundColor: Colors.teal + '30', borderColor: Colors.teal + '60' }]}>
-                        <Text style={[styles.tagText, { color: Colors.teal, fontWeight: Typography.bold }]}>Completed</Text>
-                      </View>
-                    ) : hasLogged ? (
-                      <View style={[styles.tag, { backgroundColor: Colors.accentBlue + '20', borderColor: Colors.accentBlue + '50' }]}>
-                        <Text style={[styles.tagText, { color: Colors.accentBlue }]}>Logged</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                </View>
-                {topWeight > 0 && (
-                  <Text style={styles.topSet}>{topWeight}kg top set</Text>
-                )}
-                <TouchableOpacity onPress={() => onEditExercise(ex)} style={{ padding: Spacing.xs }} activeOpacity={0.6}>
-                  <Text style={{ fontSize: Typography.md, color: Colors.textSecondary }}>✏️</Text>
-                </TouchableOpacity>
-              </View>
-              {hasLogged ? (
-                <View style={styles.setsRow}>
-                  {loggedSets.map(set => (
-                    <View key={set.set_id} style={styles.setChip}>
-                      <Text style={styles.setChipText}>
-                        Set {set.set_no}: {set.weight}kg × {set.reps}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <View style={styles.setsRow}>
-                  {Array.from({ length: ex.target_sets }).map((_, i) => (
-                    <View key={i} style={styles.setChip}>
-                      <Text style={styles.setChipText}>Set {i + 1}: {ex.target_weight || '?'}kg × {ex.target_reps}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-              {!hasLogged && ex.last_performance && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: Spacing.sm, backgroundColor: Colors.accentBlue + '10', borderRadius: Radius.sm, paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs }}>
-                  <Text style={{ fontSize: Typography.xs, color: Colors.accentBlue, fontWeight: Typography.semiBold, marginRight: Spacing.xs }}>
-                    Last:
-                  </Text>
-                  <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary }}>
-                    {ex.last_performance.weight}kg × {ex.last_performance.reps}
-                  </Text>
-                  <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginHorizontal: 4 }}>·</Text>
-                  <Text style={{ fontSize: Typography.xs, color: ex.last_performance.completed ? Colors.teal : Colors.amber }}>
-                    {ex.last_performance.sets_completed}/{ex.last_performance.sets_total} sets
-                  </Text>
-                  {ex.last_performance.completed && ex.target_weight && ex.target_weight > ex.last_performance.weight && (
-                    <>
-                      <ChevronRight size={14} color={Colors.textSecondary} strokeWidth={2} style={{ marginHorizontal: 2 }} />
-                      <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>
-                        Try {ex.target_weight}kg
-                      </Text>
-                    </>
-                  )}
-                  {ex.last_performance.completed && (!ex.target_weight || ex.target_weight <= ex.last_performance.weight) && (
-                    <>
-                      <ChevronRight size={14} color={Colors.textSecondary} strokeWidth={2} style={{ marginHorizontal: 2 }} />
-                      <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>
-                        Try {ex.last_performance.weight + 2.5}kg
-                      </Text>
-                    </>
-                  )}
-                </View>
-              )}
-            </GlassCardView>
-          );
-
           return (
-            <TouchableOpacity key={ex.exercise_id} onPress={() => onLogExercise(ex)} activeOpacity={0.7}>
-              {cardContent}
-            </TouchableOpacity>
+            <View key={ex.exercise_id} style={{ position: 'relative' }}>
+              <TouchableOpacity onPress={() => onLogExercise(ex)} activeOpacity={0.7}>
+                <GlassCardView style={[styles.exerciseCard, isCompleted && { borderColor: Colors.teal + '40', borderWidth: 1 }]}>
+                  <View style={styles.exerciseHeader}>
+                    <View style={styles.exerciseIconWrap}>
+                      {isCompleted ? <Check size={Typography.md} color={Colors.teal} /> : <Dumbbell size={Typography.md} color={Colors.textSecondary} />}
+                    </View>
+                    <View style={styles.exerciseTitleWrap}>
+                      <Text style={styles.exerciseName}>{ex.exercise_name}</Text>
+                      <View style={styles.tagRow}>
+                        <View style={[styles.tag, { backgroundColor: Colors.teal + '20', borderColor: Colors.teal + '50' }]}>
+                          <Text style={[styles.tagText, { color: Colors.teal }]}>{ex.target_sets}×{ex.target_reps}</Text>
+                        </View>
+                        {isCompleted ? (
+                          <View style={[styles.tag, { backgroundColor: Colors.teal + '30', borderColor: Colors.teal + '60' }]}>
+                            <Text style={[styles.tagText, { color: Colors.teal, fontWeight: Typography.bold }]}>Completed</Text>
+                          </View>
+                        ) : hasLogged ? (
+                          <View style={[styles.tag, { backgroundColor: Colors.accentBlue + '20', borderColor: Colors.accentBlue + '50' }]}>
+                            <Text style={[styles.tagText, { color: Colors.accentBlue }]}>Logged</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    </View>
+                    {topWeight > 0 && (
+                      <Text style={styles.topSet}>{topWeight}kg top set</Text>
+                    )}
+                  </View>
+                  {hasLogged ? (
+                    <View style={styles.setsRow}>
+                      {loggedSets.map(set => (
+                        <View key={set.set_id} style={styles.setChip}>
+                          <Text style={styles.setChipText}>
+                            Set {set.set_no}: {set.weight}kg × {set.reps}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <View style={styles.setsRow}>
+                      {Array.from({ length: ex.target_sets }).map((_, i) => (
+                        <View key={i} style={styles.setChip}>
+                          <Text style={styles.setChipText}>Set {i + 1}: {ex.target_weight || '?'}kg × {ex.target_reps}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  {!hasLogged && ex.last_performance && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: Spacing.sm, backgroundColor: Colors.accentBlue + '10', borderRadius: Radius.sm, paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs }}>
+                      <Text style={{ fontSize: Typography.xs, color: Colors.accentBlue, fontWeight: Typography.semiBold, marginRight: Spacing.xs }}>
+                        Last:
+                      </Text>
+                      <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary }}>
+                        {ex.last_performance.weight}kg × {ex.last_performance.reps}
+                      </Text>
+                      <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginHorizontal: 4 }}>·</Text>
+                      <Text style={{ fontSize: Typography.xs, color: ex.last_performance.completed ? Colors.teal : Colors.amber }}>
+                        {ex.last_performance.sets_completed}/{ex.last_performance.sets_total} sets
+                      </Text>
+                      {ex.last_performance.completed && ex.target_weight && ex.target_weight > ex.last_performance.weight && (
+                        <>
+                          <ChevronRight size={14} color={Colors.textSecondary} strokeWidth={2} style={{ marginHorizontal: 2 }} />
+                          <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>
+                            Try {ex.target_weight}kg
+                          </Text>
+                        </>
+                      )}
+                      {ex.last_performance.completed && (!ex.target_weight || ex.target_weight <= ex.last_performance.weight) && (
+                        <>
+                          <ChevronRight size={14} color={Colors.textSecondary} strokeWidth={2} style={{ marginHorizontal: 2 }} />
+                          <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>
+                            Try {ex.last_performance.weight + 2.5}kg
+                          </Text>
+                        </>
+                      )}
+                    </View>
+                  )}
+                </GlassCardView>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => onEditExercise(ex)} style={{ position: 'absolute', top: Spacing.base, right: Spacing.base, padding: Spacing.xs, zIndex: 1 }} activeOpacity={0.6}>
+                <Pencil size={16} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
           );
         })}
         {planDayId && (
@@ -1129,7 +1127,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         <GlassCardView style={styles.card}>
           <SectionLabel title="PERSONAL RECORDS" />
           <View style={{ paddingVertical: Spacing.lg, alignItems: 'center' }}>
-            <Text style={{ fontSize: Typography.xxl, marginBottom: Spacing.sm }}>🏆</Text>
+            <Trophy size={Typography.xxl} color={Colors.textSecondary} />
             <Text style={{ color: Colors.textSecondary, fontSize: Typography.sm }}>No personal records yet</Text>
           </View>
         </GlassCardView>
@@ -1196,7 +1194,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[Colors.teal, Colors.pink]} tintColor={Colors.teal} progressBackgroundColor={Colors.bgCard} />}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.dateText}>{formatDateHeader(today)}</Text>
             <Text style={styles.title}>Activity & Gym</Text>
           </View>
           <View style={styles.headerRight}>
@@ -1215,14 +1212,14 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         {showSetupBanner && (
           <TouchableOpacity style={styles.setupBanner} activeOpacity={0.8} onPress={openPlanModal}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={[styles.setupBannerIcon, { backgroundColor: Colors.accentBlue + '20' }]}>
-                <Text style={{ fontSize: Typography.md }}>💪</Text>
-              </View>
+                <View style={[styles.setupBannerIcon, { backgroundColor: Colors.accentBlue + '20' }]}>
+                  <Dumbbell size={Typography.md} color={Colors.accentBlue} />
+                </View>
               <View style={{ flex: 1, marginLeft: Spacing.md }}>
                 <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textPrimary }}>Set up your workout plan</Text>
                 <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 }}>Create a plan to track exercises, log sets, and monitor your progress</Text>
               </View>
-              <Text style={{ fontSize: Typography.md, color: Colors.textMuted }}>›</Text>
+              <ChevronRight size={Typography.md} color={Colors.textMuted} />
             </View>
           </TouchableOpacity>
         )}
@@ -1231,13 +1228,13 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           <TouchableOpacity style={styles.setupBanner} activeOpacity={0.8} onPress={() => setGoalSetupVisible(true)}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View style={[styles.setupBannerIcon, { backgroundColor: Colors.teal + '20' }]}>
-                <Text style={{ fontSize: Typography.md }}>🎯</Text>
+                <Target size={Typography.md} color={Colors.teal} />
               </View>
               <View style={{ flex: 1, marginLeft: Spacing.md }}>
                 <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textPrimary }}>Set your activity goals</Text>
                 <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 }}>Define daily targets for calories burned, exercise minutes, and steps</Text>
               </View>
-              <Text style={{ fontSize: Typography.md, color: Colors.textMuted }}>›</Text>
+              <ChevronRight size={Typography.md} color={Colors.textMuted} />
             </View>
           </TouchableOpacity>
         )}
@@ -1302,7 +1299,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           activeOpacity={1}
           onPress={() => setPlanModalVisible(false)}
           style={styles.modalOverlay}>
-          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+          <View style={styles.modalContent}>
         {/* Step indicator */}
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: Spacing.base }}>
           {[1, 2, 3].map(s => (
@@ -1460,7 +1457,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
             </View>
           </>
         )}
-          </TouchableOpacity>
+          </View>
         </TouchableOpacity>
       </Modal>}
 
@@ -1470,7 +1467,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           activeOpacity={1}
           onPress={() => setAddExModalVisible(false)}
           style={styles.modalOverlay}>
-          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+          <View style={styles.modalContent}>
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>Add Exercise</Text>
 
@@ -1523,7 +1520,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                 )}
               </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          </View>
         </TouchableOpacity>
       </Modal>}
 
@@ -1533,7 +1530,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           activeOpacity={1}
           onPress={() => setEditExModalVisible(false)}
           style={styles.modalOverlay}>
-          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+          <View style={styles.modalContent}>
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>Edit Exercise</Text>
 
@@ -1608,7 +1605,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
               style={{ alignItems: 'center', paddingVertical: Spacing.md, borderRadius: Radius.md, backgroundColor: Colors.danger + '30', marginTop: Spacing.md }}>
               <Text style={{ fontSize: Typography.sm, color: Colors.danger, fontWeight: Typography.semiBold }}>Delete this exercise</Text>
             </TouchableOpacity>
-          </TouchableOpacity>
+          </View>
         </TouchableOpacity>
       </Modal>}
 
@@ -1618,7 +1615,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           activeOpacity={1}
           onPress={() => setLogActivityVisible(false)}
           style={styles.modalOverlay}>
-          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+          <View style={styles.modalContent}>
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>Log Activity</Text>
 
@@ -1674,7 +1671,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                 )}
               </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          </View>
         </TouchableOpacity>
       </Modal>
 
@@ -1684,7 +1681,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           activeOpacity={1}
           onPress={() => setGoalSetupVisible(false)}
           style={styles.modalOverlay}>
-          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+          <View style={styles.modalContent}>
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>Set Activity Goals</Text>
             <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, marginBottom: Spacing.base }}>
@@ -1739,7 +1736,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                 )}
               </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          </View>
         </TouchableOpacity>
       </Modal>
     </View>

@@ -33,6 +33,7 @@ import {
   AIHealthInsightsSection,
 } from './HealthCommonSections';
 import { CyclePhaseVisualizer } from '../../components/CyclePhaseVisualizer';
+import { Droplets, Flower2, Sparkles, Moon, ChevronRight } from 'lucide-react-native';
 import { useAuth } from '../../providers/AuthProvider';
 import { usePreferences } from '../../providers/PreferencesContext';
 import { HealthLogDraft } from './HealthLogScreen';
@@ -942,13 +943,13 @@ export default function HealthScreenFemale({
         {!cycleData && !loading && (
           <TouchableOpacity style={s.cycleSetupBanner} activeOpacity={0.85} onPress={() => setShowCycleSetup(true)}>
             <View style={s.cycleSetupBannerIcon}>
-              <Text style={{ fontSize: Typography.lg }}>🩸</Text>
+              <Droplets size={Typography.lg} color={theme.colors.pink} />
             </View>
             <View style={s.cycleSetupBannerCopy}>
               <Text style={s.cycleSetupBannerTitle}>Set up your cycle</Text>
               <Text style={s.cycleSetupBannerSub}>Enter your last period start date to see accurate cycle tracking</Text>
             </View>
-            <Text style={s.cycleSetupBannerArrow}>›</Text>
+            <ChevronRight size={Typography.md} color={theme.colors.textMuted} />
           </TouchableOpacity>
         )}
 
@@ -1041,13 +1042,13 @@ export default function HealthScreenFemale({
               </View>
 
               <View style={s.phaseBtnRow}>
-                <QuickActionButton icon="🩸" label="Menstrual" color={theme.colors.pink} active={selectedPhase === 'Menstrual'} onPress={() => setSelectedPhase('Menstrual')} />
+                <QuickActionButton icon={<Droplets size={20} color={theme.colors.pink} />} label="Menstrual" color={theme.colors.pink} active={selectedPhase === 'Menstrual'} onPress={() => setSelectedPhase('Menstrual')} />
                 <View style={s.phaseGap} />
-                <QuickActionButton icon="🌸" label="Follicular" color={theme.colors.pink + 'AA'} active={selectedPhase === 'Follicular'} onPress={() => setSelectedPhase('Follicular')} />
+                <QuickActionButton icon={<Flower2 size={20} color={theme.colors.pink} />} label="Follicular" color={theme.colors.pink + 'AA'} active={selectedPhase === 'Follicular'} onPress={() => setSelectedPhase('Follicular')} />
                 <View style={s.phaseGap} />
-                <QuickActionButton icon="✨" label="Ovulation" color={theme.colors.amber} active={selectedPhase === 'Ovulation'} onPress={() => setSelectedPhase('Ovulation')} />
+                <QuickActionButton icon={<Sparkles size={20} color={theme.colors.amber} />} label="Ovulation" color={theme.colors.amber} active={selectedPhase === 'Ovulation'} onPress={() => setSelectedPhase('Ovulation')} />
                 <View style={s.phaseGap} />
-                <QuickActionButton icon="🌙" label="Luteal" color={theme.colors.accentBlue} active={selectedPhase === 'Luteal'} onPress={() => setSelectedPhase('Luteal')} />
+                <QuickActionButton icon={<Moon size={20} color={theme.colors.accentBlue} />} label="Luteal" color={theme.colors.accentBlue} active={selectedPhase === 'Luteal'} onPress={() => setSelectedPhase('Luteal')} />
               </View>
             </GlassCardView>
 

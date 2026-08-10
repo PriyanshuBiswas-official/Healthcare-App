@@ -204,7 +204,7 @@ export const LogButton: React.FC<{
 // QuickActionButton
 // ═══════════════════════════════════════════════════════════════════════════════
 export const QuickActionButton: React.FC<{
-  icon: string; label: string; color: string; onPress?: () => void; active?: boolean;
+  icon: React.ReactNode; label: string; color: string; onPress?: () => void; active?: boolean;
 }> = ({ icon, label, color, onPress, active = false }) => {
   const { theme } = useTheme();
   const qab = useStyles((t) => StyleSheet.create({
@@ -212,7 +212,7 @@ export const QuickActionButton: React.FC<{
       flex: 1, alignItems: 'center', paddingVertical: Spacing.md,
       borderRadius: Radius.md, borderWidth: 1,
     },
-    icon: { fontSize: Typography.xl, marginBottom: 4 },
+    iconWrap: { marginBottom: 4 },
     label: { fontSize: Typography.xs, fontWeight: Typography.semiBold, textAlign: 'center' },
   }));
   return (
@@ -223,7 +223,7 @@ export const QuickActionButton: React.FC<{
         qab.btn,
         { borderColor: active ? color : theme.colors.bgCardBorder, backgroundColor: active ? color + '20' : theme.colors.bgCard },
       ]}>
-      <Text style={qab.icon}>{icon}</Text>
+      <View style={qab.iconWrap}>{icon}</View>
       <Text style={[qab.label, { color: active ? color : theme.colors.textSecondary }]}>{label}</Text>
     </TouchableOpacity>
   );
