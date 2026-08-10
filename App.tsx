@@ -197,8 +197,6 @@ const MemoizedWorkoutLogScreen = React.memo(WorkoutLogScreen);
 const MemoizedHealthLogScreen = React.memo(HealthLogScreen);
 const MemoizedPartnerReportScreen = React.memo(PartnerHealthReportScreen);
 const MemoizedRelationshipsScreen = React.memo(RelationshipsScreen);
-const MemoizedTabBar = React.memo(TabBar);
-
 // ── AppShell ─────────────────────────────────────────────────────────
 
 function AppShell() {
@@ -588,7 +586,7 @@ function AppShell() {
         )}
       </View>
 
-      <MemoizedTabBar activeTab={state.activeTab} onTabChange={handleTabChange} />
+      <TabBar activeTab={state.activeTab} onTabChange={handleTabChange} />
 
       {/* OCR Loading Overlay */}
       {ocrLoading && (
