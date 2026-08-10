@@ -2174,25 +2174,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         </View>
 
         {/* SECTION: WEEKLY CHALLENGE */}
-        <SectionHeader title="Weekly Challenge" />
-        <GlassCardView style={styles.challengeCard} accentColor={theme.colors.amber}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Droplets size={18} color={theme.colors.amber} />
-            <Text style={styles.challengeTitle}>Hydration Hero</Text>
-          </View>
-          <Text style={styles.challengeDesc}>Drink 2.5L water for 5 days in a row.</Text>
-          <View style={{ marginTop: Spacing.sm }}>
-            <ProgressBar progress={waterChallenge?.progress ?? 0} color={theme.colors.amber} height={8} />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-              <Text style={styles.challengeProgressText}>{waterChallenge?.daysComplete ?? 0} / {waterChallenge?.totalDays ?? 5} days complete</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Flame size={12} color={theme.colors.amber} />
-                <Text style={styles.challengeStreakText}>{waterChallenge?.streak ?? 0}d streak</Text>
-              </View>
-            </View>
-          </View>
-        </GlassCardView>
-
         {/* SECTION: TODAY'S MEDICATIONS */}
         <SectionHeader title="Today's Medications" />
         <View style={styles.medList}>

@@ -391,18 +391,18 @@ export default function AIAdvisorScreen({
               </GlassCardView>
             </TouchableOpacity>
 
-            <TouchableOpacity activeOpacity={0.85} onPress={() => Alert.alert('Coming Soon', 'Disease classifier is under development and will be available soon!')} style={{ width: '47%' }}>
+            <TouchableOpacity activeOpacity={0.85} onPress={() => Alert.alert('Coming Soon', 'Health Lens is under development and will be available soon!')} style={{ width: '47%' }}>
               <GlassCardView style={styles.toolCard}>
                 <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.pink + '15', alignItems: 'center', justifyContent: 'center' }]}>
                   <Microscope size={18} color={theme.colors.pink} strokeWidth={1.8} />
                 </View>
-                <Text style={styles.toolTitle}>Disease classifier</Text>
-                <Text numberOfLines={2} style={styles.toolSub}>AI image analysis for skin, eye & X-ray conditions</Text>
+                <Text style={styles.toolTitle}>Health Lens</Text>
+                <Text numberOfLines={2} style={styles.toolSub}>AI image analysis for skin, bones, muscles & more</Text>
                 <Text style={styles.toolActionText}>Tap to scan or upload</Text>
                 <View style={styles.toolTagsRow}>
-                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Dermatology</Text></View>
                    <View style={styles.toolTag}><Text style={styles.toolTagText}>X-ray</Text></View>
-                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Retina</Text></View>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Injury</Text></View>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Skin</Text></View>
                 </View>
               </GlassCardView>
             </TouchableOpacity>

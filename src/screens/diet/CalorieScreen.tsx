@@ -559,8 +559,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                   </View>
                 </View>
               </View>
-              <ProgressBar progress={progress} color={progress > 1 ? colors.pink : colors.teal} height={8} style={{ marginTop: Spacing.md }} />
-              <Text style={styles.calorieProgressLabel}>{Math.round(progress * 100)}% of daily goal</Text>
             </GlassCardView>
 
             <SectionHeader title="Track Calorie with a photo" />
