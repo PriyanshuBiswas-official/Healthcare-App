@@ -1163,10 +1163,8 @@ export default function AIChatView({
     userBubble: {
       maxWidth: '78%',
       padding: Spacing.md,
-      backgroundColor: theme.colors.accentBlue,
+      backgroundColor: theme.colors.textSecondary + '30',
       borderRadius: Radius.lg,
-      borderBottomRightRadius: 4,
-      ...Shadows.teal,
     },
     chatImagesRow: {
       flexDirection: 'row',
@@ -1182,12 +1180,12 @@ export default function AIChatView({
     },
     userMsgText: {
       fontSize: Typography.sm,
-      color: theme.colors.bg,
+      color: theme.colors.textPrimary,
       lineHeight: 20,
     },
     userMsgTime: {
       fontSize: 10,
-      color: theme.colors.bg + '80',
+      color: theme.colors.textSecondary,
       marginTop: 4,
       alignSelf: 'flex-end',
     },

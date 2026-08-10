@@ -17,7 +17,6 @@ import type { WorkoutPlanDays } from '../types/activity';
 import { getLatestCycle, getPeriodLogs } from '../services/healthService';
 import { getCurrentWorkoutPlanDays } from '../services/activityService';
 import CalendarView from './calendar/CalendarView';
-import CalendarLegend from './calendar/CalendarLegend';
 import AgendaSection from './calendar/AgendaSection';
 
 export default function HealthCalendar() {
@@ -131,7 +130,6 @@ export default function HealthCalendar() {
           onDateSelect={handleDateSelect}
           onMonthChange={handleMonthChange}
         />
-        <CalendarLegend />
       </View>
 
       {/* Agenda Card */}

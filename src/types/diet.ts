@@ -61,6 +61,42 @@ export interface WeeklyTrendDay {
   val: number;
   date: string;
   today: boolean;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
 }
 
+export type WeeklyWaterDay = WeeklyTrendDay;
+
 export type MealType = 'breakfast' | 'lunch' | 'snack' | 'dinner';
+
+// ── Meal Suggestions (Spoonacular) ───────────────────────
+
+export interface MealSuggestion {
+  id: number;
+  title: string;
+  image: string;
+  imageType: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  servings: number;
+  readyInMinutes: number;
+  healthScore: number;
+  diets: string[];
+  dishTypes: string[];
+  summary: string;
+}
+
+export interface MealSuggestionQuery {
+  diet?: string;
+  maxCalories?: number;
+  minCalories?: number;
+  excludeAllergens?: string;
+  number?: number;
+  offset?: number;
+}

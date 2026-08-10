@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Typography, Spacing } from '../theme/theme';
 import { useTheme, useStyles } from '../providers/ThemeProvider';
-import { Home, Stethoscope, Bot, Utensils, Activity } from 'lucide-react-native';
+import { Home, HeartPulse, Sparkles, Utensils, Footprints } from 'lucide-react-native';
 import { useScrollVisibility } from './ScrollVisibilityContext';
 
 export type TabName = 'Home' | 'Health' | 'Diet' | 'Activity' | 'AI' | 'Profile' | 'Notifications' | 'WorkoutLog' | 'HealthLog' | 'PartnerReport' | 'Relationships';
@@ -15,51 +15,82 @@ interface TabBarProps {
 function TabBar({ activeTab, onTabChange }: TabBarProps) {
   const { theme } = useTheme();
   const styles = useStyles(themeStyles);
-  const { visible } = useScrollVisibility();
+  const { visible, resetVisibility } = useScrollVisibility();
+  const [selectedTab, setSelectedTab] = useState<TabName>(activeTab);
 
-  const TABS: { name: TabName; Icon: React.ElementType; activeColor: string }[] = [
-    { name: 'Home', Icon: Home, activeColor: theme.colors.teal },
-    { name: 'Health', Icon: Stethoscope, activeColor: theme.colors.pink },
-    { name: 'AI', Icon: Bot, activeColor: theme.colors.accentBlue },
-    { name: 'Diet', Icon: Utensils, activeColor: theme.colors.amber },
-    { name: 'Activity', Icon: Activity, activeColor: theme.colors.teal },
+  // Sync with prop when parent navigation state updates
+  useEffect(() => {
+    setSelectedTab(activeTab);
+  }, [activeTab]);
+
+  const TABS: { name: TabName; label: string; Icon: React.ElementType }[] = [
+    { name: 'Home', label: 'Home', Icon: Home },
+    { name: 'Health', label: 'Health', Icon: HeartPulse },
+    { name: 'AI', label: 'Insights', Icon: Sparkles },
+    { name: 'Diet', label: 'Nutrition', Icon: Utensils },
+    { name: 'Activity', label: 'Activity', Icon: Footprints },
   ];
-  const anim = React.useRef(new Animated.Value(0)).current;
+
+  const anim = useRef(new Animated.Value(0)).current;
+
+  // Always reset visibility when switching active tabs
+  useEffect(() => {
+    resetVisibility();
+  }, [selectedTab, resetVisibility]);
 
   useEffect(() => {
     Animated.timing(anim, { toValue: visible ? 0 : 1, duration: 220, useNativeDriver: true }).start();
   }, [visible, anim]);
 
-  const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 80] });
+  const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 90] });
   const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.0] });
 
+  // Theme reference colors matching reference image
+  const COLOR_ACTIVE = '#00E0C7';
+  const COLOR_INACTIVE = '#A7A9BE';
+
+  const handleTabPress = (tabName: TabName) => {
+    // Instant visual response
+    setSelectedTab(tabName);
+    resetVisibility();
+    onTabChange(tabName);
+  };
+
   return (
-    <Animated.View style={[styles.container, styles.floating, { transform: [{ translateY }], opacity }]}>
-      <View style={styles.bar}>
-        {TABS.map(tab => {
-          const isActive = activeTab === tab.name;
-          return (
-            <TouchableOpacity
-              key={tab.name}
-              style={styles.tab}
-              onPress={() => onTabChange(tab.name)}
-              activeOpacity={0.8}
-              accessibilityLabel={tab.name}
-              accessibilityState={{ selected: isActive }}>
-              <View style={styles.iconWrap}>
+    <Animated.View style={[styles.container, { transform: [{ translateY }], opacity }]} pointerEvents="box-none">
+      <View style={styles.floating}>
+        <View style={styles.bar}>
+          {TABS.map(tab => {
+            const isActive = selectedTab === tab.name;
+
+            return (
+              <TouchableOpacity
+                key={tab.name}
+                style={styles.tab}
+                onPress={() => handleTabPress(tab.name)}
+                activeOpacity={0.6}
+                accessibilityLabel={tab.label}
+                accessibilityState={{ selected: isActive }}>
+                
                 <tab.Icon
-                  size={28}
-                  color={isActive ? theme.colors.teal : theme.colors.text}
-                  strokeWidth={2}
-                  style={styles.icon}
+                  size={24}
+                  color={isActive ? COLOR_ACTIVE : COLOR_INACTIVE}
+                  strokeWidth={isActive ? 2.2 : 1.8}
                 />
-              </View>
-              {isActive && (
-                <View style={[styles.activeIndicator, { backgroundColor: theme.colors.teal, shadowColor: theme.colors.teal }]} />
-              )}
-            </TouchableOpacity>
-          );
-        })}
+
+                <Text style={[styles.label, isActive && styles.labelActive]}>
+                  {tab.label}
+                </Text>
+
+                {isActive ? (
+                  <View style={styles.activeIndicator} />
+                ) : (
+                  <View style={styles.indicatorSpacer} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
     </Animated.View>
   );
@@ -68,76 +99,67 @@ function TabBar({ activeTab, onTabChange }: TabBarProps) {
 const themeStyles = (theme: any) => StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 12,
+    bottom: 16,
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.sm,
+    justifyContent: 'center',
     backgroundColor: 'transparent',
+    zIndex: 50,
   },
   floating: {
-    alignSelf: 'center',
-    width: '96%',
+    width: '92%',
     borderRadius: 28,
-    paddingVertical: Spacing.xs,
-    backgroundColor: theme.colors.tabBarBg,
-    borderWidth: 1,
-    borderColor: theme.colors.bgCardBorder,
-    shadowColor: theme.colors.shadowColor,
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 12,
-    zIndex: 50,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    backgroundColor: 'rgba(23, 26, 39, 0.95)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(0, 224, 199, 0.22)',
+    shadowColor: '#000000',
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 14,
   },
   bar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    paddingHorizontal: Spacing.sm,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.sm,
-    position: 'relative',
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    overflow: 'hidden',
-    alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-    marginBottom: 2,
-  },
-  icon: {
-    color: theme.colors.text,
-    zIndex: 1,
+    paddingVertical: 2,
   },
   label: {
-    fontSize: Typography.xs,
-    maxWidth: 48,
-    color: theme.colors.textMuted,
-    fontWeight: Typography.semiBold,
-    letterSpacing: Typography.lsNormal,
-    textTransform: 'uppercase',
-    marginTop: 2,
+    fontSize: 11,
+    color: '#A7A9BE',
+    fontWeight: '500',
+    marginTop: 4,
     textAlign: 'center',
   },
+  labelActive: {
+    color: '#00E0C7',
+    fontWeight: '600',
+  },
   activeIndicator: {
-    width: 24,
+    width: 22,
     height: 2,
     borderRadius: 1,
-    marginTop: 2,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
+    backgroundColor: '#00E0C7',
+    marginTop: 4,
+    shadowColor: '#00E0C7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
     shadowRadius: 4,
     elevation: 3,
+  },
+  indicatorSpacer: {
+    height: 2,
+    marginTop: 4,
   },
 });
 
 export default React.memo(TabBar);
+

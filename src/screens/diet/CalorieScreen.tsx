@@ -13,6 +13,7 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Image,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Typography, Spacing, Radius } from '../../theme/theme';
@@ -23,7 +24,8 @@ import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, Notific
 import { useAuth } from '../../providers/AuthProvider';
 import { useNotifications } from '../../providers/NotificationContext';
 import * as dietService from '../../services/dietService';
-import type { NutritionLog, NutritionGoal, WeeklyTrendDay, MealType } from '../../types/diet';
+import type { NutritionLog, NutritionGoal, WeeklyTrendDay, WeeklyWaterDay, MealType, MealSuggestion } from '../../types/diet';
+import MealSuggestionDetailModal from '../../components/diet/MealSuggestionDetailModal';
 
 const MEAL_TYPE_OPTIONS: MealType[] = ['breakfast', 'lunch', 'snack', 'dinner'];
 
@@ -66,20 +68,18 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     { key: 'dinner', name: 'Dinner', icon: '🌙', color: colors.textMuted },
   ], [colors.amber, colors.teal, colors.pink, colors.textMuted]);
 
-  const AI_SUGGESTIONS = useMemo(() => [
-    { title: 'Baked salmon & broccoli', tags: ['High protein', 'omega-3', 'low carb'], calories: 490, highlight: '38g protein', icon: '🐟', type: 'AI pick', color: colors.teal },
-    { title: 'Lentil soup & roti', tags: ['Low GI', 'high fibre', 'gut friendly'], calories: 420, highlight: '24g fibre', icon: '🍲', type: 'Diabetic', color: colors.accentBlue },
-    { title: 'Egg fried brown rice', tags: ['Balanced macros', '15 min prep'], calories: 510, highlight: '28g protein', icon: '🥚', type: 'Quick', color: colors.amber },
-    { title: 'Tofu stir fry & noodles', tags: ['Plant-based', 'iron rich', 'anti-inflammatory'], calories: 460, highlight: '22g protein', icon: '🍃', type: 'Vegan', color: colors.pink },
-  ], [colors.teal, colors.accentBlue, colors.amber, colors.pink]);
-
   const [meals, setMeals] = useState<NutritionLog[]>([]);
   const [waterLogs, setWaterLogs] = useState<any[]>([]);
   const [waterTotalMl, setWaterTotalMl] = useState(0);
   const [goal, setGoal] = useState<NutritionGoal | null>(null);
   const [weeklyTrend, setWeeklyTrend] = useState<WeeklyTrendDay[]>([]);
+  const [weeklyWaterTrend, setWeeklyWaterTrend] = useState<WeeklyWaterDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const [suggestions, setSuggestions] = useState<MealSuggestion[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState<MealSuggestion | null>(null);
 
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [tempGoal, setTempGoal] = useState('');
@@ -125,6 +125,12 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     const total = weeklyTrend.reduce((sum, d) => sum + d.val, 0);
     return Math.round(total / weeklyTrend.length);
   }, [weeklyTrend]);
+
+  const weeklyWaterAvg = useMemo(() => {
+    if (weeklyWaterTrend.length === 0) return 0;
+    const total = weeklyWaterTrend.reduce((sum, d) => sum + d.val, 0);
+    return Math.round(total / weeklyWaterTrend.length);
+  }, [weeklyWaterTrend]);
 
   const mealsByType = useMemo(() => {
     const grouped: Record<MealType, NutritionLog[]> = {
@@ -245,17 +251,19 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     if (!session?.access_token) return;
     setLoading(true);
     try {
-      const [mealsRes, waterRes, goalRes, weeklyRes] = await Promise.all([
+      const [mealsRes, waterRes, goalRes, weeklyRes, weeklyWaterRes] = await Promise.all([
         dietService.getMealsForDate(session.access_token, todayStr),
         dietService.getWaterForDate(session.access_token, todayStr),
         dietService.getCalorieGoal(session.access_token),
         dietService.getWeeklyTrend(session.access_token, todayStr),
+        dietService.getWeeklyWaterTrend(session.access_token, todayStr),
       ]);
       setMeals(mealsRes.meals);
       setWaterLogs(waterRes.logs);
       setWaterTotalMl(waterRes.total_ml);
       setGoal(goalRes);
       setWeeklyTrend(weeklyRes);
+      setWeeklyWaterTrend(weeklyWaterRes);
       setTempGoal(String(goalRes?.calorie_goal ?? 0));
     } catch (e) {
       console.warn('[CalorieScreen] Fetch failed:', e);
@@ -267,11 +275,12 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
   const handleRefresh = useCallback(async () => {
     if (!session?.access_token) return;
     setRefreshing(true);
-    const [mealsRes, waterRes, goalRes, weeklyRes] = await Promise.allSettled([
+    const [mealsRes, waterRes, goalRes, weeklyRes, weeklyWaterRes] = await Promise.allSettled([
       dietService.getMealsForDate(session.access_token, todayStr),
       dietService.getWaterForDate(session.access_token, todayStr),
       dietService.getCalorieGoal(session.access_token),
       dietService.getWeeklyTrend(session.access_token, todayStr),
+      dietService.getWeeklyWaterTrend(session.access_token, todayStr),
     ]);
     if (mealsRes.status === 'fulfilled') setMeals(mealsRes.value.meals);
     if (waterRes.status === 'fulfilled') {
@@ -283,6 +292,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
       setTempGoal(String(goalRes.value?.calorie_goal ?? 0));
     }
     if (weeklyRes.status === 'fulfilled') setWeeklyTrend(weeklyRes.value);
+    if (weeklyWaterRes.status === 'fulfilled') setWeeklyWaterTrend(weeklyWaterRes.value);
     setRefreshing(false);
   }, [session?.access_token, todayStr]);
 
@@ -301,6 +311,15 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
       setGoalSetupVisible(true);
     }
   }, [loading, goal]);
+
+  useEffect(() => {
+    if (!session?.access_token) return;
+    setSuggestionsLoading(true);
+    dietService.getMealSuggestions(session.access_token, { maxCalories: 600, number: 4 })
+      .then(res => setSuggestions(res.suggestions))
+      .catch(() => { })
+      .finally(() => setSuggestionsLoading(false));
+  }, [session?.access_token]);
 
   const handleSaveGoalSetup = async () => {
     if (!session?.access_token) return;
@@ -348,9 +367,10 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
   const handleLogWater = async (amountMl: number) => {
     if (!session?.access_token) return;
     try {
-      const log = await dietService.logWater(session.access_token, amountMl);
-      setWaterLogs(prev => [...prev, log]);
-      setWaterTotalMl(prev => prev + amountMl);
+      await dietService.logWater(session.access_token, amountMl);
+      const waterRes = await dietService.getWaterForDate(session.access_token, todayStr);
+      setWaterLogs(waterRes.logs);
+      setWaterTotalMl(waterRes.total_ml);
     } catch (e) {
       console.warn('[CalorieScreen] Log water failed:', e);
     }
@@ -403,6 +423,32 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     }
   };
 
+  const getMealTypeByTime = (): MealType => {
+    const hour = new Date().getHours();
+    if (hour < 11) return 'breakfast';
+    if (hour < 15) return 'lunch';
+    if (hour < 18) return 'snack';
+    return 'dinner';
+  };
+
+  const handleLogSuggestionMeal = async (data: { food: string; calories: number; protein: number; carbs: number; fat: number; fiber: number }) => {
+    if (!session?.access_token) return;
+    try {
+      const newMeal = await dietService.logMeal(session.access_token, {
+        food: data.food,
+        taken_as: getMealTypeByTime(),
+        calories: data.calories,
+        protein: data.protein,
+        carbs: data.carbs,
+        fat: data.fat,
+        fiber: data.fiber,
+      });
+      setMeals(prev => [...prev, newMeal]);
+    } catch (e) {
+      console.warn('[CalorieScreen] Log suggestion meal failed:', e);
+    }
+  };
+
   const macros = [
     { label: 'Protein', val: totalMacros.protein, target: goal?.protein_goal ?? 120, unit: 'g', color: colors.teal },
     { label: 'Carbs', val: totalMacros.carbs, target: goal?.carbs_goal ?? 280, unit: 'g', color: colors.amber },
@@ -424,7 +470,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>Diet</Text>
-            <Text style={styles.sub}>{formatDateHeader(today)}</Text>
           </View>
           <View style={styles.headerActions}>
             <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
@@ -526,8 +571,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                   </View>
                 </View>
               </View>
-              <ProgressBar progress={progress} color={progress > 1 ? colors.pink : colors.teal} height={8} style={{ marginTop: Spacing.md }} />
-              <Text style={styles.calorieProgressLabel}>{Math.round(progress * 100)}% of daily goal</Text>
             </GlassCardView>
 
             <SectionHeader title="Track Calorie with a photo" />
@@ -544,14 +587,35 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
             <SectionHeader title="Macronutrients" />
             <GlassCardView style={styles.macroCard}>
               <View style={styles.macroGrid}>
-                {macros.map(m => (
-                  <View key={m.label} style={[styles.macroItem, { borderColor: m.color + '40', backgroundColor: m.color + '10' }]}>
-                    <Text style={[styles.macroVal, { color: m.color }]}>{m.val}{m.unit}</Text>
-                    <Text style={styles.macroLabel}>{m.label}</Text>
-                    <ProgressBar progress={m.target > 0 ? m.val / m.target : 0} color={m.color} height={4} style={{ marginTop: Spacing.xs }} />
-                    <Text style={styles.macroTarget}>/ {m.target}{m.unit}</Text>
-                  </View>
-                ))}
+                {macros.map(m => {
+                  const macroKey = m.label === 'Protein' ? 'protein'
+                    : m.label === 'Carbs' ? 'carbs'
+                    : m.label === 'Fats' ? 'fat'
+                    : 'fiber';
+                  const chartData = weeklyTrend.map(d => d[macroKey as keyof typeof d] as number);
+                  const maxVal = Math.max(...chartData, 1);
+                  const barH = 40;
+                  const barW = 6;
+                  const gap = 3;
+
+                  return (
+                    <View key={m.label} style={[styles.macroItem, { borderColor: m.color + '40', backgroundColor: m.color + '10' }]}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.macroVal, { color: m.color }]}>{m.val}{m.unit}</Text>
+                          <Text style={styles.macroLabel}>{m.label}</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap, height: barH, paddingBottom: 0 }}>
+                          {chartData.map((v, i) => (
+                            <View key={i} style={{ width: barW, height: v > 0 ? `${(v / maxVal) * 100}%` : 3, backgroundColor: m.color + '60', borderRadius: 2 }} />
+                          ))}
+                        </View>
+                      </View>
+                      <ProgressBar progress={m.target > 0 ? m.val / m.target : 0} color={m.color} height={4} style={{ marginTop: Spacing.xs }} />
+                      <Text style={styles.macroTarget}>/ {m.target}{m.unit}</Text>
+                    </View>
+                  );
+                })}
               </View>
             </GlassCardView>
 
@@ -603,6 +667,29 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               })}
             </GlassCardView>
 
+            <SectionHeader title="WEEKLY NUTRITION TREND" />
+            <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
+              <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary, marginBottom: Spacing.xl }}>Calorie intake <Text style={{ color: colors.textSecondary, fontWeight: Typography.regular }}>— past 7 days</Text></Text>
+
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 120, marginBottom: Spacing.sm, paddingHorizontal: Spacing.xs }}>
+                {weeklyTrend.map((day, idx) => (
+                  <View key={idx} style={{ alignItems: 'center', width: '12%', height: '100%', justifyContent: 'flex-end' }}>
+                    <View style={{ width: '100%', height: `${(day.val / 3000) * 100}%`, backgroundColor: day.today ? colors.accentBlue : day.val > 2000 ? colors.amber : colors.teal + '80', borderRadius: Radius.sm, minHeight: day.val > 0 ? 20 : 0 }} />
+                    <Text style={{ fontSize: Typography.sm, color: day.today ? colors.accentBlue : colors.textSecondary, marginTop: Spacing.sm, fontWeight: day.today ? Typography.bold : Typography.regular }}>{day.day}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <View style={{ height: 1, backgroundColor: colors.bgCardBorder, marginVertical: Spacing.md }} />
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ fontSize: Typography.sm, color: colors.textSecondary }}>Avg this week: <Text style={{ color: colors.textPrimary, fontWeight: Typography.bold }}>{weeklyAvg.toLocaleString()} kcal</Text></Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.teal + '20', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: colors.teal + '50' }}>
+                  <Text style={{ fontSize: Typography.xs, color: colors.teal, fontWeight: Typography.bold }}>✓ {weeklyAvg <= calorieGoal ? 'Within goal' : 'Over goal'}</Text>
+                </View>
+              </View>
+            </GlassCardView>
+
             <SectionHeader title="WATER INTAKE" />
             <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
@@ -612,10 +699,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                     <Text style={{ fontSize: Typography.sm, color: colors.textMuted, marginLeft: 2 }}>/ {waterGoalLiters} L</Text>
                   </View>
                   <Text style={{ fontSize: Typography.xs, color: colors.textSecondary }}>{waterPercent}% of daily goal</Text>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.teal + '15', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: colors.teal + '30' }}>
-                  <Text style={{ fontSize: Typography.sm, marginRight: 6 }}>💧</Text>
-                  <Text style={{ fontSize: Typography.xs, color: colors.teal, fontWeight: Typography.bold }}>{waterTotalMl} ml</Text>
                 </View>
               </View>
 
@@ -646,46 +729,16 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               </TouchableOpacity>
             </GlassCardView>
 
-            <SectionHeader title="AI MEAL SUGGESTIONS - DINNER" />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xl, justifyContent: 'space-between' }}>
-              {AI_SUGGESTIONS.map((item, idx) => (
-                <GlassCardView key={idx} style={{ width: '48.5%', padding: Spacing.sm, marginBottom: Spacing.sm }}>
-                  <View style={{ backgroundColor: item.color + '20', height: 70, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.md }}>
-                    <Text style={{ fontSize: Typography.xxl }}>{item.icon}</Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                    <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: colors.textPrimary, flex: 1, marginRight: Spacing.xs, lineHeight: 18 }} numberOfLines={2}>{item.title}</Text>
-                    <View style={{ backgroundColor: colors.bgCardBorder, paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full }}>
-                      <Text style={{ fontSize: Typography.xs, color: item.color, fontWeight: Typography.bold }}>{item.type}</Text>
-                    </View>
-                  </View>
-                  <Text style={{ fontSize: Typography.xs, color: colors.textSecondary, marginBottom: Spacing.lg, lineHeight: 14 }} numberOfLines={2}>
-                    {item.tags.join(' - ')}
-                  </Text>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                    <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary }}>~{item.calories} <Text style={{ fontSize: Typography.xs, color: colors.textMuted, fontWeight: Typography.regular }}>kcal</Text></Text>
-                    <View style={{ backgroundColor: item.color + '15', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, borderWidth: 1, borderColor: item.color + '30' }}>
-                      <Text style={{ fontSize: Typography.xs, color: item.color, fontWeight: Typography.bold }}>{item.highlight}</Text>
-                    </View>
-                  </View>
-                </GlassCardView>
-              ))}
-            </View>
-
-            <SectionHeader title="WEEKLY NUTRITION TREND" />
+            <SectionHeader title="WEEKLY WATER TREND" />
             <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl }}>
-                <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary }}>Calorie intake <Text style={{ color: colors.textSecondary, fontWeight: Typography.regular }}>— past 7 days</Text></Text>
-                <View style={{ backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.accentBlue, paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={{ fontSize: Typography.xs, marginRight: 4 }}>✦</Text>
-                  <Text style={{ fontSize: Typography.xs, color: colors.accentBlue, fontWeight: Typography.bold }}>AI analyzed Today</Text>
-                </View>
+                <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary }}>Water intake <Text style={{ color: colors.textSecondary, fontWeight: Typography.regular }}>— past 7 days</Text></Text>
               </View>
 
               <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 120, marginBottom: Spacing.sm, paddingHorizontal: Spacing.xs }}>
-                {weeklyTrend.map((day, idx) => (
+                {weeklyWaterTrend.map((day, idx) => (
                   <View key={idx} style={{ alignItems: 'center', width: '12%', height: '100%', justifyContent: 'flex-end' }}>
-                    <View style={{ width: '100%', height: `${(day.val / 3000) * 100}%`, backgroundColor: day.today ? colors.accentBlue : day.val > 2000 ? colors.amber : colors.teal + '80', borderRadius: Radius.sm, minHeight: 20 }} />
+                    <View style={{ width: '100%', height: `${waterGoalMl > 0 ? Math.min((day.val / waterGoalMl) * 100, 100) : (day.val / 3000) * 100}%`, backgroundColor: day.today ? colors.accentBlue : colors.blue + '80', borderRadius: Radius.sm, minHeight: day.val > 0 ? 20 : 0 }} />
                     <Text style={{ fontSize: Typography.sm, color: day.today ? colors.accentBlue : colors.textSecondary, marginTop: Spacing.sm, fontWeight: day.today ? Typography.bold : Typography.regular }}>{day.day}</Text>
                   </View>
                 ))}
@@ -694,12 +747,50 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               <View style={{ height: 1, backgroundColor: colors.bgCardBorder, marginVertical: Spacing.md }} />
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ fontSize: Typography.sm, color: colors.textSecondary }}>Avg this week: <Text style={{ color: colors.textPrimary, fontWeight: Typography.bold }}>{weeklyAvg.toLocaleString()} kcal</Text></Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.teal + '20', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: colors.teal + '50' }}>
-                  <Text style={{ fontSize: Typography.xs, color: colors.teal, fontWeight: Typography.bold }}>✓ {weeklyAvg <= calorieGoal ? 'Within goal' : 'Over goal'}</Text>
+                <Text style={{ fontSize: Typography.sm, color: colors.textSecondary }}>Avg this week: <Text style={{ color: colors.textPrimary, fontWeight: Typography.bold }}>{weeklyWaterAvg.toLocaleString()} ml</Text></Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.blue + '20', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: colors.blue + '50' }}>
+                  <Text style={{ fontSize: Typography.xs, color: colors.blue, fontWeight: Typography.bold }}>✓ {weeklyWaterAvg >= waterGoalMl ? 'Goal met' : `${waterGoalMl - weeklyWaterAvg} ml left`}</Text>
                 </View>
               </View>
             </GlassCardView>
+
+            <SectionHeader title="AI MEAL SUGGESTIONS" />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xl }}>
+              {suggestionsLoading ? (
+                <View style={{ width: '100%', alignItems: 'center', paddingVertical: Spacing.lg }}>
+                  <ActivityIndicator size="small" color={colors.teal} />
+                  <Text style={{ fontSize: Typography.xs, color: colors.textSecondary, marginTop: Spacing.sm }}>Fetching suggestions...</Text>
+                </View>
+              ) : suggestions.length > 0 ? (
+                suggestions.map((item, idx) => (
+                  <TouchableOpacity key={item.id || idx} onPress={() => setSelectedMeal(item)} activeOpacity={0.7} style={{ width: '48%', height: 220 }}>
+                    <GlassCardView style={{ padding: Spacing.sm, flex: 1 }}>
+                      {item.image ? (
+                        <Image source={{ uri: item.image }} style={{ height: 80, borderRadius: Radius.sm, marginBottom: Spacing.sm }} resizeMode="cover" />
+                      ) : (
+                        <View style={{ backgroundColor: colors.teal + '20', height: 80, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm }}>
+                          <Text style={{ fontSize: Typography.xxl, color: colors.teal }}>🍽</Text>
+                        </View>
+                      )}
+                      <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: colors.textPrimary, marginBottom: 4 }} numberOfLines={2}>{item.title}</Text>
+                      <Text style={{ fontSize: Typography.xs, color: colors.textSecondary, marginBottom: Spacing.sm }} numberOfLines={1}>
+                        {item.diets?.[0] || item.dishTypes?.[0] || 'Balanced meal'}
+                      </Text>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                        <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: colors.textPrimary }}>~{item.calories} <Text style={{ fontSize: Typography.xs, color: colors.textMuted, fontWeight: Typography.regular }}>kcal</Text></Text>
+                        <View style={{ backgroundColor: colors.teal + '15', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, borderWidth: 1, borderColor: colors.teal + '30' }}>
+                          <Text style={{ fontSize: Typography.xs, color: colors.teal, fontWeight: Typography.bold }}>{item.protein}g P</Text>
+                        </View>
+                      </View>
+                    </GlassCardView>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View style={{ width: '100%', alignItems: 'center', paddingVertical: Spacing.lg }}>
+                  <Text style={{ fontSize: Typography.xs, color: colors.textSecondary }}>No suggestions available</Text>
+                </View>
+              )}
+            </View>
           </>
         )}
 
@@ -861,6 +952,13 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>}
+
+      <MealSuggestionDetailModal
+        visible={!!selectedMeal}
+        meal={selectedMeal}
+        onClose={() => setSelectedMeal(null)}
+        onLogMeal={handleLogSuggestionMeal}
+      />
     </KeyboardAvoidingView>
   );
 }
