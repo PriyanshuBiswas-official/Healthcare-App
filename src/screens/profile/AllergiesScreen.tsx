@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  InteractionManager,
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
@@ -104,27 +105,30 @@ export default function AllergiesScreen({ onBack, onSaved }: Props) {
   }));
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!session?.access_token) return;
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/profile`, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        const json = await res.json();
-        if (json.success && json.data) {
-          const raw = json.data.allergies || '';
-          const parsed = typeof raw === 'string'
-            ? raw.split(',').map((s: string) => s.trim()).filter(Boolean)
-            : Array.isArray(raw) ? raw : [];
-          setAllergies(parsed);
+    const task = InteractionManager.runAfterInteractions(() => {
+      const fetchProfile = async () => {
+        if (!session?.access_token) return;
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/profile`, {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          const json = await res.json();
+          if (json.success && json.data) {
+            const raw = json.data.allergies || '';
+            const parsed = typeof raw === 'string'
+              ? raw.split(',').map((s: string) => s.trim()).filter(Boolean)
+              : Array.isArray(raw) ? raw : [];
+            setAllergies(parsed);
+          }
+        } catch (e) {
+          console.warn('[Allergies] Fetch failed:', e);
+        } finally {
+          setLoading(false);
         }
-      } catch (e) {
-        console.warn('[Allergies] Fetch failed:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProfile();
+      };
+      fetchProfile();
+    });
+    return () => task.cancel();
   }, [session?.access_token]);
 
   const toggleAllergy = (value: string) => {

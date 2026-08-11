@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  InteractionManager,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Typography, Spacing, Radius } from '../../theme/theme';
@@ -78,7 +79,10 @@ export default function AppointmentsRemindersScreen({ onBack, onSaved }: Props) 
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [showCustomTimePicker, setShowCustomTimePicker] = useState(false);
 
-  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => { fetchAppointments(); });
+    return () => task.cancel();
+  }, [fetchAppointments]);
 
   const isLessThan1DayAway = useMemo(() => {
     if (!dateObj) return false;

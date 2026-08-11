@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  InteractionManager,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Typography, Spacing, Radius } from '../../theme/theme';
@@ -219,32 +220,35 @@ export default function MedicationsScreen({ onBack, onSaved }: Props) {
   // ── Fetch Profile ───────────────────────────────────────
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!session?.access_token) return;
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/profile`, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        const json = await res.json();
-        if (json.success && json.data) {
-          const meds = json.data.medications || [];
-          setMedications(
-            meds.map((m: any) => ({
-              name: m.name || '',
-              dosage: m.dosage || '',
-              frequency: m.frequency || '',
-              startDate: m.start_date || m.startDate || '',
-              endDate: m.end_date || m.endDate || '',
-            })),
-          );
+    const task = InteractionManager.runAfterInteractions(() => {
+      const fetchProfile = async () => {
+        if (!session?.access_token) return;
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/profile`, {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          const json = await res.json();
+          if (json.success && json.data) {
+            const meds = json.data.medications || [];
+            setMedications(
+              meds.map((m: any) => ({
+                name: m.name || '',
+                dosage: m.dosage || '',
+                frequency: m.frequency || '',
+                startDate: m.start_date || m.startDate || '',
+                endDate: m.end_date || m.endDate || '',
+              })),
+            );
+          }
+        } catch (e) {
+          console.warn('[Medications] Fetch failed:', e);
+        } finally {
+          setLoading(false);
         }
-      } catch (e) {
-        console.warn('[Medications] Fetch failed:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProfile();
+      };
+      fetchProfile();
+    });
+    return () => task.cancel();
   }, [session?.access_token]);
 
   // ── Date Picker Handlers ────────────────────────────────

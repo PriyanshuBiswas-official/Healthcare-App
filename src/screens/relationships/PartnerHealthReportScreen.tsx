@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  InteractionManager,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -306,9 +307,12 @@ export default function PartnerHealthReportScreen({
   const [report, setReport] = useState<relationshipApi.HealthReport | null>(null);
 
   useEffect(() => {
-    if (token && relationshipId) {
-      loadReport();
-    }
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (token && relationshipId) {
+        loadReport();
+      }
+    });
+    return () => task.cancel();
   }, [token, relationshipId]);
 
   const loadReport = async () => {

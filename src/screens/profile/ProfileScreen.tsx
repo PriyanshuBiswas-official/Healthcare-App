@@ -9,6 +9,7 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  InteractionManager,
 } from 'react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { Typography, Spacing, Radius } from '../../theme/theme';
@@ -512,7 +513,10 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
   }, [session?.access_token]);
 
   useEffect(() => {
-    fetchProfile();
+    const task = InteractionManager.runAfterInteractions(() => {
+      fetchProfile();
+    });
+    return () => task.cancel();
   }, [fetchProfile]);
 
   const percentage: number = profileCompletion?.percentage ?? 0;

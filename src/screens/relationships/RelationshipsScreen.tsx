@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Clipboard,
+  InteractionManager,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -314,9 +315,12 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
   };
 
   useEffect(() => {
-    if (token) {
-      fetchRelationships();
-    }
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (token) {
+        fetchRelationships();
+      }
+    });
+    return () => task.cancel();
   }, [token]);
 
   const handleGenerateInvite = async () => {

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  InteractionManager,
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
@@ -54,7 +55,10 @@ export default function WorkoutsRemindersScreen({ onBack, onSaved }: Props) {
     }
   }, [getRemindersByCategory, fetchSchedules]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => { loadData(); });
+    return () => task.cancel();
+  }, [loadData]);
 
   const handleAdd = async () => {
     if (!newType.trim()) return;

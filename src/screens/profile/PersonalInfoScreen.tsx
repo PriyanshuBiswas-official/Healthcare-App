@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  InteractionManager,
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
@@ -174,29 +175,32 @@ export default function PersonalInfoScreen({ onBack, onSaved }: Props) {
   }));
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!session?.access_token) return;
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/profile`, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        const json = await res.json();
-        if (json.success && json.data) {
-          const d: ProfileData = json.data;
-          setName(d.name || '');
-          setDateOfBirth(d.date_of_birth || '');
-          setGender(d.gender || '');
-          setHeight(d.height ? String(d.height) : '');
-          setWeight(d.weight ? String(d.weight) : '');
-          setBloodGroup(d.blood_group || '');
+    const task = InteractionManager.runAfterInteractions(() => {
+      const fetchProfile = async () => {
+        if (!session?.access_token) return;
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/profile`, {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          const json = await res.json();
+          if (json.success && json.data) {
+            const d: ProfileData = json.data;
+            setName(d.name || '');
+            setDateOfBirth(d.date_of_birth || '');
+            setGender(d.gender || '');
+            setHeight(d.height ? String(d.height) : '');
+            setWeight(d.weight ? String(d.weight) : '');
+            setBloodGroup(d.blood_group || '');
+          }
+        } catch (e) {
+          console.warn('[PersonalInfo] Fetch failed:', e);
+        } finally {
+          setLoading(false);
         }
-      } catch (e) {
-        console.warn('[PersonalInfo] Fetch failed:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProfile();
+      };
+      fetchProfile();
+    });
+    return () => task.cancel();
   }, [session?.access_token]);
 
   const bmi = (() => {
