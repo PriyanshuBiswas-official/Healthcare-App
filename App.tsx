@@ -36,6 +36,17 @@ import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import type { ChatAttachment } from './src/services/aiApi';
 const Stack = createNativeStackNavigator();
 
+type RootStackParamList = {
+  Main: Record<string, any>;
+  Profile: { initialSection?: string } | undefined;
+  ProfileSetup: undefined;
+  Notifications: undefined;
+  WorkoutLog: { exercise: any } | undefined;
+  HealthLog: undefined;
+  PartnerReport: { partnerId: string } | undefined;
+  Relationships: undefined;
+};
+
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
 const OVERLAY_TABS: TabName[] = ['Profile', 'Notifications', 'WorkoutLog', 'HealthLog', 'PartnerReport', 'Relationships'];
 
@@ -202,7 +213,7 @@ const MemoizedRelationshipsScreen = React.memo(RelationshipsScreen);
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 const Tab = createBottomTabNavigator();
-const RootStack = createNativeStackNavigator();
+const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 // ── AppShell Navigation Setup ─────────────────────────────────────────
 
@@ -230,7 +241,7 @@ function TabNavigator({ route }: any) {
   return (
     <Tab.Navigator
       tabBar={(props) => <TabBar {...props} />}
-      screenOptions={{ headerShown: false }}
+      screenOptions={{ headerShown: false, freezeOnBlur: true }}
       initialRouteName="Home">
       <Tab.Screen name="Home">
         {(props) => (
@@ -449,8 +460,8 @@ function AppShell() {
     <>
       <OfflineBanner />
       <View style={styles.screenContainer}>
-        <NavigationContainer ref={navRef} onStateChange={handleStateChange} independent>
-          <RootStack.Navigator screenOptions={{ headerShown: false }}>
+        <NavigationContainer ref={navRef} onStateChange={handleStateChange}>
+          <RootStack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true, animation: 'slide_from_right', animationDuration: 220, gestureEnabled: true }}>
             <RootStack.Screen 
               name="Main" 
               component={TabNavigator} 
