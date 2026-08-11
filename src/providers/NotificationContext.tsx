@@ -65,7 +65,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Load inbox on mount
   useEffect(() => {
-    getNotificationInbox().then(setNotifications);
+    setNotifications(getNotificationInbox());
   }, []);
 
   // Listen for foreground notification events
@@ -73,7 +73,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const unsubscribe = notifee.onForegroundEvent(async ({ type, detail }) => {
       if (type === EventType.DELIVERED) {
         if (detail.notification) {
-          const added = await addNotificationToInbox(detail.notification);
+          const added = addNotificationToInbox(detail.notification);
           if (added) {
             setNotifications(prev => [added, ...prev]);
           }
@@ -121,24 +121,24 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return id;
   }, []);
 
-  const markAsRead = useCallback(async (id: string) => {
+  const markAsRead = useCallback((id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    await markInboxItemRead(id);
+    markInboxItemRead(id);
   }, []);
 
-  const markAllRead = useCallback(async () => {
+  const markAllRead = useCallback(() => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    await markAllInboxItemsRead();
+    markAllInboxItemsRead();
   }, []);
 
-  const removeNotification = useCallback(async (id: string) => {
+  const removeNotification = useCallback((id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
-    await removeInboxItem(id);
+    removeInboxItem(id);
   }, []);
 
-  const clearAll = useCallback(async () => {
+  const clearAll = useCallback(() => {
     setNotifications([]);
-    await clearNotificationInbox();
+    clearNotificationInbox();
   }, []);
 
   const setOnNotificationTap = useCallback((handler: (screen: string, data?: Record<string, unknown>) => void) => {
