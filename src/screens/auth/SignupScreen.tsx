@@ -8,6 +8,7 @@ import { API_BASE_URL } from '../../config/api';
 import { useAuth } from '../../providers/AuthProvider';
 import { Typography } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { posthog } from '../../config/posthog';
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -98,6 +99,7 @@ const SignupScreen = () => {
         // Re-check the profile — this sets hasProfile=true in AuthProvider,
         // which causes RootComponent to swap from Onboarding → AppShell.
         await checkProfile(data.session);
+        posthog?.capture('user_signed_up', { method: 'password' });
       }
       setLoading(false);
     } else {
@@ -140,6 +142,7 @@ const SignupScreen = () => {
         if (saved) {
           // Re-check profile to set hasProfile=true and navigate to Dashboard.
           await checkProfile(authData.session);
+          posthog?.capture('user_signed_up', { method: 'google' });
         }
         setLoading(false);
       } else {

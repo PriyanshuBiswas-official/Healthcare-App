@@ -28,13 +28,19 @@ import OnboardingScreen from './src/screens/auth/OnboardingScreen';
 import { AuthStack } from './src/navigation/AuthStack';
 import LoadingScreen from './src/components/LoadingScreen';
 import ErrorScreen from './src/screens/error/ErrorScreen';
-import ErrorBoundary from './src/components/ErrorBoundary';
 import { NetworkProvider } from './src/services/networkService';
 import OfflineBanner from './src/components/OfflineBanner';
 import { ArrowLeft, Camera, Image as ImageIcon, X } from 'lucide-react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import type { ChatAttachment } from './src/services/aiApi';
+import { PostHogProvider } from 'posthog-react-native';
+import type { ReactNode } from 'react';
+import { posthog } from './src/config/posthog';
 const Stack = createNativeStackNavigator();
+
+function PostHogBoundary({ children }: { children: ReactNode }) {
+  return posthog ? <PostHogProvider client={posthog}>{children}</PostHogProvider> : <>{children}</>;
+}
 
 type RootStackParamList = {
   Main: Record<string, any>;
@@ -239,86 +245,77 @@ function TabNavigator({ route }: any) {
   } = route.params;
 
   return (
+    <PostHogBoundary>
     <Tab.Navigator
       tabBar={(props) => <TabBar {...props} />}
       screenOptions={{ headerShown: false, freezeOnBlur: true }}
       initialRouteName="Home">
       <Tab.Screen name="Home">
         {(props) => (
-          <ErrorBoundary>
-            <MemoizedDashboard
-              {...props}
-              onProfilePress={openProfile}
-              onNotificationsPress={openNotifications}
-              onCompleteProfile={openProfileSetup}
-              navigateToTab={navigateToTab}
-              onPartnerPress={openPartnerReport}
-              onRelationshipsPress={openRelationships}
-              onOpenAI={openAI}
-              onOpenAppointments={openAppointments}
-              onOpenHealthLog={openHealthLog}
-              onCaptureImage={(att) => {
-                setPendingAttachments([att]);
-                setInput('Analyze this health image');
-                setOcrLoading(true);
-                openAI('Home', true);
-              }}
-            />
-          </ErrorBoundary>
+          <MemoizedDashboard
+            {...props}
+            onProfilePress={openProfile}
+            onNotificationsPress={openNotifications}
+            onCompleteProfile={openProfileSetup}
+            navigateToTab={navigateToTab}
+            onPartnerPress={openPartnerReport}
+            onRelationshipsPress={openRelationships}
+            onOpenAI={openAI}
+            onOpenAppointments={openAppointments}
+            onOpenHealthLog={openHealthLog}
+            onCaptureImage={(att) => {
+              setPendingAttachments([att]);
+              setInput('Analyze this health image');
+              setOcrLoading(true);
+              openAI('Home', true);
+            }}
+          />
         )}
       </Tab.Screen>
       <Tab.Screen name="Health">
         {(props) => (
-          <ErrorBoundary>
-            <MemoizedHealthScreen
-              {...props}
-              onProfilePress={openProfile}
-              onNotificationsPress={openNotifications}
-              onOpenHealthLog={openHealthLog}
-              lastHealthLog={lastHealthLog}
-            />
-          </ErrorBoundary>
+          <MemoizedHealthScreen
+            {...props}
+            onProfilePress={openProfile}
+            onNotificationsPress={openNotifications}
+            onOpenHealthLog={openHealthLog}
+            lastHealthLog={lastHealthLog}
+          />
         )}
       </Tab.Screen>
       <Tab.Screen name="AI">
         {(props) => (
-          <ErrorBoundary>
-            <MemoizedAIAdvisorScreen
-              {...props}
-              onProfilePress={openProfile}
-              onNotificationsPress={openNotifications}
-              isTabActive={props.navigation.isFocused()}
-              onOpenChat={() => openAI(undefined, true, '')}
-              onOpenOCR={openOCR}
-            />
-          </ErrorBoundary>
+          <MemoizedAIAdvisorScreen
+            {...props}
+            onProfilePress={openProfile}
+            onNotificationsPress={openNotifications}
+            onOpenChat={() => openAI(undefined, true, '')}
+            onOpenOCR={openOCR}
+          />
         )}
       </Tab.Screen>
       <Tab.Screen name="Diet">
         {(props) => (
-          <ErrorBoundary>
-            <MemoizedCalorieScreen
-              {...props}
-              onProfilePress={openProfile}
-              onNotificationsPress={openNotifications}
-            />
-          </ErrorBoundary>
+          <MemoizedCalorieScreen
+            {...props}
+            onProfilePress={openProfile}
+            onNotificationsPress={openNotifications}
+          />
         )}
       </Tab.Screen>
       <Tab.Screen name="Activity">
         {(props) => (
-          <ErrorBoundary>
-            <MemoizedFitnessScreen
-              {...props}
-              onProfilePress={openProfile}
-              onNotificationsPress={openNotifications}
-              onOpenAI={openAI}
-              onOpenWorkoutLog={(ex: any) => props.navigation.navigate('WorkoutLog', { exercise: ex })}
-            />
-          </ErrorBoundary>
+          <MemoizedFitnessScreen
+            {...props}
+            onProfilePress={openProfile}
+            onNotificationsPress={openNotifications}
+            onOpenAI={openAI}
+            onOpenWorkoutLog={(ex: any) => props.navigation.navigate('WorkoutLog', { exercise: ex })}
+          />
         )}
       </Tab.Screen>
     </Tab.Navigator>
+    </PostHogBoundary>
   );
 }
 
@@ -461,7 +458,7 @@ function AppShell() {
       <OfflineBanner />
       <View style={styles.screenContainer}>
         <NavigationContainer ref={navRef} onStateChange={handleStateChange}>
-          <RootStack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true, animation: 'slide_from_right', animationDuration: 220, gestureEnabled: true }}>
+            <RootStack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true, animation: 'slide_from_right', animationDuration: 220, gestureEnabled: true }}>
             <RootStack.Screen 
               name="Main" 
               component={TabNavigator} 
@@ -537,7 +534,7 @@ function AppShell() {
                 />
               )}
             </RootStack.Screen>
-          </RootStack.Navigator>
+            </RootStack.Navigator>
         </NavigationContainer>
 
         {aiChatVisible && (
@@ -673,7 +670,9 @@ const RootComponent = () => {
   if (!session?.user) {
     return (
       <NavigationContainer>
-        <AuthStack />
+        <PostHogBoundary>
+          <AuthStack />
+        </PostHogBoundary>
       </NavigationContainer>
     );
   }
@@ -681,9 +680,11 @@ const RootComponent = () => {
   if (hasProfile === false) {
     return (
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-        </Stack.Navigator>
+        <PostHogBoundary>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          </Stack.Navigator>
+        </PostHogBoundary>
       </NavigationContainer>
     );
   }

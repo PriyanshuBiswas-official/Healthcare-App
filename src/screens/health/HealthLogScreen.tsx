@@ -20,6 +20,7 @@ import { saveSymptomsLog } from '../../services/healthService';
 import { saveSleepLog } from '../../services/healthService';
 import { getPeriodLogs } from '../../services/healthService';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { posthog } from '../../config/posthog';
 
 export interface HealthLogDraft {
   createdAt: string;
@@ -371,6 +372,13 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
         setSaving(false);
       }
     }
+
+    posthog?.capture('health_log_created', {
+      includes_period: gotPeriod,
+      includes_symptoms: logSymptoms,
+      includes_sleep: true,
+      includes_vitals: !hideVitals,
+    });
 
     // Call local save callback AFTER backend persist so re-fetch gets fresh data
     onSave?.(draft);

@@ -12,6 +12,7 @@ import {
   cancelAppointmentNotifications,
 } from '../services/notificationService';
 import type { Appointment, CreateAppointmentPayload, UpdateAppointmentPayload, AppointmentStatus } from '../types/appointment';
+import { posthog } from '../config/posthog';
 
 type AppointmentContextType = {
   appointments: Appointment[];
@@ -71,6 +72,7 @@ export function AppointmentProvider({ children }: { children: React.ReactNode })
     if (!token) throw new Error('Not authenticated');
     const appointment = await createAppointment(token, payload);
     setAppointments(prev => [appointment, ...prev]);
+    posthog?.capture('appointment_created');
     return appointment;
   }, [token]);
 

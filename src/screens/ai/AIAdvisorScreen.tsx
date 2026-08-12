@@ -15,6 +15,7 @@ import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
+import { useIsFocused } from '@react-navigation/native';
 import { useAuth } from '../../providers/AuthProvider';
 import { useNotifications } from '../../providers/NotificationContext';
 import { getSleepLogs, getWeightLogs, getMoodLogs } from '../../services/healthService';
@@ -99,13 +100,11 @@ function MiniLineChart({ data, color, height = 48 }: { data: number[]; color: st
 export default function AIAdvisorScreen({
   onProfilePress,
   onNotificationsPress,
-  isTabActive,
   onOpenChat,
   onOpenOCR,
 }: {
   onProfilePress?: () => void;
   onNotificationsPress?: () => void;
-  isTabActive?: boolean;
   onOpenChat?: () => void;
   onOpenOCR?: () => void;
 }) {
@@ -113,6 +112,7 @@ export default function AIAdvisorScreen({
   const { user } = useAuth();
   const { unreadCount } = useNotifications();
   const { setForceHidden, onScroll } = useScrollVisibility();
+  const isTabActive = useIsFocused();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const [insightData, setInsightData] = useState<InsightData>({ sleep: [], weight: [], mood: [] });

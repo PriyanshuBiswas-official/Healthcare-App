@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { GoogleSignin } from '../../lib/googleSignin';
 import { Typography } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { posthog } from '../../config/posthog';
 
 type AuthStackParamList = {
   Onboarding: undefined;
@@ -35,6 +36,8 @@ const LoginScreen = () => {
     setLoading(false);
     if (error) {
       Alert.alert('Login Failed', error.message);
+    } else {
+      posthog?.capture('user_logged_in', { method: 'password' });
     }
   };
 
@@ -63,6 +66,8 @@ const LoginScreen = () => {
 
       if (error) {
         Alert.alert('Login Failed', error.message);
+      } else {
+        posthog?.capture('user_logged_in', { method: 'google' });
       }
     } catch (error: any) {
       setLoading(false);
