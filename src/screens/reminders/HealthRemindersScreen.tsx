@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  InteractionManager,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Typography, Spacing, Radius } from '../../theme/theme';
@@ -69,7 +70,10 @@ export default function HealthRemindersScreen({ onBack, onSaved }: Props) {
     }
   }, [getRemindersByCategory, fetchSchedules]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => { loadData(); });
+    return () => task.cancel();
+  }, [loadData]);
 
   function resetForm() {
     setNewTitle('');

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  InteractionManager,
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
@@ -84,25 +85,28 @@ export default function DietTypeScreen({ onBack, onSaved }: Props) {
   }));
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!session?.access_token) return;
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/profile`, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        const json = await res.json();
-        if (json.success && json.data) {
-          const raw = json.data as any;
-          setSelectedType(raw.diet_type || '');
-          setFoodRestrictions(raw.food_restrictions || '');
+    const task = InteractionManager.runAfterInteractions(() => {
+      const fetchProfile = async () => {
+        if (!session?.access_token) return;
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/profile`, {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          const json = await res.json();
+          if (json.success && json.data) {
+            const raw = json.data as any;
+            setSelectedType(raw.diet_type || '');
+            setFoodRestrictions(raw.food_restrictions || '');
+          }
+        } catch (e) {
+          console.warn('[DietType] Fetch failed:', e);
+        } finally {
+          setLoading(false);
         }
-      } catch (e) {
-        console.warn('[DietType] Fetch failed:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProfile();
+      };
+      fetchProfile();
+    });
+    return () => task.cancel();
   }, [session?.access_token]);
 
   const handleSave = async () => {

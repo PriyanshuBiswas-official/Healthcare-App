@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storage } from '../lib/storage';
 import { Notification } from '@notifee/react-native';
 
 export type AppNotification = {
@@ -12,9 +12,9 @@ export type AppNotification = {
 
 const INBOX_KEY = '@notification_inbox';
 
-export async function getNotificationInbox(): Promise<AppNotification[]> {
+export function getNotificationInbox(): AppNotification[] {
   try {
-    const json = await AsyncStorage.getItem(INBOX_KEY);
+    const json = storage.getString(INBOX_KEY);
     return json ? JSON.parse(json) : [];
   } catch (e) {
     console.error('Error reading inbox', e);
@@ -22,10 +22,10 @@ export async function getNotificationInbox(): Promise<AppNotification[]> {
   }
 }
 
-export async function addNotificationToInbox(notification: Notification): Promise<AppNotification | null> {
+export function addNotificationToInbox(notification: Notification): AppNotification | null {
   if (!notification.id) return null;
   try {
-    const inbox = await getNotificationInbox();
+    const inbox = getNotificationInbox();
     // Check if it already exists
     if (inbox.some(n => n.id === notification.id)) return null;
     
@@ -42,7 +42,7 @@ export async function addNotificationToInbox(notification: Notification): Promis
     // Keep max 100
     if (updated.length > 100) updated.length = 100;
     
-    await AsyncStorage.setItem(INBOX_KEY, JSON.stringify(updated));
+    storage.set(INBOX_KEY, JSON.stringify(updated));
     return newNotif;
   } catch (e) {
     console.error('Error adding to inbox', e);
@@ -50,30 +50,32 @@ export async function addNotificationToInbox(notification: Notification): Promis
   }
 }
 
-export async function markInboxItemRead(id: string): Promise<void> {
+export function markInboxItemRead(id: string): void {
   try {
-    const inbox = await getNotificationInbox();
+    const inbox = getNotificationInbox();
     const updated = inbox.map(n => n.id === id ? { ...n, read: true } : n);
-    await AsyncStorage.setItem(INBOX_KEY, JSON.stringify(updated));
+    storage.set(INBOX_KEY, JSON.stringify(updated));
   } catch (e) {}
 }
 
-export async function markAllInboxItemsRead(): Promise<void> {
+export function markAllInboxItemsRead(): void {
   try {
-    const inbox = await getNotificationInbox();
+    const inbox = getNotificationInbox();
     const updated = inbox.map(n => ({ ...n, read: true }));
-    await AsyncStorage.setItem(INBOX_KEY, JSON.stringify(updated));
+    storage.set(INBOX_KEY, JSON.stringify(updated));
   } catch (e) {}
 }
 
-export async function clearNotificationInbox(): Promise<void> {
-  await AsyncStorage.removeItem(INBOX_KEY);
+export function clearNotificationInbox(): void {
+  try {
+    storage.remove(INBOX_KEY);
+  } catch (e) {}
 }
 
-export async function removeInboxItem(id: string): Promise<void> {
+export function removeInboxItem(id: string): void {
   try {
-    const inbox = await getNotificationInbox();
+    const inbox = getNotificationInbox();
     const updated = inbox.filter(n => n.id !== id);
-    await AsyncStorage.setItem(INBOX_KEY, JSON.stringify(updated));
+    storage.set(INBOX_KEY, JSON.stringify(updated));
   } catch (e) {}
 }

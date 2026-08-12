@@ -4,26 +4,16 @@ import { Typography, Spacing } from '../theme/theme';
 import { useTheme, useStyles } from '../providers/ThemeProvider';
 import { Home, HeartPulse, Sparkles, Utensils, Footprints } from 'lucide-react-native';
 import { useScrollVisibility } from './ScrollVisibilityContext';
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 export type TabName = 'Home' | 'Health' | 'Diet' | 'Activity' | 'AI' | 'Profile' | 'Notifications' | 'WorkoutLog' | 'HealthLog' | 'PartnerReport' | 'Relationships';
 
-interface TabBarProps {
-  activeTab: TabName;
-  onTabChange: (tab: TabName) => void;
-}
-
-function TabBar({ activeTab, onTabChange }: TabBarProps) {
+function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { theme } = useTheme();
   const styles = useStyles(themeStyles);
   const { visible, resetVisibility } = useScrollVisibility();
-  const [selectedTab, setSelectedTab] = useState<TabName>(activeTab);
 
-  // Sync with prop when parent navigation state updates
-  useEffect(() => {
-    setSelectedTab(activeTab);
-  }, [activeTab]);
-
-  const TABS: { name: TabName; label: string; Icon: React.ElementType }[] = [
+  const TABS: { name: string; label: string; Icon: React.ElementType }[] = [
     { name: 'Home', label: 'Home', Icon: Home },
     { name: 'Health', label: 'Health', Icon: HeartPulse },
     { name: 'AI', label: 'Insights', Icon: Sparkles },
@@ -31,12 +21,14 @@ function TabBar({ activeTab, onTabChange }: TabBarProps) {
     { name: 'Activity', label: 'Activity', Icon: Footprints },
   ];
 
+  const activeRouteName = state.routes[state.index].name;
+
   const anim = useRef(new Animated.Value(0)).current;
 
   // Always reset visibility when switching active tabs
   useEffect(() => {
     resetVisibility();
-  }, [selectedTab, resetVisibility]);
+  }, [activeRouteName, resetVisibility]);
 
   useEffect(() => {
     Animated.timing(anim, { toValue: visible ? 0 : 1, duration: 220, useNativeDriver: true }).start();
@@ -49,11 +41,17 @@ function TabBar({ activeTab, onTabChange }: TabBarProps) {
   const COLOR_ACTIVE = '#00E0C7';
   const COLOR_INACTIVE = '#A7A9BE';
 
-  const handleTabPress = (tabName: TabName) => {
-    // Instant visual response
-    setSelectedTab(tabName);
+  const handleTabPress = (routeName: string) => {
     resetVisibility();
-    onTabChange(tabName);
+    const event = navigation.emit({
+      type: 'tabPress',
+      target: routeName,
+      canPreventDefault: true,
+    });
+
+    if (activeRouteName !== routeName && !event.defaultPrevented) {
+      navigation.navigate(routeName);
+    }
   };
 
   return (
@@ -61,7 +59,7 @@ function TabBar({ activeTab, onTabChange }: TabBarProps) {
       <View style={styles.floating}>
         <View style={styles.bar}>
           {TABS.map(tab => {
-            const isActive = selectedTab === tab.name;
+            const isActive = activeRouteName === tab.name;
 
             return (
               <TouchableOpacity

@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Clipboard,
+  InteractionManager,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -28,6 +29,7 @@ import { GlassCardView, SectionHeader, BackButton } from '../../components/Share
 import { useAuth } from '../../providers/AuthProvider';
 import * as relationshipApi from '../../services/relationshipApi';
 import PermissionsModal from './PermissionsModal';
+import { posthog } from '../../config/posthog';
 
 interface RelationshipsScreenProps {
   onBack: () => void;
@@ -314,9 +316,12 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
   };
 
   useEffect(() => {
-    if (token) {
-      fetchRelationships();
-    }
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (token) {
+        fetchRelationships();
+      }
+    });
+    return () => task.cancel();
   }, [token]);
 
   const handleGenerateInvite = async () => {
@@ -332,6 +337,7 @@ export default function RelationshipsScreen({ onBack, onPartnerPress }: Relation
           minute: '2-digit',
         })
       );
+      posthog?.capture('relationship_invitation_sent', { relationship_role: inviteRole });
       Alert.alert('Success', 'Invite code generated! Share it with your partner.');
       fetchRelationships();
     } catch (err: any) {

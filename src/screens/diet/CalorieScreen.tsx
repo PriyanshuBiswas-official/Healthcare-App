@@ -26,6 +26,7 @@ import { useNotifications } from '../../providers/NotificationContext';
 import * as dietService from '../../services/dietService';
 import type { NutritionLog, NutritionGoal, WeeklyTrendDay, WeeklyWaterDay, MealType, MealSuggestion } from '../../types/diet';
 import MealSuggestionDetailModal from '../../components/diet/MealSuggestionDetailModal';
+import { posthog } from '../../config/posthog';
 
 const MEAL_TYPE_OPTIONS: MealType[] = ['breakfast', 'lunch', 'snack', 'dinner'];
 
@@ -405,6 +406,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
         fiber: parseInt(modalFiber, 10) || 0,
       });
       setMeals(prev => [...prev, newMeal]);
+      posthog?.capture('meal_logged', { meal_type: modalMealType });
       setModalVisible(false);
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to save meal.');
@@ -444,6 +446,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
         fiber: data.fiber,
       });
       setMeals(prev => [...prev, newMeal]);
+      posthog?.capture('meal_logged', { meal_type: getMealTypeByTime(), source: 'ai_suggestion' });
     } catch (e) {
       console.warn('[CalorieScreen] Log suggestion meal failed:', e);
     }

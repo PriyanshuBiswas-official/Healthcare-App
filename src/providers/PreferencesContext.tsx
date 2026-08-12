@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import { storage } from '../lib/storage';
 
 const STORAGE_KEY_VITALS = '@prefs/hideVitals';
 const STORAGE_KEY_COMMUNITY = '@prefs/hideCommunitySpotlight';
@@ -17,37 +17,40 @@ const PreferencesContext = createContext<PreferencesState>({
   setHideVitals: () => {},
   hideCommunitySpotlight: false,
   setHideCommunitySpotlight: () => {},
-  loaded: false,
+  loaded: true,
 });
 
 export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [hideVitals, setHideVitalsState] = useState(true);
-  const [hideCommunitySpotlight, setHideCommunitySpotlightState] = useState(true);
-  const [loaded, setLoaded] = useState(false);
+  const [hideVitals, setHideVitalsState] = useState<boolean>(() => {
+    const saved = storage.getString(STORAGE_KEY_VITALS);
+    return saved !== null ? saved === 'true' : false;
+  });
 
-  useEffect(() => {
-    Promise.all([
-      AsyncStorage.getItem(STORAGE_KEY_VITALS),
-      AsyncStorage.getItem(STORAGE_KEY_COMMUNITY),
-    ]).then(([vitals, community]) => {
-      if (vitals !== null) setHideVitalsState(vitals === 'true');
-      if (community !== null) setHideCommunitySpotlightState(community === 'true');
-      setLoaded(true);
-    });
-  }, []);
+  const [hideCommunitySpotlight, setHideCommunitySpotlightState] = useState<boolean>(() => {
+    const saved = storage.getString(STORAGE_KEY_COMMUNITY);
+    return saved !== null ? saved === 'true' : false;
+  });
 
   const setHideVitals = useCallback((val: boolean) => {
     setHideVitalsState(val);
-    AsyncStorage.setItem(STORAGE_KEY_VITALS, String(val));
+    try {
+      storage.set(STORAGE_KEY_VITALS, String(val));
+    } catch (e) {
+      console.error(e);
+    }
   }, []);
 
   const setHideCommunitySpotlight = useCallback((val: boolean) => {
     setHideCommunitySpotlightState(val);
-    AsyncStorage.setItem(STORAGE_KEY_COMMUNITY, String(val));
+    try {
+      storage.set(STORAGE_KEY_COMMUNITY, String(val));
+    } catch (e) {
+      console.error(e);
+    }
   }, []);
 
   return (
-    <PreferencesContext.Provider value={{ hideVitals, setHideVitals, hideCommunitySpotlight, setHideCommunitySpotlight, loaded }}>
+    <PreferencesContext.Provider value={{ hideVitals, setHideVitals, hideCommunitySpotlight, setHideCommunitySpotlight, loaded: true }}>
       {children}
     </PreferencesContext.Provider>
   );

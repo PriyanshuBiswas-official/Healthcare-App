@@ -11,6 +11,7 @@ import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { ArrowLeft, Trash2 } from 'lucide-react-native';
 import { GlassCardView, BackButton } from '../../components/SharedComponents';
+import { posthog } from '../../config/posthog';
 
 interface Props {
   onBack: () => void;
@@ -96,7 +97,14 @@ export default function ConfirmScreen({ onBack, onDelete, step, totalSteps }: Pr
       'This is a simulated feature. In the future, this will permanently delete your account and all associated data.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: onDelete },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            posthog?.capture('account_deletion_requested');
+            onDelete();
+          },
+        },
       ]
     );
   };

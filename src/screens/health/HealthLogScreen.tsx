@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  InteractionManager,
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { GlassCardView, BackButton } from '../../components/SharedComponents';
@@ -19,6 +20,7 @@ import { saveSymptomsLog } from '../../services/healthService';
 import { saveSleepLog } from '../../services/healthService';
 import { getPeriodLogs } from '../../services/healthService';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { posthog } from '../../config/posthog';
 
 export interface HealthLogDraft {
   createdAt: string;
@@ -276,24 +278,27 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
 
   // Auto-fill period state from latest period log
   useEffect(() => {
-    if (!token) return;
-    getPeriodLogs(token).then(logs => {
-      if (!logs || logs.length === 0) return;
-      const latest = logs[logs.length - 1];
-      if (!latest.period_start_date) return;
-      const start = new Date(latest.period_start_date);
-      const today = new Date();
-      const diffDays = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-      // Auto-toggle on if period started within last 7 days
-      if (diffDays >= 0 && diffDays <= 6) {
-        setGotPeriod(true);
-        setPeriodDay(diffDays + 1);
-        if (latest.flow_intensity) setFlowIntensity(latest.flow_intensity);
-        if (latest.Flow_color) setFlowColor(latest.Flow_color);
-        if (latest.cramps) setCramps(latest.cramps);
-        if (latest.clots) setClots(latest.clots);
-      }
-    }).catch(() => {});
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (!token) return;
+      getPeriodLogs(token).then(logs => {
+        if (!logs || logs.length === 0) return;
+        const latest = logs[logs.length - 1];
+        if (!latest.period_start_date) return;
+        const start = new Date(latest.period_start_date);
+        const today = new Date();
+        const diffDays = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        // Auto-toggle on if period started within last 7 days
+        if (diffDays >= 0 && diffDays <= 6) {
+          setGotPeriod(true);
+          setPeriodDay(diffDays + 1);
+          if (latest.flow_intensity) setFlowIntensity(latest.flow_intensity);
+          if (latest.Flow_color) setFlowColor(latest.Flow_color);
+          if (latest.cramps) setCramps(latest.cramps);
+          if (latest.clots) setClots(latest.clots);
+        }
+      }).catch(() => {});
+    });
+    return () => task.cancel();
   }, [token]);
 
   const handleSave = async () => {
@@ -367,6 +372,13 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
         setSaving(false);
       }
     }
+
+    posthog?.capture('health_log_created', {
+      includes_period: gotPeriod,
+      includes_symptoms: logSymptoms,
+      includes_sleep: true,
+      includes_vitals: !hideVitals,
+    });
 
     // Call local save callback AFTER backend persist so re-fetch gets fresh data
     onSave?.(draft);

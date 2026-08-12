@@ -16,6 +16,7 @@ import { BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import * as activityService from '../../services/activityService';
 import { WorkoutSet } from '../../types/activity';
+import { posthog } from '../../config/posthog';
 
 interface SetEntry {
   set_no: number;
@@ -136,6 +137,10 @@ export default function WorkoutLogScreen({
           if (!result.completed) allCompleted = false;
         }
       }
+      posthog?.capture('workout_logged', {
+        set_count: sets.filter(set => (parseFloat(set.weight) || 0) > 0 || (parseInt(set.reps, 10) || 0) > 0).length,
+        workout_completed: allCompleted,
+      });
       if (allCompleted) {
         Alert.alert('Exercise Complete', 'All sets logged for today!', [{ text: 'OK', onPress: onBack }]);
       } else {

@@ -19,6 +19,7 @@ import {
   rescheduleReminderNotifications,
   cancelAllReminderNotifications,
 } from '../services/notificationService';
+import { posthog } from '../config/posthog';
 import type {
   Reminder,
   ReminderSchedule,
@@ -123,6 +124,7 @@ export function ReminderProvider({ children }: { children: React.ReactNode }) {
     if (!token) throw new Error('Not authenticated');
     const reminder = await createReminder(token, payload);
     setReminders(prev => [reminder, ...prev]);
+    posthog?.capture('reminder_created');
     return reminder;
   }, [token]);
 

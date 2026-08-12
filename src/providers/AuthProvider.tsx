@@ -4,6 +4,19 @@ import { supabase } from '../lib/supabase';
 import { API_BASE_URL, fetchWithTimeout } from '../config/api';
 import { checkInitialConnectivity } from '../services/networkService';
 import { checkMaintenance, MaintenanceData } from '../services/maintenanceService';
+import { posthog } from '../config/posthog';
+
+const identifyPostHogUser = (user: User) => {
+  if (!posthog || !user.id) return;
+
+  const fullName = user.user_metadata?.full_name;
+  posthog.identify(user.id, {
+    $set: {
+      ...(user.email ? { email: user.email } : {}),
+      ...(typeof fullName === 'string' && fullName ? { name: fullName } : {}),
+    },
+  });
+};
 
 export interface ProfileCompletion {
   percentage: number;
@@ -163,6 +176,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // 2. Profile (if logged in)
       if (initialSession) {
+        // Restore the persisted stable Supabase user ID for this fresh SDK instance.
+        identifyPostHogUser(initialSession.user);
         startProgress(25, 70, 3000);
         await checkProfile(initialSession);
       }
@@ -202,12 +217,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!active) return;
       setSession(newSession);
       if (newSession) {
+        // Identify once at successful login or registration; token refreshes retain SDK identity.
+        if (event === 'SIGNED_IN') {
+          identifyPostHogUser(newSession.user);
+        }
         checkProfile(newSession);
       } else {
+        // Clear the persisted distinct ID when the authenticated user signs out.
+        if (event === 'SIGNED_OUT') {
+          posthog?.reset();
+        }
         setHasProfile(null);
         setProfileCompletion(null);
         setGender(null);

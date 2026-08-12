@@ -18,6 +18,7 @@ import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
+import { posthog } from '../../config/posthog';
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -197,6 +198,10 @@ export default function OnboardingScreen() {
 
         if (json.success) {
           await checkProfile();
+          posthog?.capture('onboarding_completed', {
+            goal_selected: selectedGoal,
+            activity_level: activityLevel,
+          });
         } else {
           Alert.alert('Error', json.error || 'Failed to save profile. Please try again.');
         }

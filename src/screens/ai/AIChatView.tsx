@@ -38,6 +38,7 @@ import { Copy, RotateCcw, Volume2, Share2, Paperclip, Mic, SendHorizonal, Menu, 
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { BackButton } from '../../components/SharedComponents';
 import type { TabName } from '../../navigation/TabBar';
+import { posthog } from '../../config/posthog';
 
 export type Message = {
   id: string;
@@ -191,6 +192,10 @@ export function useChatState() {
     const attachmentsToSend = [...pendingAttachments];
     setPendingAttachments([]);
     setMessages(prev => [...prev, userMsg]);
+    posthog?.capture('ai_advisor_message_sent', {
+      has_attachments: attachmentsToSend.length > 0,
+      is_new_conversation: !conversationId,
+    });
     setInput('');
     setIsThinking(true);
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);

@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useNavigation } from '@react-navigation/native';
 import { Bell, X } from 'lucide-react-native';
 
 import { GlassCardView, SectionHeader, BackButton } from '../../components/SharedComponents';
@@ -46,6 +47,7 @@ function getNotificationIcon(title: string): string {
 export default function NotificationsScreen({ onBackPress }: { onBackPress?: () => void }) {
   const { theme } = useTheme();
   const colors = theme.colors;
+  const navigation = useNavigation();
   const styles = useStyles(t => ({
     root: { flex: 1, backgroundColor: t.colors.bg },
     scroll: {
@@ -221,7 +223,7 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
         {/* Top Bar */}
         <View style={styles.topBar}>
           {onBackPress ? (
-            <BackButton onPress={onBackPress} color={colors.textPrimary} />
+            <BackButton onPress={() => navigation.goBack()} color={colors.textPrimary} />
           ) : (
             <View style={styles.backPlaceholder} />
           )}

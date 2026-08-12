@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useColorScheme, StyleSheet } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storage } from '../lib/storage';
 import { AppTheme, ThemeName, darkTheme, themes } from '../theme';
 
 interface ThemeContextType {
@@ -35,66 +35,42 @@ const SYSTEM_SYNC_KEY = '@theme_system_sync';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemColorScheme = useColorScheme(); // 'light' | 'dark' | null
-  const [themeName, setThemeNameState] = useState<ThemeName>('dark');
-  const [systemSync, setSystemSyncState] = useState<boolean>(true);
-  const [isReady, setIsReady] = useState(false);
+  
+  // Synchronously initialize state from MMKV
+  const [themeName, setThemeNameState] = useState<ThemeName>(() => {
+    const saved = storage.getString(THEME_PREF_KEY);
+    return (saved && saved in themes) ? (saved as ThemeName) : 'dark';
+  });
 
-  // Load preferences on mount
-  useEffect(() => {
-    async function loadTheme() {
-      try {
-        const [savedTheme, savedSync] = await Promise.all([
-          AsyncStorage.getItem(THEME_PREF_KEY),
-          AsyncStorage.getItem(SYSTEM_SYNC_KEY),
-        ]);
+  const [systemSync, setSystemSyncState] = useState<boolean>(() => {
+    const saved = storage.getString(SYSTEM_SYNC_KEY);
+    return saved !== null ? saved === 'true' : true;
+  });
 
-        if (savedSync !== null) {
-          setSystemSyncState(savedSync === 'true');
-        }
-
-        if (savedTheme && savedTheme in themes) {
-          setThemeNameState(savedTheme as ThemeName);
-        }
-      } catch (e) {
-        console.error('Failed to load theme preference', e);
-      } finally {
-        setIsReady(true);
-      }
-    }
-    loadTheme();
-  }, []);
-
-  const setThemeName = useCallback(async (name: ThemeName) => {
+  const setThemeName = useCallback((name: ThemeName) => {
     setThemeNameState(name);
     try {
-      await AsyncStorage.setItem(THEME_PREF_KEY, name);
+      storage.set(THEME_PREF_KEY, name);
     } catch (e) {
       console.error('Failed to save theme', e);
     }
   }, []);
 
-  const setSystemSync = useCallback(async (sync: boolean) => {
+  const setSystemSync = useCallback((sync: boolean) => {
     setSystemSyncState(sync);
     try {
-      await AsyncStorage.setItem(SYSTEM_SYNC_KEY, String(sync));
+      storage.set(SYSTEM_SYNC_KEY, String(sync));
     } catch (e) {
       console.error('Failed to save system sync', e);
     }
   }, []);
-
   // Compute effective theme based on system sync
   let effectiveThemeName = themeName;
   if (systemSync && systemColorScheme) {
-    // If system is light, use light. If system is dark, use dark. 
-    // Currently we only have dark, so fallback to dark if not available.
     effectiveThemeName = (systemColorScheme in themes ? systemColorScheme : 'dark') as ThemeName;
   }
 
   const currentTheme = themes[effectiveThemeName] || darkTheme;
-
-  if (!isReady) {
-    return null; // Or a splash screen
-  }
 
   return (
     <ThemeContext.Provider value={{ theme: currentTheme, themeName: effectiveThemeName, systemSync, setThemeName, setSystemSync }}>

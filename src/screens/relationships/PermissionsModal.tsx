@@ -8,6 +8,7 @@ import {
   Switch,
   ActivityIndicator,
   Alert,
+  InteractionManager,
 } from 'react-native';
 import { X, ShieldAlert } from 'lucide-react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
@@ -153,9 +154,12 @@ export default function PermissionsModal({
   });
 
   useEffect(() => {
-    if (visible && relationshipId) {
-      loadPermissions();
-    }
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (visible && relationshipId) {
+        loadPermissions();
+      }
+    });
+    return () => task.cancel();
   }, [visible, relationshipId]);
 
   const loadPermissions = async () => {
