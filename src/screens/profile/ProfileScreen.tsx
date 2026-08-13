@@ -10,10 +10,12 @@ import {
   Alert,
   ActivityIndicator,
   InteractionManager,
+  BackHandler,
 } from 'react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { User, ClipboardList, Pill, TriangleAlert, Phone, Bell, Flower2, Lock, Watch, Smartphone, Droplets, Dumbbell, Building2, Moon, Heart, CircleQuestionMark, Shield, FileText, Info, PenLine, Monitor, Sun, Users, Crown } from 'lucide-react-native';
 import { GlassCardView, SectionHeader, ProgressBar, BackButton } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
@@ -185,6 +187,7 @@ const menuStyles = StyleSheet.create({
 export default function ProfileScreen({ onBackPress, onCompleteProfile, initialSection }: { onBackPress?: () => void; onCompleteProfile?: () => void; initialSection?: string | null }) {
   const { theme } = useTheme();
   const { onScroll } = useScrollVisibility();
+  const insets = useSafeAreaInsets();
   const { user, session, profileCompletion } = useAuth();
   const { hideVitals, setHideVitals, hideCommunitySpotlight, setHideCommunitySpotlight } = usePreferences();
   const { systemSync, setSystemSync, themeName, setThemeName } = useTheme();
@@ -216,7 +219,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
     root: { flex: 1, backgroundColor: t.colors.bg },
     scroll: {
       paddingHorizontal: Spacing.base,
-      paddingTop: Spacing.xl,
+      paddingTop: insets.top + Spacing.xl,
       paddingBottom: 120,
     },
     topBar: {
@@ -496,6 +499,18 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
       setActiveSection(null);
     }
   }, [cameFromExternal, onBackPress]);
+
+  useEffect(() => {
+    if (!activeSection) return;
+
+    const onBackPress = () => {
+      handleSubScreenBack();
+      return true;
+    };
+
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [activeSection, handleSubScreenBack]);
 
   const fetchProfile = useCallback(async () => {
     if (!session?.access_token) return;

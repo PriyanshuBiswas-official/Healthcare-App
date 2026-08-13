@@ -32,6 +32,7 @@ import { usePreferences } from '../../providers/PreferencesContext';
 import { getSleepLogs, getMoodLogs } from '../../services/healthService';
 import type { SleepLog, MoodLog } from '../../types/health';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -46,6 +47,7 @@ export default function HealthScreenMale({
 }) {
   const { theme } = useTheme();
   const { onScroll } = useScrollVisibility();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { hideVitals } = usePreferences();
   const { unreadCount } = useNotifications();
@@ -61,7 +63,7 @@ export default function HealthScreenMale({
 
   const s = useStyles((t) => StyleSheet.create({
     root: { flex: 1, backgroundColor: t.colors.bg },
-    scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, flexGrow: 1 },
+    scroll: { paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.xl, flexGrow: 1 },
 
     header: {
       flexDirection: 'row',

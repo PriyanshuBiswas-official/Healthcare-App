@@ -52,6 +52,7 @@ import {
 } from '../../services/healthService';
 import type { PeriodLog, MoodLog, DischargeLog, SymptomsLog, CycleInsight, CycleData, CycleHistoryEntry, SleepLog, WeightEntry } from '../../types/health';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -511,6 +512,7 @@ export default function HealthScreenFemale({
 }) {
   const { theme } = useTheme();
   const { onScroll } = useScrollVisibility();
+  const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
   const { hideVitals } = usePreferences();
   const { unreadCount } = useNotifications();
@@ -549,7 +551,7 @@ export default function HealthScreenFemale({
   // ── Styles ─────────────────────────────────────────────────────────────
   const s = useStyles((t) => StyleSheet.create({
     root: { flex: 1, backgroundColor: t.colors.bg },
-    scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, flexGrow: 1 },
+    scroll: { paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.xl, flexGrow: 1 },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl },
     title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: t.colors.textPrimary },
     headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },

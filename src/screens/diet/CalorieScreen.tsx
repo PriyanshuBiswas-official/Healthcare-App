@@ -18,6 +18,7 @@ import {
 import Svg, { Circle } from 'react-native-svg';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera } from 'lucide-react-native';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../../components/SharedComponents';
@@ -56,6 +57,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
   const { theme } = useTheme();
   const colors = theme.colors;
   const { onScroll } = useScrollVisibility();
+  const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
   const { unreadCount } = useNotifications();
 
@@ -151,7 +153,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
 
   const styles = useStyles(t => ({
     root: { flex: 1, backgroundColor: t.colors.bg },
-    scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl },
+    scroll: { paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.xl },
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',

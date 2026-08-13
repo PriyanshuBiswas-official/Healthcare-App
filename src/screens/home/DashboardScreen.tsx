@@ -10,7 +10,6 @@ import {
   Dimensions,
   ActivityIndicator,
   RefreshControl,
-  StatusBar,
   NativeSyntheticEvent,
   NativeScrollEvent,
   Alert,
@@ -1317,12 +1316,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   // Dynamic status bar color on scroll
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     onScroll(e);
-    const y = e.nativeEvent.contentOffset.y;
-    if (y >= heroHeightRef.current - 80) {
-      StatusBar.setBackgroundColor(theme.colors.bg, false);
-    } else {
-      StatusBar.setBackgroundColor(theme.colors.bgHero, false);
-    }
   }, [onScroll]);
 
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -1779,7 +1772,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[theme.colors.teal, theme.colors.pink]} tintColor={theme.colors.teal} progressBackgroundColor={theme.colors.bgCard} />}>
 
         {/* ─── HERO SURFACE — extends from the very top ─── */}
-        <Animated.View style={[styles.heroSurface, { marginTop: -insets.top, paddingTop: insets.top, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
+        <Animated.View style={[styles.heroSurface, { paddingTop: insets.top, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
           onLayout={(e) => { heroHeightRef.current = e.nativeEvent.layout.height; }}>
 
           {/* ── Greeting + Notifications ── */}
