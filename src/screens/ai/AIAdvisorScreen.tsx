@@ -20,7 +20,7 @@ import { useAuth } from '../../providers/AuthProvider';
 import { useNotifications } from '../../providers/NotificationContext';
 import { getSleepLogs, getWeightLogs, getMoodLogs } from '../../services/healthService';
 import type { SleepLog, WeightEntry, MoodLog } from '../../types/health';
-import { Search, Scan, Microscope, UtensilsCrossed, TrendingUp } from 'lucide-react-native';
+import { Search, Scan, Microscope, UtensilsCrossed, Dumbbell } from 'lucide-react-native';
 
 type InsightData = {
   sleep: SleepLog[];
@@ -424,18 +424,18 @@ export default function AIAdvisorScreen({
               </GlassCardView>
             </TouchableOpacity>
 
-            <TouchableOpacity activeOpacity={0.85} onPress={() => Alert.alert('Coming Soon', 'Health trends is under development and will be available soon!')} style={{ width: '47%' }}>
+            <TouchableOpacity activeOpacity={0.85} onPress={onOpenChat} style={{ width: '47%' }}>
               <GlassCardView style={styles.toolCard}>
                 <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.amber + '15', alignItems: 'center', justifyContent: 'center' }]}>
-                  <TrendingUp size={18} color={theme.colors.amber} strokeWidth={1.8} />
+                  <Dumbbell size={18} color={theme.colors.amber} strokeWidth={1.8} />
                 </View>
-                <Text style={styles.toolTitle}>Health trends</Text>
-                <Text numberOfLines={2} style={styles.toolSub}>AI pattern recognition across vitals & symptoms</Text>
-                <Text style={styles.toolActionText}>Tap to scan or upload</Text>
+                <Text style={styles.toolTitle}>AI Coach</Text>
+                <Text numberOfLines={2} style={styles.toolSub}>Personalized workout, nutrition, sleep & health recommendations</Text>
+                <Text style={styles.toolActionText}>Tap to get started</Text>
                 <View style={styles.toolTagsRow}>
-                   <View style={styles.toolTag}><Text style={styles.toolTagText}>7 days</Text></View>
-                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Monthly</Text></View>
-                   <View style={styles.toolTag}><Text style={styles.toolTagText}>AI report</Text></View>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Workout</Text></View>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Nutrition</Text></View>
+                   <View style={styles.toolTag}><Text style={styles.toolTagText}>Sleep</Text></View>
                 </View>
               </GlassCardView>
             </TouchableOpacity>

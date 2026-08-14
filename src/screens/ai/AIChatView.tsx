@@ -34,7 +34,7 @@ import {
   ChatHistoryItem,
   ChatAttachment,
 } from '../../services/aiApi';
-import { Copy, RotateCcw, Volume2, Share2, Paperclip, Mic, SendHorizonal, Menu, Plus, X, MessageSquare, Trash2, Pin, Archive, ChevronDown, ChevronRight, Camera, Image as ImageIcon, FileText } from 'lucide-react-native';
+import { Copy, RotateCcw, Volume2, Share2, Paperclip, Mic, SendHorizonal, Menu, Plus, X, MessageSquare, Trash2, Pin, Archive, ChevronDown, ChevronRight, Camera, Image as ImageIcon, FileText, Play } from 'lucide-react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { BackButton, LoadingSpinner } from '../../components/SharedComponents';
 import type { TabName } from '../../navigation/TabBar';
@@ -1007,6 +1007,8 @@ type AttachMenuProps = {
   onSelectedMultiple?: (attachments: ChatAttachment[]) => void;
 };
 
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+
 function AttachMenu({ visible, onClose, onSelected, onSelectedMultiple }: AttachMenuProps) {
   const { theme } = useTheme();
 
@@ -1063,9 +1065,13 @@ function AttachMenu({ visible, onClose, onSelected, onSelectedMultiple }: Attach
         );
         if (granted !== PermissionsAndroid.RESULTS.GRANTED) return;
       }
-      const result = await launchCamera({ mediaType: 'photo', quality: 0.8 });
+      const result = await launchCamera({ mediaType: 'mixed', quality: 0.8 });
       if (result.didCancel || result.errorCode || !result.assets?.[0]) return;
       const a = result.assets[0];
+      if (a.fileSize && a.fileSize > MAX_FILE_SIZE) {
+        Alert.alert('File Too Large', 'Videos must be under 100MB. Try recording a shorter video.');
+        return;
+      }
       onSelected({ uri: a.uri || '', type: a.type || 'image/jpeg', name: a.fileName || 'photo.jpg' });
     } catch (e: any) {
       console.warn('[Attach] Camera:', e.message);
@@ -1075,8 +1081,13 @@ function AttachMenu({ visible, onClose, onSelected, onSelectedMultiple }: Attach
   const handleGallery = async () => {
     onClose();
     try {
-      const result = await launchImageLibrary({ mediaType: 'photo', selectionLimit: 4, quality: 0.8 });
+      const result = await launchImageLibrary({ mediaType: 'mixed', selectionLimit: 4, quality: 0.8 });
       if (result.didCancel || result.errorCode || !result.assets || result.assets.length === 0) return;
+      const oversized = result.assets.find(a => a.fileSize && a.fileSize > MAX_FILE_SIZE);
+      if (oversized) {
+        Alert.alert('File Too Large', `"${oversized.fileName}" is over 100MB. Please choose a smaller file.`);
+        return;
+      }
       const items: ChatAttachment[] = result.assets.map(a => ({
         uri: a.uri || '',
         type: a.type || 'image/jpeg',
@@ -1102,7 +1113,7 @@ function AttachMenu({ visible, onClose, onSelected, onSelectedMultiple }: Attach
         </TouchableOpacity>
         <TouchableOpacity style={styles.option} onPress={handleGallery} activeOpacity={0.6}>
           <ImageIcon size={22} color={theme.colors.textSecondary} strokeWidth={1.5} />
-          <Text style={styles.optionText}>Photos</Text>
+          <Text style={styles.optionText}>Gallery</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.option} onPress={() => { onClose(); }} activeOpacity={0.6}>
           <FileText size={22} color={theme.colors.textSecondary} strokeWidth={1.5} />
@@ -1290,6 +1301,28 @@ export default function AIChatView({
       height: 22,
       borderRadius: 11,
       backgroundColor: 'rgba(0,0,0,0.6)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    videoPlayOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: Radius.md,
+      backgroundColor: 'rgba(0,0,0,0.35)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    videoPlayOverlayReceived: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: Radius.md,
+      backgroundColor: 'rgba(0,0,0,0.35)',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -1498,6 +1531,11 @@ export default function AIChatView({
                                   style={styles.chatImage}
                                   resizeMode="cover"
                                 />
+                                {att.mimeType?.startsWith('video') && (
+                                  <View style={styles.videoPlayOverlayReceived}>
+                                    <Play size={24} color="#fff" strokeWidth={2.5} fill="#fff" />
+                                  </View>
+                                )}
                               </TouchableOpacity>
                             ) : null
                           ))}
@@ -1558,6 +1596,11 @@ export default function AIChatView({
                 <View key={index} style={styles.attachmentImageWrap}>
                   <TouchableOpacity onPress={() => setViewerImage(att.uri)} activeOpacity={0.8}>
                     <Image source={{ uri: att.uri }} style={styles.attachmentThumb} />
+                    {att.type.startsWith('video') && (
+                      <View style={styles.videoPlayOverlay}>
+                        <Play size={20} color="#fff" strokeWidth={2.5} fill="#fff" />
+                      </View>
+                    )}
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => {
