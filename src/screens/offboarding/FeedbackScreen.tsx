@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCardView, BackButton } from '../../components/SharedComponents';
 
 interface Props {
@@ -20,13 +21,14 @@ interface Props {
 
 export default function FeedbackScreen({ onBack, onNext, onSkip, step, totalSteps }: Props) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [feedback, setFeedback] = useState('');
 
   const styles = useStyles((t) => ({
     root: { flex: 1, backgroundColor: t.colors.bg },
     topBar: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
+      paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.xl, paddingBottom: Spacing.md,
     },
     pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary },
     skipBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },

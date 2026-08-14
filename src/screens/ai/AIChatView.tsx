@@ -38,6 +38,7 @@ import { Copy, RotateCcw, Volume2, Share2, Paperclip, Mic, SendHorizonal, Menu, 
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { BackButton } from '../../components/SharedComponents';
 import type { TabName } from '../../navigation/TabBar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { posthog } from '../../config/posthog';
 
 export type Message = {
@@ -560,6 +561,7 @@ function HistorySidebar({
   const { theme } = useTheme();
   const slideAnim = useRef(new Animated.Value(Dimensions.get('window').width)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const insets = useSafeAreaInsets();
   const [contextMenu, setContextMenu] = useState<{ visible: boolean; conversation: Conversation | null }>({
     visible: false,
     conversation: null,
@@ -592,7 +594,7 @@ function HistorySidebar({
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingTop: Spacing.xl + Spacing.base,
+      paddingTop: insets.top + Spacing.xl + Spacing.base,
       paddingHorizontal: Spacing.base,
       paddingBottom: Spacing.md,
       borderBottomWidth: 1,
@@ -1123,6 +1125,7 @@ export default function AIChatView({
 }: AIChatViewProps) {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [historyVisible, setHistoryVisible] = useState(false);
   const [attachSheetVisible, setAttachSheetVisible] = useState(false);
   const [viewerImage, setViewerImage] = useState<string | null>(null);
@@ -1369,7 +1372,7 @@ export default function AIChatView({
       flexDirection: 'row',
       alignItems: 'center',
       padding: Spacing.base,
-      paddingTop: Spacing.xl,
+      paddingTop: insets.top + Spacing.xl,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.divider,
       backgroundColor: theme.colors.bg,

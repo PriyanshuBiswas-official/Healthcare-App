@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import * as activityService from '../../services/activityService';
@@ -50,6 +51,7 @@ export default function WorkoutLogScreen({
 }) {
   const { session } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const isCompleted = exercise.completed;
   const loggedSets = exercise.logged_sets || [];
 
@@ -183,7 +185,7 @@ export default function WorkoutLogScreen({
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: Spacing.base,
-      paddingTop: Platform.OS === 'ios' ? 60 : Spacing.xl,
+      paddingTop: insets.top + Spacing.xl,
       paddingBottom: Spacing.base,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.bgCardBorder,

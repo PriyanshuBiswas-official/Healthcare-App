@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useReducer, useCallback, useState } from 'react';
-import { View, StatusBar, StyleSheet, SafeAreaView, BackHandler, KeyboardAvoidingView, Platform, TouchableOpacity, Text, Modal, ActivityIndicator } from 'react-native';
+import { View, StatusBar, StyleSheet, BackHandler, KeyboardAvoidingView, Platform, TouchableOpacity, Text, Modal, ActivityIndicator } from 'react-native';
 import TabBar, { TabName } from './src/navigation/TabBar';
 import { ScrollVisibilityProvider, useScrollVisibility } from './src/navigation/ScrollVisibilityContext';
 import DashboardScreen from './src/screens/home/DashboardScreen';
@@ -705,12 +705,10 @@ const RootThemedApp = () => {
     <View style={[styles.root, { backgroundColor: theme.colors.bg }]}>
       <StatusBar
         barStyle={themeName === 'light' ? 'dark-content' : 'light-content'}
-        backgroundColor={theme.colors.bgHero}
-        translucent={false}
+        translucent={true}
+        backgroundColor="transparent"
       />
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.bgHero }]}>
-        <RootComponent />
-      </SafeAreaView>
+      <RootComponent />
     </View>
   );
 };
@@ -737,9 +735,6 @@ export default function App() {
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1,
-  },
-  safeArea: {
     flex: 1,
   },
   screenContainer: {

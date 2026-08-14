@@ -18,6 +18,7 @@ import { useStyles } from '../../providers/ThemeProvider';
 import { ChevronRight, Dumbbell, Check, Pencil, Trophy, Target } from 'lucide-react-native';
 import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton, ActivityProgressCard } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNotifications } from '../../providers/NotificationContext';
 import { TabName } from '../../navigation/TabBar';
 import { useAuth } from '../../providers/AuthProvider';
@@ -55,6 +56,7 @@ function formatDuration(minutes: number): string {
 
 export default function FitnessScreen({ onProfilePress, onNotificationsPress, onOpenAI, onOpenWorkoutLog }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void; onOpenWorkoutLog?: (exercise: any) => void }) {
   const { onScroll } = useScrollVisibility();
+  const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
   const { unreadCount } = useNotifications();
   const [activeSegment, setActiveSegment] = useState<Segment>('Today');
@@ -385,7 +387,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   const estimatedSteps = logDistance ? Math.round((parseFloat(logDistance) || 0) * 1312) : 0;
   const styles = useStyles((theme: any) => ({
     root: { flex: 1, backgroundColor: theme.colors.bg },
-    scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl },
+    scroll: { paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.xl },
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ClipboardList } from 'lucide-react-native';
 import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
@@ -34,6 +35,7 @@ interface Props {
 
 export default function MedicalHistoryScreen({ onBack, onSaved }: Props) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -49,7 +51,7 @@ export default function MedicalHistoryScreen({ onBack, onSaved }: Props) {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: Spacing.base,
-      paddingTop: Spacing.xl,
+      paddingTop: insets.top + Spacing.xl,
       paddingBottom: Spacing.md,
     },
     pageTitle: {

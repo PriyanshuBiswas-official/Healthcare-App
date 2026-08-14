@@ -16,6 +16,7 @@ import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useIsFocused } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../providers/AuthProvider';
 import { useNotifications } from '../../providers/NotificationContext';
 import { getSleepLogs, getWeightLogs, getMoodLogs } from '../../services/healthService';
@@ -113,6 +114,7 @@ export default function AIAdvisorScreen({
   const { unreadCount } = useNotifications();
   const { setForceHidden, onScroll } = useScrollVisibility();
   const isTabActive = useIsFocused();
+  const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const [insightData, setInsightData] = useState<InsightData>({ sleep: [], weight: [], mood: [] });
@@ -182,7 +184,7 @@ export default function AIAdvisorScreen({
       flexDirection: 'row',
       alignItems: 'center',
       padding: Spacing.base,
-      paddingTop: Spacing.xl,
+      paddingTop: insets.top + Spacing.xl,
     },
     headerTextWrap: {
       flex: 1,

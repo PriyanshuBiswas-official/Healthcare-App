@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { useReminders } from '../../providers/ReminderContext';
 import type { Reminder, ReminderSchedule } from '../../types/reminder';
@@ -24,6 +25,7 @@ const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export default function WorkoutsRemindersScreen({ onBack, onSaved }: Props) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { getRemindersByCategory, addReminder, removeReminder, addReminderSchedule, fetchSchedules } = useReminders();
 
   const [editing, setEditing] = useState(false);
@@ -151,7 +153,7 @@ export default function WorkoutsRemindersScreen({ onBack, onSaved }: Props) {
   const styles = useStyles(theme => ({
     root: { flex: 1, backgroundColor: theme.colors.bg },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md },
+    topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.xl, paddingBottom: Spacing.md },
     pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
     editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
     editBtnText: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.pink },

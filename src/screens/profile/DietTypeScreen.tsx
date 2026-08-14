@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check } from 'lucide-react-native';
 import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
@@ -30,6 +31,7 @@ interface Props {
 
 export default function DietTypeScreen({ onBack, onSaved }: Props) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const colors = theme.colors;
   const { session } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ export default function DietTypeScreen({ onBack, onSaved }: Props) {
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     topBar: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
+      paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.xl, paddingBottom: Spacing.md,
     },
     pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary },
     editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },

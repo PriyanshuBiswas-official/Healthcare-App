@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Bell, X } from 'lucide-react-native';
 
@@ -47,12 +48,13 @@ function getNotificationIcon(title: string): string {
 export default function NotificationsScreen({ onBackPress }: { onBackPress?: () => void }) {
   const { theme } = useTheme();
   const colors = theme.colors;
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const styles = useStyles(t => ({
     root: { flex: 1, backgroundColor: t.colors.bg },
     scroll: {
       paddingHorizontal: Spacing.base,
-      paddingTop: Spacing.xl,
+      paddingTop: insets.top + Spacing.xl,
       paddingBottom: 120,
     },
     topBar: {

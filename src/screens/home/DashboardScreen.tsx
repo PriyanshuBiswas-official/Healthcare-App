@@ -10,7 +10,6 @@ import {
   Dimensions,
   ActivityIndicator,
   RefreshControl,
-  StatusBar,
   NativeSyntheticEvent,
   NativeScrollEvent,
   Alert,
@@ -28,19 +27,19 @@ import { usePreferences } from '../../providers/PreferencesContext';
 import { useNotifications } from '../../providers/NotificationContext';
 import { useAppointments } from '../../providers/AppointmentContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pill, Droplets, Utensils, Footprints, Dumbbell, Moon, Pin, Stethoscope, Scale, Calendar, Clock, Flame, UserRound } from 'lucide-react-native';
+import { Pill, Droplets, Utensils, Footprints, Dumbbell, Moon, Pin, Stethoscope, Scale, Calendar, Clock, Flame, UserRound, Flower2, Activity, Zap, ArrowRight, Target, Info } from 'lucide-react-native';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path } from 'react-native-svg';
 import { launchCamera } from 'react-native-image-picker';
 import Voice from '@dev-amirzubair/react-native-voice';
 import { Search, Mic, Camera, Check, TriangleAlert } from 'lucide-react-native';
 import { TabName } from '../../navigation/TabBar';
 import { SleepTrackerSection, VitalsDashboardSection } from '../health/HealthCommonSections';
-import { getSleepLogs, getWeightLogs, saveWeightLog } from '../../services/healthService';
+import { getSleepLogs, getWeightLogs, saveWeightLog, getLatestCycle, getMoodLogs, getSymptomsLogs, getPeriodLogs } from '../../services/healthService';
 import { getMealsForDate, getWaterForDate, getCalorieGoal, logMeal, logWater, getWaterChallenge, getWeeklyTrend } from '../../services/dietService';
 import { getTodaySummary, getActivityGoal, getWeeklyStats } from '../../services/activityService';
 import { getDashboardHealthScore } from '../../services/healthScoreService';
 import * as relationshipApi from '../../services/relationshipApi';
-import type { SleepLog, WeightEntry, DashboardHealthScore } from '../../types/health';
+import type { SleepLog, WeightEntry, DashboardHealthScore, CycleData, MoodLog, SymptomsLog, PeriodLog } from '../../types/health';
 import type { DayMealsResponse, DayWaterResponse, NutritionGoal, MealType, WaterChallenge, WeeklyTrendDay } from '../../types/diet';
 import type { ActivitySummary, ActivityGoal, WeeklyData } from '../../types/activity';
 import { getMedications, getMedicationLogsForDate, logMedicationTaken, removeMedicationLog } from '../../types/medication';
@@ -49,6 +48,11 @@ import { formatTime12h } from '../../utils/calendarHelpers';
 import { getAIHealthSummary, AISummaryTag } from '../../services/aiApi';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+
+function capitalizeFirst(s: string): string {
+  if (!s) return '';
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
 
 function formatDashboardDate(iso: string): string {
   try {
@@ -71,33 +75,6 @@ function formatDashboardDate(iso: string): string {
     return iso;
   }
 }
-
-// ── Health Timeline Types ──
-type TimelineEventStatus = 'pending' | 'completed' | 'skipped' | 'stopped';
-type TimelineEventType = 'medication' | 'water' | 'meal' | 'steps' | 'workout' | 'sleep' | 'custom';
-
-type TimelineEvent = {
-  id: string;
-  time: string;
-  title: string;
-  sub: string;
-  icon: React.ReactNode;
-  color: string;
-  rightText: string;
-  rightType: 'taken' | 'value' | 'countdown' | 'upcoming';
-  type: TimelineEventType;
-  status: TimelineEventStatus;
-};
-
-const DEFAULT_TIMELINE_EVENTS: Omit<TimelineEvent, 'color'>[] = [
-  { id: '1', time: '08:00 AM', title: 'Medication', sub: 'Vitamin D3 1000 IU', icon: <Pill size={18} color="#FFFFFF" />, rightText: 'Taken', rightType: 'taken', type: 'medication', status: 'completed' },
-  { id: '2', time: '09:15 AM', title: 'Water', sub: '400 ml recorded', icon: <Droplets size={18} color="#FFFFFF" />, rightText: '400 ml', rightType: 'value', type: 'water', status: 'completed' },
-  { id: '3', time: '10:00 AM', title: 'Breakfast', sub: 'Oats with fruits, Almonds', icon: <Utensils size={18} color="#FFFFFF" />, rightText: '450 kcal', rightType: 'value', type: 'meal', status: 'completed' },
-  { id: '4', time: '12:00 PM', title: 'Steps', sub: '2,350 steps', icon: <Footprints size={18} color="#FFFFFF" />, rightText: '2,350', rightType: 'value', type: 'steps', status: 'completed' },
-  { id: '5', time: '04:30 PM', title: 'Workout', sub: 'Strength Training', icon: <Dumbbell size={18} color="#FFFFFF" />, rightText: '45 min', rightType: 'value', type: 'workout', status: 'pending' },
-  { id: '6', time: '08:00 PM', title: 'Medication (Upcoming)', sub: 'Metformin 500 mg', icon: <Pill size={18} color="#FFFFFF" />, rightText: '', rightType: 'countdown', type: 'medication', status: 'pending' },
-  { id: '7', time: '10:30 PM', title: 'Sleep Goal', sub: 'Target: 8 hrs', icon: <Moon size={18} color="#FFFFFF" />, rightText: 'Upcoming', rightType: 'upcoming', type: 'sleep', status: 'pending' },
-];
 
 export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab, onPartnerPress, onRelationshipsPress, onOpenAI, onOpenAppointments, onOpenHealthLog, onCaptureImage }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void; onPartnerPress?: (partnerId: string) => void; onRelationshipsPress?: () => void; onOpenAI?: (fromTab?: TabName, startInChat?: boolean, initialQuery?: string) => void; onOpenAppointments?: () => void; onOpenHealthLog?: () => void; onCaptureImage?: (attachment: { uri: string; type: string; name: string }) => void; }) {
   const { theme } = useTheme();
@@ -362,7 +339,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     // HEALTH ALERT
     alertCard: {
       padding: Spacing.base,
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.lg,
       borderWidth: 1,
       backgroundColor: theme.colors.danger + '08',
     },
@@ -383,180 +360,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       fontSize: Typography.sm,
       color: theme.colors.textSecondary,
       lineHeight: 18,
-    },
-
-    // DAILY HEALTH TIMELINE
-    newTimelineContainer: {
-      position: 'relative',
-      paddingHorizontal: Spacing.xs,
-      marginBottom: Spacing.xl,
-    },
-    newTimelineLine: {
-      position: 'absolute',
-      left: 54,
-      top: 24,
-      bottom: 24,
-      width: 1.5,
-      backgroundColor: theme.colors.bgCardBorder,
-    },
-    newTimelineRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: Spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.divider,
-    },
-    newTimelineIconBg: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      borderWidth: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    newTimelineCardIcon: {
-      fontSize: Typography.lg,
-    },
-    newTimelineNodeContainer: {
-      width: 36,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    newTimelineNode: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      borderWidth: 1.5,
-      borderColor: theme.colors.bg,
-    },
-    newTimelineContent: {
-      flex: 1,
-      marginLeft: 4,
-    },
-    newTimelineTime: {
-      fontSize: Typography.xs,
-      fontWeight: Typography.bold,
-      marginBottom: 2,
-    },
-    newTimelineTitle: {
-      fontSize: Typography.sm,
-      fontWeight: Typography.bold,
-      color: theme.colors.textPrimary,
-    },
-    newTimelineSub: {
-      fontSize: Typography.xs,
-      color: theme.colors.textMuted,
-    },
-    newTimelineRight: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: Spacing.sm,
-    },
-    badgeTaken: {
-      backgroundColor: theme.colors.success + '15',
-      borderColor: theme.colors.success + '33',
-      borderWidth: 1,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-      borderRadius: Radius.full,
-    },
-    badgeTakenText: {
-      fontSize: Typography.xs,
-      fontWeight: Typography.bold,
-      color: theme.colors.success,
-    },
-    badgeValueText: {
-      fontSize: Typography.sm,
-      fontWeight: Typography.bold,
-    },
-    badgeCountdown: {
-      backgroundColor: theme.colors.amber + '15',
-      borderColor: theme.colors.amber + '33',
-      borderWidth: 1,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-      borderRadius: Radius.full,
-    },
-    badgeCountdownText: {
-      fontSize: Typography.xs,
-      fontWeight: Typography.bold,
-      color: theme.colors.amber,
-    },
-    badgeUpcoming: {
-      backgroundColor: theme.colors.accentBlue + '15',
-      borderColor: theme.colors.accentBlue + '33',
-      borderWidth: 1,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-      borderRadius: Radius.full,
-    },
-    badgeUpcomingText: {
-      fontSize: Typography.xs,
-      fontWeight: Typography.bold,
-      color: theme.colors.accentBlue,
-    },
-    newTimelineChevron: {
-      color: theme.colors.textMuted,
-      fontSize: Typography.xs,
-      marginLeft: 4,
-    },
-    timelineDragHandle: {
-      width: 24,
-      height: 24,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: Spacing.xs,
-    },
-    timelineDeleteBtn: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      backgroundColor: theme.colors.danger + '15',
-      borderWidth: 1,
-      borderColor: theme.colors.danger + '30',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginLeft: Spacing.xs,
-    },
-    timelineAddBtn: {
-      backgroundColor: theme.colors.teal + '15',
-      borderWidth: 1,
-      borderColor: theme.colors.teal + '40',
-      borderRadius: Radius.md,
-      paddingVertical: Spacing.md,
-      alignItems: 'center',
-      marginTop: Spacing.md,
-    },
-    timelineAddBtnText: {
-      fontSize: Typography.sm,
-      fontWeight: Typography.bold,
-      color: theme.colors.teal,
-    },
-    badgeStopped: {
-      backgroundColor: theme.colors.danger + '15',
-      borderColor: theme.colors.danger + '33',
-      borderWidth: 1,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-      borderRadius: Radius.full,
-    },
-    badgeStoppedText: {
-      fontSize: Typography.xs,
-      fontWeight: Typography.bold,
-      color: theme.colors.danger,
-    },
-    badgeSkipped: {
-      backgroundColor: theme.colors.amber + '15',
-      borderColor: theme.colors.amber + '33',
-      borderWidth: 1,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-      borderRadius: Radius.full,
-    },
-    badgeSkippedText: {
-      fontSize: Typography.xs,
-      fontWeight: Typography.bold,
-      color: theme.colors.amber,
     },
 
     // QUICK ACTIONS REDESIGNED
@@ -612,7 +415,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       flexDirection: 'row',
       flexWrap: 'wrap',
       justifyContent: 'space-between',
-      marginBottom: Spacing.base,
+      marginBottom: Spacing.lg,
     },
     progressCard: {
       width: '48%',
@@ -641,7 +444,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
     // MEDS LIST
     medList: {
-      marginBottom: Spacing.sm,
+      marginBottom: Spacing.lg,
     },
     medItem: {
       flexDirection: 'row',
@@ -707,7 +510,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     // WEIGHT CARD
     weightCard: {
       padding: Spacing.base,
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.lg,
     },
     weightHeader: {
       flexDirection: 'row',
@@ -738,7 +541,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     // APPOINTMENT CARD
     aptCard: {
       padding: Spacing.base,
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.lg,
     },
     aptRow: {
       flexDirection: 'row',
@@ -821,7 +624,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     // BIOLOGICAL AGE CARD
     ageCard: {
       padding: Spacing.base,
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.lg,
     },
     ageRow: {
       flexDirection: 'row',
@@ -891,7 +694,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     // COMMUNITY CARD
     communityCard: {
       padding: Spacing.base,
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.lg,
     },
     communityPost: {
       backgroundColor: theme.colors.bgCard,
@@ -1317,12 +1120,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   // Dynamic status bar color on scroll
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     onScroll(e);
-    const y = e.nativeEvent.contentOffset.y;
-    if (y >= heroHeightRef.current - 80) {
-      StatusBar.setBackgroundColor(theme.colors.bg, false);
-    } else {
-      StatusBar.setBackgroundColor(theme.colors.bgHero, false);
-    }
   }, [onScroll]);
 
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -1342,22 +1139,10 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [showMealModal, setShowMealModal] = useState(false);
   const [showWaterModal, setShowWaterModal] = useState(false);
   const [showMedModal, setShowMedModal] = useState(false);
-  const buildDefaultTimeline = useCallback((c: typeof theme.colors): TimelineEvent[] => {
-    const colorMap: Record<TimelineEventType, string> = {
-      medication: c.accentBlue, water: c.blue, meal: c.amber, steps: c.success,
-      workout: c.pink, sleep: c.accentBlue, custom: c.teal,
-    };
-    return DEFAULT_TIMELINE_EVENTS.map(evt => ({ ...evt, color: colorMap[evt.type] }));
-  }, []);
-  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>(() => buildDefaultTimeline(theme.colors));
-  const [timelineEditing, setTimelineEditing] = useState(false);
-  const [showAddEventModal, setShowAddEventModal] = useState(false);
-  const [draggedEventId, setDraggedEventId] = useState<string | null>(null);
-  const [dragY, setDragY] = useState(new Animated.Value(0));
-  const [newEventTitle, setNewEventTitle] = useState('');
-  const [newEventTime, setNewEventTime] = useState('');
-  const [newEventSub, setNewEventSub] = useState('');
-  const [newEventType, setNewEventType] = useState<TimelineEventType>('custom');
+  const [cycleData, setCycleData] = useState<CycleData | null>(null);
+  const [moodLogs, setMoodLogs] = useState<MoodLog[]>([]);
+  const [symptomsLogs, setSymptomsLogs] = useState<SymptomsLog[]>([]);
+  const [periodLogs, setPeriodLogs] = useState<PeriodLog[]>([]);
   const [mealFood, setMealFood] = useState('');
   const [mealCalories, setMealCalories] = useState('');
   const [mealProtein, setMealProtein] = useState('');
@@ -1495,6 +1280,22 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       relationshipApi.listRelationships(session.access_token)
         .then(setRelationships)
         .catch(err => console.warn('Failed to load relationships on Dashboard:', err));
+
+      getLatestCycle(session.access_token)
+        .then(setCycleData)
+        .catch(err => console.warn('Failed to load cycle data on Dashboard:', err));
+
+      getMoodLogs(session.access_token, today, today)
+        .then(setMoodLogs)
+        .catch(err => console.warn('Failed to load mood logs on Dashboard:', err));
+
+      getSymptomsLogs(session.access_token, today, today)
+        .then(setSymptomsLogs)
+        .catch(err => console.warn('Failed to load symptoms logs on Dashboard:', err));
+
+      getPeriodLogs(session.access_token)
+        .then(setPeriodLogs)
+        .catch(err => console.warn('Failed to load period logs on Dashboard:', err));
     }
   };
 
@@ -1518,6 +1319,10 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       getMedicationLogsForDate(session.access_token, today).then(setMedicationLogs),
       getDashboardHealthScore(session.access_token).then(setHealthScore),
       relationshipApi.listRelationships(session.access_token).then(setRelationships),
+      getLatestCycle(session.access_token).then(setCycleData),
+      getMoodLogs(session.access_token, today, today).then(setMoodLogs),
+      getSymptomsLogs(session.access_token, today, today).then(setSymptomsLogs),
+      getPeriodLogs(session.access_token).then(setPeriodLogs),
     ]);
     setRefreshing(false);
   }, [session?.access_token]);
@@ -1595,63 +1400,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     } finally {
       setModalSaving(false);
     }
-  };
-
-  // ── Timeline Helpers ──
-  const toggleTimelineEventStatus = (id: string) => {
-    setTimelineEvents(prev => prev.map(evt => {
-      if (evt.id !== id) return evt;
-      const newStatus: TimelineEventStatus = evt.status === 'completed' ? 'skipped' : 'completed';
-      return { ...evt, status: newStatus };
-    }));
-  };
-
-  const removeTimelineEvent = (id: string) => {
-    setTimelineEvents(prev => prev.filter(evt => evt.id !== id));
-  };
-
-  const addTimelineEvent = () => {
-    if (!newEventTitle.trim()) return;
-    const typeConfig: Record<TimelineEventType, { icon: React.ReactNode; color: string; rightType: TimelineEvent['rightType'] }> = {
-      medication: { icon: <Pill size={18} color="#FFFFFF" />, color: theme.colors.accentBlue, rightType: 'upcoming' },
-      water: { icon: <Droplets size={18} color="#FFFFFF" />, color: theme.colors.blue, rightType: 'value' },
-      meal: { icon: <Utensils size={18} color="#FFFFFF" />, color: theme.colors.amber, rightType: 'value' },
-      steps: { icon: <Footprints size={18} color="#FFFFFF" />, color: theme.colors.success, rightType: 'value' },
-      workout: { icon: <Dumbbell size={18} color="#FFFFFF" />, color: theme.colors.pink, rightType: 'value' },
-      sleep: { icon: <Moon size={18} color="#FFFFFF" />, color: theme.colors.accentBlue, rightType: 'upcoming' },
-      custom: { icon: <Pin size={18} color="#FFFFFF" />, color: theme.colors.teal, rightType: 'upcoming' },
-    };
-    const cfg = typeConfig[newEventType];
-    const newEvent: TimelineEvent = {
-      id: Date.now().toString(),
-      time: newEventTime.trim() || 'Now',
-      title: newEventTitle.trim(),
-      sub: newEventSub.trim() || '',
-      icon: cfg.icon,
-      color: cfg.color,
-      rightText: '',
-      rightType: cfg.rightType,
-      type: newEventType,
-      status: 'pending',
-    };
-    setTimelineEvents(prev => [...prev, newEvent]);
-    setNewEventTitle('');
-    setNewEventTime('');
-    setNewEventSub('');
-    setNewEventType('custom');
-    setShowAddEventModal(false);
-  };
-
-  const moveTimelineEvent = (id: string, direction: 'up' | 'down') => {
-    setTimelineEvents(prev => {
-      const idx = prev.findIndex(e => e.id === id);
-      if (idx === -1) return prev;
-      const newIdx = direction === 'up' ? idx - 1 : idx + 1;
-      if (newIdx < 0 || newIdx >= prev.length) return prev;
-      const updated = [...prev];
-      [updated[idx], updated[newIdx]] = [updated[newIdx], updated[idx]];
-      return updated;
-    });
   };
 
   // Rendering weight trend sparkline
@@ -1779,7 +1527,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[theme.colors.teal, theme.colors.pink]} tintColor={theme.colors.teal} progressBackgroundColor={theme.colors.bgCard} />}>
 
         {/* ─── HERO SURFACE — extends from the very top ─── */}
-        <Animated.View style={[styles.heroSurface, { marginTop: -insets.top, paddingTop: insets.top, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
+        <Animated.View style={[styles.heroSurface, { paddingTop: insets.top, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
           onLayout={(e) => { heroHeightRef.current = e.nativeEvent.layout.height; }}>
 
           {/* ── Greeting + Notifications ── */}
@@ -1957,148 +1705,254 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           ))}
         </ScrollView>
 
-        {/* SECTION: DAILY HEALTH TIMELINE */}
-        <SectionHeader
-          title="Health Timeline"
-          subtitle={timelineEditing ? 'Tap arrows to reorder, ✕ to remove' : 'Your day at a glance'}
-          action={timelineEditing ? 'Done' : 'Edit'}
-          onAction={() => setTimelineEditing(!timelineEditing)}
-        />
-
-        {timelineEvents.length === 0 && !timelineEditing ? (
-          <GlassCardView style={{ padding: Spacing.xl, marginBottom: Spacing.xl, alignItems: 'center' }}>
-            <Calendar size={40} color={theme.colors.textMuted} />
-            <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: theme.colors.textPrimary, marginBottom: Spacing.xs }}>
-              No Health Timeline
-            </Text>
-            <Text style={{ fontSize: Typography.sm, color: theme.colors.textSecondary, textAlign: 'center', marginBottom: Spacing.lg, lineHeight: 20 }}>
-              Set up your daily health timeline to track medications, workouts, meals, and more.
-            </Text>
-            <TouchableOpacity
-              style={{ backgroundColor: theme.colors.teal + '20', borderWidth: 1, borderColor: theme.colors.teal + '50', borderRadius: Radius.md, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md }}
-              onPress={() => setTimelineEvents(buildDefaultTimeline(theme.colors))}
-              activeOpacity={0.7}>
-              <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: theme.colors.teal }}>Setup Timeline →</Text>
-            </TouchableOpacity>
-          </GlassCardView>
-        ) : (
-          <View style={styles.newTimelineContainer}>
-            <View style={styles.newTimelineLine} />
-            {timelineEvents.map((item, index) => {
-              const isSkipped = item.status === 'skipped';
-              const isStopped = item.status === 'stopped';
-              const isCompleted = item.status === 'completed';
-
-              let rightBadge;
-              if (isStopped) {
-                rightBadge = (
-                  <View style={styles.badgeStopped}>
-                    <Text style={styles.badgeStoppedText}>Stopped</Text>
-                  </View>
-                );
-              } else if (isSkipped) {
-                rightBadge = (
-                  <TouchableOpacity onPress={() => toggleTimelineEventStatus(item.id)}>
-                    <View style={styles.badgeSkipped}>
-                      <Text style={styles.badgeSkippedText}>Skipped</Text>
+        {/* SECTION: CYCLE SUMMARY (female only) */}
+        {gender === 'female' && (
+          <>
+            <SectionHeader
+              title="Cycle Summary"
+              subtitle="Your cycle at a glance"
+            />
+            {cycleData ? (
+              <GlassCardView style={{ padding: Spacing.lg, marginBottom: Spacing.lg }}>
+                {/* Top section: phase info left + circular ring right */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.lg }}>
+                  {/* Left - phase info */}
+                  <View style={{ flex: 1, paddingRight: Spacing.lg }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: cycleData.phase_color, marginRight: 8 }} />
+                      <Text style={{ fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary }}>
+                        {cycleData.current_phase} Phase
+                      </Text>
                     </View>
-                  </TouchableOpacity>
-                );
-              } else if (isCompleted) {
-                rightBadge = (
-                  <TouchableOpacity onPress={() => toggleTimelineEventStatus(item.id)}>
-                    <View style={styles.badgeTaken}>
-                      <Text style={styles.badgeTakenText}>{item.rightText || 'Done'}</Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              } else {
-                rightBadge = (
-                  <TouchableOpacity onPress={() => toggleTimelineEventStatus(item.id)}>
-                    {item.rightType === 'value' && (
-                      <Text style={[styles.badgeValueText, { color: item.color }]}>{item.rightText}</Text>
-                    )}
-                    {item.rightType === 'countdown' && (
-                      <View style={styles.badgeCountdown}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                          <Clock size={12} color={theme.colors.textSecondary} />
-                          <Text style={styles.badgeCountdownText}>{item.rightText || `${getNextDoseHours(20)}h`}</Text>
-                        </View>
-                      </View>
-                    )}
-                    {item.rightType === 'upcoming' && (
-                      <View style={styles.badgeUpcoming}>
-                        <Text style={styles.badgeUpcomingText}>{item.rightText || 'Upcoming'}</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              }
-
-              return (
-                <View
-                  key={item.id}
-                  style={[
-                    styles.newTimelineRow,
-                    isStopped && { opacity: 0.4 },
-                    isSkipped && { opacity: 0.6 },
-                    isCompleted && {},
-                  ]}
-                >
-                  {timelineEditing && (
-                    <TouchableOpacity
-                      style={styles.timelineDragHandle}
-                      onPress={() => moveTimelineEvent(item.id, 'up')}
-                      onLongPress={() => {
-                        if (index > 0) moveTimelineEvent(item.id, 'up');
-                      }}
-                      activeOpacity={0.6}>
-                      <Text style={{ color: theme.colors.textMuted, fontSize: Typography.sm }}>☰</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  <View style={[styles.newTimelineIconBg, { backgroundColor: item.color + '15', borderColor: item.color + '30' }]}>
-                    {item.icon}
-                  </View>
-
-                  <View style={styles.newTimelineNodeContainer}>
-                    <View style={[styles.newTimelineNode, { backgroundColor: item.color }]} />
-                  </View>
-
-                  <View style={styles.newTimelineContent}>
-                    <Text style={[styles.newTimelineTime, { color: item.color, textDecorationLine: isStopped || isSkipped ? 'line-through' : 'none' }]}>{item.time}</Text>
-                    <Text style={[styles.newTimelineTitle, isStopped && { textDecorationLine: 'line-through' }]}>
-                      {isStopped ? '[Stopped] ' : isSkipped ? '[Skipped] ' : ''}{item.title}
+                    <Text style={{ fontSize: Typography.sm, color: theme.colors.textSecondary, marginBottom: 12 }}>
+                      Day {cycleData.current_cycle_day} of {cycleData.cycle_length}
                     </Text>
-                    <Text style={styles.newTimelineSub}>{item.sub}</Text>
+
+                    {/* Progress bar */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                      <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.colors.bgCardBorder, overflow: 'hidden' }}>
+                        <View style={{ height: '100%', width: `${Math.min((cycleData.current_cycle_day / cycleData.cycle_length) * 100, 100)}%`, borderRadius: 3, backgroundColor: cycleData.phase_color }} />
+                      </View>
+                      <Text style={{ fontSize: Typography.xs, fontWeight: Typography.bold, color: theme.colors.textPrimary, marginLeft: 8 }}>
+                        {Math.round((cycleData.current_cycle_day / cycleData.cycle_length) * 100)}%
+                      </Text>
+                    </View>
+
+                    {/* Quick stats */}
+                    <View style={{ gap: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Clock size={14} color={theme.colors.textMuted} />
+                        <Text style={{ fontSize: Typography.xs, color: theme.colors.textSecondary }}>
+                          {cycleData.days_until_next_period} days to next period
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Flower2 size={14} color={theme.colors.textMuted} />
+                        <Text style={{ fontSize: Typography.xs, color: theme.colors.textSecondary }}>
+                          {cycleData.is_fertile ? 'Fertile window' : 'Not in fertile window'}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
 
-                  <View style={styles.newTimelineRight}>
-                    {rightBadge}
-                    <Text style={styles.newTimelineChevron}>❯</Text>
-                  </View>
-
-                  {timelineEditing && (
+                  {/* Right - circular ring */}
+                  <View style={{ alignItems: 'center' }}>
+                    <View style={{ width: 100, height: 100 }}>
+                      <Svg width={100} height={100} viewBox="0 0 100 100">
+                        <Circle cx={50} cy={50} r={40} fill="none" stroke={theme.colors.bgCardBorder} strokeWidth={8} />
+                        <Circle
+                          cx={50}
+                          cy={50}
+                          r={40}
+                          fill="none"
+                          stroke={cycleData.phase_color}
+                          strokeWidth={8}
+                          strokeDasharray={`${(cycleData.current_cycle_day / cycleData.cycle_length) * 251.2} 251.2`}
+                          strokeLinecap="round"
+                          transform="rotate(-90 50 50)"
+                        />
+                      </Svg>
+                      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 22, fontWeight: Typography.extraBold, color: theme.colors.textPrimary, lineHeight: 26 }}>
+                          {cycleData.cycle_length}
+                        </Text>
+                        <Text style={{ fontSize: 9, color: theme.colors.textSecondary }}>Day Cycle</Text>
+                      </View>
+                    </View>
                     <TouchableOpacity
-                      style={styles.timelineDeleteBtn}
-                      onPress={() => removeTimelineEvent(item.id)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                      <Text style={{ color: theme.colors.danger, fontSize: Typography.md }}>✕</Text>
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8, paddingVertical: 4, paddingHorizontal: 10, borderRadius: Radius.sm, backgroundColor: theme.colors.bgCardBorder }}
+                      onPress={() => navigateToTab?.('Health')}
+                      activeOpacity={0.7}>
+                      <Text style={{ fontSize: 10, color: theme.colors.textSecondary }}>Avg: {cycleData.avg_cycle_length} days</Text>
+                      <ArrowRight size={10} color={theme.colors.textSecondary} />
                     </TouchableOpacity>
-                  )}
+                  </View>
                 </View>
-              );
-            })}
 
-            {timelineEditing && (
-              <TouchableOpacity
-                style={styles.timelineAddBtn}
-                onPress={() => setShowAddEventModal(true)}
-                activeOpacity={0.7}>
-                <Text style={styles.timelineAddBtnText}>+ Add Event</Text>
-              </TouchableOpacity>
+                {/* Cycle Outlook */}
+                <View style={{ marginBottom: Spacing.md }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.md }}>
+                    <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: theme.colors.textPrimary }}>Cycle Outlook</Text>
+                    <Info size={14} color={theme.colors.textMuted} />
+                  </View>
+
+                  {/* Next Period card */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.chipBg, borderRadius: Radius.md, padding: Spacing.md, marginBottom: Spacing.sm }}>
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: theme.colors.pink + '15', alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md }}>
+                      <Droplets size={20} color={theme.colors.pink} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: Typography.xs, color: theme.colors.textSecondary, marginBottom: 2 }}>Next Period</Text>
+                      <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: theme.colors.textPrimary }}>
+                        {(() => {
+                          const nextStart = new Date(cycleData.start_date + 'T12:00:00');
+                          nextStart.setDate(nextStart.getDate() + cycleData.cycle_length);
+                          const nextEnd = new Date(nextStart);
+                          nextEnd.setDate(nextEnd.getDate() + cycleData.period_length - 1);
+                          const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                          return `${fmt(nextStart)} – ${fmt(nextEnd)}`;
+                        })()}
+                      </Text>
+                    </View>
+                    <View style={{ paddingVertical: 4, paddingHorizontal: 10, borderRadius: Radius.sm, backgroundColor: theme.colors.pink + '12' }}>
+                      <Text style={{ fontSize: 11, fontWeight: Typography.bold, color: theme.colors.pink }}>
+                        {cycleData.days_until_next_period}–{cycleData.days_until_next_period + cycleData.period_length - 1} days
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Fertile Window card */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.chipBg, borderRadius: Radius.md, padding: Spacing.md }}>
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: theme.colors.accentBlue + '15', alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md }}>
+                      <Target size={20} color={cycleData.is_fertile ? theme.colors.success : theme.colors.accentBlue} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: Typography.xs, color: theme.colors.textSecondary, marginBottom: 2 }}>Fertile Window</Text>
+                      <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: theme.colors.textPrimary }}>
+                        {(() => {
+                          const cycleStart = new Date(cycleData.start_date + 'T12:00:00');
+                          const fertileStart = new Date(cycleStart);
+                          fertileStart.setDate(cycleStart.getDate() + cycleData.fertile_window_start - 1);
+                          const fertileEnd = new Date(cycleStart);
+                          fertileEnd.setDate(cycleStart.getDate() + cycleData.fertile_window_end - 1);
+                          const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                          return `${fmt(fertileStart)} – ${fmt(fertileEnd)}`;
+                        })()}
+                      </Text>
+                    </View>
+                    <View style={{ paddingVertical: 4, paddingHorizontal: 10, borderRadius: Radius.sm, backgroundColor: cycleData.is_fertile ? theme.colors.success + '12' : theme.colors.accentBlue + '12' }}>
+                      <Text style={{ fontSize: 11, fontWeight: Typography.bold, color: cycleData.is_fertile ? theme.colors.success : theme.colors.accentBlue }}>
+                        {cycleData.is_fertile ? 'Likely' : 'Unlikely'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Logged This Cycle */}
+                <View style={{ marginTop: Spacing.md, marginBottom: Spacing.md }}>
+                  <View style={{ marginBottom: Spacing.md }}>
+                    <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: theme.colors.textPrimary }}>Logged This Cycle</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    {/* Period */}
+                    <View style={{ alignItems: 'center', flex: 1 }}>
+                      <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.pink + '20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: theme.colors.pink + '30' }}>
+                        <Droplets size={22} color={theme.colors.pink} />
+                        {periodLogs.length > 0 && (
+                          <View style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.bgCard }}>
+                            <Check size={8} color={theme.colors.white} strokeWidth={3} />
+                          </View>
+                        )}
+                      </View>
+                      <Text style={{ fontSize: 10, color: theme.colors.textSecondary, marginTop: 4 }}>Period</Text>
+                    </View>
+                    {/* Symptoms */}
+                    <View style={{ alignItems: 'center', flex: 1 }}>
+                      <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.amber + '20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: theme.colors.amber + '30' }}>
+                        <Activity size={22} color={theme.colors.amber} />
+                        {symptomsLogs.length > 0 && (
+                          <View style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.bgCard }}>
+                            <Check size={8} color={theme.colors.white} strokeWidth={3} />
+                          </View>
+                        )}
+                      </View>
+                      <Text style={{ fontSize: 10, color: theme.colors.textSecondary, marginTop: 4 }}>Symptoms</Text>
+                    </View>
+                    {/* Moods */}
+                    <View style={{ alignItems: 'center', flex: 1 }}>
+                      <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.accentBlue + '20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: theme.colors.accentBlue + '30' }}>
+                        <Flower2 size={22} color={theme.colors.accentBlue} />
+                        {moodLogs.length > 0 && (
+                          <View style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.bgCard }}>
+                            <Check size={8} color={theme.colors.white} strokeWidth={3} />
+                          </View>
+                        )}
+                      </View>
+                      <Text style={{ fontSize: 10, color: theme.colors.textSecondary, marginTop: 4 }}>Moods</Text>
+                    </View>
+                    {/* Medications */}
+                    <View style={{ alignItems: 'center', flex: 1 }}>
+                      <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.teal + '20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: theme.colors.teal + '30' }}>
+                        <Pill size={22} color={theme.colors.teal} />
+                        {medicationLogs.length > 0 && (
+                          <View style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.bgCard }}>
+                            <Check size={8} color={theme.colors.white} strokeWidth={3} />
+                          </View>
+                        )}
+                      </View>
+                      <Text style={{ fontSize: 10, color: theme.colors.textSecondary, marginTop: 4 }}>Meds</Text>
+                    </View>
+                    {/* Weight */}
+                    <View style={{ alignItems: 'center', flex: 1 }}>
+                      <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.follicular + '20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: theme.colors.follicular + '30' }}>
+                        <Scale size={22} color={theme.colors.follicular} />
+                        {weightLogs.length > 0 && (
+                          <View style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.bgCard }}>
+                            <Check size={8} color={theme.colors.white} strokeWidth={3} />
+                          </View>
+                        )}
+                      </View>
+                      <Text style={{ fontSize: 10, color: theme.colors.textSecondary, marginTop: 4 }}>Weight</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Action buttons */}
+                <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                  <TouchableOpacity
+                    style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: theme.colors.accentBlue + '30', backgroundColor: theme.colors.accentBlue + '10', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                    onPress={() => onOpenHealthLog?.()}
+                    activeOpacity={0.7}>
+                    <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: theme.colors.accentBlue }}>Log Health</Text>
+                    <ArrowRight size={14} color={theme.colors.accentBlue} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: theme.colors.accentBlue + '30', backgroundColor: theme.colors.accentBlue + '10', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                    onPress={() => navigateToTab?.('Health')}
+                    activeOpacity={0.7}>
+                    <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: theme.colors.accentBlue }}>View Details</Text>
+                    <ArrowRight size={14} color={theme.colors.accentBlue} />
+                  </TouchableOpacity>
+                </View>
+              </GlassCardView>
+            ) : (
+              <GlassCardView style={{ padding: Spacing.xl, marginBottom: Spacing.lg, alignItems: 'center' }}>
+                <Flower2 size={40} color={theme.colors.textMuted} />
+                <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: theme.colors.textPrimary, marginBottom: Spacing.xs }}>
+                  No Cycle Data
+                </Text>
+                <Text style={{ fontSize: Typography.sm, color: theme.colors.textSecondary, textAlign: 'center', marginBottom: Spacing.lg, lineHeight: 20 }}>
+                  Log your period to start tracking your cycle.
+                </Text>
+                <TouchableOpacity
+                  style={{ backgroundColor: theme.colors.accentBlue + '20', borderWidth: 1, borderColor: theme.colors.accentBlue + '50', borderRadius: Radius.md, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md }}
+                  onPress={() => onOpenHealthLog?.()}
+                  activeOpacity={0.7}>
+                  <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: theme.colors.accentBlue }}>Get Started →</Text>
+                </TouchableOpacity>
+              </GlassCardView>
             )}
-          </View>
+          </>
         )}
 
         {/* SECTION: TODAY'S PROGRESS */}
@@ -2462,82 +2316,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               <View style={styles.modalActions}>
                 <TouchableOpacity style={styles.modalCancel} onPress={() => setShowMedModal(false)}>
                   <Text style={{ color: theme.colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </GlassCardView>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* ADD TIMELINE EVENT MODAL */}
-      <Modal visible={showAddEventModal} transparent animationType="slide">
-        <TouchableOpacity activeOpacity={1} onPress={() => setShowAddEventModal(false)} style={styles.modalBg}>
-          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{ alignSelf: 'stretch' }}>
-            <GlassCardView style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Add Timeline Event</Text>
-              <Text style={styles.modalSub}>Add an event to your health timeline</Text>
-
-              <TextInput
-                style={[styles.modalInput, { width: '100%' }]}
-                value={newEventTitle}
-                onChangeText={setNewEventTitle}
-                placeholder="Event title *"
-                placeholderTextColor={theme.colors.textMuted}
-              />
-              <TextInput
-                style={[styles.modalInput, { width: '100%' }]}
-                value={newEventTime}
-                onChangeText={setNewEventTime}
-                placeholder="Time (e.g. 03:00 PM)"
-                placeholderTextColor={theme.colors.textMuted}
-              />
-              <TextInput
-                style={[styles.modalInput, { width: '100%' }]}
-                value={newEventSub}
-                onChangeText={setNewEventSub}
-                placeholder="Description (optional)"
-                placeholderTextColor={theme.colors.textMuted}
-              />
-
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md, alignSelf: 'stretch' }}>
-                {(['medication', 'water', 'meal', 'steps', 'workout', 'sleep', 'custom'] as TimelineEventType[]).map(type => {
-                  const typeConfig: Record<TimelineEventType, { label: string; icon: React.ReactNode }> = {
-                    medication: { label: 'Meds', icon: <Pill size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
-                    water: { label: 'Water', icon: <Droplets size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
-                    meal: { label: 'Meal', icon: <Utensils size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
-                    steps: { label: 'Steps', icon: <Footprints size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
-                    workout: { label: 'Workout', icon: <Dumbbell size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
-                    sleep: { label: 'Sleep', icon: <Moon size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
-                    custom: { label: 'Custom', icon: <Pin size={12} color={newEventType === type ? theme.colors.teal : theme.colors.textSecondary} /> },
-                  };
-                  return (
-                    <TouchableOpacity
-                      key={type}
-                      onPress={() => setNewEventType(type)}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 4,
-                        paddingHorizontal: Spacing.sm + 2,
-                        paddingVertical: Spacing.sm,
-                        borderRadius: Radius.sm,
-                        backgroundColor: newEventType === type ? theme.colors.teal + '20' : theme.colors.bgCardBorder,
-                        borderWidth: newEventType === type ? 1 : 0,
-                        borderColor: theme.colors.teal,
-                      }}>
-                      {typeConfig[type].icon}
-                      <Text style={{ fontSize: Typography.xs, color: newEventType === type ? theme.colors.teal : theme.colors.textSecondary, fontWeight: Typography.bold }}>{typeConfig[type].label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <View style={styles.modalActions}>
-                <TouchableOpacity style={styles.modalCancel} onPress={() => setShowAddEventModal(false)}>
-                  <Text style={{ color: theme.colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.modalSave} onPress={addTimelineEvent}>
-                  <Text style={{ color: theme.colors.bg, fontWeight: Typography.bold }}>Add</Text>
                 </TouchableOpacity>
               </View>
             </GlassCardView>

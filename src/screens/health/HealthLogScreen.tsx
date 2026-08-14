@@ -20,6 +20,7 @@ import { saveSymptomsLog } from '../../services/healthService';
 import { saveSleepLog } from '../../services/healthService';
 import { getPeriodLogs } from '../../services/healthService';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { posthog } from '../../config/posthog';
 
 export interface HealthLogDraft {
@@ -95,6 +96,7 @@ const SEVERITY_OPTIONS = [
 
 export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScreenProps) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { hideVitals } = usePreferences();
   const [mood, setMood] = useState('Okay');
   const [energyLevel, setEnergyLevel] = useState('Medium');
@@ -125,7 +127,7 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
 
   const s = useStyles((t) => StyleSheet.create({
     root: { flex: 1, backgroundColor: t.colors.bg },
-    scroll: { paddingHorizontal: Spacing.base, paddingTop: Spacing.xl },
+    scroll: { paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.xl },
     header: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.xl },
     headerCopy: { flex: 1, marginLeft: Spacing.md },
     title: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: t.colors.textPrimary },

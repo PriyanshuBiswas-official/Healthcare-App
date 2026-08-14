@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Info, Phone } from 'lucide-react-native';
 import { GlassCardView, BackButton } from '../../components/SharedComponents';
 
@@ -28,6 +29,7 @@ const INITIAL_CONTACTS: EmergencyContact[] = [
 
 export default function EmergencyContactsScreen({ onBack }: Props) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [contacts, setContacts] = useState<EmergencyContact[]>(INITIAL_CONTACTS);
   const [editing, setEditing] = useState(false);
 
@@ -35,7 +37,7 @@ export default function EmergencyContactsScreen({ onBack }: Props) {
     root: { flex: 1, backgroundColor: t.colors.bg },
     topBar: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
+      paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.xl, paddingBottom: Spacing.md,
     },
     pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary },
     editBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
