@@ -4,16 +4,15 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Platform,
+  StyleSheet,
   Animated,
-  ActivityIndicator,
   RefreshControl,
   Alert,
 } from 'react-native';
 import Svg, { Rect, Polyline, Line, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton } from '../../components/SharedComponents';
+import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -446,8 +445,7 @@ export default function AIAdvisorScreen({
           <SectionHeader title="Recent AI Insights" />
           {insightsLoading ? (
             <GlassCardView style={styles.emptyInsight}>
-              <ActivityIndicator size="small" color={theme.colors.accentBlue} />
-              <Text style={[styles.emptyInsightText, { marginTop: Spacing.sm }]}>Loading your health insights...</Text>
+              <LoadingSpinner size="small" text="Loading your health insights..." />
             </GlassCardView>
           ) : (
             <>

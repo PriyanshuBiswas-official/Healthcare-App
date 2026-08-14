@@ -36,7 +36,7 @@ import {
 } from '../../services/aiApi';
 import { Copy, RotateCcw, Volume2, Share2, Paperclip, Mic, SendHorizonal, Menu, Plus, X, MessageSquare, Trash2, Pin, Archive, ChevronDown, ChevronRight, Camera, Image as ImageIcon, FileText } from 'lucide-react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
-import { BackButton } from '../../components/SharedComponents';
+import { BackButton, LoadingSpinner } from '../../components/SharedComponents';
 import type { TabName } from '../../navigation/TabBar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { posthog } from '../../config/posthog';
@@ -865,7 +865,7 @@ function HistorySidebar({
 
         {loading ? (
           <View style={styles.emptyState}>
-            <ActivityIndicator size="small" color={theme.colors.accentBlue} />
+            <LoadingSpinner size="small" />
           </View>
         ) : conversations.length === 0 && archivedConversations.length === 0 ? (
           <View style={styles.emptyState}>
@@ -1523,8 +1523,7 @@ export default function AIChatView({
           {isThinking && (
             <View style={styles.aiMsgContainer}>
               <View style={styles.thinkingRow}>
-                <ActivityIndicator size="small" color={theme.colors.accentBlue} />
-                <Text style={styles.thinkingText}>Analyzing your health metrics...</Text>
+                <LoadingSpinner size="small" text="Analyzing your health metrics..." />
               </View>
             </View>
           )}

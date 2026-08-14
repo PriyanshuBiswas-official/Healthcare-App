@@ -8,7 +8,6 @@ import {
   Switch,
   Image,
   Alert,
-  ActivityIndicator,
   InteractionManager,
   BackHandler,
 } from 'react-native';
@@ -17,7 +16,7 @@ import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { User, ClipboardList, Pill, TriangleAlert, Phone, Bell, Flower2, Lock, Watch, Smartphone, Droplets, Dumbbell, Building2, Moon, Heart, CircleQuestionMark, Shield, FileText, Info, PenLine, Monitor, Sun, Users, Crown } from 'lucide-react-native';
-import { GlassCardView, SectionHeader, ProgressBar, BackButton } from '../../components/SharedComponents';
+import { GlassCardView, SectionHeader, ProgressBar, BackButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useAuth } from '../../providers/AuthProvider';
 import { supabase } from '../../lib/supabase';
@@ -951,12 +950,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
       )}
 
       {loggingOut && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
-          <View style={{ backgroundColor: theme.colors.bgCardSolid, borderRadius: Radius.lg, padding: Spacing.xl, alignItems: 'center', gap: Spacing.md }}>
-            <ActivityIndicator size="large" color={theme.colors.danger} />
-            <Text style={{ fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary }}>Signing out...</Text>
-          </View>
-        </View>
+        <LoadingSpinner overlay text="Signing out..." />
       )}
     </View>
   );

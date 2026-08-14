@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   Dimensions,
   InteractionManager,
 } from 'react-native';
@@ -27,7 +26,7 @@ import {
 } from 'lucide-react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { GlassCardView, SectionHeader, ActivityProgressCard, BackButton } from '../../components/SharedComponents';
+import { GlassCardView, SectionHeader, ActivityProgressCard, BackButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import * as relationshipApi from '../../services/relationshipApi';
 
@@ -332,8 +331,7 @@ export default function PartnerHealthReportScreen({
   if (loading) {
     return (
       <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={colors.teal} />
-        <Text style={styles.loadingText}>Loading shared health data...</Text>
+        <LoadingSpinner text="Loading shared health data..." />
       </View>
     );
   }

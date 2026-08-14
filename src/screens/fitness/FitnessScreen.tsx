@@ -16,7 +16,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import { useStyles } from '../../providers/ThemeProvider';
 import { ChevronRight, Dumbbell, Check, Pencil, Trophy, Target } from 'lucide-react-native';
-import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton, ActivityProgressCard } from '../../components/SharedComponents';
+import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton, ActivityProgressCard, LoadingSpinner } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNotifications } from '../../providers/NotificationContext';
@@ -1242,9 +1242,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         )}
 
         {loading ? (
-          <View style={{ paddingVertical: 60, alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={Colors.teal} />
-          </View>
+          <LoadingSpinner />
         ) : (
           <>
             {showToday && <DailyProgressCard summary={summary} goal={activityGoal} onLogActivity={() => setLogActivityVisible(true)} />}

@@ -13,7 +13,7 @@ import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check } from 'lucide-react-native';
-import { GlassCardView, BackButton } from '../../components/SharedComponents';
+import { GlassCardView, BackButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
 
@@ -148,9 +148,7 @@ export default function DietTypeScreen({ onBack, onSaved }: Props) {
   if (loading) {
     return (
       <View style={styles.root}>
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.teal} />
-        </View>
+        <LoadingSpinner />
       </View>
     );
   }

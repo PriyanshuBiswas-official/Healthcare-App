@@ -21,7 +21,7 @@ import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera } from 'lucide-react-native';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
-import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton } from '../../components/SharedComponents';
+import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { useNotifications } from '../../providers/NotificationContext';
 import * as dietService from '../../services/dietService';
@@ -487,9 +487,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
         </View>
 
         {loading ? (
-          <View style={{ paddingVertical: 60, alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={colors.teal} />
-          </View>
+          <LoadingSpinner />
         ) : (
           <>
             {goal === null && (
