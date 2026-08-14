@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -18,11 +19,13 @@ const { height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const navigation = useNavigation<WelcomeScreenProp>();
+  const insets = useSafeAreaInsets();
 
   const styles = useStyles((theme) => ({
     container: {
       flex: 1,
       backgroundColor: theme.colors.bg,
+      paddingTop: insets.top,
     },
     content: {
       flex: 1,
@@ -142,7 +145,7 @@ export default function WelcomeScreen() {
   }));
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.content}>
         {/* Glow Effects */}
         <View style={[styles.glow, styles.glowTeal]} />
@@ -153,8 +156,8 @@ export default function WelcomeScreen() {
           <View style={styles.logoContainer}>
             <Text style={styles.logoEmoji}>🌙</Text>
           </View>
-          <Text style={styles.title}>LunaFlow</Text>
-          <Text style={styles.subtitle}>Your AI-powered personalized health, wellness, & cycle companion</Text>
+          <Text style={styles.title}>Cureto</Text>
+          <Text style={styles.subtitle}>Your AI-powered personalized health & wellness companion</Text>
         </View>
 
         {/* Feature Highlights */}
@@ -194,6 +197,6 @@ export default function WelcomeScreen() {
           </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

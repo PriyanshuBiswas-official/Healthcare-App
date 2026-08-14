@@ -7,6 +7,8 @@ import { GoogleSignin } from '../../lib/googleSignin';
 import { Typography } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { posthog } from '../../config/posthog';
+import { BackButton } from '../../components/SharedComponents';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type AuthStackParamList = {
   Onboarding: undefined;
@@ -19,6 +21,7 @@ type LoginScreenProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenProp>();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -80,7 +83,8 @@ const LoginScreen = () => {
 
   const styles = useStyles((theme) => ({
     container: { flex: 1, backgroundColor: theme.colors.bgAuth },
-    content: { flex: 1, padding: 24, justifyContent: 'center' },
+    topBar: { paddingHorizontal: 24, paddingTop: insets.top + 8 },
+    centeredContent: { flex: 1, padding: 24, justifyContent: 'center' },
     title: { fontSize: Typography.xxl, fontWeight: Typography.bold, marginBottom: 32, textAlign: 'center', color: theme.colors.white, letterSpacing: Typography.lsTight },
     inputContainer: { marginBottom: 20 },
     inputLabel: { fontSize: Typography.xs, fontWeight: Typography.medium, color: theme.colors.textInputLabel, marginBottom: 8, marginLeft: 2 },
@@ -125,7 +129,10 @@ const LoginScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <View style={styles.topBar}>
+        <BackButton onPress={() => navigation.goBack()} color={theme.colors.textPrimary} />
+      </View>
+      <View style={styles.centeredContent}>
         <Text style={styles.title}>Welcome Back</Text>
         
         <View style={styles.inputContainer}>
