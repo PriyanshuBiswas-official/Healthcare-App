@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
   Platform,
   InteractionManager,
 } from 'react-native';
@@ -14,7 +13,7 @@ import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trash2 } from 'lucide-react-native';
-import { GlassCardView, BackButton } from '../../components/SharedComponents';
+import { GlassCardView, BackButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import {
   getMedications,
@@ -297,7 +296,7 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
           <View style={{ width: 60 }} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.amber} />
+          <LoadingSpinner />
         </View>
       </View>
     );

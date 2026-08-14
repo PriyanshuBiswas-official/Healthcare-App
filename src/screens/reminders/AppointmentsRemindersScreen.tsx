@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
   Platform,
   InteractionManager,
 } from 'react-native';
@@ -15,7 +14,7 @@ import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pencil } from 'lucide-react-native';
-import { GlassCardView, BackButton } from '../../components/SharedComponents';
+import { GlassCardView, BackButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useAppointments } from '../../providers/AppointmentContext';
 import { scheduleAppointmentNotifications, cancelAppointmentNotifications } from '../../services/notificationService';
 import type { Appointment, AppointmentStatus } from '../../types/appointment';
@@ -317,7 +316,7 @@ export default function AppointmentsRemindersScreen({ onBack, onSaved }: Props) 
           <Text style={styles.pageTitle}>Appointments</Text>
           <View style={{ width: 60 }} />
         </View>
-        <View style={styles.loadingContainer}><ActivityIndicator size="large" color={theme.colors.teal} /></View>
+        <View style={styles.loadingContainer}><LoadingSpinner /></View>
       </View>
     );
   }

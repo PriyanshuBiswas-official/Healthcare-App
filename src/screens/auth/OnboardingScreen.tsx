@@ -5,17 +5,19 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   Alert,
   ActivityIndicator,
   BackHandler,
+  Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { BackButton } from '../../components/SharedComponents';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
 import { posthog } from '../../config/posthog';
@@ -61,6 +63,7 @@ export default function OnboardingScreen() {
   const navigation = useNavigation<OnboardingScreenProp>();
   const { session, user, checkProfile } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -68,9 +71,8 @@ export default function OnboardingScreen() {
   // Form State
   const [displayName, setDisplayName] = useState('');
   const [selectedGoal, setSelectedGoal] = useState('');
-  const [dobYear, setDobYear] = useState('');
-  const [dobMonth, setDobMonth] = useState('');
-  const [dobDay, setDobDay] = useState('');
+  const [dob, setDob] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [gender, setGender] = useState('');
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
@@ -90,23 +92,8 @@ export default function OnboardingScreen() {
         return;
       }
     } else if (step === 3) {
-      if (!dobYear || !dobMonth || !dobDay) {
-        Alert.alert('Required', 'Please enter your complete date of birth');
-        return;
-      }
-      const y = parseInt(dobYear, 10);
-      const m = parseInt(dobMonth, 10);
-      const d = parseInt(dobDay, 10);
-      if (isNaN(y) || y < 1900 || y > new Date().getFullYear()) {
-        Alert.alert('Invalid Date', 'Please enter a valid year');
-        return;
-      }
-      if (isNaN(m) || m < 1 || m > 12) {
-        Alert.alert('Invalid Date', 'Please enter a valid month (1-12)');
-        return;
-      }
-      if (isNaN(d) || d < 1 || d > 31) {
-        Alert.alert('Invalid Date', 'Please enter a valid day (1-31)');
+      if (!dob) {
+        Alert.alert('Required', 'Please select your date of birth');
         return;
       }
       if (!gender) {
@@ -156,7 +143,9 @@ export default function OnboardingScreen() {
   }, [step]);
 
   const getOnboardingData = () => {
-    const formattedDob = `${dobYear}-${dobMonth.padStart(2, '0')}-${dobDay.padStart(2, '0')}`;
+    const formattedDob = dob
+      ? `${dob.getFullYear()}-${String(dob.getMonth() + 1).padStart(2, '0')}-${String(dob.getDate()).padStart(2, '0')}`
+      : '';
     return {
       displayName,
       goals: [selectedGoal],
@@ -219,6 +208,7 @@ export default function OnboardingScreen() {
     container: {
       flex: 1,
       backgroundColor: theme.colors.bg,
+      paddingTop: insets.top,
     },
     header: {
       flexDirection: 'row',
@@ -294,14 +284,18 @@ export default function OnboardingScreen() {
       marginTop: Spacing.lg,
       marginBottom: Spacing.sm,
     },
-    dobContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      gap: Spacing.md,
+    datePickerButton: {
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+      backgroundColor: theme.colors.bgCard,
+      borderRadius: Radius.lg,
+      paddingHorizontal: Spacing.base,
+      paddingVertical: Spacing.md + 2,
+      marginBottom: Spacing.sm,
     },
-    dobInput: {
-      flex: 1,
-      textAlign: 'center',
+    datePickerText: {
+      fontSize: Typography.base,
+      color: theme.colors.textPrimary,
     },
     rowContainer: {
       flexDirection: 'row',
@@ -436,11 +430,9 @@ export default function OnboardingScreen() {
   }));
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
-        {step > 1 && (
-          <BackButton onPress={prevStep} color={theme.colors.teal} />
-        )}
+        <BackButton onPress={step > 1 ? prevStep : () => navigation.goBack()} color={theme.colors.textPrimary} />
         <Text style={styles.progressText}>Step {step} of 5</Text>
       </View>
 
@@ -487,37 +479,32 @@ export default function OnboardingScreen() {
             <Text style={styles.stepTitle}>Basic Info</Text>
             <Text style={styles.stepSubtitle}>This data helps us calculate your BMI, daily calorie target, and cycle details.</Text>
 
-            {/* DOB Inputs */}
+            {/* DOB Input */}
             <Text style={styles.inputLabel}>Date of Birth</Text>
-            <View style={styles.dobContainer}>
-              <TextInput
-                style={[styles.textInput, styles.dobInput]}
-                placeholder="YYYY"
-                placeholderTextColor={theme.colors.textPlaceholder}
-                keyboardType="number-pad"
-                maxLength={4}
-                value={dobYear}
-                onChangeText={setDobYear}
+            <TouchableOpacity
+              style={styles.datePickerButton}
+              onPress={() => setShowDatePicker(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.datePickerText, !dob && { color: theme.colors.textPlaceholder }]}>
+                {dob ? dob.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Select your date of birth'}
+              </Text>
+            </TouchableOpacity>
+            {showDatePicker && (
+              <DateTimePicker
+                value={dob || new Date(2000, 0, 1)}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                maximumDate={new Date()}
+                minimumDate={new Date(1900, 0, 1)}
+                onChange={(_, selectedDate) => {
+                  setShowDatePicker(Platform.OS === 'ios');
+                  if (selectedDate) {
+                    setDob(selectedDate);
+                  }
+                }}
               />
-              <TextInput
-                style={[styles.textInput, styles.dobInput]}
-                placeholder="MM"
-                placeholderTextColor={theme.colors.textPlaceholder}
-                keyboardType="number-pad"
-                maxLength={2}
-                value={dobMonth}
-                onChangeText={setDobMonth}
-              />
-              <TextInput
-                style={[styles.textInput, styles.dobInput]}
-                placeholder="DD"
-                placeholderTextColor={theme.colors.textPlaceholder}
-                keyboardType="number-pad"
-                maxLength={2}
-                value={dobDay}
-                onChangeText={setDobDay}
-              />
-            </View>
+            )}
 
             {/* Gender Input */}
             <Text style={styles.inputLabel}>Gender</Text>
@@ -645,6 +632,6 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

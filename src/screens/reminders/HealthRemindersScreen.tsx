@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
   Platform,
   InteractionManager,
 } from 'react-native';
@@ -15,7 +14,7 @@ import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trash2, Pencil, Check } from 'lucide-react-native';
-import { GlassCardView, BackButton } from '../../components/SharedComponents';
+import { GlassCardView, BackButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useReminders } from '../../providers/ReminderContext';
 import type { Reminder, ReminderSchedule, Weekday } from '../../types/reminder';
 
@@ -350,7 +349,7 @@ export default function HealthRemindersScreen({ onBack, onSaved }: Props) {
           <View style={{ width: 60 }} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.danger} />
+          <LoadingSpinner />
         </View>
       </View>
     );

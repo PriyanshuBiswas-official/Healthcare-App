@@ -13,7 +13,7 @@ import {
 import { X, ShieldAlert } from 'lucide-react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { GlassCardView } from '../../components/SharedComponents';
+import { GlassCardView, LoadingSpinner } from '../../components/SharedComponents';
 import * as relationshipApi from '../../services/relationshipApi';
 
 interface PermissionsModalProps {
@@ -229,8 +229,7 @@ export default function PermissionsModal({
 
           {loading ? (
             <View style={styles.loaderWrap}>
-              <ActivityIndicator size="large" color={colors.teal} />
-              <Text style={styles.loadingText}>Fetching current sharing permissions...</Text>
+              <LoadingSpinner text="Fetching current sharing permissions..." />
             </View>
           ) : (
             <View style={{ flex: 1 }}>

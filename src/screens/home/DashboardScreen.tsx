@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar } from '../../components/SharedComponents';
+import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar, LoadingSpinner } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import ProfileCompletionBanner from '../../components/ProfileCompletionBanner';
 import HealthCalendar from '../../components/HealthCalendar';
@@ -1595,9 +1595,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
               </View>
             </View>
             {aiSummaryLoading ? (
-              <View style={{ paddingVertical: Spacing.sm, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-                <ActivityIndicator size="small" color={theme.colors.white} />
-                <Text style={[styles.heroAiText, { fontStyle: 'italic', marginBottom: 0 }]}>Updating health metrics...</Text>
+              <View style={{ paddingVertical: Spacing.sm }}>
+                <LoadingSpinner size="small" color={theme.colors.white} text="Updating health metrics..." />
               </View>
             ) : (
               <>

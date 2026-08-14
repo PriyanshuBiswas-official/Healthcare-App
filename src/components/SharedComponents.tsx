@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   TouchableOpacityProps,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { Bell, ChevronLeft } from 'lucide-react-native';
@@ -614,5 +615,54 @@ export const BackButton: React.FC<BackButtonProps> = React.memo(({ onPress, colo
     <TouchableOpacity style={s.btn} activeOpacity={0.7} onPress={onPress}>
       <ChevronLeft size={25} color={color} strokeWidth={3} />
     </TouchableOpacity>
+  );
+});
+
+// ─── Loading Spinner ────────────────────────────────────────────────────────
+interface LoadingSpinnerProps {
+  size?: 'small' | 'large';
+  color?: string;
+  text?: string;
+  overlay?: boolean;
+}
+
+export const LoadingSpinner: React.FC<LoadingSpinnerProps> = React.memo(({
+  size = 'large',
+  color,
+  text,
+  overlay = false,
+}) => {
+  const { theme } = useTheme();
+  const spinnerColor = color || theme.colors.accentBlue;
+
+  if (overlay) {
+    return (
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
+        <View style={{ backgroundColor: theme.colors.bgCardSolid, borderRadius: Radius.lg, padding: Spacing.xl, alignItems: 'center', gap: Spacing.md }}>
+          <ActivityIndicator size="large" color={spinnerColor} />
+          {text && (
+            <Text style={{ fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary }}>{text}</Text>
+          )}
+        </View>
+      </View>
+    );
+  }
+
+  if (text && size === 'small') {
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xs }}>
+        <ActivityIndicator size="small" color={spinnerColor} />
+        <Text style={{ fontSize: Typography.xs, color: theme.colors.textSecondary, fontStyle: 'italic' }}>{text}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: Spacing.xl }}>
+      <ActivityIndicator size={size} color={spinnerColor} />
+      {text && (
+        <Text style={{ fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: Spacing.sm, fontStyle: 'italic' }}>{text}</Text>
+      )}
+    </View>
   );
 });

@@ -20,6 +20,7 @@ import {
   SectionHeader,
   ProfileAvatarButton,
   NotificationIconButton,
+  LoadingSpinner,
 } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useNotifications } from '../../providers/NotificationContext';
@@ -916,7 +917,7 @@ export default function HealthScreenFemale({
   if (loading) {
     return (
       <View style={[s.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={theme.colors.pink} />
+        <LoadingSpinner />
       </View>
     );
   }
