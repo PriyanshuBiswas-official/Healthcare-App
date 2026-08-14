@@ -13,6 +13,7 @@ import {
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pencil } from 'lucide-react-native';
 import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { useAppointments } from '../../providers/AppointmentContext';
@@ -51,6 +52,7 @@ function ensureDrPrefix(name: string): string {
 
 export default function AppointmentsRemindersScreen({ onBack, onSaved }: Props) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { appointments, isLoading, fetchAppointments, addAppointment, editAppointment, removeAppointment, updateStatus } = useAppointments();
 
   const STATUS_COLORS: Record<AppointmentStatus, string> = useMemo(() => ({
@@ -263,7 +265,7 @@ export default function AppointmentsRemindersScreen({ onBack, onSaved }: Props) 
   const styles = useStyles(theme => ({
     root: { flex: 1, backgroundColor: theme.colors.bg },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md },
+    topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.xl, paddingBottom: Spacing.md },
     pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
     topBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
     topBtnAdd: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.teal },

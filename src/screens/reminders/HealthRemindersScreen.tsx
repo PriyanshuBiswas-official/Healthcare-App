@@ -13,6 +13,7 @@ import {
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trash2, Pencil, Check } from 'lucide-react-native';
 import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { useReminders } from '../../providers/ReminderContext';
@@ -35,6 +36,7 @@ function formatTime12h(hhmm: string): string {
 
 export default function HealthRemindersScreen({ onBack, onSaved }: Props) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { getRemindersByCategory, addReminder, removeReminder, editReminder, addReminderSchedule, removeSchedule, fetchSchedules, getSchedulesForReminder } = useReminders();
 
   const [loading, setLoading] = useState(true);
@@ -265,7 +267,7 @@ export default function HealthRemindersScreen({ onBack, onSaved }: Props) {
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     topBar: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
+      paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.xl, paddingBottom: Spacing.md,
     },
     pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
     addTopBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },

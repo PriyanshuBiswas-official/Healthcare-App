@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Trash2 } from 'lucide-react-native';
 import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { posthog } from '../../config/posthog';
@@ -22,6 +23,7 @@ interface Props {
 
 export default function ConfirmScreen({ onBack, onDelete, step, totalSteps }: Props) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [confirmText, setConfirmText] = useState('');
   const isConfirmed = confirmText.toUpperCase() === 'DELETE';
 
@@ -29,7 +31,7 @@ export default function ConfirmScreen({ onBack, onDelete, step, totalSteps }: Pr
     root: { flex: 1, backgroundColor: t.colors.bg },
     topBar: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
+      paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.xl, paddingBottom: Spacing.md,
     },
     pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary },
     scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },

@@ -12,6 +12,7 @@ import {
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trash2 } from 'lucide-react-native';
 import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
@@ -55,6 +56,7 @@ function formatDisplayDate(d: Date): string {
 
 export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { session } = useAuth();
 
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -212,7 +214,7 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     topBar: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      paddingHorizontal: Spacing.base, paddingTop: Spacing.xl, paddingBottom: Spacing.md,
+      paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.xl, paddingBottom: Spacing.md,
     },
     pageTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
     scroll: { paddingHorizontal: Spacing.base, paddingBottom: 120 },

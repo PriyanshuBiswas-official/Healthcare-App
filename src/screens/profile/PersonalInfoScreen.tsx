@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCardView, BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { API_BASE_URL } from '../../config/api';
@@ -36,6 +37,7 @@ const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 export default function PersonalInfoScreen({ onBack, onSaved }: Props) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -56,7 +58,7 @@ export default function PersonalInfoScreen({ onBack, onSaved }: Props) {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: Spacing.base,
-      paddingTop: Spacing.xl,
+      paddingTop: insets.top + Spacing.xl,
       paddingBottom: Spacing.md,
     },
     pageTitle: {
