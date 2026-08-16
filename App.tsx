@@ -33,14 +33,8 @@ import OfflineBanner from './src/components/OfflineBanner';
 import { ArrowLeft, Camera, Image as ImageIcon, X } from 'lucide-react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import type { ChatAttachment } from './src/services/aiApi';
-import { PostHogProvider } from 'posthog-react-native';
-import type { ReactNode } from 'react';
-import { posthog } from './src/config/posthog';
+import { PostHogBoundary } from './src/providers/PostHogBoundary';
 const Stack = createNativeStackNavigator();
-
-function PostHogBoundary({ children }: { children: ReactNode }) {
-  return posthog ? <PostHogProvider client={posthog}>{children}</PostHogProvider> : <>{children}</>;
-}
 
 type RootStackParamList = {
   Main: Record<string, any>;
@@ -245,13 +239,13 @@ function TabNavigator({ route }: any) {
   } = route.params;
 
   return (
-    <PostHogBoundary>
     <Tab.Navigator
       tabBar={(props) => <TabBar {...props} />}
       screenOptions={{ headerShown: false, freezeOnBlur: true }}
       initialRouteName="Home">
       <Tab.Screen name="Home">
         {(props) => (
+          <PostHogBoundary>
           <MemoizedDashboard
             {...props}
             onProfilePress={openProfile}
@@ -270,10 +264,12 @@ function TabNavigator({ route }: any) {
               openAI('Home', true);
             }}
           />
+          </PostHogBoundary>
         )}
       </Tab.Screen>
       <Tab.Screen name="Health">
         {(props) => (
+          <PostHogBoundary>
           <MemoizedHealthScreen
             {...props}
             onProfilePress={openProfile}
@@ -281,10 +277,12 @@ function TabNavigator({ route }: any) {
             onOpenHealthLog={openHealthLog}
             lastHealthLog={lastHealthLog}
           />
+          </PostHogBoundary>
         )}
       </Tab.Screen>
       <Tab.Screen name="AI">
         {(props) => (
+          <PostHogBoundary>
           <MemoizedAIAdvisorScreen
             {...props}
             onProfilePress={openProfile}
@@ -292,19 +290,23 @@ function TabNavigator({ route }: any) {
             onOpenChat={() => openAI(undefined, true, '')}
             onOpenOCR={openOCR}
           />
+          </PostHogBoundary>
         )}
       </Tab.Screen>
       <Tab.Screen name="Diet">
         {(props) => (
+          <PostHogBoundary>
           <MemoizedCalorieScreen
             {...props}
             onProfilePress={openProfile}
             onNotificationsPress={openNotifications}
           />
+          </PostHogBoundary>
         )}
       </Tab.Screen>
       <Tab.Screen name="Activity">
         {(props) => (
+          <PostHogBoundary>
           <MemoizedFitnessScreen
             {...props}
             onProfilePress={openProfile}
@@ -312,10 +314,10 @@ function TabNavigator({ route }: any) {
             onOpenAI={openAI}
             onOpenWorkoutLog={(ex: any) => props.navigation.navigate('WorkoutLog', { exercise: ex })}
           />
+          </PostHogBoundary>
         )}
       </Tab.Screen>
     </Tab.Navigator>
-    </PostHogBoundary>
   );
 }
 
@@ -670,9 +672,7 @@ const RootComponent = () => {
   if (!session?.user) {
     return (
       <NavigationContainer>
-        <PostHogBoundary>
-          <AuthStack />
-        </PostHogBoundary>
+        <AuthStack />
       </NavigationContainer>
     );
   }
@@ -680,11 +680,11 @@ const RootComponent = () => {
   if (hasProfile === false) {
     return (
       <NavigationContainer>
-        <PostHogBoundary>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-          </Stack.Navigator>
-        </PostHogBoundary>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Onboarding">
+            {() => <PostHogBoundary><OnboardingScreen /></PostHogBoundary>}
+          </Stack.Screen>
+        </Stack.Navigator>
       </NavigationContainer>
     );
   }

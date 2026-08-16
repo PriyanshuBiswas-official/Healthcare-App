@@ -9,6 +9,7 @@ import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { posthog } from '../../config/posthog';
 import { BackButton } from '../../components/SharedComponents';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Eye, EyeOff } from 'lucide-react-native';
 
 type AuthStackParamList = {
   Onboarding: undefined;
@@ -24,6 +25,7 @@ const LoginScreen = () => {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -97,6 +99,16 @@ const LoginScreen = () => {
       color: theme.colors.white,
       backgroundColor: theme.colors.bgInput,
     },
+    passwordRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      position: 'relative',
+    },
+    eyeBtn: {
+      position: 'absolute',
+      right: 14,
+      padding: 4,
+    },
     button: {
       backgroundColor: theme.colors.blue,
       paddingVertical: 18,
@@ -150,14 +162,23 @@ const LoginScreen = () => {
         
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your password"
-            placeholderTextColor={theme.colors.textPlaceholder}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+          <View style={styles.passwordRow}>
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              placeholder="Enter your password"
+              placeholderTextColor={theme.colors.textPlaceholder}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowPassword(!showPassword)} activeOpacity={0.7}>
+              {showPassword ? (
+                <EyeOff size={20} color={theme.colors.textSecondary} strokeWidth={1.8} />
+              ) : (
+                <Eye size={20} color={theme.colors.textSecondary} strokeWidth={1.8} />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
         
         <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
