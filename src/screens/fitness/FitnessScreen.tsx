@@ -486,30 +486,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       fontSize: Typography.xs,
       color: theme.colors.textSecondary,
     },
-    vitalRow: {
-      flexDirection: 'row',
-      gap: Spacing.sm,
-      paddingTop: Spacing.sm,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.divider,
-    },
-    vitalPill: {
-      flex: 1,
-      backgroundColor: theme.colors.bgCardBorder,
-      borderRadius: Radius.sm,
-      paddingVertical: Spacing.sm,
-      alignItems: 'center',
-    },
-    vitalVal: {
-      fontSize: Typography.sm,
-      fontWeight: Typography.bold,
-      color: theme.colors.textPrimary,
-    },
-    vitalLabel: {
-      fontSize: Typography.xs,
-      color: theme.colors.textMuted,
-      marginTop: 2,
-    },
     filterScroll: { marginBottom: Spacing.md },
     exerciseCard: { padding: Spacing.base, marginBottom: Spacing.sm },
     exerciseHeader: { flexDirection: 'row', alignItems: 'flex-start' },
@@ -867,20 +843,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           exercise={summary?.exercise_minutes ?? 0} exerciseTarget={exerciseTarget}
           calories={summary?.calories_burned ?? 0} caloriesTarget={burnTarget}
         />
-        <View style={styles.vitalRow}>
-          <View style={styles.vitalPill}>
-            <Text style={styles.vitalVal}>{summary?.distance ?? 0}</Text>
-            <Text style={styles.vitalLabel}>distance (m)</Text>
-          </View>
-          <View style={styles.vitalPill}>
-            <Text style={styles.vitalVal}>{summary?.steps?.toLocaleString() ?? '0'}</Text>
-            <Text style={styles.vitalLabel}>total steps</Text>
-          </View>
-          <View style={styles.vitalPill}>
-            <Text style={styles.vitalVal}>{summary?.calories_burned?.toLocaleString() ?? '0'}</Text>
-            <Text style={styles.vitalLabel}>kcal burned</Text>
-          </View>
-        </View>
       </GlassCardView>
     );
   }
