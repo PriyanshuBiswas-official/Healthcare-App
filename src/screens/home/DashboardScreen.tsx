@@ -102,7 +102,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       flexDirection: 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
-      paddingHorizontal: Spacing.lg,
+      paddingHorizontal: Spacing.base,
       paddingTop: Spacing.lg,
       paddingBottom: Spacing.xs,
     },
@@ -1843,75 +1843,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                       <Text style={{ fontSize: 11, fontWeight: Typography.bold, color: cycleData.is_fertile ? theme.colors.success : theme.colors.accentBlue }}>
                         {cycleData.is_fertile ? 'Likely' : 'Unlikely'}
                       </Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Logged This Cycle */}
-                <View style={{ marginTop: Spacing.md, marginBottom: Spacing.md }}>
-                  <View style={{ marginBottom: Spacing.md }}>
-                    <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: theme.colors.textPrimary }}>Logged This Cycle</Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    {/* Period */}
-                    <View style={{ alignItems: 'center', flex: 1 }}>
-                      <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.pink + '20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: theme.colors.pink + '30' }}>
-                        <Droplets size={22} color={theme.colors.pink} />
-                        {periodLogs.length > 0 && (
-                          <View style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.bgCard }}>
-                            <Check size={8} color={theme.colors.white} strokeWidth={3} />
-                          </View>
-                        )}
-                      </View>
-                      <Text style={{ fontSize: 10, color: theme.colors.textSecondary, marginTop: 4 }}>Period</Text>
-                    </View>
-                    {/* Symptoms */}
-                    <View style={{ alignItems: 'center', flex: 1 }}>
-                      <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.amber + '20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: theme.colors.amber + '30' }}>
-                        <Activity size={22} color={theme.colors.amber} />
-                        {symptomsLogs.length > 0 && (
-                          <View style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.bgCard }}>
-                            <Check size={8} color={theme.colors.white} strokeWidth={3} />
-                          </View>
-                        )}
-                      </View>
-                      <Text style={{ fontSize: 10, color: theme.colors.textSecondary, marginTop: 4 }}>Symptoms</Text>
-                    </View>
-                    {/* Moods */}
-                    <View style={{ alignItems: 'center', flex: 1 }}>
-                      <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.accentBlue + '20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: theme.colors.accentBlue + '30' }}>
-                        <Flower2 size={22} color={theme.colors.accentBlue} />
-                        {moodLogs.length > 0 && (
-                          <View style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.bgCard }}>
-                            <Check size={8} color={theme.colors.white} strokeWidth={3} />
-                          </View>
-                        )}
-                      </View>
-                      <Text style={{ fontSize: 10, color: theme.colors.textSecondary, marginTop: 4 }}>Moods</Text>
-                    </View>
-                    {/* Medications */}
-                    <View style={{ alignItems: 'center', flex: 1 }}>
-                      <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.teal + '20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: theme.colors.teal + '30' }}>
-                        <Pill size={22} color={theme.colors.teal} />
-                        {medicationLogs.length > 0 && (
-                          <View style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.bgCard }}>
-                            <Check size={8} color={theme.colors.white} strokeWidth={3} />
-                          </View>
-                        )}
-                      </View>
-                      <Text style={{ fontSize: 10, color: theme.colors.textSecondary, marginTop: 4 }}>Meds</Text>
-                    </View>
-                    {/* Weight */}
-                    <View style={{ alignItems: 'center', flex: 1 }}>
-                      <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.follicular + '20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: theme.colors.follicular + '30' }}>
-                        <Scale size={22} color={theme.colors.follicular} />
-                        {weightLogs.length > 0 && (
-                          <View style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.bgCard }}>
-                            <Check size={8} color={theme.colors.white} strokeWidth={3} />
-                          </View>
-                        )}
-                      </View>
-                      <Text style={{ fontSize: 10, color: theme.colors.textSecondary, marginTop: 4 }}>Weight</Text>
                     </View>
                   </View>
                 </View>
