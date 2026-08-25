@@ -162,9 +162,19 @@ export async function saveActivityGoal(token: string, goal: { calorie_burn_goal?
 
 export interface ActivityLogInput {
   distance?: number;
+  active_min?: number;
   calories_burnt?: number;
   other_activities?: string;
   other_act_calorie_burn?: number;
+}
+
+export async function getTodayActivityLog(token: string, date: string): Promise<ActivityLogInput | null> {
+  const res = await fetch(`${API_BASE_URL}/api/activity/log/today?date=${date}`, {
+    headers: authHeaders(token),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch activity log');
+  return json.data || null;
 }
 
 export async function logActivity(token: string, data: ActivityLogInput): Promise<any> {

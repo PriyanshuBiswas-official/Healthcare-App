@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -89,33 +89,6 @@ export default function WorkoutLogScreen({
   const [editWeight, setEditWeight] = useState('');
   const [editReps, setEditReps] = useState('');
 
-  // ── Rest Timer ───────────────────────────────────────
-  const [timerRunning, setTimerRunning] = useState(false);
-  const [timerSeconds, setTimerSeconds] = useState(90);
-  const [timerDisplay, setTimerDisplay] = useState('1:30');
-  const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (timerRunning && timerSeconds > 0) {
-      intervalRef.current = setInterval(() => {
-        setTimerSeconds(prev => {
-          const next = prev - 1;
-          const m = Math.floor(next / 60);
-          const s = next % 60;
-          setTimerDisplay(`${m}:${String(s).padStart(2, '0')}`);
-          if (next <= 0) {
-            setTimerRunning(false);
-            return 0;
-          }
-          return next;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [timerRunning]);
-
   const updateSet = (index: number, field: 'weight' | 'reps', value: string) => {
     setSets(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s));
   };
@@ -189,6 +162,10 @@ export default function WorkoutLogScreen({
       paddingBottom: Spacing.base,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.bgCardBorder,
+    },
+    headerCenter: {
+      flex: 1,
+      alignItems: 'center',
     },
 
     headerTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
@@ -278,28 +255,6 @@ export default function WorkoutLogScreen({
       justifyContent: 'center',
     },
     editCancelBtnText: { color: theme.colors.textSecondary, fontSize: Typography.sm },
-    timerSection: {
-      paddingHorizontal: Spacing.base,
-      paddingVertical: Spacing.md,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.bgCardBorder,
-    },
-    timerLabel: { fontSize: Typography.xs, color: theme.colors.textSecondary, fontWeight: Typography.semiBold, marginBottom: Spacing.xs },
-    timerDisplay: { fontSize: 40, fontWeight: Typography.bold, color: theme.colors.textPrimary, textAlign: 'center', marginBottom: Spacing.sm },
-    timerButtons: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.sm, marginBottom: Spacing.sm },
-    timerPreset: {
-      paddingVertical: Spacing.xs,
-      paddingHorizontal: Spacing.md,
-      borderRadius: Radius.sm,
-      backgroundColor: theme.colors.bgCardBorder,
-    },
-    timerPresetActive: { backgroundColor: theme.colors.accentBlue },
-    timerPresetText: { fontSize: Typography.xs, color: theme.colors.textSecondary, fontWeight: Typography.semiBold },
-    timerToggle: {
-      paddingVertical: Spacing.sm,
-      borderRadius: Radius.md,
-      alignItems: 'center',
-    },
     footer: {
       padding: Spacing.base,
       paddingBottom: Platform.OS === 'ios' ? 40 : Spacing.base,
@@ -319,18 +274,18 @@ export default function WorkoutLogScreen({
       {/* Header */}
       <View style={styles.header}>
         <BackButton onPress={onBack} color={theme.colors.textPrimary} />
-        <View style={{ flex: 1 }}>
+        <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>{exercise.exercise_name}</Text>
           <Text style={styles.headerSub}>
             Target: {exercise.target_sets}×{exercise.target_reps}
             {exercise.target_weight ? ` @ ${exercise.target_weight}kg` : ''}
           </Text>
         </View>
-        {isCompleted && (
+        {isCompleted ? (
           <View style={styles.completedBadge}>
             <Text style={styles.completedBadgeText}>✅ Done</Text>
           </View>
-        )}
+        ) : <View style={{ width: 44 }} />}
       </View>
 
       {/* Last Performance Hint — only when not completed */}
@@ -465,47 +420,6 @@ export default function WorkoutLogScreen({
           </>
         )}
       </ScrollView>
-
-      {/* Rest Timer */}
-      <View style={styles.timerSection}>
-        <Text style={styles.timerLabel}>Rest Timer</Text>
-        <Text style={styles.timerDisplay}>{timerDisplay}</Text>
-        <View style={styles.timerButtons}>
-          {[30, 60, 90, 120].map(sec => (
-            <TouchableOpacity
-              key={sec}
-              onPress={() => {
-                setTimerSeconds(sec);
-                const m = Math.floor(sec / 60);
-                const s = sec % 60;
-                setTimerDisplay(`${m}:${String(s).padStart(2, '0')}`);
-              }}
-              style={[styles.timerPreset, timerSeconds === sec && styles.timerPresetActive]}
-              activeOpacity={0.7}>
-              <Text style={[styles.timerPresetText, timerSeconds === sec && { color: theme.colors.bg }]}>{sec}s</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        <TouchableOpacity
-          onPress={() => {
-            if (timerRunning) {
-              setTimerRunning(false);
-              if (intervalRef.current) clearInterval(intervalRef.current);
-            } else {
-              if (timerSeconds === 0) {
-                setTimerSeconds(90);
-                setTimerDisplay('1:30');
-              }
-              setTimerRunning(true);
-            }
-          }}
-          style={[styles.timerToggle, { backgroundColor: timerRunning ? theme.colors.danger : theme.colors.teal }]}
-          activeOpacity={0.8}>
-          <Text style={{ color: theme.colors.bg, fontWeight: Typography.bold, fontSize: Typography.sm }}>
-            {timerRunning ? 'Stop' : 'Start Timer'}
-          </Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Save / Done Button */}
       <View style={styles.footer}>

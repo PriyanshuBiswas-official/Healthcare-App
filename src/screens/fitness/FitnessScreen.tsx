@@ -16,7 +16,8 @@ import Svg, { Circle } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import { useStyles } from '../../providers/ThemeProvider';
 import { ChevronRight, Dumbbell, Check, Pencil, Trophy, Target } from 'lucide-react-native';
-import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton, ActivityProgressCard, LoadingSpinner } from '../../components/SharedComponents';
+import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton, ActivityProgressCard, LoadingSpinner, SectionHeader } from '../../components/SharedComponents';
+import { WeeklyChart } from '../../components/WeeklyChart';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNotifications } from '../../providers/NotificationContext';
@@ -28,9 +29,9 @@ import type { PlanDayInput } from '../../services/activityService';
 
 const { width } = Dimensions.get('window');
 
-type Segment = 'Today' | 'Weekly' | 'Workouts' | 'PRs';
+type Segment = 'Overview' | 'Your Plan' | 'PRs';
 
-const SEGMENTS: Segment[] = ['Today', 'Weekly', 'Workouts', 'PRs'];
+const SEGMENTS: Segment[] = ['Overview', 'Your Plan', 'PRs'];
 
 const MUSCLE_FILTERS = ['All', 'Chest', 'Shoulders', 'Triceps', 'Core'];
 
@@ -59,7 +60,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
   const { unreadCount } = useNotifications();
-  const [activeSegment, setActiveSegment] = useState<Segment>('Today');
+  const [activeSegment, setActiveSegment] = useState<Segment>('Overview');
   const [activeFilter, setActiveFilter] = useState('All');
 
   const today = useMemo(() => new Date(), []);
@@ -109,6 +110,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   // ── Activity log modal state ─────────────────────────────────
   const [logActivityVisible, setLogActivityVisible] = useState(false);
   const [logDistance, setLogDistance] = useState('');
+  const [logActiveMin, setLogActiveMin] = useState('');
   const [logOtherActivity, setLogOtherActivity] = useState('');
   const [logOtherCalories, setLogOtherCalories] = useState('');
   const [logSaving, setLogSaving] = useState(false);
@@ -179,10 +181,9 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     fetchData();
   }, [fetchData]);
 
-  const showToday = activeSegment === 'Today';
-  const showWeekly = activeSegment === 'Weekly' || showToday;
-  const showWorkouts = activeSegment === 'Workouts' || showToday;
-  const showPRs = activeSegment === 'PRs' || showToday;
+  const showToday = activeSegment === 'Overview';
+  const showYourPlan = activeSegment === 'Your Plan' || showToday;
+  const showPRs = activeSegment === 'PRs';
 
   const hasNoPlan = !loading && !planName;
   const hasNoData = !loading && !summary?.steps && !summary?.calories_burned && exercises.length === 0 && weeklyStats?.sessions === 0;
@@ -341,21 +342,24 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   const handleLogActivity = async () => {
     if (!session?.access_token) return;
     const dist = parseFloat(logDistance) || 0;
+    const actMin = parseInt(logActiveMin, 10) || 0;
     const otherCal = parseInt(logOtherCalories, 10) || 0;
-    if (dist === 0 && !logOtherActivity.trim() && otherCal === 0) {
-      Alert.alert('Required', 'Please enter distance or activity details.');
+    if (dist === 0 && actMin === 0 && !logOtherActivity.trim() && otherCal === 0) {
+      Alert.alert('Required', 'Please enter distance, active minutes, or activity details.');
       return;
     }
     setLogSaving(true);
     try {
       await activityService.logActivity(session.access_token, {
         distance: dist || undefined,
+        active_min: actMin || undefined,
         calories_burnt: otherCal || undefined,
         other_activities: logOtherActivity.trim() || undefined,
         other_act_calorie_burn: otherCal || undefined,
       });
       setLogActivityVisible(false);
       setLogDistance('');
+      setLogActiveMin('');
       setLogOtherActivity('');
       setLogOtherCalories('');
       fetchData();
@@ -384,6 +388,23 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     }
   };
 
+  const handleOpenLogActivity = async () => {
+    if (session?.access_token) {
+      try {
+        const existing = await activityService.getTodayActivityLog(session.access_token, todayStr);
+        if (existing) {
+          setLogDistance(existing.distance ? String(existing.distance) : '');
+          setLogActiveMin(existing.active_min ? String(existing.active_min) : '');
+          setLogOtherActivity(existing.other_activities || '');
+          setLogOtherCalories(existing.other_act_calorie_burn ? String(existing.other_act_calorie_burn) : '');
+        }
+      } catch (e) {
+        console.warn('[FitnessScreen] Failed to prefill activity log:', e);
+      }
+    }
+    setLogActivityVisible(true);
+  };
+
   const estimatedSteps = logDistance ? Math.round((parseFloat(logDistance) || 0) * 1312) : 0;
   const styles = useStyles((theme: any) => ({
     root: { flex: 1, backgroundColor: theme.colors.bg },
@@ -392,7 +413,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
-      marginBottom: Spacing.lg,
+      marginBottom: Spacing.xl,
     },
     headerLeft: { flex: 1 },
     headerRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
@@ -414,11 +435,11 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       borderWidth: 1,
       borderColor: theme.colors.bgCardBorder,
       padding: 4,
-      marginBottom: Spacing.lg,
+      marginBottom: Spacing.xl,
     },
     segmentBtn: {
       flex: 1,
-      paddingVertical: Spacing.sm + 2,
+      paddingVertical: Spacing.sm,
       borderRadius: Radius.md,
       alignItems: 'center',
     },
@@ -426,7 +447,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       backgroundColor: theme.colors.bgCardBorder,
     },
     segmentText: {
-      fontSize: Typography.xs,
+      fontSize: Typography.sm,
       fontWeight: Typography.semiBold,
       color: theme.colors.textMuted,
     },
@@ -650,11 +671,11 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       justifyContent: 'space-between',
       height: 100,
       marginBottom: Spacing.lg,
-      paddingHorizontal: Spacing.xs,
+      paddingHorizontal: Spacing.sm,
     },
     barCol: { alignItems: 'center', flex: 1 },
     bar: {
-      width: Math.min(28, (width - 80) / 9),
+      width: Math.min(36, (width - 60) / 7),
       borderRadius: Radius.sm,
       minHeight: 8,
     },
@@ -663,30 +684,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       color: theme.colors.textMuted,
       marginTop: Spacing.sm,
       fontWeight: Typography.medium,
-    },
-    weeklyStatsGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: Spacing.sm,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.divider,
-      paddingTop: Spacing.base,
-    },
-    weeklyStat: {
-      width: '47%',
-      backgroundColor: theme.colors.bgCardBorder,
-      borderRadius: Radius.sm,
-      padding: Spacing.md,
-    },
-    weeklyStatVal: {
-      fontSize: Typography.md,
-      fontWeight: Typography.bold,
-      color: theme.colors.textPrimary,
-    },
-    weeklyStatLabel: {
-      fontSize: Typography.xs,
-      color: theme.colors.textMuted,
-      marginTop: 2,
     },
     prRow: {
       flexDirection: 'row',
@@ -734,29 +731,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       fontSize: Typography.sm,
       color: theme.colors.textSecondary,
       lineHeight: 20,
-    },
-    recoveryGrid: {
-      flexDirection: 'row',
-      gap: Spacing.sm,
-      marginBottom: Spacing.md,
-    },
-    recoveryMini: {
-      flex: 1,
-      borderWidth: 1,
-      borderRadius: Radius.md,
-      padding: Spacing.base,
-      backgroundColor: theme.colors.bgCard,
-    },
-    recoveryMiniLabel: {
-      fontSize: Typography.xs,
-      fontWeight: Typography.bold,
-      color: theme.colors.textMuted,
-      letterSpacing: Typography.lsWider,
-      marginBottom: 6,
-    },
-    recoveryMiniVal: {
-      fontSize: Typography.md,
-      fontWeight: Typography.bold,
     },
     // Modal styles
     modalOverlay: { flex: 1, backgroundColor: theme.colors.overlay, justifyContent: 'flex-end' },
@@ -831,19 +805,21 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     ];
 
     return (
-      <GlassCardView style={styles.card}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <SectionLabel title="DAILY PROGRESS" />
+      <>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: Spacing.md }}>
+          <SectionHeader title="Daily Progress" subtitle="Your daily activity rings" />
           <TouchableOpacity onPress={onLogActivity} style={{ backgroundColor: Colors.teal + '20', paddingVertical: Spacing.xs, paddingHorizontal: Spacing.sm, borderRadius: Radius.sm }} activeOpacity={0.7}>
             <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>+ Log Activity</Text>
           </TouchableOpacity>
         </View>
-        <ActivityProgressCard 
-          steps={summary?.steps ?? 0} stepsTarget={stepsTarget}
-          exercise={summary?.exercise_minutes ?? 0} exerciseTarget={exerciseTarget}
-          calories={summary?.calories_burned ?? 0} caloriesTarget={burnTarget}
-        />
-      </GlassCardView>
+        <GlassCardView style={styles.card}>
+          <ActivityProgressCard
+            steps={summary?.steps ?? 0} stepsTarget={stepsTarget}
+            exercise={summary?.exercise_minutes ?? 0} exerciseTarget={exerciseTarget}
+            calories={summary?.calories_burned ?? 0} caloriesTarget={burnTarget}
+          />
+        </GlassCardView>
+      </>
     );
   }
 
@@ -1012,25 +988,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     );
   }
 
-  function AITrainerCard({ onOpenAI }: { onOpenAI?: (from?: string) => void }) {
-    return (
-      <GlassCardView style={styles.card} accentColor={Colors.accentBlue}>
-        <SectionLabel title="Ask AI about your workout" />
-        <View style={{ paddingVertical: Spacing.sm }}>
-          <Text style={{ color: Colors.textSecondary, marginBottom: Spacing.sm }}>
-            Get quick tips, workout swaps, or recovery advice from AI.
-          </Text>
-          <TouchableOpacity
-            style={{ backgroundColor: Colors.accentBlue, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, borderRadius: Radius.md, alignSelf: 'stretch', width: '100%', alignItems: 'center', justifyContent: 'center' }}
-            onPress={() => onOpenAI && onOpenAI('Activity')}
-            activeOpacity={0.9}>
-            <Text style={{ color: Colors.bg, fontWeight: Typography.bold }}>Ask AI</Text>
-          </TouchableOpacity>
-        </View>
-      </GlassCardView>
-    );
-  }
-
   function WeeklyActivityCard({ days, stats }: { days: WeeklyDay[]; stats: WeeklyStats | null }) {
     const maxBarH = 80;
     const maxVal = useMemo(() => {
@@ -1042,15 +999,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
 
     return (
       <GlassCardView style={styles.card}>
-        <View style={styles.weeklyHeader}>
-          <SectionLabel title="WEEKLY ACTIVITY" />
-          {totalDays > 0 && (
-            <View style={[styles.streakBadge, { backgroundColor: Colors.teal + '20', borderColor: Colors.teal + '50' }]}>
-              <Text style={[styles.streakBadgeText, { color: Colors.teal }]}>{totalDays} day streak</Text>
-            </View>
-          )}
-        </View>
-        <Text style={styles.chartSubtitle}>Volume this week</Text>
         <View style={styles.barChart}>
           {days.map((bar, i) => {
             const barVal = maxVal > 0 ? bar.calories / maxVal : 0;
@@ -1062,24 +1010,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
               </View>
             );
           })}
-        </View>
-        <View style={styles.weeklyStatsGrid}>
-          <View style={styles.weeklyStat}>
-            <Text style={styles.weeklyStatVal}>{stats?.sessions ?? 0}</Text>
-            <Text style={styles.weeklyStatLabel}>sessions</Text>
-          </View>
-          <View style={styles.weeklyStat}>
-            <Text style={styles.weeklyStatVal}>{stats ? formatDuration(stats.total_time_minutes) : '0h'}</Text>
-            <Text style={styles.weeklyStatLabel}>total time</Text>
-          </View>
-          <View style={styles.weeklyStat}>
-            <Text style={styles.weeklyStatVal}>{stats?.kcal_burned?.toLocaleString() ?? '0'}</Text>
-            <Text style={styles.weeklyStatLabel}>kcal burned</Text>
-          </View>
-          <View style={styles.weeklyStat}>
-            <Text style={styles.weeklyStatVal}>{stats?.total_steps?.toLocaleString() ?? '0'}</Text>
-            <Text style={styles.weeklyStatLabel}>total steps</Text>
-          </View>
         </View>
       </GlassCardView>
     );
@@ -1125,29 +1055,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     );
   }
 
-  function RecoveryCard() {
-    return (
-      <GlassCardView style={styles.card}>
-        <SectionLabel title="RECOVERY STATUS" />
-        <View style={styles.recoveryGrid}>
-          <View style={[styles.recoveryMini, { borderColor: Colors.teal + '40' }]}>
-            <Text style={styles.recoveryMiniLabel}>HRV STATUS</Text>
-            <Text style={[styles.recoveryMiniVal, { color: Colors.teal }]}>68 ms</Text>
-          </View>
-          <View style={[styles.recoveryMini, { borderColor: Colors.pink + '40' }]}>
-            <Text style={styles.recoveryMiniLabel}>SORENESS</Text>
-            <Text style={[styles.recoveryMiniVal, { color: Colors.pink }]}>Chest / Delts</Text>
-          </View>
-        </View>
-        <View style={[styles.insightBox, { backgroundColor: Colors.accentBlue + '15', borderColor: Colors.accentBlue + '40' }]}>
-          <Text style={[styles.insightLabel, { color: Colors.accentBlue }]}>AI recovery tips</Text>
-          <Text style={styles.insightText}>
-            Prioritize 7.5+ hours sleep tonight. Reduce intensity on shoulders if soreness persists.
-          </Text>
-        </View>
-      </GlassCardView>
-    );
-  }
   return (
     <View style={styles.root}>
       <ScrollView
@@ -1176,9 +1083,9 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         {showSetupBanner && (
           <TouchableOpacity style={styles.setupBanner} activeOpacity={0.8} onPress={openPlanModal}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <View style={[styles.setupBannerIcon, { backgroundColor: Colors.accentBlue + '20' }]}>
-                  <Dumbbell size={Typography.md} color={Colors.accentBlue} />
-                </View>
+              <View style={[styles.setupBannerIcon, { backgroundColor: Colors.accentBlue + '20' }]}>
+                <Dumbbell size={Typography.md} color={Colors.accentBlue} />
+              </View>
               <View style={{ flex: 1, marginLeft: Spacing.md }}>
                 <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textPrimary }}>Set up your workout plan</Text>
                 <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 }}>Create a plan to track exercises, log sets, and monitor your progress</Text>
@@ -1207,9 +1114,9 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           <LoadingSpinner />
         ) : (
           <>
-            {showToday && <DailyProgressCard summary={summary} goal={activityGoal} onLogActivity={() => setLogActivityVisible(true)} />}
+            {showToday && <DailyProgressCard summary={summary} goal={activityGoal} onLogActivity={handleOpenLogActivity} />}
 
-            {showWorkouts && (
+            {showYourPlan && (
               <View style={styles.section}>
                 <TodaysWorkout
                   exercises={exercises}
@@ -1228,25 +1135,43 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
 
             {showToday && (
               <View style={styles.section}>
-                <AITrainerCard onOpenAI={() => onOpenAI && onOpenAI('Activity')} />
+                <SectionHeader title="Weekly Activity" subtitle={`${weeklyStats?.sessions ?? 0} sessions · ${weeklyStats ? formatDuration(weeklyStats.total_time_minutes) : '0h'} total time`} />
+                <WeeklyActivityCard days={weeklyDays} stats={weeklyStats} />
               </View>
             )}
 
-            {showWeekly && (
-              <View style={styles.section}>
-                <WeeklyActivityCard days={weeklyDays} stats={weeklyStats} />
-              </View>
+            {showToday && weeklyDays.length > 0 && (
+              <>
+                <View style={styles.section}>
+                  <SectionHeader title="Steps" subtitle={`${weeklyDays[weeklyDays.length - 1]?.steps.toLocaleString() ?? '0'} today · avg ${Math.round(weeklyDays.reduce((s, d) => s + d.steps, 0) / weeklyDays.length).toLocaleString()}`} />
+                  <WeeklyChart
+                    data={weeklyDays.map(d => d.steps)}
+                    labels={weeklyDays.map(d => d.day)}
+                    color={Colors.teal}
+                  />
+                </View>
+                <View style={styles.section}>
+                  <SectionHeader title="Active Minutes" subtitle={`${weeklyDays[weeklyDays.length - 1]?.duration ?? 0} today · avg ${Math.round(weeklyDays.reduce((s, d) => s + d.duration, 0) / weeklyDays.length)}`} />
+                  <WeeklyChart
+                    data={weeklyDays.map(d => d.duration)}
+                    labels={weeklyDays.map(d => d.day)}
+                    color={Colors.accentBlue}
+                  />
+                </View>
+                <View style={styles.section}>
+                  <SectionHeader title="Calories Burned" subtitle={`${weeklyDays[weeklyDays.length - 1]?.calories.toLocaleString() ?? '0'} today · avg ${Math.round(weeklyDays.reduce((s, d) => s + d.calories, 0) / weeklyDays.length).toLocaleString()}`} />
+                  <WeeklyChart
+                    data={weeklyDays.map(d => d.calories)}
+                    labels={weeklyDays.map(d => d.day)}
+                    color={Colors.pink}
+                  />
+                </View>
+              </>
             )}
 
             {showPRs && (
               <View style={styles.section}>
                 <PersonalRecordsCard prs={prs} />
-              </View>
-            )}
-
-            {(showToday || activeSegment === 'Weekly') && (
-              <View style={styles.section}>
-                <RecoveryCard />
               </View>
             )}
           </>
@@ -1262,163 +1187,163 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           onPress={() => setPlanModalVisible(false)}
           style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-        {/* Step indicator */}
-        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: Spacing.base }}>
-          {[1, 2, 3].map(s => (
-            <View key={s} style={{ width: planStep === s ? 24 : 8, height: 8, borderRadius: 4, backgroundColor: planStep === s ? Colors.accentBlue : Colors.bgCardBorder }} />
-          ))}
-        </View>
-
-        {/* Step 1: Plan basics */}
-        {planStep === 1 && (
-          <>
-            <Text style={styles.modalTitle}>Create Workout Plan</Text>
-            <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, marginBottom: Spacing.base }}>
-              Set up your plan basics. You can add exercises next.
-            </Text>
-            <Text style={styles.modalLabel}>Plan name *</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={planNameInput}
-              onChangeText={setPlanNameInput}
-              placeholder="e.g. PPL Split"
-              placeholderTextColor={Colors.textMuted}
-              autoFocus
-            />
-            <Text style={styles.modalLabel}>Goal</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={planGoal}
-              onChangeText={setPlanGoal}
-              placeholder="e.g. Build muscle, lose fat"
-              placeholderTextColor={Colors.textMuted}
-            />
-            <Text style={styles.modalLabel}>Days per week</Text>
-            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              {['3', '4', '5', '6'].map(d => (
-                <TouchableOpacity
-                  key={d}
-                  onPress={() => setPlanDaysPerWeek(d)}
-                  style={{
-                    flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.md, alignItems: 'center',
-                    backgroundColor: planDaysPerWeek === d ? Colors.accentBlue + '20' : Colors.bgCardBorder,
-                    borderWidth: planDaysPerWeek === d ? 1 : 0, borderColor: Colors.accentBlue,
-                  }}>
-                  <Text style={{ fontSize: Typography.sm, color: planDaysPerWeek === d ? Colors.accentBlue : Colors.textSecondary, fontWeight: Typography.bold }}>{d}</Text>
-                </TouchableOpacity>
+            {/* Step indicator */}
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: Spacing.base }}>
+              {[1, 2, 3].map(s => (
+                <View key={s} style={{ width: planStep === s ? 24 : 8, height: 8, borderRadius: 4, backgroundColor: planStep === s ? Colors.accentBlue : Colors.bgCardBorder }} />
               ))}
             </View>
-            <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
-              <TouchableOpacity onPress={() => setPlanModalVisible(false)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setPlanStep(2)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue }}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Next</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
 
-        {/* Step 2: Select days */}
-        {planStep === 2 && (
-          <>
-            <Text style={styles.modalTitle}>Select Workout Days</Text>
-            <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, marginBottom: Spacing.base }}>
-              Tap the days you plan to train.
-            </Text>
-            {DAY_NAMES.map((name, i) => (
-              <TouchableOpacity
-                key={i}
-                onPress={() => toggleDay(i)}
-                style={{
-                  flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md,
-                  borderBottomWidth: 1, borderBottomColor: Colors.divider,
-                }}>
-                <View style={{
-                  width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center',
-                  borderColor: selectedDays.includes(i) ? Colors.accentBlue : Colors.textMuted,
-                  backgroundColor: selectedDays.includes(i) ? Colors.accentBlue : 'transparent',
-                }}>
-                  {selectedDays.includes(i) && <Text style={{ fontSize: Typography.xs, color: Colors.bg, fontWeight: Typography.bold }}>✓</Text>}
+            {/* Step 1: Plan basics */}
+            {planStep === 1 && (
+              <>
+                <Text style={styles.modalTitle}>Create Workout Plan</Text>
+                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, marginBottom: Spacing.base }}>
+                  Set up your plan basics. You can add exercises next.
+                </Text>
+                <Text style={styles.modalLabel}>Plan name *</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={planNameInput}
+                  onChangeText={setPlanNameInput}
+                  placeholder="e.g. PPL Split"
+                  placeholderTextColor={Colors.textMuted}
+                  autoFocus
+                />
+                <Text style={styles.modalLabel}>Goal</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={planGoal}
+                  onChangeText={setPlanGoal}
+                  placeholder="e.g. Build muscle, lose fat"
+                  placeholderTextColor={Colors.textMuted}
+                />
+                <Text style={styles.modalLabel}>Days per week</Text>
+                <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                  {['3', '4', '5', '6'].map(d => (
+                    <TouchableOpacity
+                      key={d}
+                      onPress={() => setPlanDaysPerWeek(d)}
+                      style={{
+                        flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.md, alignItems: 'center',
+                        backgroundColor: planDaysPerWeek === d ? Colors.accentBlue + '20' : Colors.bgCardBorder,
+                        borderWidth: planDaysPerWeek === d ? 1 : 0, borderColor: Colors.accentBlue,
+                      }}>
+                      <Text style={{ fontSize: Typography.sm, color: planDaysPerWeek === d ? Colors.accentBlue : Colors.textSecondary, fontWeight: Typography.bold }}>{d}</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
-                <Text style={{ fontSize: Typography.base, color: Colors.textPrimary, marginLeft: Spacing.md, fontWeight: selectedDays.includes(i) ? Typography.bold : Typography.regular }}>{name}</Text>
-              </TouchableOpacity>
-            ))}
-            <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
-              <TouchableOpacity onPress={() => setPlanStep(1)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Back</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setPlanStep(3)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue }}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Next</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
+                <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
+                  <TouchableOpacity onPress={() => setPlanModalVisible(false)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
+                    <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setPlanStep(2)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue }}>
+                    <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Next</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
 
-        {/* Step 3: Add exercises per day */}
-        {planStep === 3 && (
-          <>
-            <Text style={styles.modalTitle}>Add Exercises</Text>
-            <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, marginBottom: Spacing.base }}>
-              Add exercises for each day. You can skip and add later.
-            </Text>
-            <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
-              {selectedDays.map(dayIndex => (
-                <View key={dayIndex} style={{ marginBottom: Spacing.base }}>
-                  <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.accentBlue, marginBottom: Spacing.sm }}>{DAY_NAMES[dayIndex]}</Text>
-                  {(dayExercises[dayIndex] || []).map((ex, exIndex) => (
-                    <View key={exIndex} style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.sm, alignItems: 'center' }}>
-                      <TextInput
-                        style={[styles.modalInput, { flex: 2, marginBottom: 0 }]}
-                        value={ex.name}
-                        onChangeText={v => updateExercise(dayIndex, exIndex, 'name', v)}
-                        placeholder="Exercise"
-                        placeholderTextColor={Colors.textMuted}
-                      />
-                      <TextInput
-                        style={[styles.modalInput, { flex: 0.6, marginBottom: 0, textAlign: 'center' }]}
-                        value={ex.sets}
-                        onChangeText={v => updateExercise(dayIndex, exIndex, 'sets', v)}
-                        keyboardType="number-pad"
-                        placeholder="Sets"
-                        placeholderTextColor={Colors.textMuted}
-                      />
-                      <TextInput
-                        style={[styles.modalInput, { flex: 0.6, marginBottom: 0, textAlign: 'center' }]}
-                        value={ex.reps}
-                        onChangeText={v => updateExercise(dayIndex, exIndex, 'reps', v)}
-                        keyboardType="number-pad"
-                        placeholder="Reps"
-                        placeholderTextColor={Colors.textMuted}
-                      />
-                      <TouchableOpacity onPress={() => removeExercise(dayIndex, exIndex)} style={{ padding: 4 }}>
-                        <Text style={{ fontSize: Typography.md, color: Colors.pink }}>✕</Text>
+            {/* Step 2: Select days */}
+            {planStep === 2 && (
+              <>
+                <Text style={styles.modalTitle}>Select Workout Days</Text>
+                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, marginBottom: Spacing.base }}>
+                  Tap the days you plan to train.
+                </Text>
+                {DAY_NAMES.map((name, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    onPress={() => toggleDay(i)}
+                    style={{
+                      flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md,
+                      borderBottomWidth: 1, borderBottomColor: Colors.divider,
+                    }}>
+                    <View style={{
+                      width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center',
+                      borderColor: selectedDays.includes(i) ? Colors.accentBlue : Colors.textMuted,
+                      backgroundColor: selectedDays.includes(i) ? Colors.accentBlue : 'transparent',
+                    }}>
+                      {selectedDays.includes(i) && <Text style={{ fontSize: Typography.xs, color: Colors.bg, fontWeight: Typography.bold }}>✓</Text>}
+                    </View>
+                    <Text style={{ fontSize: Typography.base, color: Colors.textPrimary, marginLeft: Spacing.md, fontWeight: selectedDays.includes(i) ? Typography.bold : Typography.regular }}>{name}</Text>
+                  </TouchableOpacity>
+                ))}
+                <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
+                  <TouchableOpacity onPress={() => setPlanStep(1)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
+                    <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Back</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setPlanStep(3)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue }}>
+                    <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Next</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+
+            {/* Step 3: Add exercises per day */}
+            {planStep === 3 && (
+              <>
+                <Text style={styles.modalTitle}>Add Exercises</Text>
+                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, marginBottom: Spacing.base }}>
+                  Add exercises for each day. You can skip and add later.
+                </Text>
+                <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
+                  {selectedDays.map(dayIndex => (
+                    <View key={dayIndex} style={{ marginBottom: Spacing.base }}>
+                      <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.accentBlue, marginBottom: Spacing.sm }}>{DAY_NAMES[dayIndex]}</Text>
+                      {(dayExercises[dayIndex] || []).map((ex, exIndex) => (
+                        <View key={exIndex} style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.sm, alignItems: 'center' }}>
+                          <TextInput
+                            style={[styles.modalInput, { flex: 2, marginBottom: 0 }]}
+                            value={ex.name}
+                            onChangeText={v => updateExercise(dayIndex, exIndex, 'name', v)}
+                            placeholder="Exercise"
+                            placeholderTextColor={Colors.textMuted}
+                          />
+                          <TextInput
+                            style={[styles.modalInput, { flex: 0.6, marginBottom: 0, textAlign: 'center' }]}
+                            value={ex.sets}
+                            onChangeText={v => updateExercise(dayIndex, exIndex, 'sets', v)}
+                            keyboardType="number-pad"
+                            placeholder="Sets"
+                            placeholderTextColor={Colors.textMuted}
+                          />
+                          <TextInput
+                            style={[styles.modalInput, { flex: 0.6, marginBottom: 0, textAlign: 'center' }]}
+                            value={ex.reps}
+                            onChangeText={v => updateExercise(dayIndex, exIndex, 'reps', v)}
+                            keyboardType="number-pad"
+                            placeholder="Reps"
+                            placeholderTextColor={Colors.textMuted}
+                          />
+                          <TouchableOpacity onPress={() => removeExercise(dayIndex, exIndex)} style={{ padding: 4 }}>
+                            <Text style={{ fontSize: Typography.md, color: Colors.pink }}>✕</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                      <TouchableOpacity onPress={() => addExerciseToDay(dayIndex)} style={{ paddingVertical: Spacing.sm, alignItems: 'center', borderWidth: 1, borderColor: Colors.accentBlue + '40', borderRadius: Radius.sm, backgroundColor: Colors.accentBlue + '08' }}>
+                        <Text style={{ fontSize: Typography.xs, color: Colors.accentBlue, fontWeight: Typography.bold }}>+ Add exercise</Text>
                       </TouchableOpacity>
                     </View>
                   ))}
-                  <TouchableOpacity onPress={() => addExerciseToDay(dayIndex)} style={{ paddingVertical: Spacing.sm, alignItems: 'center', borderWidth: 1, borderColor: Colors.accentBlue + '40', borderRadius: Radius.sm, backgroundColor: Colors.accentBlue + '08' }}>
-                    <Text style={{ fontSize: Typography.xs, color: Colors.accentBlue, fontWeight: Typography.bold }}>+ Add exercise</Text>
+                </ScrollView>
+                <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.base }}>
+                  <TouchableOpacity onPress={() => setPlanStep(2)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
+                    <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Back</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleSavePlan}
+                    disabled={planSaving}
+                    style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue, opacity: planSaving ? 0.6 : 1 }}>
+                    {planSaving ? (
+                      <ActivityIndicator size="small" color={Colors.bg} />
+                    ) : (
+                      <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Save Plan</Text>
+                    )}
                   </TouchableOpacity>
                 </View>
-              ))}
-            </ScrollView>
-            <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.base }}>
-              <TouchableOpacity onPress={() => setPlanStep(2)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Back</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleSavePlan}
-                disabled={planSaving}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue, opacity: planSaving ? 0.6 : 1 }}>
-                {planSaving ? (
-                  <ActivityIndicator size="small" color={Colors.bg} />
-                ) : (
-                  <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Save Plan</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
+              </>
+            )}
           </View>
         </TouchableOpacity>
       </Modal>}
@@ -1596,6 +1521,16 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                 ≈ {estimatedSteps.toLocaleString()} steps estimated
               </Text>
             )}
+
+            <Text style={styles.modalLabel}>Active minutes (optional)</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={logActiveMin}
+              onChangeText={setLogActiveMin}
+              keyboardType="number-pad"
+              placeholder="e.g. 30"
+              placeholderTextColor={Colors.textMuted}
+            />
 
             <Text style={styles.modalLabel}>Other activity (optional)</Text>
             <TextInput
