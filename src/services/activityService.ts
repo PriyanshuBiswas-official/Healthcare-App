@@ -9,8 +9,9 @@ export interface PlanDayInput {
     exercise_order: number;
     sets: number;
     reps: number;
-    rest?: number | null;
-    target_weight?: number | null;
+    equipment?: string;
+    muscle_group?: string;
+    exercise_type?: string;
   }[];
 }
 
@@ -91,8 +92,10 @@ export interface AddExerciseInput {
   exercise_order?: number;
   sets?: number;
   reps?: number;
-  rest?: number;
-  target_weight?: number;
+  equipment?: string;
+  muscle_group?: string;
+  other_muscles?: string[];
+  exercise_type?: string;
 }
 
 export async function addExerciseToDay(token: string, data: AddExerciseInput): Promise<any> {
@@ -112,8 +115,9 @@ export interface UpdateExerciseInput {
   exercise_order?: number;
   sets?: number;
   reps?: number;
-  rest?: number;
-  target_weight?: number;
+  equipment?: string;
+  muscle_group?: string;
+  exercise_type?: string;
 }
 
 export async function updateExercise(token: string, data: UpdateExerciseInput): Promise<any> {

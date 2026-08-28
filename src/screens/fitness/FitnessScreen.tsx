@@ -55,7 +55,7 @@ function formatDuration(minutes: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-export default function FitnessScreen({ onProfilePress, onNotificationsPress, onOpenAI, onOpenWorkoutLog }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void; onOpenWorkoutLog?: (exercise: any) => void }) {
+export default function FitnessScreen({ onProfilePress, onNotificationsPress, onOpenAI, onOpenWorkoutLog, onOpenAddExercise }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void; onOpenWorkoutLog?: (exercise: any) => void; onOpenAddExercise?: (planDayId: number) => void }) {
   const { onScroll } = useScrollVisibility();
   const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
@@ -88,23 +88,12 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   const [dayExercises, setDayExercises] = useState<Record<number, { name: string; sets: string; reps: string; weight: string }[]>>({});
   const [planSaving, setPlanSaving] = useState(false);
 
-  // ── Add exercise modal state ─────────────────────────────────
-  const [addExModalVisible, setAddExModalVisible] = useState(false);
-  const [addExName, setAddExName] = useState('');
-  const [addExSets, setAddExSets] = useState('3');
-  const [addExReps, setAddExReps] = useState('10');
-  const [addExWeight, setAddExWeight] = useState('');
-  const [addExRest, setAddExRest] = useState('');
-  const [addExSaving, setAddExSaving] = useState(false);
-
   // ── Edit exercise modal state ─────────────────────────────────
   const [editExModalVisible, setEditExModalVisible] = useState(false);
   const [editExId, setEditExId] = useState<number | null>(null);
   const [editExName, setEditExName] = useState('');
   const [editExSets, setEditExSets] = useState('3');
   const [editExReps, setEditExReps] = useState('10');
-  const [editExWeight, setEditExWeight] = useState('');
-  const [editExRest, setEditExRest] = useState('');
   const [editExSaving, setEditExSaving] = useState(false);
 
   // ── Activity log modal state ─────────────────────────────────
@@ -254,7 +243,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
             exercise_order: j + 1,
             sets: parseInt(ex.sets, 10) || 3,
             reps: parseInt(ex.reps, 10) || 10,
-            target_weight: ex.weight ? parseInt(ex.weight, 10) : null,
           })),
       }));
 
@@ -274,36 +262,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     }
   };
 
-  const handleAddExercise = async () => {
-    if (!session?.access_token || !planDayId) return;
-    if (!addExName.trim()) {
-      Alert.alert('Required', 'Please enter an exercise name.');
-      return;
-    }
-    setAddExSaving(true);
-    try {
-      await activityService.addExerciseToDay(session.access_token, {
-        plan_day_id: planDayId,
-        exercise_name: addExName.trim(),
-        sets: parseInt(addExSets, 10) || 3,
-        reps: parseInt(addExReps, 10) || 10,
-        target_weight: addExWeight ? parseInt(addExWeight, 10) : undefined,
-        rest: addExRest ? parseInt(addExRest, 10) : undefined,
-      });
-      setAddExModalVisible(false);
-      setAddExName('');
-      setAddExSets('3');
-      setAddExReps('10');
-      setAddExWeight('');
-      setAddExRest('');
-      fetchData();
-    } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to add exercise.');
-    } finally {
-      setAddExSaving(false);
-    }
-  };
-
   const handleUpdateExercise = async () => {
     if (!session?.access_token || !editExId) return;
     if (!editExName.trim()) {
@@ -317,8 +275,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         exercise_name: editExName.trim(),
         sets: parseInt(editExSets, 10) || 3,
         reps: parseInt(editExReps, 10) || 10,
-        target_weight: editExWeight ? parseInt(editExWeight, 10) : undefined,
-        rest: editExRest ? parseInt(editExRest, 10) : undefined,
       });
       setEditExModalVisible(false);
       fetchData();
@@ -334,8 +290,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     setEditExName(ex.exercise_name);
     setEditExSets(String(ex.target_sets));
     setEditExReps(String(ex.target_reps));
-    setEditExWeight(ex.target_weight ? String(ex.target_weight) : '');
-    setEditExRest(ex.rest_seconds ? String(ex.rest_seconds) : '');
     setEditExModalVisible(true);
   };
 
@@ -932,7 +886,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                     <View style={styles.setsRow}>
                       {Array.from({ length: ex.target_sets }).map((_, i) => (
                         <View key={i} style={styles.setChip}>
-                          <Text style={styles.setChipText}>Set {i + 1}: {ex.target_weight || '?'}kg × {ex.target_reps}</Text>
+                          <Text style={styles.setChipText}>Set {i + 1}: {ex.target_reps} reps</Text>
                         </View>
                       ))}
                     </View>
@@ -949,15 +903,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                       <Text style={{ fontSize: Typography.xs, color: ex.last_performance.completed ? Colors.teal : Colors.amber }}>
                         {ex.last_performance.sets_completed}/{ex.last_performance.sets_total} sets
                       </Text>
-                      {ex.last_performance.completed && ex.target_weight && ex.target_weight > ex.last_performance.weight && (
-                        <>
-                          <ChevronRight size={14} color={Colors.textSecondary} strokeWidth={2} style={{ marginHorizontal: 2 }} />
-                          <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>
-                            Try {ex.target_weight}kg
-                          </Text>
-                        </>
-                      )}
-                      {ex.last_performance.completed && (!ex.target_weight || ex.target_weight <= ex.last_performance.weight) && (
+                      {ex.last_performance.completed && (
                         <>
                           <ChevronRight size={14} color={Colors.textSecondary} strokeWidth={2} style={{ marginHorizontal: 2 }} />
                           <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>
@@ -978,7 +924,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         {planDayId && (
           <TouchableOpacity
             onPress={onAddExercise}
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.md, marginTop: Spacing.xs, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.accentBlue + '50', borderStyle: 'dashed', backgroundColor: Colors.accentBlue + '08' }}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', paddingVertical: Spacing.md, marginTop: Spacing.xs, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.accentBlue + '50', borderStyle: 'dashed', backgroundColor: Colors.accentBlue + '08' }}
             activeOpacity={0.7}>
             <Text style={{ fontSize: Typography.md, marginRight: Spacing.xs, color: Colors.accentBlue }}>+</Text>
             <Text style={{ fontSize: Typography.sm, color: Colors.accentBlue, fontWeight: Typography.semiBold }}>Add Exercise</Text>
@@ -1126,7 +1072,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                   activeFilter={activeFilter}
                   setActiveFilter={setActiveFilter}
                   onSetupPlan={() => setPlanModalVisible(true)}
-                  onAddExercise={() => setAddExModalVisible(true)}
+                  onAddExercise={() => planDayId && onOpenAddExercise && onOpenAddExercise(planDayId)}
                   onEditExercise={openEditExercise}
                   onLogExercise={(ex) => onOpenWorkoutLog && onOpenWorkoutLog(ex)}
                 />
@@ -1348,69 +1294,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         </TouchableOpacity>
       </Modal>}
 
-      {/* ── Add Exercise Modal ───────────────────────────────── */}
-      {addExModalVisible && <Modal visible={addExModalVisible} animationType="slide" transparent>
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => setAddExModalVisible(false)}
-          style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Add Exercise</Text>
-
-            <Text style={styles.modalLabel}>Exercise name *</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={addExName}
-              onChangeText={setAddExName}
-              placeholder="e.g. Bench Press"
-              placeholderTextColor={Colors.textMuted}
-              autoFocus
-            />
-
-            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalLabel}>Sets</Text>
-                <TextInput style={styles.modalInput} value={addExSets} onChangeText={setAddExSets} keyboardType="number-pad" placeholder="3" placeholderTextColor={Colors.textMuted} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalLabel}>Reps</Text>
-                <TextInput style={styles.modalInput} value={addExReps} onChangeText={setAddExReps} keyboardType="number-pad" placeholder="10" placeholderTextColor={Colors.textMuted} />
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalLabel}>Weight (kg)</Text>
-                <TextInput style={styles.modalInput} value={addExWeight} onChangeText={setAddExWeight} keyboardType="number-pad" placeholder="optional" placeholderTextColor={Colors.textMuted} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalLabel}>Rest (sec)</Text>
-                <TextInput style={styles.modalInput} value={addExRest} onChangeText={setAddExRest} keyboardType="number-pad" placeholder="optional" placeholderTextColor={Colors.textMuted} />
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
-              <TouchableOpacity
-                onPress={() => setAddExModalVisible(false)}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleAddExercise}
-                disabled={addExSaving}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue, opacity: addExSaving ? 0.6 : 1 }}>
-                {addExSaving ? (
-                  <ActivityIndicator size="small" color={Colors.bg} />
-                ) : (
-                  <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Add Exercise</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>}
-
       {/* ── Edit Exercise Modal ───────────────────────────────── */}
       {editExModalVisible && <Modal visible={editExModalVisible} animationType="slide" transparent>
         <TouchableOpacity
@@ -1438,17 +1321,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalLabel}>Reps</Text>
                 <TextInput style={styles.modalInput} value={editExReps} onChangeText={setEditExReps} keyboardType="number-pad" placeholder="10" placeholderTextColor={Colors.textMuted} />
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalLabel}>Weight (kg)</Text>
-                <TextInput style={styles.modalInput} value={editExWeight} onChangeText={setEditExWeight} keyboardType="number-pad" placeholder="optional" placeholderTextColor={Colors.textMuted} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalLabel}>Rest (sec)</Text>
-                <TextInput style={styles.modalInput} value={editExRest} onChangeText={setEditExRest} keyboardType="number-pad" placeholder="optional" placeholderTextColor={Colors.textMuted} />
               </View>
             </View>
 

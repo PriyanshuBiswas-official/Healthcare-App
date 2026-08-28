@@ -9,15 +9,20 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Linking,
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BackButton } from '../../components/SharedComponents';
+import { BackButton, GlassCardView } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import * as activityService from '../../services/activityService';
 import { WorkoutSet } from '../../types/activity';
 import { posthog } from '../../config/posthog';
+import { PREDEFINED_EXERCISES } from '../../data/predefinedExercises';
+import { getMockProgressData } from '../../data/mockProgressData';
+import ProgressLineChart from '../../components/ProgressLineChart';
+import { ChevronRight, Play, Info } from 'lucide-react-native';
 
 interface SetEntry {
   set_no: number;
@@ -30,7 +35,9 @@ interface WorkoutLogExercise {
   exercise_name: string;
   target_sets: number;
   target_reps: number;
-  target_weight: number | null;
+  equipment: string | null;
+  muscle_group: string | null;
+  exercise_type: string | null;
   completed: boolean;
   logged_sets: WorkoutSet[];
   last_performance: {
@@ -54,14 +61,21 @@ export default function WorkoutLogScreen({
   const insets = useSafeAreaInsets();
   const isCompleted = exercise.completed;
   const loggedSets = exercise.logged_sets || [];
+  const colors = theme.colors;
+
+  // Look up exercise in predefined list for instructions
+  const predefined = PREDEFINED_EXERCISES.find(
+    e => e.name.toLowerCase() === exercise.exercise_name.toLowerCase()
+  );
+
+  // Progress chart data (hardcoded for now)
+  const progressData = getMockProgressData(exercise.exercise_name);
 
   const suggestedWeight = exercise.last_performance
     ? exercise.last_performance.completed
-      ? (exercise.target_weight && exercise.target_weight > exercise.last_performance.weight
-          ? exercise.target_weight
-          : exercise.last_performance.weight + 2.5)
+      ? exercise.last_performance.weight + 2.5
       : exercise.last_performance.weight
-    : exercise.target_weight || 0;
+    : 0;
 
   const suggestedReps = exercise.last_performance
     ? exercise.last_performance.completed
@@ -69,7 +83,6 @@ export default function WorkoutLogScreen({
       : exercise.last_performance.reps
     : exercise.target_reps;
 
-  // In logging mode: pre-fill with suggestions. In edit mode: pre-fill with logged values.
   const [sets, setSets] = useState<SetEntry[]>(() => {
     if (isCompleted && loggedSets.length > 0) {
       return loggedSets.map(s => ({
@@ -88,12 +101,12 @@ export default function WorkoutLogScreen({
   const [editingSetId, setEditingSetId] = useState<number | null>(null);
   const [editWeight, setEditWeight] = useState('');
   const [editReps, setEditReps] = useState('');
+  const [showInstructions, setShowInstructions] = useState(false);
 
   const updateSet = (index: number, field: 'weight' | 'reps', value: string) => {
     setSets(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s));
   };
 
-  // ── Save new sets (logging mode) ─────────────────────
   const handleSave = async () => {
     if (!session?.access_token) return;
     setSaving(true);
@@ -128,7 +141,6 @@ export default function WorkoutLogScreen({
     }
   };
 
-  // ── Edit an existing set (edit mode) ─────────────────
   const handleEditSave = async (setId: number) => {
     if (!session?.access_token) return;
     const w = parseFloat(editWeight) || 0;
@@ -152,92 +164,122 @@ export default function WorkoutLogScreen({
     setEditReps(String(set.reps || ''));
   };
 
-  const styles = useStyles((theme: any) => ({
-    root: { flex: 1, backgroundColor: theme.colors.bg },
+  const styles = useStyles((c: any) => ({
+    root: { flex: 1, backgroundColor: c.colors.bg },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: Spacing.base,
-      paddingTop: insets.top + Spacing.xl,
+      paddingTop: insets.top + Spacing.lg,
       paddingBottom: Spacing.base,
       borderBottomWidth: 1,
-      borderBottomColor: theme.colors.bgCardBorder,
+      borderBottomColor: c.colors.bgCardBorder,
     },
-    headerCenter: {
-      flex: 1,
-      alignItems: 'center',
-    },
-
-    headerTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
-    headerSub: { fontSize: Typography.xs, color: theme.colors.textSecondary, marginTop: 2 },
+    headerCenter: { flex: 1, alignItems: 'center' },
+    headerTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: c.colors.textPrimary },
+    headerSub: { fontSize: Typography.xs, color: c.colors.textSecondary, marginTop: 2 },
     completedBadge: {
-      backgroundColor: theme.colors.teal + '20',
+      backgroundColor: c.colors.teal + '20',
       borderRadius: Radius.sm,
       paddingHorizontal: Spacing.sm,
       paddingVertical: Spacing.xs,
     },
-    completedBadgeText: { fontSize: Typography.xs, color: theme.colors.teal, fontWeight: Typography.bold },
+    completedBadgeText: { fontSize: Typography.xs, color: c.colors.teal, fontWeight: Typography.bold },
+    scroll: { flex: 1 },
+    scrollContent: { padding: Spacing.base, paddingBottom: 100 },
+
+    // ── Last Session Hint ──
     lastHint: {
-      marginHorizontal: Spacing.base,
-      marginTop: Spacing.md,
+      marginBottom: Spacing.base,
       padding: Spacing.md,
-      backgroundColor: theme.colors.accentBlue + '10',
+      backgroundColor: c.colors.accentBlue + '10',
       borderRadius: Radius.md,
       borderWidth: 1,
-      borderColor: theme.colors.accentBlue + '30',
+      borderColor: c.colors.accentBlue + '30',
     },
-    lastHintTitle: { fontSize: Typography.xs, fontWeight: Typography.semiBold, color: theme.colors.accentBlue, marginBottom: 4 },
-    lastHintText: { fontSize: Typography.sm, color: theme.colors.textSecondary },
-    suggestionText: { fontSize: Typography.sm, color: theme.colors.teal, fontWeight: Typography.semiBold, marginTop: 4 },
-    scroll: { flex: 1 },
-    scrollContent: { padding: Spacing.base },
+    lastHintTitle: { fontSize: Typography.xs, fontWeight: Typography.semiBold, color: c.colors.accentBlue, marginBottom: 4 },
+    lastHintText: { fontSize: Typography.sm, color: c.colors.textSecondary },
+    suggestionText: { fontSize: Typography.sm, color: c.colors.teal, fontWeight: Typography.semiBold, marginTop: 4 },
+
+    // ── How to Perform ──
+    howToCard: { marginBottom: Spacing.base, padding: Spacing.base },
+    howToHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.sm },
+    howToTitle: { fontSize: Typography.base, fontWeight: Typography.bold, color: c.colors.textPrimary },
+    howToTags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md },
+    howToTag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.colors.accentBlue + '15',
+      borderRadius: Radius.full,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.xs,
+      gap: 4,
+    },
+    howToTagText: { fontSize: Typography.xs, color: c.colors.accentBlue, fontWeight: Typography.semiBold },
+    tutorialBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.colors.teal + '15',
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      marginBottom: Spacing.md,
+      gap: Spacing.sm,
+    },
+    tutorialBtnText: { fontSize: Typography.sm, color: c.colors.teal, fontWeight: Typography.semiBold },
+    instructionsList: { gap: Spacing.sm },
+    instructionRow: { flexDirection: 'row', gap: Spacing.sm },
+    instructionNum: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: c.colors.teal + '20',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 2,
+    },
+    instructionNumText: { fontSize: Typography.xs, fontWeight: Typography.bold, color: c.colors.teal },
+    instructionText: { flex: 1, fontSize: Typography.sm, color: c.colors.textSecondary, lineHeight: 20 },
+
+    // ── Sets Table ──
     completedBanner: {
-      backgroundColor: theme.colors.teal + '15',
+      backgroundColor: c.colors.teal + '15',
       borderRadius: Radius.md,
       padding: Spacing.md,
       marginBottom: Spacing.base,
       borderWidth: 1,
-      borderColor: theme.colors.teal + '30',
+      borderColor: c.colors.teal + '30',
     },
-    completedBannerText: { fontSize: Typography.sm, color: theme.colors.teal, fontWeight: Typography.semiBold, textAlign: 'center' },
-    setRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: Spacing.sm,
-    },
-    setRowEditing: {
-      backgroundColor: theme.colors.accentBlue + '10',
-      borderRadius: Radius.sm,
-      padding: Spacing.xs,
-      marginBottom: Spacing.sm,
-    },
+    completedBannerText: { fontSize: Typography.sm, color: c.colors.teal, fontWeight: Typography.semiBold, textAlign: 'center' },
+    setRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm },
+    setRowEditing: { backgroundColor: c.colors.accentBlue + '10', borderRadius: Radius.sm, padding: Spacing.xs, marginBottom: Spacing.sm },
     setRowHeader: { marginBottom: Spacing.md },
-    setHeader: { fontSize: Typography.xs, color: theme.colors.textSecondary, fontWeight: Typography.semiBold, textAlign: 'center' },
+    setHeader: { fontSize: Typography.xs, color: c.colors.textSecondary, fontWeight: Typography.semiBold, textAlign: 'center' },
     setNum: { alignItems: 'center', justifyContent: 'center' },
-    setNumText: { fontSize: Typography.sm, fontWeight: Typography.bold, color: theme.colors.accentBlue },
+    setNumText: { fontSize: Typography.sm, fontWeight: Typography.bold, color: c.colors.accentBlue },
     setInput: {
-      backgroundColor: theme.colors.bgCardSolid,
-      color: theme.colors.textPrimary,
+      backgroundColor: c.colors.bgCardSolid,
+      color: c.colors.textPrimary,
       borderRadius: Radius.sm,
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.sm,
       fontSize: Typography.sm,
       textAlign: 'center',
       borderWidth: 1,
-      borderColor: theme.colors.bgCardBorder,
+      borderColor: c.colors.bgCardBorder,
     },
     setValue: {
-      backgroundColor: theme.colors.bgCardSolid,
+      backgroundColor: c.colors.bgCardSolid,
       borderRadius: Radius.sm,
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.sm,
       alignItems: 'center',
     },
-    setValueText: { fontSize: Typography.sm, color: theme.colors.textPrimary },
+    setValueText: { fontSize: Typography.sm, color: c.colors.textPrimary },
     editBtn: { padding: Spacing.xs },
     editBtnText: { fontSize: Typography.sm },
     editSaveBtn: {
-      backgroundColor: theme.colors.teal,
+      backgroundColor: c.colors.teal,
       borderRadius: Radius.sm,
       width: 28,
       height: 28,
@@ -245,24 +287,31 @@ export default function WorkoutLogScreen({
       justifyContent: 'center',
       marginRight: 4,
     },
-    editSaveBtnText: { color: theme.colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold },
+    editSaveBtnText: { color: c.colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold },
     editCancelBtn: {
-      backgroundColor: theme.colors.bgCardBorder,
+      backgroundColor: c.colors.bgCardBorder,
       borderRadius: Radius.sm,
       width: 28,
       height: 28,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    editCancelBtnText: { color: theme.colors.textSecondary, fontSize: Typography.sm },
+    editCancelBtnText: { color: c.colors.textSecondary, fontSize: Typography.sm },
+
+    // ── Footer ──
     footer: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
       padding: Spacing.base,
       paddingBottom: Platform.OS === 'ios' ? 40 : Spacing.base,
+      backgroundColor: c.colors.bg,
       borderTopWidth: 1,
-      borderTopColor: theme.colors.bgCardBorder,
+      borderTopColor: c.colors.bgCardBorder,
     },
     saveBtn: {
-      backgroundColor: theme.colors.teal,
+      backgroundColor: c.colors.teal,
       paddingVertical: Spacing.md,
       borderRadius: Radius.md,
       alignItems: 'center',
@@ -273,48 +322,115 @@ export default function WorkoutLogScreen({
     <View style={styles.root}>
       {/* Header */}
       <View style={styles.header}>
-        <BackButton onPress={onBack} color={theme.colors.textPrimary} />
+        <BackButton onPress={onBack} color={colors.textPrimary} />
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>{exercise.exercise_name}</Text>
-          <Text style={styles.headerSub}>
-            Target: {exercise.target_sets}×{exercise.target_reps}
-            {exercise.target_weight ? ` @ ${exercise.target_weight}kg` : ''}
-          </Text>
+          {exercise.exercise_type && (
+            <Text style={styles.headerSub}>{exercise.exercise_type}</Text>
+          )}
         </View>
         {isCompleted ? (
           <View style={styles.completedBadge}>
-            <Text style={styles.completedBadgeText}>✅ Done</Text>
+            <Text style={styles.completedBadgeText}>Done</Text>
           </View>
         ) : <View style={{ width: 44 }} />}
       </View>
 
-      {/* Last Performance Hint — only when not completed */}
-      {!isCompleted && exercise.last_performance && (
-        <View style={styles.lastHint}>
-          <Text style={styles.lastHintTitle}>Last Session</Text>
-          <Text style={styles.lastHintText}>
-            {exercise.last_performance.weight}kg × {exercise.last_performance.reps} ·{' '}
-            {exercise.last_performance.sets_completed}/{exercise.last_performance.sets_total} sets
-            {exercise.last_performance.completed ? ' ✓' : ''}
-          </Text>
-          {exercise.last_performance.completed && (
-            <Text style={styles.suggestionText}>
-              Suggested: {Math.round(suggestedWeight * 10) / 10}kg
-            </Text>
-          )}
-        </View>
-      )}
-
-      {/* Sets */}
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        {/* ── Progress Chart ── */}
+        {progressData.length > 0 && (
+          <ProgressLineChart data={progressData} />
+        )}
+
+        {/* ── How to Perform ── */}
+        {predefined && (
+          <GlassCardView style={styles.howToCard}>
+            <View style={styles.howToHeader}>
+              <Text style={styles.howToTitle}>How to Perform</Text>
+              <TouchableOpacity
+                onPress={() => setShowInstructions(!showInstructions)}
+                activeOpacity={0.6}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+              >
+                <Text style={{ fontSize: Typography.xs, color: colors.textSecondary }}>
+                  {showInstructions ? 'Hide' : 'Show'}
+                </Text>
+                <ChevronRight
+                  size={14}
+                  color={colors.textSecondary}
+                  style={{ transform: [{ rotate: showInstructions ? '90deg' : '0deg' }] }}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Tags */}
+            <View style={styles.howToTags}>
+              {exercise.muscle_group && (
+                <View style={styles.howToTag}>
+                  <Info size={12} color={colors.accentBlue} />
+                  <Text style={styles.howToTagText}>{exercise.muscle_group}</Text>
+                </View>
+              )}
+              {exercise.equipment && exercise.equipment !== 'None' && (
+                <View style={[styles.howToTag, { backgroundColor: colors.pink + '15' }]}>
+                  <Text style={[styles.howToTagText, { color: colors.pink }]}>{exercise.equipment}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Video Tutorial Button */}
+            {predefined.videoUrl && (
+              <TouchableOpacity
+                style={styles.tutorialBtn}
+                onPress={() => Linking.openURL(predefined.videoUrl!)}
+                activeOpacity={0.7}
+              >
+                <Play size={16} color={colors.teal} fill={colors.teal} />
+                <Text style={styles.tutorialBtnText}>Watch Tutorial</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Instructions */}
+            {showInstructions && predefined.instructions && (
+              <View style={styles.instructionsList}>
+                {predefined.instructions.map((step, i) => (
+                  <View key={i} style={styles.instructionRow}>
+                    <View style={styles.instructionNum}>
+                      <Text style={styles.instructionNumText}>{i + 1}</Text>
+                    </View>
+                    <Text style={styles.instructionText}>{step}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </GlassCardView>
+        )}
+
+        {/* ── Last Performance Hint ── */}
+        {!isCompleted && exercise.last_performance && (
+          <View style={styles.lastHint}>
+            <Text style={styles.lastHintTitle}>Last Session</Text>
+            <Text style={styles.lastHintText}>
+              {exercise.last_performance.weight}kg × {exercise.last_performance.reps} ·{' '}
+              {exercise.last_performance.sets_completed}/{exercise.last_performance.sets_total} sets
+              {exercise.last_performance.completed ? ' ✓' : ''}
+            </Text>
+            {exercise.last_performance.completed && (
+              <Text style={styles.suggestionText}>
+                Suggested: {Math.round(suggestedWeight * 10) / 10}kg
+              </Text>
+            )}
+          </View>
+        )}
+
+        {/* ── Sets Table ── */}
+        <View style={{ marginTop: Spacing.xl }}>
         {isCompleted ? (
           <>
-            {/* Completed banner */}
             <View style={styles.completedBanner}>
               <Text style={styles.completedBannerText}>All sets logged for today. Tap a set to edit.</Text>
             </View>
 
-            {/* Header row for edit mode */}
             <View style={[styles.setRow, styles.setRowHeader]}>
               <Text style={[styles.setHeader, { width: 50 }]}>Set</Text>
               <Text style={[styles.setHeader, { flex: 1, textAlign: 'center' }]}>Weight (kg)</Text>
@@ -337,7 +453,7 @@ export default function WorkoutLogScreen({
                         onChangeText={setEditWeight}
                         keyboardType="decimal-pad"
                         placeholder="0"
-                        placeholderTextColor={theme.colors.textMuted}
+                        placeholderTextColor={colors.textMuted}
                       />
                     ) : (
                       <View style={styles.setValue}>
@@ -353,7 +469,7 @@ export default function WorkoutLogScreen({
                         onChangeText={setEditReps}
                         keyboardType="number-pad"
                         placeholder="0"
-                        placeholderTextColor={theme.colors.textMuted}
+                        placeholderTextColor={colors.textMuted}
                       />
                     ) : (
                       <View style={styles.setValue}>
@@ -383,7 +499,6 @@ export default function WorkoutLogScreen({
           </>
         ) : (
           <>
-            {/* Header row for logging mode */}
             <View style={[styles.setRow, styles.setRowHeader]}>
               <Text style={[styles.setHeader, { width: 50 }]}>Set</Text>
               <Text style={[styles.setHeader, { flex: 1, textAlign: 'center' }]}>Weight (kg)</Text>
@@ -402,7 +517,7 @@ export default function WorkoutLogScreen({
                     onChangeText={(v) => updateSet(i, 'weight', v)}
                     keyboardType="decimal-pad"
                     placeholder="0"
-                    placeholderTextColor={theme.colors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                   />
                 </View>
                 <View style={{ flex: 1, paddingHorizontal: 6 }}>
@@ -412,13 +527,14 @@ export default function WorkoutLogScreen({
                     onChangeText={(v) => updateSet(i, 'reps', v)}
                     keyboardType="number-pad"
                     placeholder="0"
-                    placeholderTextColor={theme.colors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                   />
                 </View>
               </View>
             ))}
           </>
         )}
+        </View>
       </ScrollView>
 
       {/* Save / Done Button */}
@@ -426,9 +542,9 @@ export default function WorkoutLogScreen({
         {isCompleted ? (
           <TouchableOpacity
             onPress={onBack}
-            style={[styles.saveBtn, { backgroundColor: theme.colors.teal }]}
+            style={[styles.saveBtn, { backgroundColor: colors.teal }]}
             activeOpacity={0.8}>
-            <Text style={{ color: theme.colors.bg, fontWeight: Typography.bold, fontSize: Typography.base }}>
+            <Text style={{ color: colors.bg, fontWeight: Typography.bold, fontSize: Typography.base }}>
               Done
             </Text>
           </TouchableOpacity>
@@ -439,9 +555,9 @@ export default function WorkoutLogScreen({
             style={[styles.saveBtn, { opacity: saving ? 0.6 : 1 }]}
             activeOpacity={0.8}>
             {saving ? (
-              <ActivityIndicator size="small" color={theme.colors.bg} />
+              <ActivityIndicator size="small" color={colors.bg} />
             ) : (
-              <Text style={{ color: theme.colors.bg, fontWeight: Typography.bold, fontSize: Typography.base }}>
+              <Text style={{ color: colors.bg, fontWeight: Typography.bold, fontSize: Typography.base }}>
                 Save Sets
               </Text>
             )}

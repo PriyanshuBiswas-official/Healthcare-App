@@ -21,8 +21,9 @@ export interface TodayExercise {
   exercise_order: number;
   target_sets: number;
   target_reps: number;
-  target_weight: number | null;
-  rest_seconds: number | null;
+  equipment: string | null;
+  muscle_group: string | null;
+  exercise_type: string | null;
   logged_sets: WorkoutSet[];
   last_performance: {
     weight: number;
@@ -90,4 +91,65 @@ export interface WorkoutPlanDay {
 export interface WorkoutPlanDays {
   plan_name: string | null;
   days: WorkoutPlanDay[];
+}
+
+// ── Exercise metadata types ─────────────────────────────────
+
+export const EQUIPMENT_OPTIONS = [
+  'None',
+  'Barbell',
+  'Dumbbell',
+  'Kettlebell',
+  'Machine',
+  'Plate',
+  'Resistance Band',
+  'Suspension Band',
+  'Other',
+] as const;
+
+export type ExerciseEquipment = typeof EQUIPMENT_OPTIONS[number];
+
+export const MUSCLE_GROUP_OPTIONS = [
+  'Abdominals',
+  'Abductors',
+  'Adductors',
+  'Biceps',
+  'Calves',
+  'Cardio',
+  'Chest',
+  'Forearms',
+  'Full Body',
+  'Glutes',
+  'Hamstrings',
+  'Lats',
+  'Lower Back',
+  'Neck',
+  'Shoulders',
+  'Traps',
+  'Triceps',
+] as const;
+
+export type MuscleGroup = typeof MUSCLE_GROUP_OPTIONS[number];
+
+export const EXERCISE_TYPE_OPTIONS = [
+  'Weight & Reps',
+  'Bodyweight Reps',
+  'Weighted Bodyweight',
+  'Assisted Bodyweight',
+  'Duration',
+  'Duration & Weight',
+  'Distance & Duration',
+  'Weight & Distance',
+] as const;
+
+export type ExerciseType = typeof EXERCISE_TYPE_OPTIONS[number];
+
+export interface PredefinedExercise {
+  id: string;
+  name: string;
+  equipment: ExerciseEquipment;
+  muscle_group: MuscleGroup;
+  exercise_type: ExerciseType;
+  instructions?: string[];
+  videoUrl?: string;
 }
