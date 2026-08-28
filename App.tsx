@@ -12,6 +12,9 @@ import ProfileScreen from './src/screens/profile/ProfileScreen';
 import NotificationsScreen from './src/screens/notifications/NotificationsScreen';
 import ProfileSetupScreen from './src/screens/profile/ProfileSetupScreen';
 import WorkoutLogScreen from './src/screens/fitness/WorkoutLogScreen';
+import AddExerciseScreen from './src/screens/fitness/AddExerciseScreen';
+import PredefinedExerciseScreen from './src/screens/fitness/PredefinedExerciseScreen';
+import ExerciseDetailsScreen from './src/screens/fitness/ExerciseDetailsScreen';
 import HealthLogScreen, { HealthLogDraft } from './src/screens/health/HealthLogScreen';
 import PartnerHealthReportScreen from './src/screens/relationships/PartnerHealthReportScreen';
 import RelationshipsScreen from './src/screens/relationships/RelationshipsScreen';
@@ -33,14 +36,8 @@ import OfflineBanner from './src/components/OfflineBanner';
 import { ArrowLeft, Camera, Image as ImageIcon, X } from 'lucide-react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import type { ChatAttachment } from './src/services/aiApi';
-import { PostHogProvider } from 'posthog-react-native';
-import type { ReactNode } from 'react';
-import { posthog } from './src/config/posthog';
+import { PostHogBoundary } from './src/providers/PostHogBoundary';
 const Stack = createNativeStackNavigator();
-
-function PostHogBoundary({ children }: { children: ReactNode }) {
-  return posthog ? <PostHogProvider client={posthog}>{children}</PostHogProvider> : <>{children}</>;
-}
 
 type RootStackParamList = {
   Main: Record<string, any>;
@@ -48,13 +45,16 @@ type RootStackParamList = {
   ProfileSetup: undefined;
   Notifications: undefined;
   WorkoutLog: { exercise: any } | undefined;
+  AddExercise: { planDayId: number } | undefined;
+  PredefinedExercise: { planDayId: number } | undefined;
+  ExerciseDetails: { planDayId: number; exerciseName?: string; equipment?: string; muscleGroup?: string; otherMuscles?: string[]; exerciseType?: string } | undefined;
   HealthLog: undefined;
   PartnerReport: { partnerId: string } | undefined;
   Relationships: undefined;
 };
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
-const OVERLAY_TABS: TabName[] = ['Profile', 'Notifications', 'WorkoutLog', 'HealthLog', 'PartnerReport', 'Relationships'];
+const OVERLAY_TABS: string[] = ['Profile', 'Notifications', 'WorkoutLog', 'AddExercise', 'PredefinedExercise', 'ExerciseDetails', 'HealthLog', 'PartnerReport', 'Relationships'];
 
 const OCR_PROMPT = `Please analyze this medical document image. Extract all visible text and provide:
 1. A clear transcription of all text found
@@ -211,6 +211,9 @@ const MemoizedProfileScreen = React.memo(ProfileScreen);
 const MemoizedProfileSetupScreen = React.memo(ProfileSetupScreen);
 const MemoizedNotificationsScreen = React.memo(NotificationsScreen);
 const MemoizedWorkoutLogScreen = React.memo(WorkoutLogScreen);
+const MemoizedAddExerciseScreen = React.memo(AddExerciseScreen);
+const MemoizedPredefinedExerciseScreen = React.memo(PredefinedExerciseScreen);
+const MemoizedExerciseDetailsScreen = React.memo(ExerciseDetailsScreen);
 const MemoizedHealthLogScreen = React.memo(HealthLogScreen);
 const MemoizedPartnerReportScreen = React.memo(PartnerHealthReportScreen);
 const MemoizedRelationshipsScreen = React.memo(RelationshipsScreen);
@@ -245,13 +248,13 @@ function TabNavigator({ route }: any) {
   } = route.params;
 
   return (
-    <PostHogBoundary>
     <Tab.Navigator
       tabBar={(props) => <TabBar {...props} />}
       screenOptions={{ headerShown: false, freezeOnBlur: true }}
       initialRouteName="Home">
       <Tab.Screen name="Home">
         {(props) => (
+          <PostHogBoundary>
           <MemoizedDashboard
             {...props}
             onProfilePress={openProfile}
@@ -270,10 +273,12 @@ function TabNavigator({ route }: any) {
               openAI('Home', true);
             }}
           />
+          </PostHogBoundary>
         )}
       </Tab.Screen>
       <Tab.Screen name="Health">
         {(props) => (
+          <PostHogBoundary>
           <MemoizedHealthScreen
             {...props}
             onProfilePress={openProfile}
@@ -281,10 +286,12 @@ function TabNavigator({ route }: any) {
             onOpenHealthLog={openHealthLog}
             lastHealthLog={lastHealthLog}
           />
+          </PostHogBoundary>
         )}
       </Tab.Screen>
       <Tab.Screen name="AI">
         {(props) => (
+          <PostHogBoundary>
           <MemoizedAIAdvisorScreen
             {...props}
             onProfilePress={openProfile}
@@ -292,30 +299,35 @@ function TabNavigator({ route }: any) {
             onOpenChat={() => openAI(undefined, true, '')}
             onOpenOCR={openOCR}
           />
+          </PostHogBoundary>
         )}
       </Tab.Screen>
       <Tab.Screen name="Diet">
         {(props) => (
+          <PostHogBoundary>
           <MemoizedCalorieScreen
             {...props}
             onProfilePress={openProfile}
             onNotificationsPress={openNotifications}
           />
+          </PostHogBoundary>
         )}
       </Tab.Screen>
       <Tab.Screen name="Activity">
         {(props) => (
+          <PostHogBoundary>
           <MemoizedFitnessScreen
             {...props}
             onProfilePress={openProfile}
             onNotificationsPress={openNotifications}
             onOpenAI={openAI}
             onOpenWorkoutLog={(ex: any) => props.navigation.navigate('WorkoutLog', { exercise: ex })}
+            onOpenAddExercise={(planDayId: number) => props.navigation.navigate('AddExercise', { planDayId })}
           />
+          </PostHogBoundary>
         )}
       </Tab.Screen>
     </Tab.Navigator>
-    </PostHogBoundary>
   );
 }
 
@@ -437,13 +449,14 @@ function AppShell() {
   const openRelationships = useCallback(() => navRef.current?.navigate('Relationships'), []);
   const openAppointments = useCallback(() => navRef.current?.navigate('Profile', { initialSection: 'reminders-appointments' }), []);
   const openHealthLog = useCallback(() => navRef.current?.navigate('HealthLog'), []);
+  const openAddExercise = useCallback((planDayId: number) => navRef.current?.navigate('AddExercise', { planDayId }), []);
 
   // Sync force hidden based on route and ai chat overlay visibility
   const handleStateChange = () => {
     if (!navRef.current) return;
     const currentRoute = navRef.current.getCurrentRoute();
     const currentName = currentRoute?.name;
-    const isOverlay = ['Profile', 'Notifications', 'WorkoutLog', 'HealthLog', 'PartnerReport', 'Relationships', 'ProfileSetup'].includes(currentName);
+    const isOverlay = ['Profile', 'Notifications', 'WorkoutLog', 'AddExercise', 'PredefinedExercise', 'ExerciseDetails', 'HealthLog', 'PartnerReport', 'Relationships', 'ProfileSetup'].includes(currentName);
     setForceHidden(aiChatVisible || isOverlay);
   };
 
@@ -503,6 +516,43 @@ function AppShell() {
                 <MemoizedWorkoutLogScreen 
                   exercise={props.route.params?.exercise} 
                   onBack={() => props.navigation.goBack()} 
+                />
+              )}
+            </RootStack.Screen>
+            <RootStack.Screen name="AddExercise">
+              {(props) => (
+                <MemoizedAddExerciseScreen
+                  onBack={() => props.navigation.goBack()}
+                  onSelectPredefined={() => props.navigation.navigate('PredefinedExercise', { planDayId: props.route.params?.planDayId })}
+                  onCreateCustom={() => props.navigation.navigate('ExerciseDetails', { planDayId: props.route.params?.planDayId })}
+                />
+              )}
+            </RootStack.Screen>
+            <RootStack.Screen name="PredefinedExercise">
+              {(props) => (
+                <MemoizedPredefinedExerciseScreen
+                  onSelect={(exercise) => props.navigation.navigate('ExerciseDetails', {
+                    planDayId: props.route.params?.planDayId,
+                    exerciseName: exercise.name,
+                    equipment: exercise.equipment,
+                    muscleGroup: exercise.muscle_group,
+                    exerciseType: exercise.exercise_type,
+                  })}
+                  onBack={() => props.navigation.goBack()}
+                />
+              )}
+            </RootStack.Screen>
+            <RootStack.Screen name="ExerciseDetails">
+              {(props) => (
+                <MemoizedExerciseDetailsScreen
+                  params={{
+                    planDayId: props.route.params?.planDayId || 0,
+                    exerciseName: props.route.params?.exerciseName,
+                    equipment: props.route.params?.equipment as any,
+                    muscleGroup: props.route.params?.muscleGroup as any,
+                    exerciseType: props.route.params?.exerciseType as any,
+                  }}
+                  onBack={() => props.navigation.goBack()}
                 />
               )}
             </RootStack.Screen>
@@ -670,9 +720,7 @@ const RootComponent = () => {
   if (!session?.user) {
     return (
       <NavigationContainer>
-        <PostHogBoundary>
-          <AuthStack />
-        </PostHogBoundary>
+        <AuthStack />
       </NavigationContainer>
     );
   }
@@ -680,11 +728,11 @@ const RootComponent = () => {
   if (hasProfile === false) {
     return (
       <NavigationContainer>
-        <PostHogBoundary>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-          </Stack.Navigator>
-        </PostHogBoundary>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Onboarding">
+            {() => <PostHogBoundary><OnboardingScreen /></PostHogBoundary>}
+          </Stack.Screen>
+        </Stack.Navigator>
       </NavigationContainer>
     );
   }

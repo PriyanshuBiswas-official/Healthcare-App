@@ -181,22 +181,18 @@ export default function AIAdvisorScreen({
     root: { flex: 1, backgroundColor: theme.colors.bg },
     header: {
       flexDirection: 'row',
+      justifyContent: 'space-between',
       alignItems: 'center',
-      padding: Spacing.base,
-      paddingTop: insets.top + Spacing.xl,
+      marginBottom: Spacing.xl,
     },
-    headerTextWrap: {
-      flex: 1,
-    },
-    greeting: { fontSize: Typography.xl, fontWeight: Typography.bold, color: theme.colors.textPrimary },
-    subGreeting: { fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: 2 },
+    greeting: { fontSize: Typography.xxl, fontWeight: Typography.extraBold, color: theme.colors.textPrimary, letterSpacing: -0.5 },
     headerActions: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: Spacing.sm,
     },
 
-    scroll: { padding: Spacing.base },
+    scroll: { paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.xl },
 
     searchBar: {
       flexDirection: 'row',
@@ -353,10 +349,7 @@ export default function AIAdvisorScreen({
           
           {/* Header — scrolls with content */}
           <View style={styles.header}>
-            <View style={styles.headerTextWrap}>
-              <Text style={styles.greeting}>AI Health Advisor</Text>
-              <Text style={styles.subGreeting}>Your personalized health hub</Text>
-            </View>
+            <Text style={styles.greeting}>AI Health Advisor</Text>
             <View style={styles.headerActions}>
               <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
               <ProfileAvatarButton

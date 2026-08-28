@@ -34,7 +34,7 @@ import {
   AIHealthInsightsSection,
 } from './HealthCommonSections';
 import { CyclePhaseVisualizer } from '../../components/CyclePhaseVisualizer';
-import { Droplets, Flower2, Sparkles, Moon, ChevronRight } from 'lucide-react-native';
+import { Droplets, Flower2, Sparkles, Moon, ChevronRight, Check, Activity, Scale } from 'lucide-react-native';
 import { useAuth } from '../../providers/AuthProvider';
 import { usePreferences } from '../../providers/PreferencesContext';
 import { HealthLogDraft } from './HealthLogScreen';
@@ -518,7 +518,6 @@ export default function HealthScreenFemale({
   const { hideVitals } = usePreferences();
   const { unreadCount } = useNotifications();
   const [activeTab, setActiveTab] = useState('Overview');
-  const [selectedPhase, setSelectedPhase] = useState('Luteal');
   const [hasTodayLog, setHasTodayLog] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -1044,14 +1043,67 @@ export default function HealthScreenFemale({
                 </View>
               </View>
 
-              <View style={s.phaseBtnRow}>
-                <QuickActionButton icon={<Droplets size={20} color={theme.colors.pink} />} label="Menstrual" color={theme.colors.pink} active={selectedPhase === 'Menstrual'} onPress={() => setSelectedPhase('Menstrual')} />
-                <View style={s.phaseGap} />
-                <QuickActionButton icon={<Flower2 size={20} color={theme.colors.pink} />} label="Follicular" color={theme.colors.pink + 'AA'} active={selectedPhase === 'Follicular'} onPress={() => setSelectedPhase('Follicular')} />
-                <View style={s.phaseGap} />
-                <QuickActionButton icon={<Sparkles size={20} color={theme.colors.amber} />} label="Ovulation" color={theme.colors.amber} active={selectedPhase === 'Ovulation'} onPress={() => setSelectedPhase('Ovulation')} />
-                <View style={s.phaseGap} />
-                <QuickActionButton icon={<Moon size={20} color={theme.colors.accentBlue} />} label="Luteal" color={theme.colors.accentBlue} active={selectedPhase === 'Luteal'} onPress={() => setSelectedPhase('Luteal')} />
+              <View style={{ marginTop: Spacing.md }}>
+                <View style={{ marginBottom: Spacing.md }}>
+                  <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: theme.colors.textPrimary }}>Logged This Cycle</Text>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <View style={{ alignItems: 'center', flex: 1 }}>
+                    <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.pink + '20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: theme.colors.pink + '30' }}>
+                      <Droplets size={22} color={theme.colors.pink} />
+                      {periodLogs.length > 0 && (
+                        <View style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.bgCard }}>
+                          <Check size={8} color={theme.colors.white} strokeWidth={3} />
+                        </View>
+                      )}
+                    </View>
+                    <Text style={{ fontSize: 10, color: theme.colors.textSecondary, marginTop: 4 }}>Period</Text>
+                  </View>
+                  <View style={{ alignItems: 'center', flex: 1 }}>
+                    <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.amber + '20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: theme.colors.amber + '30' }}>
+                      <Activity size={22} color={theme.colors.amber} />
+                      {symptomsLogs.length > 0 && (
+                        <View style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.bgCard }}>
+                          <Check size={8} color={theme.colors.white} strokeWidth={3} />
+                        </View>
+                      )}
+                    </View>
+                    <Text style={{ fontSize: 10, color: theme.colors.textSecondary, marginTop: 4 }}>Symptoms</Text>
+                  </View>
+                  <View style={{ alignItems: 'center', flex: 1 }}>
+                    <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.accentBlue + '20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: theme.colors.accentBlue + '30' }}>
+                      <Flower2 size={22} color={theme.colors.accentBlue} />
+                      {moodLogs.length > 0 && (
+                        <View style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.bgCard }}>
+                          <Check size={8} color={theme.colors.white} strokeWidth={3} />
+                        </View>
+                      )}
+                    </View>
+                    <Text style={{ fontSize: 10, color: theme.colors.textSecondary, marginTop: 4 }}>Mood</Text>
+                  </View>
+                  <View style={{ alignItems: 'center', flex: 1 }}>
+                    <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.teal + '20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: theme.colors.teal + '30' }}>
+                      <Droplets size={22} color={theme.colors.teal} />
+                      {dischargeLogs.length > 0 && (
+                        <View style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.bgCard }}>
+                          <Check size={8} color={theme.colors.white} strokeWidth={3} />
+                        </View>
+                      )}
+                    </View>
+                    <Text style={{ fontSize: 10, color: theme.colors.textSecondary, marginTop: 4 }}>Discharge</Text>
+                  </View>
+                  <View style={{ alignItems: 'center', flex: 1 }}>
+                    <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.follicular + '20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: theme.colors.follicular + '30' }}>
+                      <Scale size={22} color={theme.colors.follicular} />
+                      {weightLogs.length > 0 && (
+                        <View style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.bgCard }}>
+                          <Check size={8} color={theme.colors.white} strokeWidth={3} />
+                        </View>
+                      )}
+                    </View>
+                    <Text style={{ fontSize: 10, color: theme.colors.textSecondary, marginTop: 4 }}>Weight</Text>
+                  </View>
+                </View>
               </View>
             </GlassCardView>
 

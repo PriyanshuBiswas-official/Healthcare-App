@@ -146,10 +146,12 @@ export function ActivityRings({ steps, exercise, calories }: { steps: number; ex
   const drawRing = (radius: number, color: string, percentage: number) => {
     const circumference = 2 * Math.PI * radius;
     const strokeDashoffset = circumference - (Math.min(percentage, 1) * circumference);
+    const dotR = strokeWidth / 2;
     return (
       <G rotation="-90" origin={`${center}, ${center}`}>
         <Circle cx={center} cy={center} r={radius} stroke={color + '33'} strokeWidth={strokeWidth} fill="none" />
         <Circle cx={center} cy={center} r={radius} stroke={color} strokeWidth={strokeWidth} fill="none" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" />
+        {percentage <= 0 && <Circle cx={center + radius} cy={center} r={dotR} fill={color} />}
       </G>
     );
   };
@@ -157,8 +159,8 @@ export function ActivityRings({ steps, exercise, calories }: { steps: number; ex
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size}>
-        {drawRing(50, theme.colors.pink, calories)}
-        {drawRing(36, theme.colors.teal, steps)}
+        {drawRing(50, theme.colors.pink, steps)}
+        {drawRing(36, theme.colors.teal, calories)}
         {drawRing(22, theme.colors.blue, exercise)}
       </Svg>
     </View>
@@ -185,7 +187,7 @@ export const ActivityProgressCard = React.memo(({
       <ActivityRings steps={stepsPct} exercise={exercisePct} calories={caloriesPct} />
       <View style={styles.activityLegend}>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: theme.colors.teal }]} />
+          <View style={[styles.legendDot, { backgroundColor: theme.colors.pink }]} />
           <View style={styles.legendTextWrap}>
             <Text style={styles.legendLabel}>Steps</Text>
             <Text style={styles.legendValue}>{steps.toLocaleString()} <Text style={styles.legendTarget}>/ {stepsTarget.toLocaleString()}</Text></Text>
@@ -199,7 +201,7 @@ export const ActivityProgressCard = React.memo(({
           </View>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: theme.colors.pink }]} />
+          <View style={[styles.legendDot, { backgroundColor: theme.colors.teal }]} />
           <View style={styles.legendTextWrap}>
             <Text style={styles.legendLabel}>Calories</Text>
             <Text style={styles.legendValue}>{calories.toLocaleString()} <Text style={styles.legendTarget}>/ {caloriesTarget.toLocaleString()}</Text></Text>
@@ -574,9 +576,12 @@ const activityCardStyleCreator = (theme: any) => StyleSheet.create({
   },
   legendTextWrap: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   legendLabel: {
-    fontSize: Typography.xs,
+    fontSize: Typography.sm,
     color: theme.colors.textSecondary,
   },
   legendValue: {
