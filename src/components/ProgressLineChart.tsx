@@ -1,9 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Polyline, Circle, Line, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Polyline, Circle, Line, Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useTheme, useStyles } from '../providers/ThemeProvider';
 import { Typography, Spacing, Radius } from '../theme/theme';
-import { GlassCardView } from './SharedComponents';
 
 interface DataPoint {
   date: string;
@@ -15,37 +14,35 @@ interface ProgressLineChartProps {
   height?: number;
 }
 
-const CHART_HEIGHT = 160;
-const PADDING = { top: 16, right: 12, bottom: 24, left: 8 };
+const CHART_HEIGHT = 200;
+const PADDING = { top: 20, right: 16, bottom: 40, left: 50 };
 
 export default function ProgressLineChart({ data, height = CHART_HEIGHT }: ProgressLineChartProps) {
   const { theme } = useTheme();
   const colors = theme.colors;
 
   const styles = useStyles((c: any) => ({
-    container: { marginTop: Spacing.base },
-    chartCard: { padding: Spacing.base, paddingBottom: Spacing.sm },
-    chartTitle: { fontSize: Typography.base, fontWeight: Typography.bold, color: c.colors.textPrimary, marginBottom: 2 },
-    chartSubtitle: { fontSize: Typography.xs, color: c.colors.textSecondary, marginBottom: Spacing.md },
+    container: { marginTop: Spacing.lg },
+    chartCard: { paddingBottom: Spacing.md },
+    chartTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: c.colors.textPrimary, marginBottom: 4 },
+    chartSubtitle: { fontSize: Typography.sm, color: c.colors.textSecondary, marginBottom: Spacing.md },
     chartArea: { position: 'relative', height, overflow: 'hidden' },
-    yLabels: { position: 'absolute', left: 0, top: PADDING.top, bottom: PADDING.bottom, width: 36, justifyContent: 'space-between' },
-    yLabel: { fontSize: 9, color: c.colors.textMuted, textAlign: 'right', paddingRight: 4 },
-    xLabels: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 36 + PADDING.left, marginTop: 4 },
-    xLabel: { fontSize: 9, color: c.colors.textMuted },
-    statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: Spacing.md, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: c.colors.bgCardBorder },
+    yLabels: { position: 'absolute', left: 0, top: PADDING.top, bottom: PADDING.bottom, width: 44, justifyContent: 'space-between' },
+    yLabel: { fontSize: Typography.xs, color: c.colors.textMuted, textAlign: 'right', paddingRight: 6 },
+    statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: Spacing.lg, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: c.colors.bgCardBorder },
     statItem: { alignItems: 'center' },
-    statValue: { fontSize: Typography.base, fontWeight: Typography.bold, color: c.colors.teal },
-    statLabel: { fontSize: Typography.xs, color: c.colors.textSecondary, marginTop: 2 },
+    statValue: { fontSize: Typography.lg, fontWeight: Typography.bold, color: c.colors.teal },
+    statLabel: { fontSize: Typography.sm, color: c.colors.textSecondary, marginTop: 4 },
     emptyText: { fontSize: Typography.sm, color: c.colors.textMuted, textAlign: 'center', paddingVertical: Spacing.xl },
   }));
 
   if (!data || data.length < 2) {
     return (
       <View style={styles.container}>
-        <GlassCardView style={styles.chartCard}>
+        <View style={styles.chartCard}>
           <Text style={styles.chartTitle}>Progress</Text>
           <Text style={styles.emptyText}>Log more sessions to see your progress chart.</Text>
-        </GlassCardView>
+        </View>
       </View>
     );
   }
@@ -83,16 +80,9 @@ export default function ProgressLineChart({ data, height = CHART_HEIGHT }: Progr
     return `${Math.round(val * 10) / 10}`;
   });
 
-  // X-axis labels: first, middle, last
-  const xLabels = [
-    data[0].date.slice(5),
-    data[Math.floor(data.length / 2)].date.slice(5),
-    data[data.length - 1].date.slice(5),
-  ];
-
   return (
     <View style={styles.container}>
-      <GlassCardView style={styles.chartCard}>
+        <View style={styles.chartCard}>
         <Text style={styles.chartTitle}>Progress</Text>
         <Text style={styles.chartSubtitle}>Weight over last 3 months</Text>
 
@@ -109,7 +99,7 @@ export default function ProgressLineChart({ data, height = CHART_HEIGHT }: Progr
             width="100%"
             height={height}
             viewBox={`0 0 ${svgWidth} ${height}`}
-            preserveAspectRatio="xMidYMid meet"
+            preserveAspectRatio="none"
           >
             <Defs>
               <LinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -141,14 +131,14 @@ export default function ProgressLineChart({ data, height = CHART_HEIGHT }: Progr
             {points.map((p, i) => (
               <Circle key={i} cx={p.x} cy={p.y} r={3} fill={colors.teal} stroke={colors.bg} strokeWidth={1.5} />
             ))}
-          </Svg>
-        </View>
 
-        {/* X-axis labels */}
-        <View style={styles.xLabels}>
-          {xLabels.map((label, i) => (
-            <Text key={i} style={styles.xLabel}>{label}</Text>
-          ))}
+            {/* X-axis labels */}
+            {[0, Math.floor(data.length / 2), data.length - 1].map((idx, i) => (
+              <SvgText key={i} x={points[idx].x} y={PADDING.top + chartHeight + 24} textAnchor="middle" fontSize={10} fill={colors.textMuted} fontFamily="System">
+                {data[idx].date.slice(5)}
+              </SvgText>
+            ))}
+          </Svg>
         </View>
 
         {/* Stats */}
@@ -166,7 +156,7 @@ export default function ProgressLineChart({ data, height = CHART_HEIGHT }: Progr
             <Text style={styles.statLabel}>Sessions</Text>
           </View>
         </View>
-      </GlassCardView>
+      </View>
     </View>
   );
 }

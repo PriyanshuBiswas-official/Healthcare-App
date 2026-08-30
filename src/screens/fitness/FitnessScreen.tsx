@@ -16,15 +16,20 @@ import Svg, { Circle } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import { useStyles } from '../../providers/ThemeProvider';
 import { ChevronRight, Dumbbell, Check, Pencil, Trophy, Target } from 'lucide-react-native';
-import { GlassCardView, Chip, ProgressBar, ProfileAvatarButton, NotificationIconButton, ActivityProgressCard, LoadingSpinner, SectionHeader } from '../../components/SharedComponents';
+import { GlassCardView, ProgressBar, ProfileAvatarButton, NotificationIconButton, ActivityProgressCard, LoadingSpinner, SectionHeader, BackButton } from '../../components/SharedComponents';
 import { WeeklyChart } from '../../components/WeeklyChart';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNotifications } from '../../providers/NotificationContext';
 import { TabName } from '../../navigation/TabBar';
 import { useAuth } from '../../providers/AuthProvider';
+import { useFocusEffect } from '@react-navigation/native';
+
+// Module-level flag: set by WorkoutLogScreen when sets are logged
+let _workoutLogged = false;
+export function markWorkoutLogged() { _workoutLogged = true; }
 import * as activityService from '../../services/activityService';
-import type { ActivitySummary, TodayExercise, WeeklyDay, WeeklyStats, PersonalRecord, ActivityGoal } from '../../types/activity';
+import type { ActivitySummary, TodayExercise, WeeklyDay, WeeklyStats, PersonalRecord, ActivityGoal, WorkoutPlanDays } from '../../types/activity';
 import type { PlanDayInput } from '../../services/activityService';
 
 const { width } = Dimensions.get('window');
@@ -33,7 +38,6 @@ type Segment = 'Overview' | 'Your Plan' | 'PRs';
 
 const SEGMENTS: Segment[] = ['Overview', 'Your Plan', 'PRs'];
 
-const MUSCLE_FILTERS = ['All', 'Chest', 'Shoulders', 'Triceps', 'Core'];
 
 function formatDateHeader(date: Date): string {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -55,13 +59,20 @@ function formatDuration(minutes: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
+function formatPlanDate(dateLike?: string | null): string {
+  if (!dateLike) return 'Not set';
+  const date = new Date(dateLike);
+  if (Number.isNaN(date.getTime())) return 'Not set';
+  return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 export default function FitnessScreen({ onProfilePress, onNotificationsPress, onOpenAI, onOpenWorkoutLog, onOpenAddExercise }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void; onOpenWorkoutLog?: (exercise: any) => void; onOpenAddExercise?: (planDayId: number) => void }) {
   const { onScroll } = useScrollVisibility();
   const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
   const { unreadCount } = useNotifications();
   const [activeSegment, setActiveSegment] = useState<Segment>('Overview');
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [loading, setLoading] = useState(true);
 
   const today = useMemo(() => new Date(), []);
   const todayStr = useMemo(() => toDateString(today), [today]);
@@ -73,10 +84,12 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   const [planDayId, setPlanDayId] = useState<number | null>(null);
   const [weeklyDays, setWeeklyDays] = useState<WeeklyDay[]>([]);
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats | null>(null);
+  const [workoutPlanDays, setWorkoutPlanDays] = useState<WorkoutPlanDays>({ plan_name: null, days: [] });
   const [prs, setPrs] = useState<PersonalRecord[]>([]);
   const [activityGoal, setActivityGoal] = useState<ActivityGoal | null>(null);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedPlanDayIndex, setSelectedPlanDayIndex] = useState<number | null>(null);
+  const [showWorkoutPreview, setShowWorkoutPreview] = useState(false);
 
   // ── Plan setup modal state ─────────────────────────────────
   const [planModalVisible, setPlanModalVisible] = useState(false);
@@ -117,10 +130,11 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     if (!session?.access_token) return;
     setLoading(true);
     try {
-      const [summaryRes, workoutRes, weeklyRes, prsRes, goalRes] = await Promise.all([
+      const [summaryRes, workoutRes, weeklyRes, planDaysRes, prsRes, goalRes] = await Promise.all([
         activityService.getTodaySummary(session.access_token, todayStr),
         activityService.getTodayWorkout(session.access_token, todayStr),
         activityService.getWeeklyStats(session.access_token, todayStr),
+        activityService.getCurrentWorkoutPlanDays(session.access_token),
         activityService.getPersonalRecords(session.access_token),
         activityService.getActivityGoal(session.access_token),
       ]);
@@ -131,6 +145,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       setPlanDayId(workoutRes.plan_day_id);
       setWeeklyDays(weeklyRes.days);
       setWeeklyStats(weeklyRes.stats);
+      setWorkoutPlanDays(planDaysRes);
       setPrs(prsRes);
       setActivityGoal(goalRes);
     } catch (e) {
@@ -143,10 +158,11 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   const handleRefresh = useCallback(async () => {
     if (!session?.access_token) return;
     setRefreshing(true);
-    const [summaryRes, workoutRes, weeklyRes, prsRes, goalRes] = await Promise.allSettled([
+    const [summaryRes, workoutRes, weeklyRes, planDaysRes, prsRes, goalRes] = await Promise.allSettled([
       activityService.getTodaySummary(session.access_token, todayStr),
       activityService.getTodayWorkout(session.access_token, todayStr),
       activityService.getWeeklyStats(session.access_token, todayStr),
+      activityService.getCurrentWorkoutPlanDays(session.access_token),
       activityService.getPersonalRecords(session.access_token),
       activityService.getActivityGoal(session.access_token),
     ]);
@@ -161,6 +177,9 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       setWeeklyDays(weeklyRes.value.days);
       setWeeklyStats(weeklyRes.value.stats);
     }
+    if (planDaysRes.status === 'fulfilled') {
+      setWorkoutPlanDays(planDaysRes.value);
+    }
     if (prsRes.status === 'fulfilled') setPrs(prsRes.value);
     if (goalRes.status === 'fulfilled') setActivityGoal(goalRes.value);
     setRefreshing(false);
@@ -170,9 +189,42 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     fetchData();
   }, [fetchData]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (_workoutLogged) {
+        _workoutLogged = false;
+        fetchData();
+      }
+    }, [fetchData])
+  );
+
   const showToday = activeSegment === 'Overview';
-  const showYourPlan = activeSegment === 'Your Plan' || showToday;
+  const showYourPlan = activeSegment === 'Your Plan';
+  const showTodayWorkout = activeSegment === 'Overview';
   const showPRs = activeSegment === 'PRs';
+
+  const currentPlanName = workoutPlanDays.plan_name || planName || 'Current Plan';
+  const currentPlanDays = workoutPlanDays.days || [];
+  const daysPerWeek = currentPlanDays.length;
+  const selectedPlanDay =
+    selectedPlanDayIndex !== null ? currentPlanDays[selectedPlanDayIndex] || null : null;
+
+  useEffect(() => {
+    if (currentPlanDays.length === 0) {
+      setSelectedPlanDayIndex(null);
+      setShowWorkoutPreview(false);
+      return;
+    }
+
+    const matchedTodayIndex = dayName
+      ? currentPlanDays.findIndex(day => day.day_name === dayName)
+      : -1;
+    setSelectedPlanDayIndex(prev => {
+      if (prev !== null && prev < currentPlanDays.length) return prev;
+      if (matchedTodayIndex >= 0) return matchedTodayIndex;
+      return 0;
+    });
+  }, [currentPlanDays, dayName]);
 
   const hasNoPlan = !loading && !planName;
   const hasNoData = !loading && !summary?.steps && !summary?.calories_burned && exercises.length === 0 && weeklyStats?.sessions === 0;
@@ -425,24 +477,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       height: 36,
       borderRadius: 18,
     },
-    sectionLabelRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: Spacing.md,
-    },
-    sectionLabel: {
-      fontSize: Typography.xs,
-      fontWeight: Typography.bold,
-      color: theme.colors.textMuted,
-      letterSpacing: Typography.lsWider,
-    },
-    sectionAction: {
-      fontSize: Typography.xs,
-      fontWeight: Typography.bold,
-      color: theme.colors.accentBlue,
-      letterSpacing: Typography.lsWide,
-    },
     ringsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.base },
     ringsVisual: { marginRight: Spacing.lg, width: 110, height: 110 },
     ringsSvgWrap: { width: 110, height: 110 },
@@ -461,7 +495,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       fontSize: Typography.xs,
       color: theme.colors.textSecondary,
     },
-    filterScroll: { marginBottom: Spacing.md },
     exerciseCard: { padding: Spacing.base, marginBottom: Spacing.sm },
     exerciseHeader: { flexDirection: 'row', alignItems: 'flex-start' },
     exerciseIconWrap: {
@@ -486,11 +519,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       borderWidth: 1,
     },
     tagText: { fontSize: Typography.xs, fontWeight: Typography.bold },
-    topSet: {
-      fontSize: Typography.xs,
-      color: theme.colors.textSecondary,
-      fontWeight: Typography.medium,
-    },
     setsRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: Spacing.xs, marginTop: Spacing.sm },
     setChip: {
       backgroundColor: theme.colors.bgCardBorder,
@@ -709,16 +737,203 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       borderColor: theme.colors.bgCardBorder,
       marginBottom: Spacing.xs,
     },
+    planCard: {
+      padding: Spacing.base,
+      marginBottom: Spacing.sm,
+      overflow: 'hidden',
+    },
+    planActionsRow: {
+      flexDirection: 'row',
+      gap: Spacing.sm,
+      marginBottom: Spacing.base,
+    },
+    planActionBtn: {
+      flex: 1,
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.md,
+      borderWidth: 1.5,
+      borderColor: Colors.bgCardBorder,
+      backgroundColor: Colors.bgCardSolid,
+      alignItems: 'center',
+    },
+    planActionText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: Colors.textSecondary,
+    },
+    planCardTop: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: Spacing.md,
+    },
+    planCardContent: {
+      flex: 1,
+    },
+    planEyebrow: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+      marginBottom: 6,
+      textTransform: 'uppercase',
+      letterSpacing: Typography.lsWide,
+    },
+    planTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    planTitle: {
+      fontSize: Typography.xl,
+      fontWeight: Typography.extraBold,
+      color: theme.colors.textPrimary,
+      letterSpacing: -0.4,
+      flexShrink: 1,
+    },
+    planEditBtn: {
+      padding: 4,
+    },
+    planMetaRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: Spacing.sm,
+      marginBottom: Spacing.sm,
+    },
+    planMetaPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 5,
+      borderRadius: Radius.full,
+      borderWidth: 1,
+    },
+    planMetaText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+    },
+    planDescription: {
+      fontSize: Typography.sm,
+      color: theme.colors.textSecondary,
+      lineHeight: 20,
+    },
+    planStatsRow: {
+      flexDirection: 'row',
+      marginTop: Spacing.base,
+      paddingTop: Spacing.base,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.bgCardBorder,
+    },
+    planStat: {
+      flex: 1,
+      paddingHorizontal: Spacing.sm,
+      gap: 4,
+    },
+    planStatDivider: {
+      width: 1,
+      backgroundColor: theme.colors.bgCardBorder,
+      opacity: 0.9,
+    },
+    planStatLabel: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+    },
+    planStatValue: {
+      fontSize: Typography.sm,
+      color: theme.colors.textPrimary,
+      fontWeight: Typography.bold,
+    },
+    weekRail: {
+      marginHorizontal: -Spacing.sm,
+      paddingHorizontal: Spacing.sm,
+    },
+    weekCard: {
+      width: Math.min(156, width * 0.38),
+      minHeight: 158,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.md,
+      marginHorizontal: Spacing.sm,
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    weekCardDay: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+      color: theme.colors.accentBlue,
+      textTransform: 'uppercase',
+      letterSpacing: Typography.lsWide,
+    },
+    weekCardName: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: theme.colors.textPrimary,
+      textAlign: 'center',
+      marginTop: 4,
+    },
+    weekCardSub: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+      marginTop: 8,
+      lineHeight: 16,
+    },
+    weekCardIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.bgCardBorder,
+      marginVertical: 12,
+    },
+    weekCardFooter: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: theme.colors.bgCardBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    workoutOverlay: {
+      flex: 1,
+      backgroundColor: theme.colors.bg,
+      paddingTop: insets.top + Spacing.lg,
+    },
+    workoutOverlayHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.base,
+      paddingBottom: Spacing.base,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.bgCardBorder,
+    },
+    workoutOverlayTitleWrap: {
+      flex: 1,
+      paddingHorizontal: Spacing.md,
+      alignItems: 'center',
+    },
+    workoutOverlayTitle: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.bold,
+      color: theme.colors.textPrimary,
+      textAlign: 'center',
+    },
+    workoutOverlaySub: {
+      fontSize: Typography.sm,
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+      textAlign: 'center',
+    },
+    workoutOverlaySpacer: {
+      width: 44,
+      height: 44,
+    },
+    workoutOverlayContent: {
+      padding: Spacing.base,
+      paddingBottom: 100,
+    },
   }));
-  function SectionLabel({ title, action }: { title: string; action?: string }) {
-    return (
-      <View style={styles.sectionLabelRow}>
-        <Text style={styles.sectionLabel}>{title}</Text>
-        {action && <Text style={styles.sectionAction}>{action}</Text>}
-      </View>
-    );
-  }
-
   function SegmentedControl({
     segments,
     active,
@@ -782,35 +997,39 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     dayName,
     planName,
     planDayId,
-    activeFilter,
-    setActiveFilter,
     onSetupPlan,
     onAddExercise,
     onEditExercise,
     onLogExercise,
+    title = "Today's Workout",
+    subtitle = dayName || undefined,
+    showHeader = true,
+    showAddExercise = true,
   }: {
     exercises: TodayExercise[];
     dayName: string | null;
     planName: string | null;
     planDayId: number | null;
-    activeFilter: string;
-    setActiveFilter: (f: string) => void;
     onSetupPlan: () => void;
     onAddExercise: () => void;
     onEditExercise: (ex: TodayExercise) => void;
     onLogExercise: (exercise: any) => void;
+    title?: string;
+    subtitle?: string;
+    showHeader?: boolean;
+    showAddExercise?: boolean;
   }) {
     if (exercises.length === 0) {
       return (
         <>
-          <SectionLabel title="TODAY'S WORKOUT" action={dayName?.toUpperCase() || ''} />
+          {showHeader && <SectionHeader title={title} subtitle={subtitle} />}
           <GlassCardView style={styles.card}>
             <View style={{ paddingVertical: Spacing.lg, alignItems: 'center' }}>
               <Dumbbell size={Typography.xxl} color={Colors.textSecondary} />
               <Text style={{ color: Colors.textSecondary, fontSize: Typography.sm }}>
                 {planName ? `No workout planned for ${dayName || 'today'}` : 'No workout plan set up yet'}
               </Text>
-              {!planName && (
+              {!planName && showAddExercise && (
                 <TouchableOpacity
                   onPress={onSetupPlan}
                   style={{ marginTop: Spacing.md, backgroundColor: Colors.accentBlue, paddingVertical: Spacing.sm + 2, paddingHorizontal: Spacing.xl, borderRadius: Radius.md }}
@@ -824,23 +1043,14 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       );
     }
 
-    const displayExercises =
-      activeFilter === 'All'
-        ? exercises
-        : exercises.filter(e => e.exercise_name.toLowerCase().includes(activeFilter.toLowerCase()));
+    const displayExercises = exercises;
 
     return (
       <>
-        <SectionLabel title="TODAY'S WORKOUT" action={dayName?.toUpperCase() || ''} />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
-          {MUSCLE_FILTERS.map(g => (
-            <Chip key={g} label={g} selected={activeFilter === g} color={Colors.accentBlue} onPress={() => setActiveFilter(g)} />
-          ))}
-        </ScrollView>
+        {showHeader && <SectionHeader title={title} subtitle={subtitle} />}
         {displayExercises.map((ex) => {
           const loggedSets = ex.logged_sets || [];
           const hasLogged = loggedSets.length > 0;
-          const topWeight = loggedSets.length > 0 ? Math.max(...loggedSets.map(s => s.weight || 0)) : 0;
           const isCompleted = ex.completed;
 
           return (
@@ -868,9 +1078,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                         ) : null}
                       </View>
                     </View>
-                    {topWeight > 0 && (
-                      <Text style={styles.topSet}>{topWeight}kg top set</Text>
-                    )}
                   </View>
                   {hasLogged ? (
                     <View style={styles.setsRow}>
@@ -921,7 +1128,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
             </View>
           );
         })}
-        {planDayId && (
+        {planDayId && showAddExercise && (
           <TouchableOpacity
             onPress={onAddExercise}
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', paddingVertical: Spacing.md, marginTop: Spacing.xs, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.accentBlue + '50', borderStyle: 'dashed', backgroundColor: Colors.accentBlue + '08' }}
@@ -931,6 +1138,185 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           </TouchableOpacity>
         )}
       </>
+    );
+  }
+
+  function CurrentPlanSection() {
+    const planDays = currentPlanDays;
+    const previewDay = selectedPlanDay || (dayName ? planDays.find(d => d.day_name === dayName) || null : null);
+    const previewLabel = previewDay?.day_name || dayName || 'Choose a day';
+    const planDetails = workoutPlanDays as WorkoutPlanDays & {
+      goal?: string | null;
+      speciality?: string | null;
+      specialty?: string | null;
+      start_date?: string | null;
+      started_on?: string | null;
+      created_at?: string | null;
+    };
+    const planGoal = planDetails.goal || 'Build muscle';
+    const planSpeciality = planDetails.speciality || planDetails.specialty || 'Strength training';
+    const planStartedOn = formatPlanDate(planDetails.started_on || planDetails.start_date || planDetails.created_at);
+    const workoutsCompleted = weeklyStats?.sessions ?? 0;
+    const workoutsTarget = Math.max(daysPerWeek, workoutsCompleted);
+    const totalVolume = exercises.reduce((total, exercise) => {
+      return total + (exercise.logged_sets || []).reduce((setTotal, set) => {
+        return setTotal + (Number(set.weight) || 0) * (Number(set.reps) || 0);
+      }, 0);
+    }, 0);
+    const avgWorkoutTime = workoutsCompleted > 0 && weeklyStats
+      ? Math.round(weeklyStats.total_time_minutes / workoutsCompleted)
+      : 0;
+
+    const openDay = (index: number) => {
+      setSelectedPlanDayIndex(index);
+      setShowWorkoutPreview(true);
+    };
+
+    const planDaysCountLabel = daysPerWeek > 0 ? `${daysPerWeek} day${daysPerWeek === 1 ? '' : 's'} / week` : 'No days yet';
+
+    return (
+      <View style={styles.section}>
+        <GlassCardView style={[styles.planCard, { borderColor: Colors.teal + '40' }]}>
+          <View style={styles.planCardTop}>
+            <View style={styles.planCardContent}>
+              <Text style={styles.planEyebrow}>Current Plan</Text>
+              <View style={styles.planTitleRow}>
+                <Text style={styles.planTitle} numberOfLines={2}>{currentPlanName}</Text>
+                <View style={styles.planEditBtn}>
+                  <Pencil size={16} color={Colors.textSecondary} />
+                </View>
+              </View>
+
+              <View style={styles.planMetaRow}>
+                <View style={[styles.planMetaPill, { backgroundColor: Colors.teal + '16', borderColor: Colors.teal + '40' }]}>
+                  <Text style={[styles.planMetaText, { color: Colors.teal }]}>{planDaysCountLabel}</Text>
+                </View>
+                <View style={[styles.planMetaPill, { backgroundColor: Colors.accentBlue + '14', borderColor: Colors.accentBlue + '35' }]}>
+                  <Text style={[styles.planMetaText, { color: Colors.accentBlue }]}>{planSpeciality}</Text>
+                </View>
+                <View style={[styles.planMetaPill, { backgroundColor: Colors.bgCardBorder, borderColor: Colors.bgCardBorder }]}>
+                  <Text style={[styles.planMetaText, { color: Colors.textSecondary }]}>Ongoing</Text>
+                </View>
+              </View>
+
+              <Text style={styles.planDescription}>
+                Goal: {planGoal}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.planStatsRow}>
+            <View style={styles.planStat}>
+              <Text style={styles.planStatLabel}>Schedule</Text>
+              <Text style={styles.planStatValue}>{planDaysCountLabel}</Text>
+            </View>
+            <View style={styles.planStatDivider} />
+            <View style={styles.planStat}>
+              <Text style={styles.planStatLabel}>Goal</Text>
+              <Text style={styles.planStatValue}>{planGoal}</Text>
+            </View>
+            <View style={styles.planStatDivider} />
+            <View style={styles.planStat}>
+              <Text style={styles.planStatLabel}>Started On</Text>
+              <Text style={styles.planStatValue}>{planStartedOn}</Text>
+            </View>
+          </View>
+        </GlassCardView>
+
+        <View style={styles.planActionsRow}>
+          <TouchableOpacity activeOpacity={0.7} style={styles.planActionBtn}>
+            <Text style={styles.planActionText}>Custom Plan</Text>
+          </TouchableOpacity>
+          <TouchableOpacity activeOpacity={0.7} style={styles.planActionBtn}>
+            <Text style={styles.planActionText}>Explore Plans</Text>
+          </TouchableOpacity>
+        </View>
+
+        <SectionHeader title="This Week's Schedule" />
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekRail}>
+          {planDays.length > 0 ? planDays.map((day, index) => {
+            const isTodayDay = day.day_name === dayName;
+            return (
+              <TouchableOpacity
+                key={`${day.day_no}-${day.day_name}`}
+                activeOpacity={0.82}
+                onPress={() => openDay(index)}>
+                <GlassCardView style={styles.weekCard}>
+                  <Text style={styles.weekCardDay}>{day.day_name.slice(0, 3)}</Text>
+                  <Text style={styles.weekCardName} numberOfLines={1}>{day.day_name}</Text>
+                  <View style={styles.weekCardIcon}>
+                    <Dumbbell size={20} color={Colors.textSecondary} />
+                  </View>
+                  <Text style={styles.weekCardSub}>
+                    {isTodayDay ? `${exercises.length} today` : 'Workout day'}
+                  </Text>
+                  <View style={styles.weekCardFooter}>
+                    <ChevronRight size={12} color={Colors.textSecondary} />
+                  </View>
+                </GlassCardView>
+              </TouchableOpacity>
+            );
+          }) : (
+            <GlassCardView style={[styles.weekCard, { width: '100%', justifyContent: 'center' }]}>
+              <Text style={styles.weekCardName}>No plan days yet</Text>
+              <Text style={styles.weekCardSub}>Set up your schedule to populate this row.</Text>
+            </GlassCardView>
+          )}
+        </ScrollView>
+
+        <View style={[styles.section, { marginTop: Spacing.base }]}>
+          <SectionHeader title="Plan Insights" />
+          <GlassCardView style={[styles.planCard, { paddingVertical: Spacing.lg }]}>
+            <View style={{ flexDirection: 'row' }}>
+              <View style={styles.planStat}>
+                <Text style={styles.planStatLabel}>Workouts</Text>
+                <Text style={styles.planStatValue}>{workoutsCompleted} / {workoutsTarget}</Text>
+              </View>
+              <View style={styles.planStatDivider} />
+              <View style={styles.planStat}>
+                <Text style={styles.planStatLabel}>Total Volume</Text>
+                <Text style={styles.planStatValue}>{Math.round(totalVolume).toLocaleString()} kg</Text>
+              </View>
+              <View style={styles.planStatDivider} />
+              <View style={styles.planStat}>
+                <Text style={styles.planStatLabel}>Avg. Time</Text>
+                <Text style={styles.planStatValue}>{avgWorkoutTime} min</Text>
+              </View>
+            </View>
+          </GlassCardView>
+        </View>
+
+        <Modal visible={showWorkoutPreview} animationType="slide" onRequestClose={() => setShowWorkoutPreview(false)}>
+          <View style={styles.workoutOverlay}>
+            <View style={styles.workoutOverlayHeader}>
+              <BackButton onPress={() => setShowWorkoutPreview(false)} color={Colors.textPrimary} />
+              <View style={styles.workoutOverlayTitleWrap}>
+                <Text style={styles.workoutOverlayTitle}>{previewLabel} Workout</Text>
+                <Text style={styles.workoutOverlaySub}>{currentPlanName}</Text>
+              </View>
+              <View style={styles.workoutOverlaySpacer} />
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.workoutOverlayContent}>
+              <TodaysWorkout
+                exercises={exercises}
+                dayName={previewLabel}
+                planName={planName}
+                planDayId={planDayId}
+                onSetupPlan={() => setPlanModalVisible(true)}
+                onAddExercise={() => planDayId && onOpenAddExercise && onOpenAddExercise(planDayId)}
+                onEditExercise={openEditExercise}
+                onLogExercise={(ex) => onOpenWorkoutLog && onOpenWorkoutLog(ex)}
+                title="Exercises"
+                subtitle={undefined}
+                showHeader={true}
+                showAddExercise={false}
+              />
+            </ScrollView>
+          </View>
+        </Modal>
+      </View>
     );
   }
 
@@ -965,7 +1351,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     if (prs.length === 0) {
       return (
         <GlassCardView style={styles.card}>
-          <SectionLabel title="PERSONAL RECORDS" />
+          <SectionHeader title="Personal Records" />
           <View style={{ paddingVertical: Spacing.lg, alignItems: 'center' }}>
             <Trophy size={Typography.xxl} color={Colors.textSecondary} />
             <Text style={{ color: Colors.textSecondary, fontSize: Typography.sm }}>No personal records yet</Text>
@@ -977,7 +1363,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     return (
       <GlassCardView style={styles.card}>
         <View style={styles.weeklyHeader}>
-          <SectionLabel title="PERSONAL RECORDS" />
+          <SectionHeader title="Personal Records" />
           <View style={[styles.streakBadge, { backgroundColor: Colors.amber + '20', borderColor: Colors.amber + '50' }]}>
             <Text style={[styles.streakBadgeText, { color: Colors.amber }]}>lifetime</Text>
           </View>
@@ -1062,15 +1448,13 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           <>
             {showToday && <DailyProgressCard summary={summary} goal={activityGoal} onLogActivity={handleOpenLogActivity} />}
 
-            {showYourPlan && (
+            {showTodayWorkout && (
               <View style={styles.section}>
                 <TodaysWorkout
                   exercises={exercises}
                   dayName={dayName}
                   planName={planName}
                   planDayId={planDayId}
-                  activeFilter={activeFilter}
-                  setActiveFilter={setActiveFilter}
                   onSetupPlan={() => setPlanModalVisible(true)}
                   onAddExercise={() => planDayId && onOpenAddExercise && onOpenAddExercise(planDayId)}
                   onEditExercise={openEditExercise}
@@ -1078,6 +1462,8 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                 />
               </View>
             )}
+
+            {showYourPlan && <CurrentPlanSection />}
 
             {showToday && (
               <View style={styles.section}>

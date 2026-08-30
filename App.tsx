@@ -553,6 +553,9 @@ function AppShell() {
                     exerciseType: props.route.params?.exerciseType as any,
                   }}
                   onBack={() => props.navigation.goBack()}
+                  onExerciseAdded={() => {
+                    props.navigation.popToTop();
+                  }}
                 />
               )}
             </RootStack.Screen>

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
   Image,
   Alert,
   InteractionManager,
@@ -15,12 +14,11 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { User, ClipboardList, Pill, TriangleAlert, Phone, Bell, Flower2, Lock, Watch, Smartphone, Droplets, Dumbbell, Building2, Moon, Heart, CircleQuestionMark, Shield, FileText, Info, PenLine, Monitor, Sun, Users, Crown } from 'lucide-react-native';
+import { User, ClipboardList, Pill, TriangleAlert, Phone, Bell, Smartphone, Droplets, Dumbbell, Building2, Moon, Heart, CircleQuestionMark, Shield, FileText, Info, PenLine, Monitor, Sun, Users, Crown } from 'lucide-react-native';
 import { GlassCardView, SectionHeader, ProgressBar, BackButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useAuth } from '../../providers/AuthProvider';
 import { supabase } from '../../lib/supabase';
-import { usePreferences } from '../../providers/PreferencesContext';
 import { API_BASE_URL } from '../../config/api';
 import PersonalInfoScreen from './PersonalInfoScreen';
 import MedicalHistoryScreen from './MedicalHistoryScreen';
@@ -108,40 +106,6 @@ function MenuRow({ item, onPress, colors }: { item: MenuItem; onPress?: () => vo
   );
 }
 
-function ToggleRow({
-  icon,
-  label,
-  sub,
-  value,
-  onValueChange,
-  colors,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  sub: string;
-  value: boolean;
-  onValueChange: (v: boolean) => void;
-  colors: AppTheme['colors'];
-}) {
-  return (
-    <View style={menuStyles.menuRow}>
-      <View style={[menuStyles.menuIcon, { backgroundColor: colors.teal + '20' }]}>
-        {icon}
-      </View>
-      <View style={menuStyles.menuContent}>
-        <Text style={[menuStyles.menuLabel, { color: colors.textPrimary }]}>{label}</Text>
-        <Text style={[menuStyles.menuSub, { color: colors.textSecondary }]}>{sub}</Text>
-      </View>
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: colors.bgCardBorder, true: colors.teal + '60' }}
-        thumbColor={value ? colors.teal : colors.textMuted}
-      />
-    </View>
-  );
-}
-
 const menuStyles = StyleSheet.create({
   menuRow: {
     flexDirection: 'row',
@@ -188,19 +152,8 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
   const { onScroll } = useScrollVisibility();
   const insets = useSafeAreaInsets();
   const { user, session, profileCompletion } = useAuth();
-  const { hideVitals, setHideVitals, hideCommunitySpotlight, setHideCommunitySpotlight } = usePreferences();
   const { systemSync, setSystemSync, themeName, setThemeName } = useTheme();
 
-  const PREFERENCES = useMemo(() => [
-    { key: 'notifications', icon: <Bell size={20} color="#F59E0B" />, label: 'Push Notifications', sub: 'Appointments & reminders', default: true },
-    { key: 'reminders', icon: <Pill size={20} color="#EC4899" />, label: 'Medication Reminders', sub: 'Daily dose alerts', default: true },
-    { key: 'cycle', icon: <Flower2 size={20} color="#EC4899" />, label: 'Cycle Tracking Alerts', sub: 'Phase & fertility updates', default: false },
-    { key: 'biometric', icon: <Lock size={20} color="#14B8A6" />, label: 'Biometric Lock', sub: 'Face ID / fingerprint', default: true },
-  ] as const, []);
-
-  const [toggles, setToggles] = useState(
-    Object.fromEntries(PREFERENCES.map(p => [p.key, p.default])) as Record<string, boolean>,
-  );
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [activeSection, setActiveSection] = useState<HealthSection | null>(
     initialSection as HealthSection | null
@@ -463,7 +416,6 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
   }));
 
   const CONNECTED_DEVICES: MenuItem[] = useMemo(() => [
-    { icon: <Watch size={20} color={theme.colors.teal} />, label: 'Apple Watch', sub: 'Synced · Last: 2 min ago', color: theme.colors.teal, badge: 'On' },
     { icon: <Smartphone size={20} color={theme.colors.pink} />, label: 'Health Connect', sub: 'Steps, sleep, heart rate', color: theme.colors.pink },
   ], [theme.colors]);
 
@@ -546,9 +498,6 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
     { label: 'Height', value: profileData?.height ? `${profileData.height} cm` : '--' },
     { label: 'Blood', value: profileData?.blood_group || '--' },
   ];
-
-  const setToggle = (key: string, value: boolean) =>
-    setToggles(prev => ({ ...prev, [key]: value }));
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -875,41 +824,6 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
                 );
               })}
             </View>
-          </GlassCardView>
-
-          <SectionHeader title="Preferences" />
-          <GlassCardView style={styles.menuCard}>
-            {PREFERENCES.map((item, i) => (
-              <View key={item.key}>
-                <ToggleRow
-                  icon={item.icon}
-                  label={item.label}
-                  sub={item.sub}
-                  value={toggles[item.key]}
-                  onValueChange={v => setToggle(item.key, v)}
-                  colors={theme.colors}
-                />
-                {i < PREFERENCES.length - 1 && <View style={styles.divider} />}
-              </View>
-            ))}
-            <View style={styles.divider} />
-            <ToggleRow
-              icon={<Heart size={20} color="#EC4899" />}
-              label="Hide Vitals"
-              sub="Remove vitals from all health pages"
-              value={hideVitals}
-              onValueChange={setHideVitals}
-              colors={theme.colors}
-            />
-            <View style={styles.divider} />
-            <ToggleRow
-              icon={<Users size={20} color="#14B8A6" />}
-              label="Hide Community Spotlight"
-              sub="Remove community posts from dashboard"
-              value={hideCommunitySpotlight}
-              onValueChange={setHideCommunitySpotlight}
-              colors={theme.colors}
-            />
           </GlassCardView>
 
           <SectionHeader title="Support" />
