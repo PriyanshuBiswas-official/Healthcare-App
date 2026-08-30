@@ -15,7 +15,7 @@ import {
 import Svg, { Circle } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import { useStyles } from '../../providers/ThemeProvider';
-import { ChevronRight, Dumbbell, Check, Pencil, Trophy, Target } from 'lucide-react-native';
+import { ChevronRight, Dumbbell, Check, Pencil, Trophy, Target, TrendingUp, Flame, Star, Plus, MoreVertical, BarChart2, ChevronDown } from 'lucide-react-native';
 import { GlassCardView, ProgressBar, ProfileAvatarButton, NotificationIconButton, ActivityProgressCard, LoadingSpinner, SectionHeader, BackButton } from '../../components/SharedComponents';
 import { WeeklyChart } from '../../components/WeeklyChart';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
@@ -933,6 +933,235 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       padding: Spacing.base,
       paddingBottom: 100,
     },
+    prHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: Spacing.sm,
+    },
+    prHeaderTitle: {
+      fontSize: Typography.xl,
+      fontWeight: Typography.bold,
+      color: theme.colors.textPrimary,
+    },
+    prHeaderSubtitle: {
+      fontSize: Typography.sm,
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    prDropdown: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.xs,
+    },
+    prDropdownText: {
+      fontSize: Typography.sm,
+      color: theme.colors.textPrimary,
+      marginRight: 4,
+      fontWeight: Typography.medium,
+    },
+    prStatsCard: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      padding: Spacing.base,
+      marginBottom: Spacing.xl,
+    },
+    prStatItem: {
+      alignItems: 'center',
+      flex: 1,
+    },
+    prStatDivider: {
+      width: 1,
+      backgroundColor: theme.colors.bgCardBorder,
+      marginVertical: Spacing.sm,
+    },
+    prStatValue: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.bold,
+      color: theme.colors.textPrimary,
+      marginTop: Spacing.xs,
+    },
+    prStatLabel: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    prSectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: Spacing.md,
+    },
+    prSectionTitle: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.bold,
+      color: theme.colors.textPrimary,
+    },
+    prSectionAction: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    prSectionActionText: {
+      fontSize: Typography.sm,
+      color: theme.colors.teal,
+      fontWeight: Typography.medium,
+      marginRight: 4,
+    },
+    prTimelineContainer: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      marginVertical: Spacing.md,
+      paddingHorizontal: Spacing.sm,
+      position: 'relative',
+    },
+    prTimelineStep: {
+      alignItems: 'center',
+      width: 50,
+      zIndex: 1,
+    },
+    prTimelineLine: {
+      position: 'absolute',
+      top: 6,
+      left: 30,
+      right: 30,
+      height: 2,
+      backgroundColor: theme.colors.bgCardBorder,
+      zIndex: 0,
+    },
+    prTimelineDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: theme.colors.textMuted,
+      borderWidth: 2,
+      borderColor: theme.colors.bg,
+      marginBottom: 8,
+    },
+    prTimelineDotActive: {
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: theme.colors.bg,
+      borderWidth: 3,
+      borderColor: theme.colors.teal,
+      marginBottom: 6,
+      marginTop: -2,
+    },
+    prTimelineLabel: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+    prTimelineLabelActive: {
+      color: theme.colors.teal,
+      fontWeight: Typography.bold,
+    },
+    prTimelineSub: {
+      fontSize: 10,
+      color: theme.colors.textMuted,
+      textAlign: 'center',
+      marginTop: 2,
+    },
+    prCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      marginBottom: Spacing.sm,
+    },
+    prCardIconWrap: {
+      width: 40,
+      height: 40,
+      borderRadius: Radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: Spacing.md,
+    },
+    prCardContent: {
+      flex: 1,
+    },
+    prCardTitle: {
+      fontSize: Typography.base,
+      fontWeight: Typography.bold,
+      color: theme.colors.textPrimary,
+    },
+    prCardSubtitle: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    prCardRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      marginTop: 4,
+    },
+    prCardWeight: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.bold,
+    },
+    prCardWeightUnit: {
+      fontSize: Typography.sm,
+      color: theme.colors.textSecondary,
+      marginLeft: 2,
+      marginRight: Spacing.sm,
+    },
+    prCardIncrease: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.bold,
+    },
+    prCardDate: {
+      fontSize: 10,
+      color: theme.colors.textMuted,
+      marginTop: 4,
+    },
+    prCardBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: Radius.full,
+      borderWidth: 1,
+      position: 'absolute',
+      top: 0,
+      right: 0,
+    },
+    prCardBadgeText: {
+      fontSize: 8,
+      fontWeight: Typography.bold,
+      marginLeft: 2,
+    },
+    prLogBtn: {
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.teal + '40',
+      borderStyle: 'dashed',
+      marginTop: Spacing.sm,
+      backgroundColor: theme.colors.teal + '15',
+    },
+    prLogBtnRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    prLogBtnText: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.bold,
+      color: theme.colors.teal,
+      marginLeft: 8,
+    },
+    prLogBtnSub: {
+      fontSize: Typography.xs,
+      color: theme.colors.textSecondary,
+    },
   }));
   function SegmentedControl({
     segments,
@@ -1348,42 +1577,128 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   }
 
   function PersonalRecordsCard({ prs }: { prs: PersonalRecord[] }) {
-    if (prs.length === 0) {
-      return (
-        <GlassCardView style={styles.card}>
-          <SectionHeader title="Personal Records" />
-          <View style={{ paddingVertical: Spacing.lg, alignItems: 'center' }}>
-            <Trophy size={Typography.xxl} color={Colors.textSecondary} />
-            <Text style={{ color: Colors.textSecondary, fontSize: Typography.sm }}>No personal records yet</Text>
+    return (
+      <View style={{ marginBottom: Spacing.xl }}>
+        <View style={styles.prHeaderRow}>
+          <View>
+            <Text style={styles.prHeaderTitle}>Personal Records</Text>
+            <Text style={styles.prHeaderSubtitle}>Your strongest moments. Keep breaking them.</Text>
+          </View>
+          <TouchableOpacity style={styles.prDropdown}>
+            <Text style={styles.prDropdownText}>All Time</Text>
+            <ChevronDown size={16} color={Colors.teal} />
+          </TouchableOpacity>
+        </View>
+
+        <GlassCardView style={styles.prStatsCard}>
+          <View style={styles.prStatItem}>
+            <Trophy size={20} color={Colors.teal} />
+            <Text style={styles.prStatValue}>12</Text>
+            <Text style={styles.prStatLabel}>Total PRs</Text>
+          </View>
+          <View style={styles.prStatDivider} />
+          <View style={styles.prStatItem}>
+            <TrendingUp size={20} color={Colors.accentBlue} />
+            <Text style={styles.prStatValue}>5</Text>
+            <Text style={styles.prStatLabel}>This Month</Text>
+          </View>
+          <View style={styles.prStatDivider} />
+          <View style={styles.prStatItem}>
+            <Flame size={20} color={Colors.amber} />
+            <Text style={styles.prStatValue}>3</Text>
+            <Text style={styles.prStatLabel}>This Week</Text>
+          </View>
+          <View style={styles.prStatDivider} />
+          <View style={styles.prStatItem}>
+            <Star size={20} color={'#A855F7'} />
+            <Text style={styles.prStatValue}>8</Text>
+            <Text style={styles.prStatLabel}>Exercises</Text>
           </View>
         </GlassCardView>
-      );
-    }
 
-    return (
-      <GlassCardView style={styles.card}>
-        <View style={styles.weeklyHeader}>
-          <SectionHeader title="Personal Records" />
-          <View style={[styles.streakBadge, { backgroundColor: Colors.amber + '20', borderColor: Colors.amber + '50' }]}>
-            <Text style={[styles.streakBadgeText, { color: Colors.amber }]}>lifetime</Text>
+        <View style={styles.prSectionHeader}>
+          <Text style={styles.prSectionTitle}>PR Timeline</Text>
+          <TouchableOpacity style={styles.prSectionAction}>
+            <Text style={styles.prSectionActionText}>View All</Text>
+            <ChevronRight size={16} color={Colors.teal} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.prTimelineContainer}>
+          <View style={styles.prTimelineLine} />
+          
+          <View style={styles.prTimelineStep}>
+            <View style={styles.prTimelineDot} />
+            <Text style={styles.prTimelineLabel}>May</Text>
+            <Text style={styles.prTimelineSub}>4 PRs</Text>
+          </View>
+          
+          <View style={styles.prTimelineStep}>
+            <View style={styles.prTimelineDot} />
+            <Text style={styles.prTimelineLabel}>Jun</Text>
+            <Text style={styles.prTimelineSub}>2 PRs</Text>
+          </View>
+          
+          <View style={styles.prTimelineStep}>
+            <View style={styles.prTimelineDot} />
+            <Text style={styles.prTimelineLabel}>Jul</Text>
+            <Text style={styles.prTimelineSub}>3 PRs</Text>
+          </View>
+          
+          <View style={styles.prTimelineStep}>
+            <View style={styles.prTimelineDotActive} />
+            <Text style={[styles.prTimelineLabel, styles.prTimelineLabelActive]}>Aug</Text>
+            <Text style={[styles.prTimelineSub, styles.prTimelineLabelActive]}>3 PRs</Text>
+          </View>
+          
+          <View style={styles.prTimelineStep}>
+            <View style={styles.prTimelineDot} />
+            <Text style={styles.prTimelineLabel}>This Week</Text>
+            <Text style={styles.prTimelineSub}>1 PR</Text>
           </View>
         </View>
-        <Text style={styles.chartSubtitle}>Your best lifts</Text>
-        {prs.map((pr, i) => (
-          <View key={pr.pr_id} style={[styles.prRow, i < prs.length - 1 && styles.prRowBorder]}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.prExercise}>{pr.exercise_name}</Text>
-              <Text style={styles.prDate}>{new Date(pr.achieved_at).toLocaleDateString()}</Text>
-            </View>
-            <View style={styles.prRight}>
-              <Text style={styles.prValue}>{pr.weight}kg × {pr.reps}</Text>
-              {pr.description && (
-                <Text style={[styles.prDelta, { color: Colors.teal }]}>{pr.description}</Text>
-              )}
-            </View>
+
+        <View style={[styles.prSectionHeader, { marginTop: Spacing.xl }]}>
+          <Text style={styles.prSectionTitle}>Recent PRs</Text>
+        </View>
+
+        {[
+          { title: 'Bench Press', date: '05 Aug 2024', weight: '100', increase: '5 kg', icon: 'green' },
+          { title: 'Back Squat', date: '02 Aug 2024', weight: '130', increase: '5 kg', icon: 'purple' },
+          { title: 'Deadlift', date: '28 Jul 2024', weight: '160', increase: '10 kg', icon: 'blue' },
+          { title: 'Overhead Press', date: '24 Jul 2024', weight: '45', increase: '2.5 kg', icon: 'orange' },
+        ].map((item, idx) => {
+          const itemColor = item.icon === 'green' ? Colors.teal : item.icon === 'purple' ? '#A855F7' : item.icon === 'blue' ? Colors.accentBlue : Colors.amber;
+          return (
+            <GlassCardView key={idx} style={styles.prCard}>
+              <View style={[styles.prCardIconWrap, { backgroundColor: itemColor + '20' }]}>
+                <Dumbbell size={20} color={itemColor} />
+              </View>
+              <View style={styles.prCardContent}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <Text style={styles.prCardTitle}>{item.title}</Text>
+                  <MoreVertical size={16} color={Colors.textSecondary} />
+                </View>
+                <Text style={styles.prCardSubtitle}>1 Rep Max</Text>
+                
+                <View style={styles.prCardRow}>
+                  <Text style={[styles.prCardWeight, { color: itemColor }]}>{item.weight}</Text>
+                  <Text style={styles.prCardWeightUnit}>kg</Text>
+                  <Text style={[styles.prCardIncrease, { color: itemColor }]}>↑ {item.increase}</Text>
+                </View>
+                <Text style={styles.prCardDate}>{item.date}</Text>
+              </View>
+            </GlassCardView>
+          );
+        })}
+
+        <TouchableOpacity style={styles.prLogBtn} activeOpacity={0.7}>
+          <View style={[styles.prLogBtnRow, { marginBottom: 0 }]}>
+            <Plus size={16} color={Colors.teal} />
+            <Text style={styles.prLogBtnText}>Log a New PR</Text>
           </View>
-        ))}
-      </GlassCardView>
+        </TouchableOpacity>
+      </View>
     );
   }
 
