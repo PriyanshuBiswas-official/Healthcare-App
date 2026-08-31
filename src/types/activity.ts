@@ -84,8 +84,10 @@ export interface ActivityGoal {
 }
 
 export interface WorkoutPlanDay {
+  plan_days_id?: number;
   day_name: string;
   day_no: number;
+  exercises?: TodayExercise[];
 }
 
 export interface WorkoutPlanDays {

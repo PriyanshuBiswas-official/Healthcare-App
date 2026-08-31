@@ -11,6 +11,7 @@ import {
   Platform,
   Alert,
   RefreshControl,
+  BackHandler,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
@@ -197,6 +198,16 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       }
     }, [fetchData])
   );
+
+  // Intercept Android hardware back button when workout preview is open
+  useEffect(() => {
+    if (!showWorkoutPreview) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setShowWorkoutPreview(false);
+      return true; // prevent default (navigating away)
+    });
+    return () => sub.remove();
+  }, [showWorkoutPreview]);
 
   const showToday = activeSegment === 'Overview';
   const showYourPlan = activeSegment === 'Your Plan';
@@ -897,13 +908,13 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     workoutOverlay: {
       flex: 1,
       backgroundColor: theme.colors.bg,
-      paddingTop: insets.top + Spacing.lg,
     },
     workoutOverlayHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: Spacing.base,
+      paddingTop: insets.top + Spacing.lg,
       paddingBottom: Spacing.base,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.bgCardBorder,
@@ -1411,9 +1422,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
               <Text style={styles.planEyebrow}>Current Plan</Text>
               <View style={styles.planTitleRow}>
                 <Text style={styles.planTitle} numberOfLines={2}>{currentPlanName}</Text>
-                <View style={styles.planEditBtn}>
-                  <Pencil size={16} color={Colors.textSecondary} />
-                </View>
               </View>
 
               <View style={styles.planMetaRow}>
@@ -1432,6 +1440,9 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                 Goal: {planGoal}
               </Text>
             </View>
+            <TouchableOpacity style={styles.planEditBtn} activeOpacity={0.7}>
+              <Pencil size={16} color={Colors.textSecondary} />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.planStatsRow}>
@@ -1461,6 +1472,40 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           </TouchableOpacity>
         </View>
 
+        {/* ── Today's Schedule card ─────────────────────────── */}
+        {(() => {
+          const todayIndex = planDays.findIndex(d => d.day_name === dayName);
+          const todayPlanDay = todayIndex >= 0 ? planDays[todayIndex] : null;
+          if (!todayPlanDay) return null;
+          const todayExCount = todayPlanDay.exercises?.length ?? 0;
+          return (
+            <>
+              <SectionHeader title="Today's Schedule" />
+              <TouchableOpacity
+                activeOpacity={0.82}
+                onPress={() => {
+                  setSelectedPlanDayIndex(todayIndex);
+                  setShowWorkoutPreview(true);
+                }}
+                style={{ marginBottom: Spacing.base }}
+              >
+                <GlassCardView style={[styles.card, { flexDirection: 'row', alignItems: 'center', marginBottom: 0 }]}>
+                  <View style={[styles.weekCardIcon, { marginRight: Spacing.md, marginVertical: 0 }]}>
+                    <Dumbbell size={20} color={Colors.teal} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.weekCardName, { textAlign: 'left', marginTop: 0 }]}>{todayPlanDay.day_name}</Text>
+                    <Text style={[styles.weekCardSub, { textAlign: 'left', marginTop: 4 }]}>
+                      {todayExCount > 0 ? `${todayExCount} exercise${todayExCount === 1 ? '' : 's'} planned` : 'No exercises yet'}
+                    </Text>
+                  </View>
+                  <ChevronRight size={18} color={Colors.textSecondary} />
+                </GlassCardView>
+              </TouchableOpacity>
+            </>
+          );
+        })()}
+
         <SectionHeader title="This Week's Schedule" />
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekRail}>
@@ -1478,7 +1523,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                     <Dumbbell size={20} color={Colors.textSecondary} />
                   </View>
                   <Text style={styles.weekCardSub}>
-                    {isTodayDay ? `${exercises.length} today` : 'Workout day'}
+                    {isTodayDay ? `${exercises.length} today` : day.exercises ? `${day.exercises.length} exercises` : 'Workout day'}
                   </Text>
                   <View style={styles.weekCardFooter}>
                     <ChevronRight size={12} color={Colors.textSecondary} />
@@ -1516,35 +1561,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           </GlassCardView>
         </View>
 
-        <Modal visible={showWorkoutPreview} animationType="slide" onRequestClose={() => setShowWorkoutPreview(false)}>
-          <View style={styles.workoutOverlay}>
-            <View style={styles.workoutOverlayHeader}>
-              <BackButton onPress={() => setShowWorkoutPreview(false)} color={Colors.textPrimary} />
-              <View style={styles.workoutOverlayTitleWrap}>
-                <Text style={styles.workoutOverlayTitle}>{previewLabel} Workout</Text>
-                <Text style={styles.workoutOverlaySub}>{currentPlanName}</Text>
-              </View>
-              <View style={styles.workoutOverlaySpacer} />
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.workoutOverlayContent}>
-              <TodaysWorkout
-                exercises={exercises}
-                dayName={previewLabel}
-                planName={planName}
-                planDayId={planDayId}
-                onSetupPlan={() => setPlanModalVisible(true)}
-                onAddExercise={() => planDayId && onOpenAddExercise && onOpenAddExercise(planDayId)}
-                onEditExercise={openEditExercise}
-                onLogExercise={(ex) => onOpenWorkoutLog && onOpenWorkoutLog(ex)}
-                title="Exercises"
-                subtitle={undefined}
-                showHeader={true}
-                showAddExercise={false}
-              />
-            </ScrollView>
-          </View>
-        </Modal>
+        {/* workout preview overlay is rendered at root level */}
       </View>
     );
   }
@@ -1826,6 +1843,40 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* ── Workout Preview Overlay ──────────────────────────── */}
+      {showWorkoutPreview && (
+        <View style={[styles.workoutOverlay, { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 }]}>
+          <View style={styles.workoutOverlayHeader}>
+            <BackButton onPress={() => setShowWorkoutPreview(false)} color={Colors.textPrimary} />
+            <View style={styles.workoutOverlayTitleWrap}>
+              <Text style={styles.workoutOverlayTitle}>{selectedPlanDay?.day_name || dayName || ''} Workout</Text>
+              <Text style={styles.workoutOverlaySub}>{currentPlanName}</Text>
+            </View>
+            <View style={styles.workoutOverlaySpacer} />
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.workoutOverlayContent}>
+            <TodaysWorkout
+              exercises={selectedPlanDay?.day_name === dayName ? exercises : (selectedPlanDay?.exercises || [])}
+              dayName={selectedPlanDay?.day_name || dayName}
+              planName={planName}
+              planDayId={selectedPlanDay?.plan_days_id || planDayId}
+              onSetupPlan={() => setPlanModalVisible(true)}
+              onAddExercise={() => {
+                const dayId = selectedPlanDay?.plan_days_id || planDayId;
+                if (dayId && onOpenAddExercise) onOpenAddExercise(dayId);
+              }}
+              onEditExercise={openEditExercise}
+              onLogExercise={(ex) => onOpenWorkoutLog && onOpenWorkoutLog(ex)}
+              title="Exercises"
+              subtitle={undefined}
+              showHeader={false}
+              showAddExercise={true}
+            />
+          </ScrollView>
+        </View>
+      )}
 
       {/* ── Plan Setup Modal ───────────────────────────────── */}
       {planModalVisible && <Modal visible={planModalVisible} animationType="slide" transparent>
