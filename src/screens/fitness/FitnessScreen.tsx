@@ -16,7 +16,7 @@ import {
 import Svg, { Circle } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
 import { useStyles } from '../../providers/ThemeProvider';
-import { ChevronRight, Dumbbell, Check, Pencil, Trophy, Target, TrendingUp, Flame, Star, Plus, MoreVertical, BarChart2, ChevronDown } from 'lucide-react-native';
+import { ChevronRight, Dumbbell, Check, Pencil, Trophy, Target, TrendingUp, Flame, Star, Plus, BarChart2 } from 'lucide-react-native';
 import { GlassCardView, ProgressBar, ProfileAvatarButton, NotificationIconButton, ActivityProgressCard, LoadingSpinner, SectionHeader, BackButton } from '../../components/SharedComponents';
 import { WeeklyChart } from '../../components/WeeklyChart';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
@@ -25,6 +25,7 @@ import { useNotifications } from '../../providers/NotificationContext';
 import { TabName } from '../../navigation/TabBar';
 import { useAuth } from '../../providers/AuthProvider';
 import { useFocusEffect } from '@react-navigation/native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 // Module-level flag: set by WorkoutLogScreen when sets are logged
 let _workoutLogged = false;
@@ -35,9 +36,9 @@ import type { PlanDayInput } from '../../services/activityService';
 
 const { width } = Dimensions.get('window');
 
-type Segment = 'Overview' | 'Your Plan' | 'PRs';
+type Segment = 'Overview' | 'Your Plan' | 'Your PRs';
 
-const SEGMENTS: Segment[] = ['Overview', 'Your Plan', 'PRs'];
+const SEGMENTS: Segment[] = ['Overview', 'Your Plan', 'Your PRs'];
 
 
 function formatDateHeader(date: Date): string {
@@ -67,7 +68,7 @@ function formatPlanDate(dateLike?: string | null): string {
   return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export default function FitnessScreen({ onProfilePress, onNotificationsPress, onOpenAI, onOpenWorkoutLog, onOpenAddExercise }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void; onOpenWorkoutLog?: (exercise: any) => void; onOpenAddExercise?: (planDayId: number) => void }) {
+export default function FitnessScreen({ onProfilePress, onNotificationsPress, onOpenAI, onOpenWorkoutLog, onOpenAddExercise, onOpenAllPRs }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void; onOpenWorkoutLog?: (exercise: any) => void; onOpenAddExercise?: (planDayId: number) => void; onOpenAllPRs?: () => void }) {
   const { onScroll } = useScrollVisibility();
   const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
@@ -125,7 +126,28 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   const [goalSteps, setGoalSteps] = useState('10000');
   const [goalSaving, setGoalSaving] = useState(false);
 
+  // ── Log PR modal state ─────────────────────────────────
+  const [logPRVisible, setLogPRVisible] = useState(false);
+  const [prExerciseId, setPrExerciseId] = useState<number | null>(null);
+  const [prWeight, setPrWeight] = useState('');
+  const [prReps, setPrReps] = useState('');
+  const [prDescription, setPrDescription] = useState('');
+  const [prDateObj, setPrDateObj] = useState<Date>(new Date());
+  const [showPRDatePicker, setShowPRDatePicker] = useState(false);
+  const [prSaving, setPrSaving] = useState(false);
+  const [exPickerVisible, setExPickerVisible] = useState(false);
+
   const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+  const allPlanExercises = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const day of workoutPlanDays.days) {
+      for (const ex of day.exercises || []) {
+        map.set(ex.exercise_id, ex.exercise_name);
+      }
+    }
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [workoutPlanDays]);
 
   const fetchData = useCallback(async () => {
     if (!session?.access_token) return;
@@ -212,7 +234,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   const showToday = activeSegment === 'Overview';
   const showYourPlan = activeSegment === 'Your Plan';
   const showTodayWorkout = activeSegment === 'Overview';
-  const showPRs = activeSegment === 'PRs';
+  const showPRs = activeSegment === 'Your PRs';
 
   const currentPlanName = workoutPlanDays.plan_name || planName || 'Current Plan';
   const currentPlanDays = workoutPlanDays.days || [];
@@ -402,6 +424,42 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       Alert.alert('Error', e?.message || 'Failed to save goal.');
     } finally {
       setGoalSaving(false);
+    }
+  };
+
+  const onPRDateChange = (_: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS === 'android') setShowPRDatePicker(false);
+    if (selected) setPrDateObj(selected);
+  };
+
+  const handleLogPR = async () => {
+    if (!session?.access_token || !prExerciseId) return;
+    if (!prWeight.trim() || !prReps.trim()) {
+      Alert.alert('Required', 'Please enter weight and reps.');
+      return;
+    }
+    setPrSaving(true);
+    try {
+      const achievedAt = new Date(prDateObj);
+      achievedAt.setHours(12, 0, 0, 0);
+      await activityService.createPersonalRecord(session.access_token, {
+        exercise_id: prExerciseId,
+        weight: parseFloat(prWeight),
+        reps: parseInt(prReps, 10),
+        description: prDescription.trim() || undefined,
+        achieved_at: achievedAt.toISOString(),
+      });
+      setLogPRVisible(false);
+      setPrExerciseId(null);
+      setPrWeight('');
+      setPrReps('');
+      setPrDescription('');
+      setPrDateObj(new Date());
+      fetchData();
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to log PR.');
+    } finally {
+      setPrSaving(false);
     }
   };
 
@@ -747,6 +805,130 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       borderWidth: 1,
       borderColor: theme.colors.bgCardBorder,
       marginBottom: Spacing.xs,
+    },
+    // Full-screen PR modal
+    prModalOverlay: {
+      flex: 1,
+      backgroundColor: theme.colors.bg,
+    },
+    prModalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.base,
+      paddingBottom: Spacing.base,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.bgCardBorder,
+    },
+    prModalHeaderCenter: { flex: 1, alignItems: 'center' },
+    prModalTitle: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.bold,
+      color: theme.colors.textPrimary,
+    },
+    prModalBody: {
+      flex: 1,
+      padding: Spacing.lg,
+    },
+    prModalLabel: {
+      fontSize: Typography.sm,
+      fontWeight: Typography.semiBold,
+      color: theme.colors.textPrimary,
+      marginBottom: Spacing.sm,
+      marginTop: Spacing.lg,
+    },
+    prModalInput: {
+      backgroundColor: theme.colors.bgCard,
+      color: theme.colors.textPrimary,
+      fontSize: Typography.base,
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+    },
+    prModalDateBtn: {
+      backgroundColor: theme.colors.bgCard,
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+    },
+    prPickerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: theme.colors.bgCard,
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+    },
+    prPickerValue: { fontSize: Typography.base, color: theme.colors.textPrimary },
+    prPickerPlaceholder: { fontSize: Typography.base, color: theme.colors.textMuted },
+    prPickerArrow: { fontSize: Typography.lg, color: theme.colors.textMuted },
+    prPickerOverlay: {
+      flex: 1,
+      backgroundColor: theme.colors.overlay,
+      justifyContent: 'flex-end',
+    },
+    prPickerSheet: {
+      backgroundColor: theme.colors.bgCardSolid,
+      borderTopLeftRadius: Radius.xl,
+      borderTopRightRadius: Radius.xl,
+      maxHeight: '80%',
+      paddingBottom: Spacing.base,
+    },
+    prPickerHandle: {
+      width: 36,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: theme.colors.bgCardBorder,
+      alignSelf: 'center',
+      marginTop: Spacing.md,
+      marginBottom: Spacing.sm,
+    },
+    prPickerHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.xl,
+      paddingTop: Spacing.sm,
+      paddingBottom: Spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.bgCardBorder,
+    },
+    prPickerTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary },
+    prPickerDone: {
+      fontSize: Typography.sm,
+      color: theme.colors.teal,
+      fontWeight: Typography.bold,
+    },
+    prPickerItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.xl,
+      paddingVertical: Spacing.md + 4,
+    },
+    prPickerItemSelected: {
+      backgroundColor: theme.colors.bgCardBorder + '40',
+    },
+    prPickerItemText: { flex: 1, fontSize: Typography.base, color: theme.colors.textPrimary, fontWeight: Typography.medium },
+    prPickerItemSelectedText: { color: theme.colors.teal, fontWeight: Typography.semiBold },
+    prPickerDivider: {
+      height: 1,
+      backgroundColor: theme.colors.bgCardBorder,
+      marginLeft: Spacing.xl,
+    },
+    prModalFooter: {
+      flexDirection: 'row',
+      gap: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      paddingBottom: Spacing.lg,
+      paddingTop: Spacing.base,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.bgCardBorder,
     },
     planCard: {
       padding: Spacing.base,
@@ -1416,6 +1598,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
 
     return (
       <View style={styles.section}>
+        <SectionHeader title="Your Workout Plan" subtitle="Track your workout schedule and progress" />
         <GlassCardView style={[styles.planCard, { borderColor: Colors.teal + '40' }]}>
           <View style={styles.planCardTop}>
             <View style={styles.planCardContent}>
@@ -1593,7 +1776,21 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     );
   }
 
-  function PersonalRecordsCard({ prs }: { prs: PersonalRecord[] }) {
+  function PersonalRecordsCard({ prs, onViewAll }: { prs: PersonalRecord[]; onViewAll?: () => void }) {
+    const totalPRs = prs.length;
+    const now = new Date();
+    const thisMonth = prs.filter(pr => {
+      const d = new Date(pr.achieved_at);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length;
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    const thisWeek = prs.filter(pr => new Date(pr.achieved_at) >= startOfWeek).length;
+    const uniqueExercises = new Set(prs.map(pr => pr.exercise_name)).size;
+
+    const prColors = [Colors.teal, '#A855F7', Colors.accentBlue, Colors.amber];
+
     return (
       <View style={{ marginBottom: Spacing.xl }}>
         <View style={styles.prHeaderRow}>
@@ -1601,115 +1798,115 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
             <Text style={styles.prHeaderTitle}>Personal Records</Text>
             <Text style={styles.prHeaderSubtitle}>Your strongest moments. Keep breaking them.</Text>
           </View>
-          <TouchableOpacity style={styles.prDropdown}>
-            <Text style={styles.prDropdownText}>All Time</Text>
-            <ChevronDown size={16} color={Colors.teal} />
-          </TouchableOpacity>
         </View>
 
         <GlassCardView style={styles.prStatsCard}>
           <View style={styles.prStatItem}>
             <Trophy size={20} color={Colors.teal} />
-            <Text style={styles.prStatValue}>12</Text>
+            <Text style={styles.prStatValue}>{totalPRs}</Text>
             <Text style={styles.prStatLabel}>Total PRs</Text>
           </View>
           <View style={styles.prStatDivider} />
           <View style={styles.prStatItem}>
             <TrendingUp size={20} color={Colors.accentBlue} />
-            <Text style={styles.prStatValue}>5</Text>
+            <Text style={styles.prStatValue}>{thisMonth}</Text>
             <Text style={styles.prStatLabel}>This Month</Text>
           </View>
           <View style={styles.prStatDivider} />
           <View style={styles.prStatItem}>
             <Flame size={20} color={Colors.amber} />
-            <Text style={styles.prStatValue}>3</Text>
+            <Text style={styles.prStatValue}>{thisWeek}</Text>
             <Text style={styles.prStatLabel}>This Week</Text>
           </View>
           <View style={styles.prStatDivider} />
           <View style={styles.prStatItem}>
             <Star size={20} color={'#A855F7'} />
-            <Text style={styles.prStatValue}>8</Text>
+            <Text style={styles.prStatValue}>{uniqueExercises}</Text>
             <Text style={styles.prStatLabel}>Exercises</Text>
           </View>
         </GlassCardView>
 
         <View style={styles.prSectionHeader}>
           <Text style={styles.prSectionTitle}>PR Timeline</Text>
-          <TouchableOpacity style={styles.prSectionAction}>
+          <TouchableOpacity style={styles.prSectionAction} onPress={onViewAll}>
             <Text style={styles.prSectionActionText}>View All</Text>
             <ChevronRight size={16} color={Colors.teal} />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.prTimelineContainer}>
-          <View style={styles.prTimelineLine} />
-          
-          <View style={styles.prTimelineStep}>
-            <View style={styles.prTimelineDot} />
-            <Text style={styles.prTimelineLabel}>May</Text>
-            <Text style={styles.prTimelineSub}>4 PRs</Text>
-          </View>
-          
-          <View style={styles.prTimelineStep}>
-            <View style={styles.prTimelineDot} />
-            <Text style={styles.prTimelineLabel}>Jun</Text>
-            <Text style={styles.prTimelineSub}>2 PRs</Text>
-          </View>
-          
-          <View style={styles.prTimelineStep}>
-            <View style={styles.prTimelineDot} />
-            <Text style={styles.prTimelineLabel}>Jul</Text>
-            <Text style={styles.prTimelineSub}>3 PRs</Text>
-          </View>
-          
-          <View style={styles.prTimelineStep}>
-            <View style={styles.prTimelineDotActive} />
-            <Text style={[styles.prTimelineLabel, styles.prTimelineLabelActive]}>Aug</Text>
-            <Text style={[styles.prTimelineSub, styles.prTimelineLabelActive]}>3 PRs</Text>
-          </View>
-          
-          <View style={styles.prTimelineStep}>
-            <View style={styles.prTimelineDot} />
-            <Text style={styles.prTimelineLabel}>This Week</Text>
-            <Text style={styles.prTimelineSub}>1 PR</Text>
-          </View>
-        </View>
+        {(() => {
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const monthCounts: Record<string, number> = {};
+          prs.forEach(pr => {
+            const d = new Date(pr.achieved_at);
+            const key = monthNames[d.getMonth()];
+            monthCounts[key] = (monthCounts[key] || 0) + 1;
+          });
+          const recentMonths = monthNames.filter(m => monthCounts[m]).slice(-5);
+          if (recentMonths.length === 0) return null;
+          const currentMonth = monthNames[now.getMonth()];
+          return (
+            <View style={styles.prTimelineContainer}>
+              <View style={styles.prTimelineLine} />
+              {recentMonths.map((m) => {
+                const isActive = m === currentMonth;
+                return (
+                  <View key={m} style={styles.prTimelineStep}>
+                    <View style={isActive ? styles.prTimelineDotActive : styles.prTimelineDot} />
+                    <Text style={isActive ? [styles.prTimelineLabel, styles.prTimelineLabelActive] : styles.prTimelineLabel}>{m}</Text>
+                    <Text style={isActive ? [styles.prTimelineSub, styles.prTimelineLabelActive] : styles.prTimelineSub}>{monthCounts[m]} PR{monthCounts[m] > 1 ? 's' : ''}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          );
+        })()}
 
         <View style={[styles.prSectionHeader, { marginTop: Spacing.xl }]}>
           <Text style={styles.prSectionTitle}>Recent PRs</Text>
+          {prs.length > 5 && (
+            <TouchableOpacity style={styles.prSectionAction} onPress={onViewAll}>
+              <Text style={styles.prSectionActionText}>View All</Text>
+              <ChevronRight size={16} color={Colors.teal} />
+            </TouchableOpacity>
+          )}
         </View>
 
-        {[
-          { title: 'Bench Press', date: '05 Aug 2024', weight: '100', increase: '5 kg', icon: 'green' },
-          { title: 'Back Squat', date: '02 Aug 2024', weight: '130', increase: '5 kg', icon: 'purple' },
-          { title: 'Deadlift', date: '28 Jul 2024', weight: '160', increase: '10 kg', icon: 'blue' },
-          { title: 'Overhead Press', date: '24 Jul 2024', weight: '45', increase: '2.5 kg', icon: 'orange' },
-        ].map((item, idx) => {
-          const itemColor = item.icon === 'green' ? Colors.teal : item.icon === 'purple' ? '#A855F7' : item.icon === 'blue' ? Colors.accentBlue : Colors.amber;
-          return (
-            <GlassCardView key={idx} style={styles.prCard}>
-              <View style={[styles.prCardIconWrap, { backgroundColor: itemColor + '20' }]}>
-                <Dumbbell size={20} color={itemColor} />
-              </View>
-              <View style={styles.prCardContent}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <Text style={styles.prCardTitle}>{item.title}</Text>
-                  <MoreVertical size={16} color={Colors.textSecondary} />
+        {prs.length === 0 ? (
+          <GlassCardView style={styles.prCard}>
+            <Text style={{ color: Colors.textSecondary, fontSize: Typography.sm, textAlign: 'center', paddingVertical: Spacing.md }}>
+              No PRs logged yet. Tap the button below to log your first one.
+            </Text>
+          </GlassCardView>
+        ) : (
+          prs.slice(0, 5).map((pr, idx) => {
+            const itemColor = prColors[idx % prColors.length];
+            const dateStr = new Date(pr.achieved_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+            return (
+              <GlassCardView key={pr.pr_id} style={styles.prCard}>
+                <View style={[styles.prCardIconWrap, { backgroundColor: itemColor + '20' }]}>
+                  <Dumbbell size={20} color={itemColor} />
                 </View>
-                <Text style={styles.prCardSubtitle}>1 Rep Max</Text>
-                
-                <View style={styles.prCardRow}>
-                  <Text style={[styles.prCardWeight, { color: itemColor }]}>{item.weight}</Text>
-                  <Text style={styles.prCardWeightUnit}>kg</Text>
-                  <Text style={[styles.prCardIncrease, { color: itemColor }]}>↑ {item.increase}</Text>
+                <View style={styles.prCardContent}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Text style={styles.prCardTitle}>{pr.exercise_name}</Text>
+                  </View>
+                  <Text style={styles.prCardSubtitle}>{pr.reps} Rep Max</Text>
+                  <View style={styles.prCardRow}>
+                    <Text style={[styles.prCardWeight, { color: itemColor }]}>{pr.weight}</Text>
+                    <Text style={styles.prCardWeightUnit}>kg</Text>
+                  </View>
+                  {pr.description ? (
+                    <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 }}>{pr.description}</Text>
+                  ) : null}
+                  <Text style={styles.prCardDate}>{dateStr}</Text>
                 </View>
-                <Text style={styles.prCardDate}>{item.date}</Text>
-              </View>
-            </GlassCardView>
-          );
-        })}
+              </GlassCardView>
+            );
+          })
+        )}
 
-        <TouchableOpacity style={styles.prLogBtn} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.prLogBtn} activeOpacity={0.7} onPress={() => setLogPRVisible(true)}>
           <View style={[styles.prLogBtnRow, { marginBottom: 0 }]}>
             <Plus size={16} color={Colors.teal} />
             <Text style={styles.prLogBtnText}>Log a New PR</Text>
@@ -1835,7 +2032,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
 
             {showPRs && (
               <View style={styles.section}>
-                <PersonalRecordsCard prs={prs} />
+                <PersonalRecordsCard prs={prs} onViewAll={onOpenAllPRs} />
               </View>
             )}
           </>
@@ -2257,6 +2454,139 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                 )}
               </TouchableOpacity>
             </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ── Log PR Modal ─────────────────────────── */}
+      {logPRVisible && (
+        <Modal visible={logPRVisible} animationType="slide" transparent>
+          <View style={styles.prModalOverlay}>
+            <View style={[styles.prModalHeader, { paddingTop: insets.top + Spacing.sm }]}>
+              <BackButton onPress={() => setLogPRVisible(false)} color={Colors.textPrimary} />
+              <View style={styles.prModalHeaderCenter}>
+                <Text style={styles.prModalTitle}>Log a New PR</Text>
+              </View>
+              <View style={{ width: 40 }} />
+            </View>
+
+            <ScrollView style={styles.prModalBody} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+              <Text style={styles.prModalLabel}>Exercise</Text>
+              {allPlanExercises.length > 0 ? (
+                <TouchableOpacity style={styles.prPickerRow} onPress={() => setExPickerVisible(true)} activeOpacity={0.7}>
+                  <Text style={prExerciseId ? styles.prPickerValue : styles.prPickerPlaceholder}>
+                    {prExerciseId ? allPlanExercises.find(e => e.id === prExerciseId)?.name : 'Select exercise'}
+                  </Text>
+                  <Text style={styles.prPickerArrow}>›</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary }}>
+                  Set up a workout plan first to log PRs.
+                </Text>
+              )}
+
+              <Text style={styles.prModalLabel}>Weight (kg)</Text>
+              <TextInput
+                style={styles.prModalInput}
+                value={prWeight}
+                onChangeText={setPrWeight}
+                keyboardType="decimal-pad"
+                placeholder="e.g. 100"
+                placeholderTextColor={Colors.textMuted}
+              />
+
+              <Text style={styles.prModalLabel}>Reps</Text>
+              <TextInput
+                style={styles.prModalInput}
+                value={prReps}
+                onChangeText={setPrReps}
+                keyboardType="number-pad"
+                placeholder="e.g. 1"
+                placeholderTextColor={Colors.textMuted}
+              />
+
+              <Text style={styles.prModalLabel}>Date</Text>
+              <TouchableOpacity
+                style={styles.prModalDateBtn}
+                onPress={() => setShowPRDatePicker(true)}
+                activeOpacity={0.7}>
+                <Text style={{ color: Colors.textPrimary, fontSize: Typography.sm }}>
+                  {prDateObj.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                </Text>
+              </TouchableOpacity>
+              {showPRDatePicker && (
+                <DateTimePicker
+                  value={prDateObj}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={onPRDateChange}
+                  maximumDate={new Date()}
+                />
+              )}
+
+              <Text style={styles.prModalLabel}>Note (optional)</Text>
+              <TextInput
+                style={[styles.prModalInput, { minHeight: 80, textAlignVertical: 'top' }]}
+                value={prDescription}
+                onChangeText={setPrDescription}
+                placeholder="e.g. new 1RM!"
+                placeholderTextColor={Colors.textMuted}
+                multiline
+              />
+            </ScrollView>
+
+            <View style={styles.prModalFooter}>
+              <TouchableOpacity
+                onPress={() => setLogPRVisible(false)}
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: Colors.bgCardBorder }}>
+                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleLogPR}
+                disabled={prSaving || !prExerciseId}
+                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.teal, opacity: prSaving || !prExerciseId ? 0.6 : 1 }}>
+                {prSaving ? (
+                  <ActivityIndicator size="small" color={Colors.bg} />
+                ) : (
+                  <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Log PR</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* ── Exercise Picker Modal ─────────────────────────── */}
+      <Modal visible={exPickerVisible} animationType="slide" transparent>
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setExPickerVisible(false)}
+          style={styles.prPickerOverlay}>
+          <View style={styles.prPickerSheet}>
+            <View style={styles.prPickerHandle} />
+            <View style={styles.prPickerHeader}>
+              <Text style={styles.prPickerTitle}>Select Exercise</Text>
+              <TouchableOpacity onPress={() => setExPickerVisible(false)} activeOpacity={0.7}>
+                <Text style={styles.prPickerDone}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            {allPlanExercises.map((ex, idx) => (
+              <React.Fragment key={ex.id}>
+                <TouchableOpacity
+                  style={[styles.prPickerItem, prExerciseId === ex.id && styles.prPickerItemSelected]}
+                  onPress={() => {
+                    setPrExerciseId(ex.id);
+                    setExPickerVisible(false);
+                  }}
+                  activeOpacity={0.7}>
+                  <Text style={[styles.prPickerItemText, prExerciseId === ex.id && styles.prPickerItemSelectedText]}>
+                    {ex.name}
+                  </Text>
+                  {prExerciseId === ex.id && <Check size={20} color={Colors.teal} strokeWidth={2.5} />}
+                </TouchableOpacity>
+                {idx < allPlanExercises.length - 1 && <View style={styles.prPickerDivider} />}
+              </React.Fragment>
+            ))}
           </View>
         </TouchableOpacity>
       </Modal>

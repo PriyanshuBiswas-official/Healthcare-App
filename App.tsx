@@ -15,6 +15,7 @@ import WorkoutLogScreen from './src/screens/fitness/WorkoutLogScreen';
 import AddExerciseScreen from './src/screens/fitness/AddExerciseScreen';
 import PredefinedExerciseScreen from './src/screens/fitness/PredefinedExerciseScreen';
 import ExerciseDetailsScreen from './src/screens/fitness/ExerciseDetailsScreen';
+import AllPRsScreen from './src/screens/fitness/AllPRsScreen';
 import HealthLogScreen, { HealthLogDraft } from './src/screens/health/HealthLogScreen';
 import PartnerHealthReportScreen from './src/screens/relationships/PartnerHealthReportScreen';
 import RelationshipsScreen from './src/screens/relationships/RelationshipsScreen';
@@ -51,10 +52,11 @@ type RootStackParamList = {
   HealthLog: undefined;
   PartnerReport: { partnerId: string } | undefined;
   Relationships: undefined;
+  AllPRs: undefined;
 };
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
-const OVERLAY_TABS: string[] = ['Profile', 'Notifications', 'WorkoutLog', 'AddExercise', 'PredefinedExercise', 'ExerciseDetails', 'HealthLog', 'PartnerReport', 'Relationships'];
+const OVERLAY_TABS: string[] = ['Profile', 'Notifications', 'WorkoutLog', 'AddExercise', 'PredefinedExercise', 'ExerciseDetails', 'HealthLog', 'PartnerReport', 'Relationships', 'AllPRs'];
 
 const OCR_PROMPT = `Please analyze this medical document image. Extract all visible text and provide:
 1. A clear transcription of all text found
@@ -217,6 +219,7 @@ const MemoizedExerciseDetailsScreen = React.memo(ExerciseDetailsScreen);
 const MemoizedHealthLogScreen = React.memo(HealthLogScreen);
 const MemoizedPartnerReportScreen = React.memo(PartnerHealthReportScreen);
 const MemoizedRelationshipsScreen = React.memo(RelationshipsScreen);
+const MemoizedAllPRsScreen = React.memo(AllPRsScreen);
 // ── AppShell ─────────────────────────────────────────────────────────
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -323,6 +326,7 @@ function TabNavigator({ route }: any) {
             onOpenAI={openAI}
             onOpenWorkoutLog={(ex: any) => props.navigation.navigate('WorkoutLog', { exercise: ex })}
             onOpenAddExercise={(planDayId: number) => props.navigation.navigate('AddExercise', { planDayId })}
+            onOpenAllPRs={() => props.navigation.navigate('AllPRs')}
           />
           </PostHogBoundary>
         )}
@@ -585,6 +589,11 @@ function AppShell() {
                   onBack={() => props.navigation.goBack()} 
                   onPartnerPress={(partnerId) => props.navigation.navigate('PartnerReport', { partnerId })} 
                 />
+              )}
+            </RootStack.Screen>
+            <RootStack.Screen name="AllPRs">
+              {(props) => (
+                <MemoizedAllPRsScreen onBack={() => props.navigation.goBack()} />
               )}
             </RootStack.Screen>
             </RootStack.Navigator>

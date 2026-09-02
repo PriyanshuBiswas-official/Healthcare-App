@@ -66,6 +66,25 @@ export async function getPersonalRecords(token: string): Promise<PersonalRecord[
   return json.data;
 }
 
+export interface LogPRInput {
+  exercise_id: number;
+  weight: number;
+  reps: number;
+  description?: string;
+  achieved_at?: string;
+}
+
+export async function createPersonalRecord(token: string, data: LogPRInput): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/api/activity/prs`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to log PR');
+  return json.data;
+}
+
 export async function createWorkoutPlan(token: string, plan: PlanInput): Promise<any> {
   const res = await fetch(`${API_BASE_URL}/api/activity/plan`, {
     method: 'POST',
