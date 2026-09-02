@@ -1133,7 +1133,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       marginBottom: Spacing.sm,
     },
     prHeaderTitle: {
-      fontSize: Typography.xl,
+      fontSize: Typography.md,
       fontWeight: Typography.bold,
       color: theme.colors.textPrimary,
     },
@@ -1190,9 +1190,10 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       marginBottom: Spacing.md,
     },
     prSectionTitle: {
-      fontSize: Typography.lg,
+      fontSize: Typography.md,
       fontWeight: Typography.bold,
       color: theme.colors.textPrimary,
+      letterSpacing: Typography.lsWide,
     },
     prSectionAction: {
       flexDirection: 'row',
