@@ -1608,7 +1608,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                 Goal: {planGoal}
               </Text>
             </View>
-            <TouchableOpacity style={styles.planEditBtn} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.planEditBtn} activeOpacity={0.7} onPress={() => Alert.alert('Coming Soon', 'Workout plan editing is under development and will be available soon!')}>
               <Pencil size={16} color={Colors.textSecondary} />
             </TouchableOpacity>
           </View>
@@ -1632,10 +1632,10 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         </GlassCardView>
 
         <View style={styles.planActionsRow}>
-          <TouchableOpacity activeOpacity={0.7} style={styles.planActionBtn}>
+          <TouchableOpacity activeOpacity={0.7} style={styles.planActionBtn} onPress={() => Alert.alert('Coming Soon', 'Custom plan creation is under development and will be available soon!')}>
             <Text style={styles.planActionText}>Custom Plan</Text>
           </TouchableOpacity>
-          <TouchableOpacity activeOpacity={0.7} style={styles.planActionBtn}>
+          <TouchableOpacity activeOpacity={0.7} style={styles.planActionBtn} onPress={() => Alert.alert('Coming Soon', 'Plan exploration is under development and will be available soon!')}>
             <Text style={styles.planActionText}>Explore Plans</Text>
           </TouchableOpacity>
         </View>

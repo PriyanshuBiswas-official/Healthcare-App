@@ -579,7 +579,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
 
             <SectionHeader title="Track Calorie with a photo" subtitle="Snap a photo to log meals automatically" />
             <GlassCardView style={styles.photoUploadCard}>
-              <TouchableOpacity style={styles.photoUploadArea}>
+              <TouchableOpacity style={styles.photoUploadArea} onPress={() => Alert.alert('Coming Soon', 'Meal scanning with AI is under development and will be available soon!')}>
                 <View style={styles.cameraIconWrap}>
                   <Camera size={28} color={colors.teal} strokeWidth={2} />
                 </View>

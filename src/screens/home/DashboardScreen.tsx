@@ -21,7 +21,6 @@ import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar, LoadingSpinner } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import ProfileCompletionBanner from '../../components/ProfileCompletionBanner';
-import HealthCalendar from '../../components/HealthCalendar';
 import { useAuth } from '../../providers/AuthProvider';
 import { usePreferences } from '../../providers/PreferencesContext';
 import { useNotifications } from '../../providers/NotificationContext';
@@ -1580,7 +1579,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                   <Text style={[styles.heroOverviewSub, { marginBottom: 0, marginLeft: 4 }]}>Limited data available</Text>
                 </View>
               )}
-              <TouchableOpacity style={styles.heroReportBtn}>
+              <TouchableOpacity style={styles.heroReportBtn} onPress={() => Alert.alert('Coming Soon', 'Full health report is under development and will be available soon!')}>
                 <Text style={styles.heroReportBtnText}>Full Report</Text>
               </TouchableOpacity>
             </View>
@@ -1676,9 +1675,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             <Text style={styles.partnerRelation}>Invite</Text>
           </TouchableOpacity>
         </ScrollView>
-
-        {/* SECTION: HEALTH CALENDAR (Self-contained and optimized) */}
-        <HealthCalendar />
 
         {/* SECTION: REDESIGNED QUICK ACTIONS */}
         <SectionHeader title="Quick Actions" />
@@ -2094,7 +2090,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
         {/* SECTION: COMMUNITY PREVIEW */}
         {!hideCommunitySpotlight && (<>
-          <SectionHeader title="Community Spotlight" action="Join Groups" />
+          <SectionHeader title="Community Spotlight" action="Join Groups" onAction={() => Alert.alert('Coming Soon', 'Community groups are under development and will be available soon!')} />
           <GlassCardView style={styles.communityCard}>
             <View style={styles.communityPost}>
               <Text style={styles.communityPostAuthor}>Jane Cooper shared a post in running group:</Text>

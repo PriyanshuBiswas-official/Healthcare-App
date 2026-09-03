@@ -14,7 +14,7 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { User, ClipboardList, Pill, TriangleAlert, Phone, Bell, Smartphone, Droplets, Dumbbell, Building2, Moon, Heart, CircleQuestionMark, Shield, FileText, Info, PenLine, Monitor, Sun, Users, Crown, Lock, AlertTriangle } from 'lucide-react-native';
+import { User, ClipboardList, Pill, TriangleAlert, Phone, Bell, Smartphone, Droplets, Dumbbell, Building2, Moon, Heart, CircleQuestionMark, Shield, FileText, Info, PenLine, Monitor, Sun, Users, Crown, Lock, AlertTriangle, Calendar } from 'lucide-react-native';
 import { GlassCardView, SectionHeader, ProgressBar, BackButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useAuth } from '../../providers/AuthProvider';
@@ -81,6 +81,7 @@ function getHealthProfile(profileData: ProfileData | null, colors: AppTheme['col
     { icon: <TriangleAlert size={20} color={colors.danger} />, label: 'Allergies', sub: allergyList.length > 0 ? allergyList.slice(0, 2).join(', ') : 'No allergies recorded', color: colors.danger },
     { icon: <ClipboardList size={20} color={colors.accentBlue} />, label: 'Diet Type', sub: (profileData as any)?.diet_type || 'Not set', color: colors.accentBlue },
     { icon: <Phone size={20} color={colors.accentBlue} />, label: 'Emergency Contacts', sub: 'Emergency contacts', color: colors.accentBlue },
+    { icon: <Calendar size={20} color={colors.teal} />, label: 'Health Calendar', sub: 'Appointments, medications, and more', color: colors.teal },
   ];
 }
 
@@ -744,6 +745,10 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, onNaviga
                     item={item}
                     colors={theme.colors}
                     onPress={() => {
+                      if (item.label === 'Health Calendar') {
+                        Alert.alert('Coming Soon', 'Health Calendar is under development and will be available soon!');
+                        return;
+                      }
                       const sectionMap: Record<string, HealthSection> = {
                         'Personal Information': 'personal',
                         'Medical History': 'medical',
@@ -788,7 +793,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, onNaviga
             <GlassCardView style={styles.menuCard}>
               {CONNECTED_DEVICES.map((item, i) => (
                 <View key={item.label}>
-                  <MenuRow item={item} colors={theme.colors} />
+                  <MenuRow item={item} colors={theme.colors} onPress={() => Alert.alert('Coming Soon', 'Health Connect integration is under development and will be available soon!')} />
                   {i < CONNECTED_DEVICES.length - 1 && <View style={styles.divider} />}
                 </View>
               ))}
@@ -843,6 +848,15 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, onNaviga
                         setActiveSection(sectionMap[item.label]);
                       } else if (item.label === 'Help & Support') {
                         onNavigate?.('Feedback');
+                      } else {
+                        const messages: Record<string, string> = {
+                          'Privacy Policy': 'Privacy Policy will be available soon.',
+                          'Privacy & Security': 'Privacy & Security settings are under development.',
+                          'Terms and Conditions': 'Terms and Conditions will be available soon.',
+                          'Disclaimer': 'Health Disclaimer will be available soon.',
+                          'About Cureto': 'About page is under development.',
+                        };
+                        Alert.alert('Coming Soon', messages[item.label] || 'This feature is under development and will be available soon!');
                       }
                     }}
                   />
