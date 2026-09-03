@@ -72,18 +72,6 @@ export default function WorkoutLogScreen({
   // Progress chart data (hardcoded for now)
   const progressData = getMockProgressData(exercise.exercise_name);
 
-  const suggestedWeight = exercise.last_performance
-    ? exercise.last_performance.completed
-      ? exercise.last_performance.weight + 2.5
-      : exercise.last_performance.weight
-    : 0;
-
-  const suggestedReps = exercise.last_performance
-    ? exercise.last_performance.completed
-      ? exercise.target_reps
-      : exercise.last_performance.reps
-    : exercise.target_reps;
-
   const [sets, setSets] = useState<SetEntry[]>(() => {
     if (isCompleted && loggedSets.length > 0) {
       return loggedSets.map(s => ({
@@ -94,8 +82,8 @@ export default function WorkoutLogScreen({
     }
     return Array.from({ length: exercise.target_sets }, (_, i) => ({
       set_no: i + 1,
-      weight: String(Math.round(suggestedWeight * 10) / 10),
-      reps: String(suggestedReps),
+      weight: '',
+      reps: String(exercise.target_reps),
     }));
   });
   const [saving, setSaving] = useState(false);
@@ -190,19 +178,6 @@ export default function WorkoutLogScreen({
     completedBadgeText: { fontSize: Typography.xs, color: c.colors.teal, fontWeight: Typography.bold },
     scroll: { flex: 1 },
     scrollContent: { padding: Spacing.base, paddingBottom: 100 },
-
-    // ── Last Session Hint ──
-    lastHint: {
-      marginBottom: Spacing.base,
-      padding: Spacing.md,
-      backgroundColor: c.colors.accentBlue + '10',
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: c.colors.accentBlue + '30',
-    },
-    lastHintTitle: { fontSize: Typography.sm, fontWeight: Typography.semiBold, color: c.colors.accentBlue, marginBottom: 6 },
-    lastHintText: { fontSize: Typography.base, color: c.colors.textSecondary },
-    suggestionText: { fontSize: Typography.base, color: c.colors.teal, fontWeight: Typography.semiBold, marginTop: 6 },
 
     // ── How to Perform ──
     howToCard: {
@@ -398,23 +373,6 @@ export default function WorkoutLogScreen({
                   </View>
                 ))}
               </View>
-            )}
-          </View>
-        )}
-
-        {/* ── Last Performance Hint ── */}
-        {!isCompleted && exercise.last_performance && (
-          <View style={styles.lastHint}>
-            <Text style={styles.lastHintTitle}>Last Session</Text>
-            <Text style={styles.lastHintText}>
-              {exercise.last_performance.weight}kg × {exercise.last_performance.reps} ·{' '}
-              {exercise.last_performance.sets_completed}/{exercise.last_performance.sets_total} sets
-              {exercise.last_performance.completed ? ' ✓' : ''}
-            </Text>
-            {exercise.last_performance.completed && (
-              <Text style={styles.suggestionText}>
-                Suggested: {Math.round(suggestedWeight * 10) / 10}kg
-              </Text>
             )}
           </View>
         )}

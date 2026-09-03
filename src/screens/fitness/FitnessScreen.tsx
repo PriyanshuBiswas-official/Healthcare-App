@@ -720,8 +720,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       flexDirection: 'row',
       alignItems: 'flex-end',
       justifyContent: 'space-between',
-      height: 100,
-      marginBottom: Spacing.lg,
+      height: 120,
       paddingHorizontal: Spacing.sm,
     },
     barCol: { alignItems: 'center', flex: 1 },
@@ -733,8 +732,14 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     barLabel: {
       fontSize: Typography.xs,
       color: theme.colors.textMuted,
+      fontWeight: Typography.semiBold,
+      textAlign: 'center',
+    },
+    barLabelsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
       marginTop: Spacing.sm,
-      fontWeight: Typography.medium,
+      paddingHorizontal: Spacing.sm,
     },
     prRow: {
       flexDirection: 'row',
@@ -1521,28 +1526,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                       ))}
                     </View>
                   )}
-                  {!hasLogged && ex.last_performance && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: Spacing.sm, backgroundColor: Colors.accentBlue + '10', borderRadius: Radius.sm, paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs }}>
-                      <Text style={{ fontSize: Typography.xs, color: Colors.accentBlue, fontWeight: Typography.semiBold, marginRight: Spacing.xs }}>
-                        Last:
-                      </Text>
-                      <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary }}>
-                        {ex.last_performance.weight}kg × {ex.last_performance.reps}
-                      </Text>
-                      <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginHorizontal: 4 }}>·</Text>
-                      <Text style={{ fontSize: Typography.xs, color: ex.last_performance.completed ? Colors.teal : Colors.amber }}>
-                        {ex.last_performance.sets_completed}/{ex.last_performance.sets_total} sets
-                      </Text>
-                      {ex.last_performance.completed && (
-                        <>
-                          <ChevronRight size={14} color={Colors.textSecondary} strokeWidth={2} style={{ marginHorizontal: 2 }} />
-                          <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>
-                            Try {ex.last_performance.weight + 2.5}kg
-                          </Text>
-                        </>
-                      )}
-                    </View>
-                  )}
+
                 </GlassCardView>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => onEditExercise(ex)} style={{ position: 'absolute', top: Spacing.base, right: Spacing.base, padding: Spacing.xs, zIndex: 1 }} activeOpacity={0.6}>
@@ -1751,7 +1735,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   }
 
   function WeeklyActivityCard({ days, stats }: { days: WeeklyDay[]; stats: WeeklyStats | null }) {
-    const maxBarH = 80;
+    const maxBarH = 120;
     const maxVal = useMemo(() => {
       if (days.length === 0) return 1;
       return Math.max(...days.map(d => d.calories), 1);
@@ -1764,14 +1748,18 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         <View style={styles.barChart}>
           {days.map((bar, i) => {
             const barVal = maxVal > 0 ? bar.calories / maxVal : 0;
-            const barColor = bar.is_today ? Colors.accentBlue : bar.calories > 0 ? Colors.teal + '90' : Colors.bgCardBorder;
+            const barColor = bar.calories > 0 ? Colors.teal : Colors.bgCardBorder;
             return (
               <View key={i} style={styles.barCol}>
-                <View style={[styles.bar, { height: Math.max(maxBarH * barVal, 8), backgroundColor: barColor }]} />
-                <Text style={[styles.barLabel, bar.is_today && { color: Colors.accentBlue, fontWeight: Typography.bold }]}>{bar.day}</Text>
+                <View style={[styles.bar, { height: Math.max(maxBarH * barVal, 4), backgroundColor: barColor, opacity: bar.calories > 0 ? 0.85 : 0.3 }]} />
               </View>
             );
           })}
+        </View>
+        <View style={styles.barLabelsRow}>
+          {days.map((bar, i) => (
+            <Text key={i} style={[styles.barLabel, { width: Math.min(36, (width - 60) / 7) }]}>{bar.day}</Text>
+          ))}
         </View>
       </GlassCardView>
     );
