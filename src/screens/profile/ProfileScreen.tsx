@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
   Image,
   Alert,
   InteractionManager,
@@ -15,12 +14,11 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { User, ClipboardList, Pill, TriangleAlert, Phone, Bell, Flower2, Lock, Watch, Smartphone, Droplets, Dumbbell, Building2, Moon, Heart, CircleQuestionMark, Shield, FileText, Info, PenLine, Monitor, Sun, Users, Crown } from 'lucide-react-native';
+import { User, ClipboardList, Pill, TriangleAlert, Phone, Bell, Smartphone, Droplets, Dumbbell, Building2, Moon, Heart, CircleQuestionMark, Shield, FileText, Info, PenLine, Monitor, Sun, Users, Crown, Lock, AlertTriangle } from 'lucide-react-native';
 import { GlassCardView, SectionHeader, ProgressBar, BackButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useAuth } from '../../providers/AuthProvider';
 import { supabase } from '../../lib/supabase';
-import { usePreferences } from '../../providers/PreferencesContext';
 import { API_BASE_URL } from '../../config/api';
 import PersonalInfoScreen from './PersonalInfoScreen';
 import MedicalHistoryScreen from './MedicalHistoryScreen';
@@ -108,40 +106,6 @@ function MenuRow({ item, onPress, colors }: { item: MenuItem; onPress?: () => vo
   );
 }
 
-function ToggleRow({
-  icon,
-  label,
-  sub,
-  value,
-  onValueChange,
-  colors,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  sub: string;
-  value: boolean;
-  onValueChange: (v: boolean) => void;
-  colors: AppTheme['colors'];
-}) {
-  return (
-    <View style={menuStyles.menuRow}>
-      <View style={[menuStyles.menuIcon, { backgroundColor: colors.teal + '20' }]}>
-        {icon}
-      </View>
-      <View style={menuStyles.menuContent}>
-        <Text style={[menuStyles.menuLabel, { color: colors.textPrimary }]}>{label}</Text>
-        <Text style={[menuStyles.menuSub, { color: colors.textSecondary }]}>{sub}</Text>
-      </View>
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: colors.bgCardBorder, true: colors.teal + '60' }}
-        thumbColor={value ? colors.teal : colors.textMuted}
-      />
-    </View>
-  );
-}
-
 const menuStyles = StyleSheet.create({
   menuRow: {
     flexDirection: 'row',
@@ -183,24 +147,13 @@ const menuStyles = StyleSheet.create({
   },
 });
 
-export default function ProfileScreen({ onBackPress, onCompleteProfile, initialSection }: { onBackPress?: () => void; onCompleteProfile?: () => void; initialSection?: string | null }) {
+export default function ProfileScreen({ onBackPress, onCompleteProfile, onNavigate, initialSection }: { onBackPress?: () => void; onCompleteProfile?: () => void; onNavigate?: (screen: string, params?: any) => void; initialSection?: string | null }) {
   const { theme } = useTheme();
   const { onScroll } = useScrollVisibility();
   const insets = useSafeAreaInsets();
   const { user, session, profileCompletion } = useAuth();
-  const { hideVitals, setHideVitals, hideCommunitySpotlight, setHideCommunitySpotlight } = usePreferences();
   const { systemSync, setSystemSync, themeName, setThemeName } = useTheme();
 
-  const PREFERENCES = useMemo(() => [
-    { key: 'notifications', icon: <Bell size={20} color="#F59E0B" />, label: 'Push Notifications', sub: 'Appointments & reminders', default: true },
-    { key: 'reminders', icon: <Pill size={20} color="#EC4899" />, label: 'Medication Reminders', sub: 'Daily dose alerts', default: true },
-    { key: 'cycle', icon: <Flower2 size={20} color="#EC4899" />, label: 'Cycle Tracking Alerts', sub: 'Phase & fertility updates', default: false },
-    { key: 'biometric', icon: <Lock size={20} color="#14B8A6" />, label: 'Biometric Lock', sub: 'Face ID / fingerprint', default: true },
-  ] as const, []);
-
-  const [toggles, setToggles] = useState(
-    Object.fromEntries(PREFERENCES.map(p => [p.key, p.default])) as Record<string, boolean>,
-  );
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [activeSection, setActiveSection] = useState<HealthSection | null>(
     initialSection as HealthSection | null
@@ -463,7 +416,6 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
   }));
 
   const CONNECTED_DEVICES: MenuItem[] = useMemo(() => [
-    { icon: <Watch size={20} color={theme.colors.teal} />, label: 'Apple Watch', sub: 'Synced · Last: 2 min ago', color: theme.colors.teal, badge: 'On' },
     { icon: <Smartphone size={20} color={theme.colors.pink} />, label: 'Health Connect', sub: 'Steps, sleep, heart rate', color: theme.colors.pink },
   ], [theme.colors]);
 
@@ -478,9 +430,11 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
 
   const SUPPORT: MenuItem[] = useMemo(() => [
     { icon: <Crown size={20} color="#F59E0B" />, label: 'Manage Subscriptions', sub: 'Plans & billing' },
-    { icon: <CircleQuestionMark size={20} color="#14B8A6" />, label: 'Help & Support', sub: 'FAQs, chat support' },
-    { icon: <Shield size={20} color="#3B82F6" />, label: 'Privacy & Security', sub: 'Data sharing, permissions' },
-    { icon: <FileText size={20} color="#F59E0B" />, label: 'Terms & Policies', sub: 'Legal documents' },
+    { icon: <CircleQuestionMark size={20} color="#14B8A6" />, label: 'Help & Support', sub: 'FAQs, chat support, Feedback' },
+    { icon: <Shield size={20} color="#3B82F6" />, label: 'Privacy Policy', sub: 'How we handle your data' },
+    { icon: <Lock size={20} color="#8B5CF6" />, label: 'Privacy & Security', sub: 'Data sharing, permissions' },
+    { icon: <FileText size={20} color="#F59E0B" />, label: 'Terms and Conditions', sub: 'Legal Terms and Conditions applied' },
+    { icon: <AlertTriangle size={20} color="#EF4444" />, label: 'Disclaimer', sub: 'Health Disclaimer apply' },
     { icon: <Info size={20} color="#6B8AFF" />, label: 'About Cureto', sub: `Version ${appVersion}` },
   ], [appVersion]);
 
@@ -546,9 +500,6 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
     { label: 'Height', value: profileData?.height ? `${profileData.height} cm` : '--' },
     { label: 'Blood', value: profileData?.blood_group || '--' },
   ];
-
-  const setToggle = (key: string, value: boolean) =>
-    setToggles(prev => ({ ...prev, [key]: value }));
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -717,235 +668,202 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, initialS
             </View>
 
             <GlassCardView style={styles.profileCard} accentColor={theme.colors.teal}>
-            <View style={styles.profileRow}>
-              <View style={styles.avatar}>
-                {avatarUrl ? (
-                  <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
-                ) : (
-                  <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
-                )}
-              </View>
-              <View style={styles.profileInfo}>
-                <Text style={styles.name}>{displayName}</Text>
-                <Text style={styles.email}>{displayEmail}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.sm, minHeight: 22 }}>
-                  <View style={styles.memberBadge}>
-                    <Text style={styles.memberBadgeText}>Free Account</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.upgradeBtn}
-                    activeOpacity={0.7}
-                    onPress={() => setActiveSection('subscriptions')}
-                  >
-                    <Text style={styles.upgradeBtnText}>Upgrade Plan</Text>
-                  </TouchableOpacity>
+              <View style={styles.profileRow}>
+                <View style={styles.avatar}>
+                  {avatarUrl ? (
+                    <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+                  ) : (
+                    <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
+                  )}
                 </View>
-              </View>
-            </View>
-          </GlassCardView>
-
-          <GlassCardView style={styles.statsRow}>
-            {healthStats.map((stat, i) => (
-              <View key={stat.label} style={styles.statItem}>
-                <Text style={styles.statValue}>{stat.value}</Text>
-                <Text style={styles.statLabel}>{stat.label}</Text>
-                {i < healthStats.length - 1 && <View style={styles.statDivider} />}
-              </View>
-            ))}
-          </GlassCardView>
-
-          {percentage < 100 && (
-            <>
-              <SectionHeader title="Complete Your Profile" subtitle={`${percentage}% completed`} />
-              <TouchableOpacity
-                style={styles.completeCard}
-                onPress={() => onCompleteProfile?.()}
-                activeOpacity={0.7}>
-                <View style={styles.completeCardInner}>
-                  <View style={styles.completeCardLeft}>
-                    <View style={styles.completeCardIcon}>
-                      <PenLine size={22} color={theme.colors.teal} />
+                <View style={styles.profileInfo}>
+                  <Text style={styles.name}>{displayName}</Text>
+                  <Text style={styles.email}>{displayEmail}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.sm, minHeight: 22 }}>
+                    <View style={styles.memberBadge}>
+                      <Text style={styles.memberBadgeText}>Free Account</Text>
                     </View>
-                    <View style={styles.completeCardTextWrap}>
-                      <Text style={styles.completeCardTitle}>Set Up Your Profile</Text>
-                      <Text style={styles.completeCardSub}>
-                        {percentage === 0
-                          ? 'Fill in your health details for a better experience'
-                          : `${6 - Math.round(percentage / 100 * 6)} sections remaining`}
-                      </Text>
-                    </View>
+                    <TouchableOpacity
+                      style={styles.upgradeBtn}
+                      activeOpacity={0.7}
+                      onPress={() => setActiveSection('subscriptions')}
+                    >
+                      <Text style={styles.upgradeBtnText}>Upgrade Plan</Text>
+                    </TouchableOpacity>
                   </View>
-                  <Text style={styles.chevron}>›</Text>
                 </View>
-                <View style={styles.completeCardProgress}>
-                  <ProgressBar progress={percentage / 100} color={theme.colors.teal} height={4} />
-                  <Text style={styles.completeCardPercent}>{percentage}%</Text>
+              </View>
+            </GlassCardView>
+
+            <GlassCardView style={styles.statsRow}>
+              {healthStats.map((stat, i) => (
+                <View key={stat.label} style={styles.statItem}>
+                  <Text style={styles.statValue}>{stat.value}</Text>
+                  <Text style={styles.statLabel}>{stat.label}</Text>
+                  {i < healthStats.length - 1 && <View style={styles.statDivider} />}
                 </View>
-              </TouchableOpacity>
-            </>
-          )}
+              ))}
+            </GlassCardView>
 
-          <SectionHeader title="Health Profile" subtitle="Manage your medical information" />
-          <GlassCardView style={styles.menuCard}>
-            {healthProfile.map((item, i) => (
-              <View key={item.label}>
-                <MenuRow
-                  item={item}
-                  colors={theme.colors}
-                  onPress={() => {
-                    const sectionMap: Record<string, HealthSection> = {
-                      'Personal Information': 'personal',
-                      'Medical History': 'medical',
-                      'Medications': 'medications',
-                      'Allergies': 'allergies',
-                      'Diet Type': 'diet-type',
-                      'Emergency Contacts': 'emergency',
-                    };
-                    setActiveSection(sectionMap[item.label] || null);
-                  }}
-                />
-                {i < healthProfile.length - 1 && <View style={styles.divider} />}
-              </View>
-            ))}
-          </GlassCardView>
+            {percentage < 100 && (
+              <>
+                <SectionHeader title="Complete Your Profile" subtitle={`${percentage}% completed`} />
+                <TouchableOpacity
+                  style={styles.completeCard}
+                  onPress={() => onCompleteProfile?.()}
+                  activeOpacity={0.7}>
+                  <View style={styles.completeCardInner}>
+                    <View style={styles.completeCardLeft}>
+                      <View style={styles.completeCardIcon}>
+                        <PenLine size={22} color={theme.colors.teal} />
+                      </View>
+                      <View style={styles.completeCardTextWrap}>
+                        <Text style={styles.completeCardTitle}>Set Up Your Profile</Text>
+                        <Text style={styles.completeCardSub}>
+                          {percentage === 0
+                            ? 'Fill in your health details for a better experience'
+                            : `${6 - Math.round(percentage / 100 * 6)} sections remaining`}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.chevron}>›</Text>
+                  </View>
+                  <View style={styles.completeCardProgress}>
+                    <ProgressBar progress={percentage / 100} color={theme.colors.teal} height={4} />
+                    <Text style={styles.completeCardPercent}>{percentage}%</Text>
+                  </View>
+                </TouchableOpacity>
+              </>
+            )}
 
-          <SectionHeader title="Reminders" subtitle="Manage your daily reminders" />
-          <GlassCardView style={styles.menuCard}>
-            {REMINDER_ITEMS.map((item, i) => (
-              <View key={item.label}>
-                <MenuRow
-                  item={item}
-                  colors={theme.colors}
-                  onPress={() => {
-                    const sectionMap: Record<string, HealthSection> = {
-                      'Medications': 'reminders-medication',
-                      'Water Reminders': 'reminders-water',
-                      'Workouts': 'reminders-workouts',
-                      'Appointments': 'reminders-appointments',
-                      'Sleep': 'reminders-sleep',
-                      'Health': 'reminders-health',
-                    };
-                    setActiveSection(sectionMap[item.label] || null);
-                  }}
-                />
-                {i < REMINDER_ITEMS.length - 1 && <View style={styles.divider} />}
-              </View>
-            ))}
-          </GlassCardView>
-
-          <SectionHeader title="Connected Devices" subtitle="Sync wearables & health data" />
-          <GlassCardView style={styles.menuCard}>
-            {CONNECTED_DEVICES.map((item, i) => (
-              <View key={item.label}>
-                <MenuRow item={item} colors={theme.colors} />
-                {i < CONNECTED_DEVICES.length - 1 && <View style={styles.divider} />}
-              </View>
-            ))}
-          </GlassCardView>
-
-          <SectionHeader title="Appearance" subtitle="Choose your app theme" />
-          <GlassCardView style={styles.menuCard}>
-            <View style={styles.themeChipRow}>
-              {([
-                { key: 'system' as const, icon: <Monitor size={18} color={theme.colors.textSecondary} />, label: 'System' },
-                { key: 'dark' as const, icon: <Moon size={18} color={theme.colors.textSecondary} />, label: 'Dark' },
-                { key: 'light' as const, icon: <Sun size={18} color={theme.colors.textSecondary} />, label: 'Light' },
-              ]).map((opt) => {
-                const isActive = opt.key === 'system'
-                  ? systemSync
-                  : !systemSync && themeName === opt.key;
-                return (
-                  <TouchableOpacity
-                    key={opt.key}
-                    style={[styles.themeChip, isActive && styles.themeChipActive]}
-                    activeOpacity={0.7}
+            <SectionHeader title="Health Profile" subtitle="Manage your medical information" />
+            <GlassCardView style={styles.menuCard}>
+              {healthProfile.map((item, i) => (
+                <View key={item.label}>
+                  <MenuRow
+                    item={item}
+                    colors={theme.colors}
                     onPress={() => {
-                      if (opt.key === 'system') {
-                        setSystemSync(true);
-                      } else {
-                        setSystemSync(false);
-                        setThemeName(opt.key);
+                      const sectionMap: Record<string, HealthSection> = {
+                        'Personal Information': 'personal',
+                        'Medical History': 'medical',
+                        'Medications': 'medications',
+                        'Allergies': 'allergies',
+                        'Diet Type': 'diet-type',
+                        'Emergency Contacts': 'emergency',
+                      };
+                      setActiveSection(sectionMap[item.label] || null);
+                    }}
+                  />
+                  {i < healthProfile.length - 1 && <View style={styles.divider} />}
+                </View>
+              ))}
+            </GlassCardView>
+
+            <SectionHeader title="Reminders" subtitle="Manage your daily reminders" />
+            <GlassCardView style={styles.menuCard}>
+              {REMINDER_ITEMS.map((item, i) => (
+                <View key={item.label}>
+                  <MenuRow
+                    item={item}
+                    colors={theme.colors}
+                    onPress={() => {
+                      const sectionMap: Record<string, HealthSection> = {
+                        'Medications': 'reminders-medication',
+                        'Water Reminders': 'reminders-water',
+                        'Workouts': 'reminders-workouts',
+                        'Appointments': 'reminders-appointments',
+                        'Sleep': 'reminders-sleep',
+                        'Health': 'reminders-health',
+                      };
+                      setActiveSection(sectionMap[item.label] || null);
+                    }}
+                  />
+                  {i < REMINDER_ITEMS.length - 1 && <View style={styles.divider} />}
+                </View>
+              ))}
+            </GlassCardView>
+
+            <SectionHeader title="Connected Devices" subtitle="Sync wearables & health data" />
+            <GlassCardView style={styles.menuCard}>
+              {CONNECTED_DEVICES.map((item, i) => (
+                <View key={item.label}>
+                  <MenuRow item={item} colors={theme.colors} />
+                  {i < CONNECTED_DEVICES.length - 1 && <View style={styles.divider} />}
+                </View>
+              ))}
+            </GlassCardView>
+
+            <SectionHeader title="Appearance" subtitle="Choose your app theme" />
+            <GlassCardView style={styles.menuCard}>
+              <View style={styles.themeChipRow}>
+                {([
+                  { key: 'system' as const, icon: <Monitor size={18} color={theme.colors.textSecondary} />, label: 'System' },
+                  { key: 'dark' as const, icon: <Moon size={18} color={theme.colors.textSecondary} />, label: 'Dark' },
+                  { key: 'light' as const, icon: <Sun size={18} color={theme.colors.textSecondary} />, label: 'Light' },
+                ]).map((opt) => {
+                  const isActive = opt.key === 'system'
+                    ? systemSync
+                    : !systemSync && themeName === opt.key;
+                  return (
+                    <TouchableOpacity
+                      key={opt.key}
+                      style={[styles.themeChip, isActive && styles.themeChipActive]}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        if (opt.key === 'system') {
+                          setSystemSync(true);
+                        } else {
+                          setSystemSync(false);
+                          setThemeName(opt.key);
+                        }
+                      }}>
+                      <View style={styles.themeChipIcon}>{opt.icon}</View>
+                      <Text style={[styles.themeChipText, isActive && styles.themeChipTextActive]}>
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </GlassCardView>
+
+            <SectionHeader title="Support" />
+            <GlassCardView style={styles.menuCard}>
+              {SUPPORT.map((item, i) => (
+                <View key={item.label}>
+                  <MenuRow
+                    item={item}
+                    colors={theme.colors}
+                    onPress={() => {
+                      const sectionMap: Record<string, HealthSection> = {
+                        'Manage Subscriptions': 'subscriptions',
+                      };
+                      if (sectionMap[item.label]) {
+                        setActiveSection(sectionMap[item.label]);
+                      } else if (item.label === 'Help & Support') {
+                        onNavigate?.('Feedback');
                       }
-                    }}>
-                    <View style={styles.themeChipIcon}>{opt.icon}</View>
-                    <Text style={[styles.themeChipText, isActive && styles.themeChipTextActive]}>
-                      {opt.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </GlassCardView>
+                    }}
+                  />
+                  {i < SUPPORT.length - 1 && <View style={styles.divider} />}
+                </View>
+              ))}
+            </GlassCardView>
 
-          <SectionHeader title="Preferences" />
-          <GlassCardView style={styles.menuCard}>
-            {PREFERENCES.map((item, i) => (
-              <View key={item.key}>
-                <ToggleRow
-                  icon={item.icon}
-                  label={item.label}
-                  sub={item.sub}
-                  value={toggles[item.key]}
-                  onValueChange={v => setToggle(item.key, v)}
-                  colors={theme.colors}
-                />
-                {i < PREFERENCES.length - 1 && <View style={styles.divider} />}
-              </View>
-            ))}
-            <View style={styles.divider} />
-            <ToggleRow
-              icon={<Heart size={20} color="#EC4899" />}
-              label="Hide Vitals"
-              sub="Remove vitals from all health pages"
-              value={hideVitals}
-              onValueChange={setHideVitals}
-              colors={theme.colors}
-            />
-            <View style={styles.divider} />
-            <ToggleRow
-              icon={<Users size={20} color="#14B8A6" />}
-              label="Hide Community Spotlight"
-              sub="Remove community posts from dashboard"
-              value={hideCommunitySpotlight}
-              onValueChange={setHideCommunitySpotlight}
-              colors={theme.colors}
-            />
-          </GlassCardView>
+            <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8} onPress={handleLogout}>
+              <Text style={styles.logoutIcon}>⏻</Text>
+              <Text style={styles.logoutText}>Log Out</Text>
+            </TouchableOpacity>
 
-          <SectionHeader title="Support" />
-          <GlassCardView style={styles.menuCard}>
-            {SUPPORT.map((item, i) => (
-              <View key={item.label}>
-                <MenuRow
-                  item={item}
-                  colors={theme.colors}
-                  onPress={() => {
-                    const sectionMap: Record<string, HealthSection> = {
-                      'Manage Subscriptions': 'subscriptions',
-                    };
-                    if (sectionMap[item.label]) {
-                      setActiveSection(sectionMap[item.label]);
-                    }
-                  }}
-                />
-                {i < SUPPORT.length - 1 && <View style={styles.divider} />}
-              </View>
-            ))}
-          </GlassCardView>
-
-          <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8} onPress={handleLogout}>
-            <Text style={styles.logoutIcon}>⏻</Text>
-            <Text style={styles.logoutText}>Log Out</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.deleteBtn}
-            activeOpacity={0.8}
-            onPress={() => setActiveSection('offboarding-reason')}
-          >
-            <Text style={styles.deleteBtnText}>Delete Account</Text>
-          </TouchableOpacity>
-        </ScrollView>
+            <TouchableOpacity
+              style={styles.deleteBtn}
+              activeOpacity={0.8}
+              onPress={() => setActiveSection('offboarding-reason')}
+            >
+              <Text style={styles.deleteBtnText}>Delete Account</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </>
       )}
 

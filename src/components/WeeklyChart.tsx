@@ -24,11 +24,10 @@ export function WeeklyChart({
 
   const chartWidth = screenWidth - Spacing.base * 2 - Spacing.base * 2;
 
-  const { barHeight, todayIndex, maxVal } = useMemo(() => {
+  const { barHeight, maxVal } = useMemo(() => {
     const max = Math.max(...data, 1);
     return {
       barHeight: CHART_HEIGHT,
-      todayIndex: data.length - 1,
       maxVal: max,
     };
   }, [data]);
@@ -43,8 +42,7 @@ export function WeeklyChart({
       <View style={[styles.barContainer, { height: barHeight }]}>
         {data.map((val, i) => {
           const h = maxVal > 0 ? (val / maxVal) * (barHeight - 8) : 0;
-          const isToday = i === todayIndex;
-          const barColor = isToday ? color : val > 0 ? color + '50' : theme.colors.bgCardBorder;
+          const barColor = val > 0 ? color : theme.colors.bgCardBorder;
           return (
             <View key={i} style={[styles.barCol, { width: barWidth }]}>
               <View
@@ -54,7 +52,7 @@ export function WeeklyChart({
                     height: Math.max(h, 4),
                     backgroundColor: barColor,
                     borderRadius: BAR_RADIUS,
-                    opacity: isToday ? 1 : val > 0 ? 0.7 : 0.3,
+                    opacity: val > 0 ? 0.85 : 0.3,
                   },
                 ]}
               />
@@ -70,7 +68,6 @@ export function WeeklyChart({
             style={[
               styles.dayLabel,
               { width: barWidth },
-              i === todayIndex && { color, fontWeight: Typography.bold },
             ]}>
             {label}
           </Text>

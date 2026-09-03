@@ -40,9 +40,11 @@ type PickerField = 'equipment' | 'muscle_group' | 'other_muscles' | 'exercise_ty
 export default function ExerciseDetailsScreen({
   params,
   onBack,
+  onExerciseAdded,
 }: {
   params: ExerciseDetailsParams;
   onBack: () => void;
+  onExerciseAdded?: () => void;
 }) {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
@@ -122,7 +124,11 @@ export default function ExerciseDetailsScreen({
         other_muscles: otherMuscles.length > 0 ? otherMuscles : undefined,
         exercise_type: exerciseType,
       });
-      onBack();
+      if (onExerciseAdded) {
+        onExerciseAdded();
+      } else {
+        onBack();
+      }
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to add exercise.');
     } finally {

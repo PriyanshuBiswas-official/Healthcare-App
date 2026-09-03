@@ -14,15 +14,16 @@ import {
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BackButton, GlassCardView } from '../../components/SharedComponents';
+import { BackButton } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import * as activityService from '../../services/activityService';
 import { WorkoutSet } from '../../types/activity';
 import { posthog } from '../../config/posthog';
+import { markWorkoutLogged } from './FitnessScreen';
 import { PREDEFINED_EXERCISES } from '../../data/predefinedExercises';
 import { getMockProgressData } from '../../data/mockProgressData';
 import ProgressLineChart from '../../components/ProgressLineChart';
-import { ChevronRight, Play, Info } from 'lucide-react-native';
+import { ChevronDown, Play, Info, Pencil } from 'lucide-react-native';
 
 interface SetEntry {
   set_no: number;
@@ -71,18 +72,6 @@ export default function WorkoutLogScreen({
   // Progress chart data (hardcoded for now)
   const progressData = getMockProgressData(exercise.exercise_name);
 
-  const suggestedWeight = exercise.last_performance
-    ? exercise.last_performance.completed
-      ? exercise.last_performance.weight + 2.5
-      : exercise.last_performance.weight
-    : 0;
-
-  const suggestedReps = exercise.last_performance
-    ? exercise.last_performance.completed
-      ? exercise.target_reps
-      : exercise.last_performance.reps
-    : exercise.target_reps;
-
   const [sets, setSets] = useState<SetEntry[]>(() => {
     if (isCompleted && loggedSets.length > 0) {
       return loggedSets.map(s => ({
@@ -93,8 +82,8 @@ export default function WorkoutLogScreen({
     }
     return Array.from({ length: exercise.target_sets }, (_, i) => ({
       set_no: i + 1,
-      weight: String(Math.round(suggestedWeight * 10) / 10),
-      reps: String(suggestedReps),
+      weight: '',
+      reps: String(exercise.target_reps),
     }));
   });
   const [saving, setSaving] = useState(false);
@@ -129,6 +118,7 @@ export default function WorkoutLogScreen({
         set_count: sets.filter(set => (parseFloat(set.weight) || 0) > 0 || (parseInt(set.reps, 10) || 0) > 0).length,
         workout_completed: allCompleted,
       });
+      markWorkoutLogged();
       if (allCompleted) {
         Alert.alert('Exercise Complete', 'All sets logged for today!', [{ text: 'OK', onPress: onBack }]);
       } else {
@@ -152,6 +142,7 @@ export default function WorkoutLogScreen({
     try {
       await activityService.editWorkoutSet(session.access_token, setId, { weight: w, reps: r });
       setEditingSetId(null);
+      markWorkoutLogged();
       onBack();
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to edit set');
@@ -176,8 +167,8 @@ export default function WorkoutLogScreen({
       borderBottomColor: c.colors.bgCardBorder,
     },
     headerCenter: { flex: 1, alignItems: 'center' },
-    headerTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: c.colors.textPrimary },
-    headerSub: { fontSize: Typography.xs, color: c.colors.textSecondary, marginTop: 2 },
+    headerTitle: { fontSize: Typography.xl, fontWeight: Typography.bold, color: c.colors.textPrimary },
+    headerSub: { fontSize: Typography.sm, color: c.colors.textSecondary, marginTop: 4 },
     completedBadge: {
       backgroundColor: c.colors.teal + '20',
       borderRadius: Radius.sm,
@@ -188,24 +179,15 @@ export default function WorkoutLogScreen({
     scroll: { flex: 1 },
     scrollContent: { padding: Spacing.base, paddingBottom: 100 },
 
-    // ── Last Session Hint ──
-    lastHint: {
-      marginBottom: Spacing.base,
-      padding: Spacing.md,
-      backgroundColor: c.colors.accentBlue + '10',
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: c.colors.accentBlue + '30',
-    },
-    lastHintTitle: { fontSize: Typography.xs, fontWeight: Typography.semiBold, color: c.colors.accentBlue, marginBottom: 4 },
-    lastHintText: { fontSize: Typography.sm, color: c.colors.textSecondary },
-    suggestionText: { fontSize: Typography.sm, color: c.colors.teal, fontWeight: Typography.semiBold, marginTop: 4 },
-
     // ── How to Perform ──
-    howToCard: { marginBottom: Spacing.base, padding: Spacing.base },
+    howToCard: {
+      marginTop: Spacing.lg,
+      marginBottom: Spacing.sm,
+      paddingBottom: Spacing.xs,
+    },
     howToHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.sm },
     howToTitle: { fontSize: Typography.base, fontWeight: Typography.bold, color: c.colors.textPrimary },
-    howToTags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md },
+    howToTags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.sm },
     howToTag: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -223,7 +205,7 @@ export default function WorkoutLogScreen({
       borderRadius: Radius.md,
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.sm,
-      marginBottom: Spacing.md,
+      marginBottom: Spacing.sm,
       gap: Spacing.sm,
     },
     tutorialBtnText: { fontSize: Typography.sm, color: c.colors.teal, fontWeight: Typography.semiBold },
@@ -250,20 +232,20 @@ export default function WorkoutLogScreen({
       borderWidth: 1,
       borderColor: c.colors.teal + '30',
     },
-    completedBannerText: { fontSize: Typography.sm, color: c.colors.teal, fontWeight: Typography.semiBold, textAlign: 'center' },
+    completedBannerText: { fontSize: Typography.base, color: c.colors.teal, fontWeight: Typography.semiBold, textAlign: 'center' },
     setRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm },
     setRowEditing: { backgroundColor: c.colors.accentBlue + '10', borderRadius: Radius.sm, padding: Spacing.xs, marginBottom: Spacing.sm },
     setRowHeader: { marginBottom: Spacing.md },
-    setHeader: { fontSize: Typography.xs, color: c.colors.textSecondary, fontWeight: Typography.semiBold, textAlign: 'center' },
+    setHeader: { fontSize: Typography.sm, color: c.colors.textSecondary, fontWeight: Typography.semiBold, textAlign: 'center' },
     setNum: { alignItems: 'center', justifyContent: 'center' },
-    setNumText: { fontSize: Typography.sm, fontWeight: Typography.bold, color: c.colors.accentBlue },
+    setNumText: { fontSize: Typography.base, fontWeight: Typography.bold, color: c.colors.accentBlue },
     setInput: {
       backgroundColor: c.colors.bgCardSolid,
       color: c.colors.textPrimary,
       borderRadius: Radius.sm,
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.sm,
-      fontSize: Typography.sm,
+      fontSize: Typography.base,
       textAlign: 'center',
       borderWidth: 1,
       borderColor: c.colors.bgCardBorder,
@@ -275,7 +257,7 @@ export default function WorkoutLogScreen({
       paddingVertical: Spacing.sm,
       alignItems: 'center',
     },
-    setValueText: { fontSize: Typography.sm, color: c.colors.textPrimary },
+    setValueText: { fontSize: Typography.base, color: c.colors.textPrimary },
     editBtn: { padding: Spacing.xs },
     editBtnText: { fontSize: Typography.sm },
     editSaveBtn: {
@@ -329,11 +311,7 @@ export default function WorkoutLogScreen({
             <Text style={styles.headerSub}>{exercise.exercise_type}</Text>
           )}
         </View>
-        {isCompleted ? (
-          <View style={styles.completedBadge}>
-            <Text style={styles.completedBadgeText}>Done</Text>
-          </View>
-        ) : <View style={{ width: 44 }} />}
+        <View style={{ width: 44 }} />
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
@@ -344,24 +322,17 @@ export default function WorkoutLogScreen({
 
         {/* ── How to Perform ── */}
         {predefined && (
-          <GlassCardView style={styles.howToCard}>
-            <View style={styles.howToHeader}>
+          <View style={styles.howToCard}>
+            <TouchableOpacity
+              onPress={() => setShowInstructions(!showInstructions)}
+              activeOpacity={0.6}
+              style={styles.howToHeader}
+            >
               <Text style={styles.howToTitle}>How to Perform</Text>
-              <TouchableOpacity
-                onPress={() => setShowInstructions(!showInstructions)}
-                activeOpacity={0.6}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-              >
-                <Text style={{ fontSize: Typography.xs, color: colors.textSecondary }}>
-                  {showInstructions ? 'Hide' : 'Show'}
-                </Text>
-                <ChevronRight
-                  size={14}
-                  color={colors.textSecondary}
-                  style={{ transform: [{ rotate: showInstructions ? '90deg' : '0deg' }] }}
-                />
-              </TouchableOpacity>
-            </View>
+              <View style={{ transform: [{ rotate: showInstructions ? '180deg' : '0deg' }] }}>
+                <ChevronDown size={22} color={colors.textPrimary} />
+              </View>
+            </TouchableOpacity>
 
             {/* Tags */}
             <View style={styles.howToTags}>
@@ -402,23 +373,6 @@ export default function WorkoutLogScreen({
                   </View>
                 ))}
               </View>
-            )}
-          </GlassCardView>
-        )}
-
-        {/* ── Last Performance Hint ── */}
-        {!isCompleted && exercise.last_performance && (
-          <View style={styles.lastHint}>
-            <Text style={styles.lastHintTitle}>Last Session</Text>
-            <Text style={styles.lastHintText}>
-              {exercise.last_performance.weight}kg × {exercise.last_performance.reps} ·{' '}
-              {exercise.last_performance.sets_completed}/{exercise.last_performance.sets_total} sets
-              {exercise.last_performance.completed ? ' ✓' : ''}
-            </Text>
-            {exercise.last_performance.completed && (
-              <Text style={styles.suggestionText}>
-                Suggested: {Math.round(suggestedWeight * 10) / 10}kg
-              </Text>
             )}
           </View>
         )}
@@ -489,7 +443,7 @@ export default function WorkoutLogScreen({
                       </View>
                     ) : (
                       <TouchableOpacity onPress={() => startEdit(set)} style={styles.editBtn} activeOpacity={0.7}>
-                        <Text style={styles.editBtnText}>✏️</Text>
+                        <Pencil size={16} color={colors.textSecondary} />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -544,7 +498,7 @@ export default function WorkoutLogScreen({
             onPress={onBack}
             style={[styles.saveBtn, { backgroundColor: colors.teal }]}
             activeOpacity={0.8}>
-            <Text style={{ color: colors.bg, fontWeight: Typography.bold, fontSize: Typography.base }}>
+            <Text style={{ color: colors.bg, fontWeight: Typography.bold, fontSize: Typography.lg }}>
               Done
             </Text>
           </TouchableOpacity>
@@ -557,7 +511,7 @@ export default function WorkoutLogScreen({
             {saving ? (
               <ActivityIndicator size="small" color={colors.bg} />
             ) : (
-              <Text style={{ color: colors.bg, fontWeight: Typography.bold, fontSize: Typography.base }}>
+              <Text style={{ color: colors.bg, fontWeight: Typography.bold, fontSize: Typography.lg }}>
                 Save Sets
               </Text>
             )}

@@ -15,9 +15,13 @@ import WorkoutLogScreen from './src/screens/fitness/WorkoutLogScreen';
 import AddExerciseScreen from './src/screens/fitness/AddExerciseScreen';
 import PredefinedExerciseScreen from './src/screens/fitness/PredefinedExerciseScreen';
 import ExerciseDetailsScreen from './src/screens/fitness/ExerciseDetailsScreen';
+import AllPRsScreen from './src/screens/fitness/AllPRsScreen';
 import HealthLogScreen, { HealthLogDraft } from './src/screens/health/HealthLogScreen';
 import PartnerHealthReportScreen from './src/screens/relationships/PartnerHealthReportScreen';
 import RelationshipsScreen from './src/screens/relationships/RelationshipsScreen';
+import FeedbackScreen from './src/screens/feedback/FeedbackScreen';
+import NewFeedbackScreen from './src/screens/feedback/NewFeedbackScreen';
+import FeedbackThreadScreen from './src/screens/feedback/FeedbackThreadScreen';
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 import { PreferencesProvider } from './src/providers/PreferencesContext';
 import { NotificationProvider, useNotifications } from './src/providers/NotificationContext';
@@ -51,10 +55,14 @@ type RootStackParamList = {
   HealthLog: undefined;
   PartnerReport: { partnerId: string } | undefined;
   Relationships: undefined;
+  AllPRs: undefined;
+  Feedback: undefined;
+  NewFeedback: undefined;
+  FeedbackThread: { threadId: number } | undefined;
 };
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
-const OVERLAY_TABS: string[] = ['Profile', 'Notifications', 'WorkoutLog', 'AddExercise', 'PredefinedExercise', 'ExerciseDetails', 'HealthLog', 'PartnerReport', 'Relationships'];
+const OVERLAY_TABS: string[] = ['Profile', 'Notifications', 'WorkoutLog', 'AddExercise', 'PredefinedExercise', 'ExerciseDetails', 'HealthLog', 'PartnerReport', 'Relationships', 'AllPRs', 'Feedback', 'NewFeedback', 'FeedbackThread'];
 
 const OCR_PROMPT = `Please analyze this medical document image. Extract all visible text and provide:
 1. A clear transcription of all text found
@@ -217,6 +225,10 @@ const MemoizedExerciseDetailsScreen = React.memo(ExerciseDetailsScreen);
 const MemoizedHealthLogScreen = React.memo(HealthLogScreen);
 const MemoizedPartnerReportScreen = React.memo(PartnerHealthReportScreen);
 const MemoizedRelationshipsScreen = React.memo(RelationshipsScreen);
+const MemoizedAllPRsScreen = React.memo(AllPRsScreen);
+const MemoizedFeedbackScreen = React.memo(FeedbackScreen);
+const MemoizedNewFeedbackScreen = React.memo(NewFeedbackScreen);
+const MemoizedFeedbackThreadScreen = React.memo(FeedbackThreadScreen);
 // ── AppShell ─────────────────────────────────────────────────────────
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -323,6 +335,7 @@ function TabNavigator({ route }: any) {
             onOpenAI={openAI}
             onOpenWorkoutLog={(ex: any) => props.navigation.navigate('WorkoutLog', { exercise: ex })}
             onOpenAddExercise={(planDayId: number) => props.navigation.navigate('AddExercise', { planDayId })}
+            onOpenAllPRs={() => props.navigation.navigate('AllPRs')}
           />
           </PostHogBoundary>
         )}
@@ -497,6 +510,7 @@ function AppShell() {
                 <MemoizedProfileScreen 
                   onBackPress={() => props.navigation.goBack()} 
                   onCompleteProfile={() => props.navigation.navigate('ProfileSetup')}
+                  onNavigate={(screen, params) => props.navigation.navigate(screen, params)}
                   initialSection={props.route.params?.initialSection}
                 />
               )}
@@ -553,6 +567,9 @@ function AppShell() {
                     exerciseType: props.route.params?.exerciseType as any,
                   }}
                   onBack={() => props.navigation.goBack()}
+                  onExerciseAdded={() => {
+                    props.navigation.popToTop();
+                  }}
                 />
               )}
             </RootStack.Screen>
@@ -581,6 +598,36 @@ function AppShell() {
                 <MemoizedRelationshipsScreen 
                   onBack={() => props.navigation.goBack()} 
                   onPartnerPress={(partnerId) => props.navigation.navigate('PartnerReport', { partnerId })} 
+                />
+              )}
+            </RootStack.Screen>
+            <RootStack.Screen name="AllPRs">
+              {(props) => (
+                <MemoizedAllPRsScreen onBack={() => props.navigation.goBack()} />
+              )}
+            </RootStack.Screen>
+            <RootStack.Screen name="Feedback">
+              {(props) => (
+                <MemoizedFeedbackScreen
+                  onBack={() => props.navigation.goBack()}
+                  onNewFeedback={() => props.navigation.navigate('NewFeedback')}
+                  onOpenThread={(threadId) => props.navigation.navigate('FeedbackThread', { threadId })}
+                />
+              )}
+            </RootStack.Screen>
+            <RootStack.Screen name="NewFeedback">
+              {(props) => (
+                <MemoizedNewFeedbackScreen
+                  onBack={() => props.navigation.goBack()}
+                  onCreated={() => props.navigation.goBack()}
+                />
+              )}
+            </RootStack.Screen>
+            <RootStack.Screen name="FeedbackThread">
+              {(props) => (
+                <MemoizedFeedbackThreadScreen
+                  threadId={props.route.params?.threadId || 0}
+                  onBack={() => props.navigation.goBack()}
                 />
               )}
             </RootStack.Screen>

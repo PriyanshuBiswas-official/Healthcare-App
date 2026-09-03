@@ -19,7 +19,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Camera } from 'lucide-react-native';
+import { Camera, Pencil } from 'lucide-react-native';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
@@ -202,7 +202,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     calorieStats: { flex: 1, marginLeft: Spacing.lg },
     calorieStat: { marginBottom: Spacing.xs },
     goalHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    editBtn: { paddingHorizontal: 6, paddingVertical: 2, backgroundColor: t.colors.bgCardBorder, borderRadius: Radius.sm },
+    editBtn: { padding: 4 },
     editBtnText: { fontSize: Typography.xs, color: t.colors.textSecondary },
     editGoalRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
     editGoalInput: { flex: 1, backgroundColor: t.colors.bg, color: t.colors.textPrimary, fontSize: Typography.base, fontWeight: Typography.bold, borderRadius: Radius.sm, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: t.colors.teal },
@@ -515,6 +515,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               </TouchableOpacity>
             )}
 
+            <SectionHeader title="Daily Calories" subtitle="Monitor your Nutrition" />
             <GlassCardView style={styles.calorieCard}>
               <View style={styles.calorieRow}>
                 <View style={styles.gaugeWrap}>
@@ -545,7 +546,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                       <Text style={styles.calorieStatLabel}>Goal</Text>
                       {!isEditingGoal && (
                         <TouchableOpacity onPress={() => setIsEditingGoal(true)} style={styles.editBtn}>
-                          <Text style={styles.editBtnText}>Edit</Text>
+                          <Pencil size={14} color={colors.textSecondary} />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -576,7 +577,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               </View>
             </GlassCardView>
 
-            <SectionHeader title="Track Calorie with a photo" />
+            <SectionHeader title="Track Calorie with a photo" subtitle="Snap a photo to log meals automatically" />
             <GlassCardView style={styles.photoUploadCard}>
               <TouchableOpacity style={styles.photoUploadArea}>
                 <View style={styles.cameraIconWrap}>
@@ -587,14 +588,14 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               </TouchableOpacity>
             </GlassCardView>
 
-            <SectionHeader title="Macronutrients" />
+            <SectionHeader title="Macronutrients" subtitle="Breakdown of protein, carbs, fats & fiber" />
             <GlassCardView style={styles.macroCard}>
               <View style={styles.macroGrid}>
                 {macros.map(m => {
                   const macroKey = m.label === 'Protein' ? 'protein'
                     : m.label === 'Carbs' ? 'carbs'
-                    : m.label === 'Fats' ? 'fat'
-                    : 'fiber';
+                      : m.label === 'Fats' ? 'fat'
+                        : 'fiber';
                   const chartData = weeklyTrend.map(d => d[macroKey as keyof typeof d] as number);
                   const maxVal = Math.max(...chartData, 1);
                   const barH = 40;
@@ -622,7 +623,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               </View>
             </GlassCardView>
 
-            <SectionHeader title="TODAY'S MEALS" />
+            <SectionHeader title="TODAY'S MEALS" subtitle="Everything you've eaten today" />
             <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
               {MEAL_CATEGORIES.map((cat) => {
                 const catMeals = mealsByType[cat.key];
@@ -670,7 +671,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               })}
             </GlassCardView>
 
-            <SectionHeader title="WEEKLY NUTRITION TREND" />
+            <SectionHeader title="WEEKLY NUTRITION TREND" subtitle="How your intake has changed over the past 7 days" />
             <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
               <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary, marginBottom: Spacing.xl }}>Calorie intake <Text style={{ color: colors.textSecondary, fontWeight: Typography.regular }}>— past 7 days</Text></Text>
 
@@ -693,7 +694,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               </View>
             </GlassCardView>
 
-            <SectionHeader title="WATER INTAKE" />
+            <SectionHeader title="WATER INTAKE" subtitle="Track your daily hydration" />
             <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
                 <View>
@@ -732,7 +733,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               </TouchableOpacity>
             </GlassCardView>
 
-            <SectionHeader title="WEEKLY WATER TREND" />
+            <SectionHeader title="WEEKLY WATER TREND" subtitle="Monitor your water intake over the past 7 days" />
             <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl }}>
                 <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary }}>Water intake <Text style={{ color: colors.textSecondary, fontWeight: Typography.regular }}>— past 7 days</Text></Text>
@@ -757,7 +758,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               </View>
             </GlassCardView>
 
-            <SectionHeader title="AI MEAL SUGGESTIONS" />
+            <SectionHeader title="AI MEAL SUGGESTIONS" subtitle="Personalized meal ideas based on your goals" />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xl }}>
               {suggestionsLoading ? (
                 <View style={{ width: '100%', alignItems: 'center', paddingVertical: Spacing.lg }}>

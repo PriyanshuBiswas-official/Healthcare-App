@@ -112,7 +112,7 @@ const themeStyles = (theme: any) => StyleSheet.create({
     paddingHorizontal: 6,
     backgroundColor: 'rgba(23, 26, 39, 0.95)',
     borderWidth: 1.2,
-    borderColor: 'rgba(0, 224, 199, 0.22)',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     shadowColor: '#000000',
     shadowOpacity: 0.45,
     shadowRadius: 18,
