@@ -34,7 +34,7 @@ import {
   AIHealthInsightsSection,
 } from './HealthCommonSections';
 import { CyclePhaseVisualizer } from '../../components/CyclePhaseVisualizer';
-import { Droplets, Flower2, Sparkles, Moon, ChevronRight, Check, Activity, Scale } from 'lucide-react-native';
+import { Droplets, Flower2, Sparkles, Moon, ChevronRight, Check, Activity, Scale, Pencil } from 'lucide-react-native';
 import { useAuth } from '../../providers/AuthProvider';
 import { usePreferences } from '../../providers/PreferencesContext';
 import { HealthLogDraft } from './HealthLogScreen';
@@ -50,6 +50,7 @@ import {
   getWeightLogs,
   saveWeightLog,
   saveCycle,
+  updateCycle,
 } from '../../services/healthService';
 import type { PeriodLog, MoodLog, DischargeLog, SymptomsLog, CycleInsight, CycleData, CycleHistoryEntry, SleepLog, WeightEntry } from '../../types/health';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
@@ -536,6 +537,7 @@ export default function HealthScreenFemale({
 
   // ── Cycle setup modal state ──────────────────────────────────────────────
   const [showCycleSetup, setShowCycleSetup] = useState(false);
+  const [isEditingCycle, setIsEditingCycle] = useState(false);
   const [setupStartDate, setSetupStartDate] = useState('');
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [setupCycleLength, setSetupCycleLength] = useState('28');
@@ -781,15 +783,28 @@ export default function HealthScreenFemale({
     if (!token || !setupStartDate) return;
     setSavingCycle(true);
     try {
-      const saved = await saveCycle(token, {
-        start_date: setupStartDate,
-        cycle_length: parseInt(setupCycleLength, 10) || 28,
-        avg_cycle_length: parseInt(setupCycleLength, 10) || 28,
-        period_length: parseInt(setupPeriodLength, 10) || 5,
-        regularity: setupRegularity,
-      });
-      setCycleData(saved);
+      if (isEditingCycle && cycleData?.cycle_id) {
+        const updated = await updateCycle(token, {
+          cycle_id: cycleData.cycle_id,
+          start_date: setupStartDate,
+          cycle_length: parseInt(setupCycleLength, 10) || 28,
+          avg_cycle_length: parseInt(setupCycleLength, 10) || 28,
+          period_length: parseInt(setupPeriodLength, 10) || 5,
+          regularity: setupRegularity,
+        });
+        setCycleData(updated);
+      } else {
+        const saved = await saveCycle(token, {
+          start_date: setupStartDate,
+          cycle_length: parseInt(setupCycleLength, 10) || 28,
+          avg_cycle_length: parseInt(setupCycleLength, 10) || 28,
+          period_length: parseInt(setupPeriodLength, 10) || 5,
+          regularity: setupRegularity,
+        });
+        setCycleData(saved);
+      }
       setShowCycleSetup(false);
+      setIsEditingCycle(false);
       fetchData();
     } catch (err: any) {
       console.error('[HealthScreenFemale] Failed to save cycle:', err);
@@ -1025,7 +1040,23 @@ export default function HealthScreenFemale({
                   </View>
                 </View>
                 <View style={s.cycleInfoWrap}>
-                  <Text style={s.cyclePhaseLabel}>Current phase</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text style={s.cyclePhaseLabel}>Current phase</Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setIsEditingCycle(true);
+                        setSetupStartDate(cycleData?.start_date || '');
+                        setSetupCycleLength(String(cycleData?.avg_cycle_length || cycleData?.cycle_length || 28));
+                        setSetupPeriodLength(String(cycleData?.period_length || 5));
+                        setSetupRegularity((cycleData?.regularity as 'regular' | 'irregular' | 'not_sure') || 'not_sure');
+                        setShowCycleSetup(true);
+                      }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      activeOpacity={0.6}
+                    >
+                      <Pencil size={16} color={theme.colors.textMuted} />
+                    </TouchableOpacity>
+                  </View>
                   <View style={s.phaseNameRow}>
                     <View style={[s.phaseDot, { backgroundColor: phaseColor }]} />
                     <Text style={[s.phaseName, { color: phaseColor }]}>{currentPhase}</Text>
@@ -1294,8 +1325,8 @@ export default function HealthScreenFemale({
         <View style={s.modalOverlay}>
           <View style={s.modalSheet}>
             <View style={s.modalHandle} />
-            <Text style={s.modalTitle}>Set Up Cycle Tracking</Text>
-            <Text style={s.modalSubtitle}>Enter your last period start date to get accurate predictions</Text>
+            <Text style={s.modalTitle}>{isEditingCycle ? 'Edit Cycle' : 'Set Up Cycle Tracking'}</Text>
+            <Text style={s.modalSubtitle}>{isEditingCycle ? 'Update your cycle information' : 'Enter your last period start date to get accurate predictions'}</Text>
 
             <Text style={s.modalLabel}>Last period start date</Text>
             <TouchableOpacity
@@ -1357,7 +1388,7 @@ export default function HealthScreenFemale({
             </View>
 
             <View style={s.modalActions}>
-              <TouchableOpacity style={s.modalCancelBtn} onPress={() => setShowCycleSetup(false)}>
+              <TouchableOpacity style={s.modalCancelBtn} onPress={() => { setShowCycleSetup(false); setIsEditingCycle(false); }}>
                 <Text style={s.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -1367,7 +1398,7 @@ export default function HealthScreenFemale({
                 {savingCycle ? (
                   <ActivityIndicator color={theme.colors.bg} size="small" />
                 ) : (
-                  <Text style={s.modalSaveText}>Save</Text>
+                  <Text style={s.modalSaveText}>{isEditingCycle ? 'Update' : 'Save'}</Text>
                 )}
               </TouchableOpacity>
             </View>

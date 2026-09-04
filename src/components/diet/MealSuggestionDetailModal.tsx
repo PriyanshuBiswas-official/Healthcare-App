@@ -7,10 +7,10 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
-  Platform,
+  StyleSheet,
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
-import { useTheme } from '../../providers/ThemeProvider';
+import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useAuth } from '../../providers/AuthProvider';
 import * as dietService from '../../services/dietService';
 import type { MealSuggestion } from '../../types/diet';
@@ -29,6 +29,36 @@ export default function MealSuggestionDetailModal({ visible, meal, onClose, onLo
   const [detail, setDetail] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
+  const s = useStyles((t) => StyleSheet.create({
+    overlay: { flex: 1, backgroundColor: t.colors.overlayHeavy, justifyContent: 'flex-end' },
+    sheet: {
+      backgroundColor: t.colors.modalBg,
+      borderTopLeftRadius: Radius.xl,
+      borderTopRightRadius: Radius.xl,
+      maxHeight: '85%',
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+    },
+    handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: t.colors.textMuted, alignSelf: 'center', marginVertical: Spacing.md },
+    content: { padding: Spacing.base },
+    title: { fontSize: Typography.xl, fontWeight: Typography.bold, color: t.colors.textPrimary, marginBottom: Spacing.sm },
+    tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
+    metaRow: { flexDirection: 'row', gap: Spacing.xl, marginBottom: Spacing.base },
+    metaText: { fontSize: Typography.sm, color: t.colors.textSecondary },
+    sectionTitle: { fontSize: Typography.base, fontWeight: Typography.bold, color: t.colors.textPrimary, marginBottom: Spacing.sm },
+    ingredientText: { fontSize: Typography.sm, color: t.colors.textSecondary, marginBottom: 4, lineHeight: 22 },
+    logBtn: {
+      backgroundColor: t.colors.teal,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.xl,
+      borderRadius: Radius.full,
+      alignItems: 'center',
+      marginTop: Spacing.sm,
+      marginBottom: Spacing.base,
+    },
+    logBtnText: { fontSize: Typography.sm, color: t.colors.bg, fontWeight: Typography.bold },
+  }));
+
   useEffect(() => {
     if (visible && meal && session?.access_token) {
       setLoading(true);
@@ -45,21 +75,18 @@ export default function MealSuggestionDetailModal({ visible, meal, onClose, onLo
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <TouchableOpacity activeOpacity={1} onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-        <TouchableOpacity activeOpacity={1} style={{ backgroundColor: colors.bg, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, maxHeight: '85%' }}>
+      <TouchableOpacity activeOpacity={1} onPress={onClose} style={s.overlay}>
+        <TouchableOpacity activeOpacity={1} style={s.sheet}>
+          <View style={s.handle} />
           <ScrollView showsVerticalScrollIndicator={false}>
-            <View style={{ alignItems: 'center', paddingVertical: Spacing.md }}>
-              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.textMuted, opacity: 0.4 }} />
-            </View>
-
             {meal.image ? (
-              <Image source={{ uri: meal.image }} style={{ width: '100%', height: 200, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl }} resizeMode="cover" />
+              <Image source={{ uri: meal.image }} style={{ width: '100%', height: 200 }} resizeMode="cover" />
             ) : null}
 
-            <View style={{ padding: Spacing.base }}>
-              <Text style={{ fontSize: Typography.xl, fontWeight: Typography.bold, color: colors.textPrimary, marginBottom: Spacing.sm }}>{meal.title}</Text>
+            <View style={s.content}>
+              <Text style={s.title}>{meal.title}</Text>
 
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base }}>
+              <View style={s.tagRow}>
                 <View style={{ backgroundColor: colors.teal + '15', paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.full }}>
                   <Text style={{ fontSize: Typography.sm, color: colors.teal, fontWeight: Typography.bold }}>~{meal.calories} kcal</Text>
                 </View>
@@ -74,15 +101,15 @@ export default function MealSuggestionDetailModal({ visible, meal, onClose, onLo
                 </View>
               </View>
 
-              <View style={{ flexDirection: 'row', gap: Spacing.xl, marginBottom: Spacing.base }}>
+              <View style={s.metaRow}>
                 {meal.readyInMinutes > 0 && (
-                  <Text style={{ fontSize: Typography.sm, color: colors.textSecondary }}>{meal.readyInMinutes} min</Text>
+                  <Text style={s.metaText}>{meal.readyInMinutes} min</Text>
                 )}
                 {data.servings > 0 && (
-                  <Text style={{ fontSize: Typography.sm, color: colors.textSecondary }}>{data.servings} servings</Text>
+                  <Text style={s.metaText}>{data.servings} servings</Text>
                 )}
                 {data.healthScore > 0 && (
-                  <Text style={{ fontSize: Typography.sm, color: colors.textSecondary }}>{data.healthScore}% health</Text>
+                  <Text style={s.metaText}>{data.healthScore}% health</Text>
                 )}
               </View>
 
@@ -100,9 +127,9 @@ export default function MealSuggestionDetailModal({ visible, meal, onClose, onLo
                 <ActivityIndicator size="small" color={colors.teal} style={{ marginVertical: Spacing.base }} />
               ) : data.extendedIngredients?.length > 0 ? (
                 <View style={{ marginBottom: Spacing.base }}>
-                  <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Ingredients</Text>
+                  <Text style={s.sectionTitle}>Ingredients</Text>
                   {data.extendedIngredients.map((ing: any, i: number) => (
-                    <Text key={i} style={{ fontSize: Typography.sm, color: colors.textSecondary, marginBottom: 4, lineHeight: 22 }}>
+                    <Text key={i} style={s.ingredientText}>
                       {ing.original}
                     </Text>
                   ))}
@@ -121,8 +148,8 @@ export default function MealSuggestionDetailModal({ visible, meal, onClose, onLo
                   });
                   onClose();
                 }}
-                style={{ backgroundColor: colors.teal, paddingVertical: Spacing.lg, borderRadius: Radius.md, alignItems: 'center', marginTop: Spacing.sm, marginBottom: Spacing.base }}>
-                <Text style={{ fontSize: Typography.base, color: colors.bg, fontWeight: Typography.bold }}>Log This Meal</Text>
+                style={s.logBtn}>
+                <Text style={s.logBtnText}>Log This Meal</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>

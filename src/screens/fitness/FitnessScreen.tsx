@@ -121,6 +121,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
 
   // ── Goal setup modal state ─────────────────────────────────
   const [goalSetupVisible, setGoalSetupVisible] = useState(false);
+  const [isEditingGoals, setIsEditingGoals] = useState(false);
   const [goalBurn, setGoalBurn] = useState('400');
   const [goalExercise, setGoalExercise] = useState('60');
   const [goalSteps, setGoalSteps] = useState('10000');
@@ -419,6 +420,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         steps_goal: parseInt(goalSteps, 10) || 10000,
       });
       setGoalSetupVisible(false);
+      setIsEditingGoals(false);
       fetchData();
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to save goal.');
@@ -789,28 +791,34 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       lineHeight: 20,
     },
     // Modal styles
-    modalOverlay: { flex: 1, backgroundColor: theme.colors.overlay, justifyContent: 'flex-end' },
-    modalContent: {
-      backgroundColor: theme.colors.bgCardSolid,
+    modalOverlay: { flex: 1, backgroundColor: theme.colors.overlayHeavy, justifyContent: 'flex-end' },
+    modalSheet: {
+      backgroundColor: theme.colors.modalBg,
       borderTopLeftRadius: Radius.xl,
       borderTopRightRadius: Radius.xl,
-      padding: Spacing.lg,
-      paddingBottom: Platform.OS === 'ios' ? 40 : Spacing.lg,
-    },
-    modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: theme.colors.bgCardBorder, alignSelf: 'center', marginBottom: Spacing.base },
-    modalTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary, marginBottom: Spacing.sm },
-    modalLabel: { fontSize: Typography.xs, color: theme.colors.textSecondary, marginBottom: 4, marginTop: Spacing.sm },
-    modalInput: {
-      backgroundColor: theme.colors.bg,
-      color: theme.colors.textPrimary,
-      fontSize: Typography.base,
-      borderRadius: Radius.md,
-      paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.sm,
+      padding: Spacing.xl,
+      paddingBottom: 40,
       borderWidth: 1,
       borderColor: theme.colors.bgCardBorder,
-      marginBottom: Spacing.xs,
     },
+    modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: theme.colors.textMuted, alignSelf: 'center', marginBottom: Spacing.lg },
+    modalTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary, marginBottom: Spacing.xs },
+    modalSubtitle: { fontSize: Typography.sm, color: theme.colors.textMuted, marginBottom: Spacing.lg },
+    modalLabel: { fontSize: Typography.sm, color: theme.colors.textSecondary, fontWeight: Typography.medium, marginBottom: Spacing.sm, marginTop: Spacing.md },
+    modalInput: {
+      backgroundColor: theme.colors.bgCard,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+      borderRadius: Radius.md,
+      padding: Spacing.md,
+      color: theme.colors.textPrimary,
+      fontSize: Typography.base,
+    },
+    modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.md, marginTop: Spacing.xl },
+    modalCancelBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, borderWidth: 1, borderColor: theme.colors.bgCardBorder },
+    modalCancelText: { color: theme.colors.textSecondary, fontSize: Typography.sm, fontWeight: Typography.semiBold },
+    modalSaveBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, backgroundColor: theme.colors.teal, alignItems: 'center', minWidth: 80 },
+    modalSaveText: { color: theme.colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold },
     // Full-screen PR modal
     prModalOverlay: {
       flex: 1,
@@ -1386,7 +1394,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     );
   }
 
-  function DailyProgressCard({ summary, goal, onLogActivity }: { summary: ActivitySummary | null; goal: ActivityGoal | null; onLogActivity: () => void }) {
+  function DailyProgressCard({ summary, goal, onLogActivity, onEditGoals }: { summary: ActivitySummary | null; goal: ActivityGoal | null; onLogActivity: () => void; onEditGoals: () => void }) {
     const burnTarget = goal?.calorie_burn_goal || 0;
     const exerciseTarget = goal?.exercise_min_goal || 0;
     const stepsTarget = goal?.steps_goal || 0;
@@ -1409,7 +1417,16 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
             <Text style={{ fontSize: Typography.xs, color: Colors.teal, fontWeight: Typography.semiBold }}>+ Log Activity</Text>
           </TouchableOpacity>
         </View>
-        <GlassCardView style={styles.card}>
+        <GlassCardView style={[styles.card, { position: 'relative' }]}>
+          {goal && (
+            <TouchableOpacity
+              onPress={onEditGoals}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.6}
+              style={{ position: 'absolute', top: Spacing.md, right: Spacing.md, zIndex: 1 }}>
+              <Pencil size={14} color={Colors.textMuted} />
+            </TouchableOpacity>
+          )}
           <ActivityProgressCard
             steps={summary?.steps ?? 0} stepsTarget={stepsTarget}
             exercise={summary?.exercise_minutes ?? 0} exerciseTarget={exerciseTarget}
@@ -1915,7 +1932,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[Colors.teal, Colors.pink]} tintColor={Colors.teal} progressBackgroundColor={Colors.bgCard} />}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.title}>Activity & Gym</Text>
+            <Text style={styles.title}>Activity</Text>
           </View>
           <View style={styles.headerRight}>
             <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
@@ -1946,7 +1963,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         )}
 
         {!activityGoal && !loading && (
-          <TouchableOpacity style={styles.setupBanner} activeOpacity={0.8} onPress={() => setGoalSetupVisible(true)}>
+          <TouchableOpacity style={styles.setupBanner} activeOpacity={0.8} onPress={() => { setIsEditingGoals(false); setGoalSetupVisible(true); }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View style={[styles.setupBannerIcon, { backgroundColor: Colors.teal + '20' }]}>
                 <Target size={Typography.md} color={Colors.teal} />
@@ -1964,7 +1981,13 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           <LoadingSpinner />
         ) : (
           <>
-            {showToday && <DailyProgressCard summary={summary} goal={activityGoal} onLogActivity={handleOpenLogActivity} />}
+            {showToday && <DailyProgressCard summary={summary} goal={activityGoal} onLogActivity={handleOpenLogActivity} onEditGoals={() => {
+              setIsEditingGoals(true);
+              setGoalBurn(String(activityGoal?.calorie_burn_goal || ''));
+              setGoalExercise(String(activityGoal?.exercise_min_goal || ''));
+              setGoalSteps(String(activityGoal?.steps_goal || ''));
+              setGoalSetupVisible(true);
+            }} />}
 
             {showTodayWorkout && (
               <View style={styles.section}>
@@ -2070,7 +2093,8 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           activeOpacity={1}
           onPress={() => setPlanModalVisible(false)}
           style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
             {/* Step indicator */}
             <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: Spacing.base }}>
               {[1, 2, 3].map(s => (
@@ -2117,12 +2141,12 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                     </TouchableOpacity>
                   ))}
                 </View>
-                <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
-                  <TouchableOpacity onPress={() => setPlanModalVisible(false)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
-                    <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
+                <View style={styles.modalActions}>
+                  <TouchableOpacity onPress={() => setPlanModalVisible(false)} style={styles.modalCancelBtn}>
+                    <Text style={styles.modalCancelText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setPlanStep(2)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue }}>
-                    <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Next</Text>
+                  <TouchableOpacity onPress={() => setPlanStep(2)} style={styles.modalSaveBtn}>
+                    <Text style={styles.modalSaveText}>Next</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -2153,12 +2177,12 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                     <Text style={{ fontSize: Typography.base, color: Colors.textPrimary, marginLeft: Spacing.md, fontWeight: selectedDays.includes(i) ? Typography.bold : Typography.regular }}>{name}</Text>
                   </TouchableOpacity>
                 ))}
-                <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
-                  <TouchableOpacity onPress={() => setPlanStep(1)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
-                    <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Back</Text>
+                <View style={styles.modalActions}>
+                  <TouchableOpacity onPress={() => setPlanStep(1)} style={styles.modalCancelBtn}>
+                    <Text style={styles.modalCancelText}>Back</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setPlanStep(3)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue }}>
-                    <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Next</Text>
+                  <TouchableOpacity onPress={() => setPlanStep(3)} style={styles.modalSaveBtn}>
+                    <Text style={styles.modalSaveText}>Next</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -2211,18 +2235,18 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
                     </View>
                   ))}
                 </ScrollView>
-                <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.base }}>
-                  <TouchableOpacity onPress={() => setPlanStep(2)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
-                    <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Back</Text>
+                <View style={styles.modalActions}>
+                  <TouchableOpacity onPress={() => setPlanStep(2)} style={styles.modalCancelBtn}>
+                    <Text style={styles.modalCancelText}>Back</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleSavePlan}
                     disabled={planSaving}
-                    style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue, opacity: planSaving ? 0.6 : 1 }}>
+                    style={[styles.modalSaveBtn, { backgroundColor: Colors.accentBlue }, planSaving && { opacity: 0.6 }]}>
                     {planSaving ? (
                       <ActivityIndicator size="small" color={Colors.bg} />
                     ) : (
-                      <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Save Plan</Text>
+                      <Text style={styles.modalSaveText}>Save Plan</Text>
                     )}
                   </TouchableOpacity>
                 </View>
@@ -2238,7 +2262,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           activeOpacity={1}
           onPress={() => setEditExModalVisible(false)}
           style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>Edit Exercise</Text>
 
@@ -2262,20 +2286,20 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
               </View>
             </View>
 
-            <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
+            <View style={styles.modalActions}>
               <TouchableOpacity
                 onPress={() => setEditExModalVisible(false)}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
+                style={styles.modalCancelBtn}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleUpdateExercise}
                 disabled={editExSaving}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.accentBlue, opacity: editExSaving ? 0.6 : 1 }}>
+                style={[styles.modalSaveBtn, { backgroundColor: Colors.accentBlue }, editExSaving && { opacity: 0.6 }]}>
                 {editExSaving ? (
                   <ActivityIndicator size="small" color={Colors.bg} />
                 ) : (
-                  <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Save</Text>
+                  <Text style={styles.modalSaveText}>Save</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -2312,7 +2336,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
           activeOpacity={1}
           onPress={() => setLogActivityVisible(false)}
           style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>Log Activity</Text>
 
@@ -2361,20 +2385,20 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
               placeholderTextColor={Colors.textMuted}
             />
 
-            <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
+            <View style={styles.modalActions}>
               <TouchableOpacity
                 onPress={() => setLogActivityVisible(false)}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
+                style={styles.modalCancelBtn}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleLogActivity}
                 disabled={logSaving}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.teal, opacity: logSaving ? 0.6 : 1 }}>
+                style={[styles.modalSaveBtn, logSaving && { opacity: 0.6 }]}>
                 {logSaving ? (
                   <ActivityIndicator size="small" color={Colors.bg} />
                 ) : (
-                  <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Log Activity</Text>
+                  <Text style={styles.modalSaveText}>Log Activity</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -2386,13 +2410,13 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       <Modal visible={goalSetupVisible} animationType="slide" transparent>
         <TouchableOpacity
           activeOpacity={1}
-          onPress={() => setGoalSetupVisible(false)}
+          onPress={() => { setGoalSetupVisible(false); setIsEditingGoals(false); }}
           style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Set Activity Goals</Text>
-            <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, marginBottom: Spacing.base }}>
-              Define your daily targets. You can update these anytime.
+            <Text style={styles.modalTitle}>{isEditingGoals ? 'Edit Activity Goals' : 'Set Activity Goals'}</Text>
+            <Text style={styles.modalSubtitle}>
+              {isEditingGoals ? 'Update your daily activity targets.' : 'Define your daily targets. You can update these anytime.'}
             </Text>
 
             <Text style={styles.modalLabel}>Calorie burn goal (kcal)</Text>
@@ -2426,20 +2450,20 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
               placeholderTextColor={Colors.textMuted}
             />
 
-            <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
+            <View style={styles.modalActions}>
               <TouchableOpacity
-                onPress={() => setGoalSetupVisible(false)}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.bgCardBorder }}>
-                <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
+                onPress={() => { setGoalSetupVisible(false); setIsEditingGoals(false); }}
+                style={styles.modalCancelBtn}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleSaveGoal}
                 disabled={goalSaving}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.teal, opacity: goalSaving ? 0.6 : 1 }}>
+                style={[styles.modalSaveBtn, goalSaving && { opacity: 0.6 }]}>
                 {goalSaving ? (
                   <ActivityIndicator size="small" color={Colors.bg} />
                 ) : (
-                  <Text style={{ fontSize: Typography.sm, color: Colors.bg, fontWeight: Typography.bold }}>Save Goals</Text>
+                  <Text style={styles.modalSaveText}>Save Goals</Text>
                 )}
               </TouchableOpacity>
             </View>

@@ -13,7 +13,7 @@ import {
 import { X, ShieldAlert } from 'lucide-react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { GlassCardView, LoadingSpinner } from '../../components/SharedComponents';
+import { LoadingSpinner } from '../../components/SharedComponents';
 import * as relationshipApi from '../../services/relationshipApi';
 
 interface PermissionsModalProps {
@@ -36,16 +36,20 @@ export default function PermissionsModal({
   const styles = useStyles(t => ({
     overlay: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.6)',
+      backgroundColor: t.colors.overlayHeavy,
       justifyContent: 'flex-end',
     },
-    modalCard: {
+    sheet: {
+      backgroundColor: t.colors.modalBg,
       height: '80%',
       borderTopLeftRadius: Radius.xl,
       borderTopRightRadius: Radius.xl,
-      padding: Spacing.base,
-      borderWidth: 0,
+      padding: Spacing.xl,
+      paddingBottom: 40,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
     },
+    handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: t.colors.textMuted, alignSelf: 'center', marginBottom: Spacing.lg },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -127,15 +131,17 @@ export default function PermissionsModal({
     },
     saveBtn: {
       backgroundColor: t.colors.teal,
-      borderRadius: Radius.md,
-      height: 48,
+      borderRadius: Radius.full,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.xl,
       alignItems: 'center',
       justifyContent: 'center',
       marginTop: Spacing.base,
+      minWidth: 80,
     },
     saveBtnText: {
-      color: t.colors.white,
-      fontSize: Typography.base,
+      color: t.colors.bg,
+      fontSize: Typography.sm,
       fontWeight: Typography.bold,
     },
   }));
@@ -215,7 +221,8 @@ export default function PermissionsModal({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <GlassCardView style={styles.modalCard}>
+        <View style={styles.sheet}>
+          <View style={styles.handle} />
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleWrap}>
@@ -277,7 +284,7 @@ export default function PermissionsModal({
               </TouchableOpacity>
             </View>
           )}
-        </GlassCardView>
+        </View>
       </View>
     </Modal>
   );

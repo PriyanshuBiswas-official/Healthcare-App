@@ -84,9 +84,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<MealSuggestion | null>(null);
 
-  const [isEditingGoal, setIsEditingGoal] = useState(false);
-  const [tempGoal, setTempGoal] = useState('');
-
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMealType, setModalMealType] = useState<MealType>('breakfast');
   const [modalFood, setModalFood] = useState('');
@@ -104,6 +101,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
   const waterGoalMl = goal?.water_goal ?? 0;
 
   const [goalSetupVisible, setGoalSetupVisible] = useState(false);
+  const [isEditingGoals, setIsEditingGoals] = useState(false);
   const [setupCalorieGoal, setSetupCalorieGoal] = useState('');
   const [setupWaterGoal, setSetupWaterGoal] = useState('');
   const [setupProteinGoal, setSetupProteinGoal] = useState('');
@@ -203,11 +201,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     calorieStat: { marginBottom: Spacing.xs },
     goalHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     editBtn: { padding: 4 },
-    editBtnText: { fontSize: Typography.xs, color: t.colors.textSecondary },
-    editGoalRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-    editGoalInput: { flex: 1, backgroundColor: t.colors.bg, color: t.colors.textPrimary, fontSize: Typography.base, fontWeight: Typography.bold, borderRadius: Radius.sm, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: t.colors.teal },
-    saveGoalBtn: { marginLeft: 8, backgroundColor: t.colors.teal, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-    saveGoalBtnText: { color: t.colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold },
     calorieStatLabel: { fontSize: Typography.xs, color: t.colors.textSecondary, marginBottom: 2 },
     calorieStatVal: { fontSize: Typography.base, fontWeight: Typography.bold },
     calorieDivider: { height: 1, backgroundColor: t.colors.bgCardBorder, marginVertical: Spacing.xs },
@@ -218,28 +211,34 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     macroVal: { fontSize: Typography.lg, fontWeight: Typography.bold, marginBottom: 2 },
     macroLabel: { fontSize: Typography.xs, color: t.colors.textSecondary, marginBottom: Spacing.xs },
     macroTarget: { fontSize: Typography.xs, color: t.colors.textMuted, marginTop: 4, alignSelf: 'flex-end' },
-    modalOverlay: { flex: 1, backgroundColor: t.colors.overlay, justifyContent: 'flex-end' },
-    modalContent: {
-      backgroundColor: t.colors.bgCardSolid,
+    modalOverlay: { flex: 1, backgroundColor: t.colors.overlayHeavy, justifyContent: 'flex-end' },
+    modalSheet: {
+      backgroundColor: t.colors.modalBg,
       borderTopLeftRadius: Radius.xl,
       borderTopRightRadius: Radius.xl,
-      padding: Spacing.lg,
-      paddingBottom: Platform.OS === 'ios' ? 40 : Spacing.lg,
-    },
-    modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: t.colors.bgCardBorder, alignSelf: 'center', marginBottom: Spacing.base },
-    modalTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary, marginBottom: Spacing.base },
-    modalLabel: { fontSize: Typography.xs, color: t.colors.textSecondary, marginBottom: 4, marginTop: Spacing.sm },
-    modalInput: {
-      backgroundColor: t.colors.bg,
-      color: t.colors.textPrimary,
-      fontSize: Typography.base,
-      borderRadius: Radius.md,
-      paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.sm,
+      padding: Spacing.xl,
+      paddingBottom: 40,
       borderWidth: 1,
       borderColor: t.colors.bgCardBorder,
-      marginBottom: Spacing.xs,
     },
+    modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: t.colors.textMuted, alignSelf: 'center', marginBottom: Spacing.lg },
+    modalTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary, marginBottom: Spacing.xs },
+    modalSubtitle: { fontSize: Typography.sm, color: t.colors.textMuted, marginBottom: Spacing.lg },
+    modalLabel: { fontSize: Typography.sm, color: t.colors.textSecondary, fontWeight: Typography.medium, marginBottom: Spacing.sm, marginTop: Spacing.md },
+    modalInput: {
+      backgroundColor: t.colors.bgCard,
+      borderWidth: 1,
+      borderColor: t.colors.bgCardBorder,
+      borderRadius: Radius.md,
+      padding: Spacing.md,
+      color: t.colors.textPrimary,
+      fontSize: Typography.base,
+    },
+    modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.md, marginTop: Spacing.xl },
+    modalCancelBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, borderWidth: 1, borderColor: t.colors.bgCardBorder },
+    modalCancelText: { color: t.colors.textSecondary, fontSize: Typography.sm, fontWeight: Typography.semiBold },
+    modalSaveBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, backgroundColor: t.colors.teal, alignItems: 'center', minWidth: 80 },
+    modalSaveText: { color: t.colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold },
     customWaterBox: {
       backgroundColor: t.colors.bgCardSolid,
       borderRadius: Radius.xl,
@@ -267,7 +266,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
       setGoal(goalRes);
       setWeeklyTrend(weeklyRes);
       setWeeklyWaterTrend(weeklyWaterRes);
-      setTempGoal(String(goalRes?.calorie_goal ?? 0));
     } catch (e) {
       console.warn('[CalorieScreen] Fetch failed:', e);
     } finally {
@@ -292,7 +290,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     }
     if (goalRes.status === 'fulfilled') {
       setGoal(goalRes.value);
-      setTempGoal(String(goalRes.value?.calorie_goal ?? 0));
     }
     if (weeklyRes.status === 'fulfilled') setWeeklyTrend(weeklyRes.value);
     if (weeklyWaterRes.status === 'fulfilled') setWeeklyWaterTrend(weeklyWaterRes.value);
@@ -311,6 +308,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
       setSetupCarbsGoal('');
       setSetupFatGoal('');
       setSetupFiberGoal('');
+      setIsEditingGoals(false);
       setGoalSetupVisible(true);
     }
   }, [loading, goal]);
@@ -339,32 +337,14 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
         fiber_goal: parseInt(setupFiberGoal, 10) || 0,
       });
       setGoal(saved);
-      setTempGoal(String(calorie));
       setGoalSetupVisible(false);
+      setIsEditingGoals(false);
     } catch (e) {
       console.warn('[CalorieScreen] Save goal setup failed:', e);
       Alert.alert('Error', 'Failed to save goals. Please try again.');
     } finally {
       setSetupSaving(false);
     }
-  };
-
-  const handleSaveGoal = async () => {
-    if (!session?.access_token) return;
-    const parsed = parseInt(tempGoal, 10);
-    if (isNaN(parsed) || parsed <= 0) {
-      setTempGoal(String(calorieGoal));
-      setIsEditingGoal(false);
-      return;
-    }
-    try {
-      const saved = await dietService.saveCalorieGoal(session.access_token, { calorie_goal: parsed });
-      setGoal(saved);
-    } catch (e) {
-      console.warn('[CalorieScreen] Save goal failed:', e);
-      setTempGoal(String(calorieGoal));
-    }
-    setIsEditingGoal(false);
   };
 
   const handleLogWater = async (amountMl: number) => {
@@ -474,7 +454,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[colors.teal, colors.pink]} tintColor={colors.teal} progressBackgroundColor={colors.bgCard} />}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>Diet</Text>
+            <Text style={styles.title}>Nutrition</Text>
           </View>
           <View style={styles.headerActions}>
             <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
@@ -544,22 +524,23 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                   <View style={styles.calorieStat}>
                     <View style={styles.goalHeaderRow}>
                       <Text style={styles.calorieStatLabel}>Goal</Text>
-                      {!isEditingGoal && (
-                        <TouchableOpacity onPress={() => setIsEditingGoal(true)} style={styles.editBtn}>
-                          <Pencil size={14} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                      )}
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSetupCalorieGoal(String(calorieGoal || ''));
+                          setSetupWaterGoal(String(waterGoalMl || ''));
+                          setSetupProteinGoal(String(goal?.protein_goal || ''));
+                          setSetupCarbsGoal(String(goal?.carbs_goal || ''));
+                          setSetupFatGoal(String(goal?.fat_goal || ''));
+                          setSetupFiberGoal(String(goal?.fiber_goal || ''));
+                          setIsEditingGoals(true);
+                          setGoalSetupVisible(true);
+                        }}
+                        style={styles.editBtn}
+                      >
+                        <Pencil size={14} color={colors.textSecondary} />
+                      </TouchableOpacity>
                     </View>
-                    {isEditingGoal ? (
-                      <View style={styles.editGoalRow}>
-                        <TextInput style={styles.editGoalInput} value={tempGoal} onChangeText={setTempGoal} keyboardType="number-pad" autoFocus />
-                        <TouchableOpacity onPress={handleSaveGoal} style={styles.saveGoalBtn}>
-                          <Text style={styles.saveGoalBtnText}>✓</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <Text style={[styles.calorieStatVal, { color: colors.textPrimary }]}>{calorieGoal.toLocaleString()}</Text>
-                    )}
+                    <Text style={[styles.calorieStatVal, { color: colors.textPrimary }]}>{calorieGoal.toLocaleString()}</Text>
                   </View>
                   <View style={[styles.calorieDivider]} />
                   <View style={styles.calorieStat}>
@@ -802,8 +783,8 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
       </ScrollView>
 
       {modalVisible && <Modal visible={modalVisible} animationType="slide" transparent>
-        <TouchableOpacity activeOpacity={1} onPress={() => setModalVisible(false)} style={styles.modalOverlay}>
-          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
               <View style={styles.modalHandle} />
               <Text style={styles.modalTitle}>Log Meal</Text>
@@ -854,24 +835,24 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                 </View>
               </View>
 
-              <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
-                <TouchableOpacity onPress={() => setModalVisible(false)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: colors.bgCardBorder }}>
-                  <Text style={{ fontSize: Typography.sm, color: colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setModalVisible(false)}>
+                  <Text style={styles.modalCancelText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  style={[styles.modalSaveBtn, modalSaving && { opacity: 0.6 }]}
                   onPress={handleSaveMeal}
-                  disabled={modalSaving}
-                  style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: colors.teal, opacity: modalSaving ? 0.6 : 1 }}>
+                  disabled={modalSaving}>
                   {modalSaving ? (
                     <ActivityIndicator size="small" color={colors.bg} />
                   ) : (
-                    <Text style={{ fontSize: Typography.sm, color: colors.bg, fontWeight: Typography.bold }}>Save Meal</Text>
+                    <Text style={styles.modalSaveText}>Save Meal</Text>
                   )}
                 </TouchableOpacity>
               </View>
             </KeyboardAvoidingView>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </View>
+        </View>
       </Modal>}
 
       {customWaterVisible && <Modal visible={customWaterVisible} animationType="fade" transparent>
@@ -880,9 +861,9 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
             <Text style={styles.modalTitle}>Add Water</Text>
             <Text style={styles.modalLabel}>Amount (ml)</Text>
             <TextInput style={styles.modalInput} value={customWaterText} onChangeText={setCustomWaterText} keyboardType="number-pad" placeholder="e.g. 300" placeholderTextColor={colors.textMuted} autoFocus />
-            <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.base }}>
-              <TouchableOpacity onPress={() => setCustomWaterVisible(false)} style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: colors.bgCardBorder }}>
-                <Text style={{ fontSize: Typography.sm, color: colors.textSecondary, fontWeight: Typography.semiBold }}>Cancel</Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setCustomWaterVisible(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
@@ -892,8 +873,8 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                     setCustomWaterVisible(false);
                   }
                 }}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: colors.teal }}>
-                <Text style={{ fontSize: Typography.sm, color: colors.bg, fontWeight: Typography.bold }}>Add</Text>
+                style={styles.modalSaveBtn}>
+                <Text style={styles.modalSaveText}>Add</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -901,16 +882,16 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
       </Modal>}
 
       {goalSetupVisible && <Modal visible={goalSetupVisible} animationType="slide" transparent>
-        <TouchableOpacity activeOpacity={1} onPress={() => setGoalSetupVisible(false)} style={styles.modalOverlay}>
-          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Set Your Nutrition Goals</Text>
-            <Text style={{ fontSize: Typography.sm, color: colors.textSecondary, marginBottom: Spacing.base }}>
-              Set your daily goals to track your progress. You can update these anytime.
+            <Text style={styles.modalTitle}>{isEditingGoals ? 'Edit Nutrition Goals' : 'Set Your Nutrition Goals'}</Text>
+            <Text style={styles.modalSubtitle}>
+              {isEditingGoals ? 'Update your daily nutrition targets.' : 'Set your daily goals to track your progress. You can update these anytime.'}
             </Text>
 
             <Text style={styles.modalLabel}>Calorie goal (kcal) *</Text>
-            <TextInput style={styles.modalInput} value={setupCalorieGoal} onChangeText={setSetupCalorieGoal} keyboardType="number-pad" placeholder="e.g. 2500" placeholderTextColor={colors.textMuted} autoFocus />
+            <TextInput style={styles.modalInput} value={setupCalorieGoal} onChangeText={setSetupCalorieGoal} keyboardType="number-pad" placeholder="e.g. 2500" placeholderTextColor={colors.textMuted} />
 
             <Text style={styles.modalLabel}>Water goal (ml)</Text>
             <TextInput style={styles.modalInput} value={setupWaterGoal} onChangeText={setSetupWaterGoal} keyboardType="number-pad" placeholder="e.g. 2500" placeholderTextColor={colors.textMuted} />
@@ -936,25 +917,23 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               </View>
             </View>
 
-            <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg }}>
-              <TouchableOpacity
-                onPress={() => setGoalSetupVisible(false)}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: colors.bgCardBorder }}>
-                <Text style={{ fontSize: Typography.sm, color: colors.textSecondary, fontWeight: Typography.semiBold }}>Skip for now</Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => { setGoalSetupVisible(false); setIsEditingGoals(false); }}>
+                <Text style={styles.modalCancelText}>{isEditingGoals ? 'Cancel' : 'Skip for now'}</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                style={[styles.modalSaveBtn, setupSaving && { opacity: 0.6 }]}
                 onPress={handleSaveGoalSetup}
-                disabled={setupSaving}
-                style={{ flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: colors.teal, opacity: setupSaving ? 0.6 : 1 }}>
+                disabled={setupSaving}>
                 {setupSaving ? (
                   <ActivityIndicator size="small" color={colors.bg} />
                 ) : (
-                  <Text style={{ fontSize: Typography.sm, color: colors.bg, fontWeight: Typography.bold }}>Save Goals</Text>
+                  <Text style={styles.modalSaveText}>Save Goals</Text>
                 )}
               </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </View>
+        </View>
       </Modal>}
 
       <MealSuggestionDetailModal
