@@ -231,6 +231,27 @@ export async function saveCycle(
   return json.data;
 }
 
+export async function updateCycle(
+  token: string,
+  cycle: {
+    cycle_id: number;
+    start_date?: string;
+    cycle_length?: number;
+    avg_cycle_length?: number;
+    period_length?: number;
+    regularity?: string;
+  },
+): Promise<CycleData> {
+  const res = await fetch(`${API_BASE_URL}/api/cycle`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(cycle),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to update cycle');
+  return json.data;
+}
+
 // ── Sleep Logs ──────────────────────────────────────
 
 export async function getSleepLogs(

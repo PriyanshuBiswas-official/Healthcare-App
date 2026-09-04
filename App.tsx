@@ -28,6 +28,7 @@ import { NotificationProvider, useNotifications } from './src/providers/Notifica
 import { ReminderProvider } from './src/providers/ReminderContext';
 import { AppointmentProvider } from './src/providers/AppointmentContext';
 import { ThemeProvider, useTheme } from './src/providers/ThemeProvider';
+import BootSplash from 'react-native-bootsplash';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -738,6 +739,12 @@ function AppShell() {
 
 const RootComponent = () => {
   const { session, isLoading, hasProfile, networkError, maintenanceData, retryAfterNetworkError } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading) {
+      BootSplash.hide({ fade: true });
+    }
+  }, [isLoading]);
 
   if (isLoading || (session?.user && hasProfile === null)) {
     return <LoadingScreen />;

@@ -21,7 +21,6 @@ import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar, LoadingSpinner } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import ProfileCompletionBanner from '../../components/ProfileCompletionBanner';
-import HealthCalendar from '../../components/HealthCalendar';
 import { useAuth } from '../../providers/AuthProvider';
 import { usePreferences } from '../../providers/PreferencesContext';
 import { useNotifications } from '../../providers/NotificationContext';
@@ -748,65 +747,60 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     // MODAL STYLING
     modalBg: {
       flex: 1,
-      backgroundColor: theme.colors.overlay,
-      justifyContent: 'center',
-      alignItems: 'center',
+      backgroundColor: theme.colors.overlayHeavy,
+      justifyContent: 'flex-end',
+    },
+    modalSheet: {
+      backgroundColor: theme.colors.modalBg,
+      borderTopLeftRadius: Radius.xl,
+      borderTopRightRadius: Radius.xl,
       padding: Spacing.xl,
-    },
-    modalContainer: {
-      alignSelf: 'stretch',
-      padding: Spacing.lg,
-      alignItems: 'stretch',
-      backgroundColor: theme.colors.bgCardSolid,
-    },
-    modalTitle: {
-      fontSize: Typography.md,
-      fontWeight: Typography.bold,
-      color: theme.colors.textPrimary,
-      marginBottom: 4,
-      textAlign: 'center',
-    },
-    modalSub: {
-      fontSize: Typography.xs,
-      color: theme.colors.textSecondary,
-      marginBottom: Spacing.md,
-      textAlign: 'center',
-    },
-    modalInput: {
-      height: 52,
-      flexShrink: 0,
-      borderRadius: Radius.md,
+      paddingBottom: 40,
       borderWidth: 1,
       borderColor: theme.colors.bgCardBorder,
-      backgroundColor: theme.colors.overlay,
+    },
+    modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: theme.colors.textMuted, alignSelf: 'center', marginBottom: Spacing.lg },
+    modalTitle: {
+      fontSize: Typography.lg,
+      fontWeight: Typography.bold,
       color: theme.colors.textPrimary,
-      paddingHorizontal: Spacing.md,
-      fontSize: Typography.md,
-      textAlign: 'center',
-      textAlignVertical: 'center',
+      marginBottom: Spacing.xs,
+    },
+    modalSub: {
+      fontSize: Typography.sm,
+      color: theme.colors.textMuted,
       marginBottom: Spacing.lg,
+    },
+    modalInput: {
+      backgroundColor: theme.colors.bgCard,
+      borderWidth: 1,
+      borderColor: theme.colors.bgCardBorder,
+      borderRadius: Radius.md,
+      padding: Spacing.md,
+      color: theme.colors.textPrimary,
+      fontSize: Typography.base,
+      marginBottom: Spacing.sm,
     },
     modalActions: {
       flexDirection: 'row',
+      justifyContent: 'flex-end',
       gap: Spacing.md,
-      alignSelf: 'stretch',
+      marginTop: Spacing.xl,
     },
     modalCancel: {
-      flex: 1,
-      height: 44,
-      borderRadius: Radius.md,
-      justifyContent: 'center',
-      alignItems: 'center',
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      borderRadius: Radius.full,
       borderWidth: 1,
       borderColor: theme.colors.bgCardBorder,
     },
     modalSave: {
-      flex: 1,
-      height: 44,
-      borderRadius: Radius.md,
-      justifyContent: 'center',
-      alignItems: 'center',
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.xl,
+      borderRadius: Radius.full,
       backgroundColor: theme.colors.teal,
+      alignItems: 'center',
+      minWidth: 80,
     },
 
     agendaCard: {
@@ -1184,8 +1178,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 700, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
     ]).start();
 
     const interval = setInterval(() => {
@@ -1580,7 +1574,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                   <Text style={[styles.heroOverviewSub, { marginBottom: 0, marginLeft: 4 }]}>Limited data available</Text>
                 </View>
               )}
-              <TouchableOpacity style={styles.heroReportBtn}>
+              <TouchableOpacity style={styles.heroReportBtn} onPress={() => Alert.alert('Coming Soon', 'Full health report is under development and will be available soon!')}>
                 <Text style={styles.heroReportBtnText}>Full Report</Text>
               </TouchableOpacity>
             </View>
@@ -1676,9 +1670,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             <Text style={styles.partnerRelation}>Invite</Text>
           </TouchableOpacity>
         </ScrollView>
-
-        {/* SECTION: HEALTH CALENDAR (Self-contained and optimized) */}
-        <HealthCalendar />
 
         {/* SECTION: REDESIGNED QUICK ACTIONS */}
         <SectionHeader title="Quick Actions" />
@@ -2094,7 +2085,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
         {/* SECTION: COMMUNITY PREVIEW */}
         {!hideCommunitySpotlight && (<>
-          <SectionHeader title="Community Spotlight" action="Join Groups" />
+          <SectionHeader title="Community Spotlight" action="Join Groups" onAction={() => Alert.alert('Coming Soon', 'Community groups are under development and will be available soon!')} />
           <GlassCardView style={styles.communityCard}>
             <View style={styles.communityPost}>
               <Text style={styles.communityPostAuthor}>Jane Cooper shared a post in running group:</Text>
@@ -2109,148 +2100,144 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
 
       {/* WEIGHT LOG MODAL */}
       <Modal visible={showWeightModal} transparent animationType="slide">
-        <TouchableOpacity activeOpacity={1} onPress={() => setShowWeightModal(false)} style={styles.modalBg}>
-          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{ alignSelf: 'stretch' }}>
-            <GlassCardView style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Log Weight</Text>
-              <Text style={styles.modalSub}>Enter your current weight in kg</Text>
-              <TextInput
-                style={styles.modalInput}
-                keyboardType="decimal-pad"
-                value={weightInput}
-                onChangeText={setWeightInput}
-                placeholder="e.g. 62.5"
-                placeholderTextColor={theme.colors.textMuted}
-              />
-              <View style={styles.modalActions}>
-                <TouchableOpacity style={styles.modalCancel} onPress={() => setShowWeightModal(false)}>
-                  <Text style={{ color: theme.colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.modalSave} onPress={handleSaveWeight}>
-                  <Text style={{ color: theme.colors.bg, fontWeight: Typography.bold }}>Save</Text>
-                </TouchableOpacity>
-              </View>
-            </GlassCardView>
-          </TouchableOpacity>
-        </TouchableOpacity>
+        <View style={styles.modalBg}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Log Weight</Text>
+            <Text style={styles.modalSub}>Enter your current weight in kg</Text>
+            <TextInput
+              style={styles.modalInput}
+              keyboardType="decimal-pad"
+              value={weightInput}
+              onChangeText={setWeightInput}
+              placeholder="e.g. 62.5"
+              placeholderTextColor={theme.colors.textMuted}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowWeightModal(false)}>
+                <Text style={{ color: theme.colors.textSecondary, fontSize: Typography.sm, fontWeight: Typography.semiBold }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalSave} onPress={handleSaveWeight}>
+                <Text style={{ color: theme.colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold }}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
       {/* MEAL LOG MODAL */}
       <Modal visible={showMealModal} transparent animationType="slide">
-        <TouchableOpacity activeOpacity={1} onPress={() => setShowMealModal(false)} style={styles.modalBg}>
-          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{ alignSelf: 'stretch' }}>
-            <GlassCardView style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Log Meal</Text>
-              <Text style={styles.modalSub}>Record what you ate</Text>
+        <View style={styles.modalBg}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Log Meal</Text>
+            <Text style={styles.modalSub}>Record what you ate</Text>
 
-              <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md, alignSelf: 'stretch' }}>
-                {(['breakfast', 'lunch', 'snack', 'dinner'] as MealType[]).map(type => (
-                  <TouchableOpacity
-                    key={type}
-                    onPress={() => setMealType(type)}
-                    style={{
-                      flex: 1,
-                      paddingVertical: Spacing.sm,
-                      borderRadius: Radius.md,
-                      alignItems: 'center',
-                      backgroundColor: mealType === type ? theme.colors.teal + '20' : theme.colors.bgCardBorder,
-                      borderWidth: mealType === type ? 1 : 0,
-                      borderColor: theme.colors.teal,
-                    }}>
-                    <Text style={{ fontSize: Typography.xs, color: mealType === type ? theme.colors.teal : theme.colors.textSecondary, fontWeight: Typography.bold, textTransform: 'capitalize' }}>{type}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <TextInput style={[styles.modalInput, { width: '100%' }]} value={mealFood} onChangeText={setMealFood} placeholder="Food name *" placeholderTextColor={theme.colors.textMuted} />
-              <TextInput style={[styles.modalInput, { width: '100%' }]} value={mealCalories} onChangeText={setMealCalories} keyboardType="number-pad" placeholder="Calories (kcal)" placeholderTextColor={theme.colors.textMuted} />
-
-              <View style={{ flexDirection: 'row', gap: Spacing.sm, alignSelf: 'stretch' }}>
-                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealProtein} onChangeText={setMealProtein} keyboardType="number-pad" placeholder="Protein (g)" placeholderTextColor={theme.colors.textMuted} />
-                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealCarbs} onChangeText={setMealCarbs} keyboardType="number-pad" placeholder="Carbs (g)" placeholderTextColor={theme.colors.textMuted} />
-              </View>
-              <View style={{ flexDirection: 'row', gap: Spacing.sm, alignSelf: 'stretch' }}>
-                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealFat} onChangeText={setMealFat} keyboardType="number-pad" placeholder="Fat (g)" placeholderTextColor={theme.colors.textMuted} />
-                <TextInput style={[styles.modalInput, { flex: 1, marginBottom: 0 }]} value={mealFiber} onChangeText={setMealFiber} keyboardType="number-pad" placeholder="Fiber (g)" placeholderTextColor={theme.colors.textMuted} />
-              </View>
-
-              <View style={styles.modalActions}>
-                <TouchableOpacity style={styles.modalCancel} onPress={() => setShowMealModal(false)}>
-                  <Text style={{ color: theme.colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
+            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md }}>
+              {(['breakfast', 'lunch', 'snack', 'dinner'] as MealType[]).map(type => (
+                <TouchableOpacity
+                  key={type}
+                  onPress={() => setMealType(type)}
+                  style={{
+                    flex: 1,
+                    paddingVertical: Spacing.sm,
+                    borderRadius: Radius.md,
+                    alignItems: 'center',
+                    backgroundColor: mealType === type ? theme.colors.teal + '20' : theme.colors.bgCardBorder,
+                    borderWidth: mealType === type ? 1 : 0,
+                    borderColor: theme.colors.teal,
+                  }}>
+                  <Text style={{ fontSize: Typography.xs, color: mealType === type ? theme.colors.teal : theme.colors.textSecondary, fontWeight: Typography.bold, textTransform: 'capitalize' }}>{type}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.modalSave} onPress={handleSaveMeal} disabled={modalSaving}>
-                  {modalSaving ? <ActivityIndicator size="small" color={theme.colors.bg} /> : <Text style={{ color: theme.colors.bg, fontWeight: Typography.bold }}>Save</Text>}
-                </TouchableOpacity>
-              </View>
-            </GlassCardView>
-          </TouchableOpacity>
-        </TouchableOpacity>
+              ))}
+            </View>
+
+            <TextInput style={styles.modalInput} value={mealFood} onChangeText={setMealFood} placeholder="Food name *" placeholderTextColor={theme.colors.textMuted} />
+            <TextInput style={styles.modalInput} value={mealCalories} onChangeText={setMealCalories} keyboardType="number-pad" placeholder="Calories (kcal)" placeholderTextColor={theme.colors.textMuted} />
+
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <TextInput style={[styles.modalInput, { flex: 1 }]} value={mealProtein} onChangeText={setMealProtein} keyboardType="number-pad" placeholder="Protein (g)" placeholderTextColor={theme.colors.textMuted} />
+              <TextInput style={[styles.modalInput, { flex: 1 }]} value={mealCarbs} onChangeText={setMealCarbs} keyboardType="number-pad" placeholder="Carbs (g)" placeholderTextColor={theme.colors.textMuted} />
+            </View>
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <TextInput style={[styles.modalInput, { flex: 1 }]} value={mealFat} onChangeText={setMealFat} keyboardType="number-pad" placeholder="Fat (g)" placeholderTextColor={theme.colors.textMuted} />
+              <TextInput style={[styles.modalInput, { flex: 1 }]} value={mealFiber} onChangeText={setMealFiber} keyboardType="number-pad" placeholder="Fiber (g)" placeholderTextColor={theme.colors.textMuted} />
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowMealModal(false)}>
+                <Text style={{ color: theme.colors.textSecondary, fontSize: Typography.sm, fontWeight: Typography.semiBold }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalSave} onPress={handleSaveMeal} disabled={modalSaving}>
+                {modalSaving ? <ActivityIndicator size="small" color={theme.colors.bg} /> : <Text style={{ color: theme.colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold }}>Save</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
 
       {/* WATER LOG MODAL */}
       <Modal visible={showWaterModal} transparent animationType="slide">
-        <TouchableOpacity activeOpacity={1} onPress={() => setShowWaterModal(false)} style={styles.modalBg}>
-          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{ alignSelf: 'stretch' }}>
-            <GlassCardView style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Log Water</Text>
-              <Text style={styles.modalSub}>How much water did you drink?</Text>
+        <View style={styles.modalBg}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Log Water</Text>
+            <Text style={styles.modalSub}>How much water did you drink?</Text>
 
-              <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md, alignSelf: 'stretch' }}>
-                {[200, 250, 300, 500].map(amount => (
-                  <TouchableOpacity
-                    key={amount}
-                    onPress={() => setWaterAmount(String(amount))}
-                    style={{
-                      flex: 1,
-                      paddingVertical: Spacing.sm,
-                      borderRadius: Radius.md,
-                      alignItems: 'center',
-                      backgroundColor: waterAmount === String(amount) ? theme.colors.blue + '20' : theme.colors.bgCardBorder,
-                      borderWidth: waterAmount === String(amount) ? 1 : 0,
-                      borderColor: theme.colors.blue,
-                    }}>
-                    <Text style={{ fontSize: Typography.xs, color: waterAmount === String(amount) ? theme.colors.blue : theme.colors.textSecondary, fontWeight: Typography.bold }}>{amount}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <TextInput style={[styles.modalInput, { width: '100%' }]} value={waterAmount} onChangeText={setWaterAmount} keyboardType="number-pad" placeholder="Custom amount (ml)" placeholderTextColor={theme.colors.textMuted} />
-
-              <View style={styles.modalActions}>
-                <TouchableOpacity style={styles.modalCancel} onPress={() => setShowWaterModal(false)}>
-                  <Text style={{ color: theme.colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
+            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md }}>
+              {[200, 250, 300, 500].map(amount => (
+                <TouchableOpacity
+                  key={amount}
+                  onPress={() => setWaterAmount(String(amount))}
+                  style={{
+                    flex: 1,
+                    paddingVertical: Spacing.sm,
+                    borderRadius: Radius.md,
+                    alignItems: 'center',
+                    backgroundColor: waterAmount === String(amount) ? theme.colors.blue + '20' : theme.colors.bgCardBorder,
+                    borderWidth: waterAmount === String(amount) ? 1 : 0,
+                    borderColor: theme.colors.blue,
+                  }}>
+                  <Text style={{ fontSize: Typography.xs, color: waterAmount === String(amount) ? theme.colors.blue : theme.colors.textSecondary, fontWeight: Typography.bold }}>{amount}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.modalSave, { backgroundColor: theme.colors.blue }]} onPress={handleSaveWater} disabled={modalSaving}>
-                  {modalSaving ? <ActivityIndicator size="small" color={theme.colors.bg} /> : <Text style={{ color: theme.colors.bg, fontWeight: Typography.bold }}>Save</Text>}
-                </TouchableOpacity>
-              </View>
-            </GlassCardView>
-          </TouchableOpacity>
-        </TouchableOpacity>
+              ))}
+            </View>
+
+            <TextInput style={styles.modalInput} value={waterAmount} onChangeText={setWaterAmount} keyboardType="number-pad" placeholder="Custom amount (ml)" placeholderTextColor={theme.colors.textMuted} />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowWaterModal(false)}>
+                <Text style={{ color: theme.colors.textSecondary, fontSize: Typography.sm, fontWeight: Typography.semiBold }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalSave, { backgroundColor: theme.colors.blue }]} onPress={handleSaveWater} disabled={modalSaving}>
+                {modalSaving ? <ActivityIndicator size="small" color={theme.colors.bg} /> : <Text style={{ color: theme.colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold }}>Save</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
 
       {/* MEDICINE MODAL */}
       <Modal visible={showMedModal} transparent animationType="slide">
-        <TouchableOpacity activeOpacity={1} onPress={() => setShowMedModal(false)} style={styles.modalBg}>
-          <TouchableOpacity activeOpacity={1} onPress={() => { }} style={{ alignSelf: 'stretch' }}>
-            <GlassCardView style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Log Medicine</Text>
-              <Text style={styles.modalSub}>Track your medication intake</Text>
+        <View style={styles.modalBg}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Log Medicine</Text>
+            <Text style={styles.modalSub}>Track your medication intake</Text>
 
-              <TextInput style={[styles.modalInput, { width: '100%' }]} placeholder="Medicine name" placeholderTextColor={theme.colors.textMuted} />
-              <TextInput style={[styles.modalInput, { width: '100%' }]} placeholder="Dosage (e.g. 500 mg)" placeholderTextColor={theme.colors.textMuted} />
+            <TextInput style={styles.modalInput} placeholder="Medicine name" placeholderTextColor={theme.colors.textMuted} />
+            <TextInput style={styles.modalInput} placeholder="Dosage (e.g. 500 mg)" placeholderTextColor={theme.colors.textMuted} />
 
-              <View style={{ backgroundColor: theme.colors.pink + '15', borderRadius: Radius.md, padding: Spacing.md, alignSelf: 'stretch', marginBottom: Spacing.md, borderWidth: 1, borderColor: theme.colors.pink + '30' }}>
-                <Text style={{ fontSize: Typography.xs, color: theme.colors.pink, fontWeight: Typography.bold, textAlign: 'center' }}>Feature coming soon</Text>
-              </View>
+            <View style={{ backgroundColor: theme.colors.pink + '15', borderRadius: Radius.md, padding: Spacing.md, marginBottom: Spacing.md, borderWidth: 1, borderColor: theme.colors.pink + '30' }}>
+              <Text style={{ fontSize: Typography.xs, color: theme.colors.pink, fontWeight: Typography.bold, textAlign: 'center' }}>Feature coming soon</Text>
+            </View>
 
-              <View style={styles.modalActions}>
-                <TouchableOpacity style={styles.modalCancel} onPress={() => setShowMedModal(false)}>
-                  <Text style={{ color: theme.colors.textSecondary, fontWeight: Typography.bold }}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </GlassCardView>
-          </TouchableOpacity>
-        </TouchableOpacity>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowMedModal(false)}>
+                <Text style={{ color: theme.colors.textSecondary, fontSize: Typography.sm, fontWeight: Typography.semiBold }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </View>
   );
