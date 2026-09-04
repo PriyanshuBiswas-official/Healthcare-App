@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Alert,
   RefreshControl,
   BackHandler,
+  Animated,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Colors, Typography, Spacing, Radius } from '../../theme/theme';
@@ -24,7 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNotifications } from '../../providers/NotificationContext';
 import { TabName } from '../../navigation/TabBar';
 import { useAuth } from '../../providers/AuthProvider';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 // Module-level flag: set by WorkoutLogScreen when sets are logged
@@ -90,6 +91,9 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   const [prs, setPrs] = useState<PersonalRecord[]>([]);
   const [activityGoal, setActivityGoal] = useState<ActivityGoal | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const isTabActive = useIsFocused();
   const [selectedPlanDayIndex, setSelectedPlanDayIndex] = useState<number | null>(null);
   const [showWorkoutPreview, setShowWorkoutPreview] = useState(false);
 
@@ -259,6 +263,13 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       return 0;
     });
   }, [currentPlanDays, dayName]);
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+    ]).start();
+  }, [isTabActive, fadeAnim, slideAnim]);
 
   const hasNoPlan = !loading && !planName;
   const hasNoData = !loading && !summary?.steps && !summary?.calories_burned && exercises.length === 0 && weeklyStats?.sessions === 0;
@@ -1930,6 +1941,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         onScroll={onScroll}
         scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[Colors.teal, Colors.pink]} tintColor={Colors.teal} progressBackgroundColor={Colors.bgCard} />}>
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.title}>Activity</Text>
@@ -2051,6 +2063,7 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
         )}
 
         <View style={{ height: 100 }} />
+        </Animated.View>
       </ScrollView>
 
       {/* ── Workout Preview Overlay ──────────────────────────── */}

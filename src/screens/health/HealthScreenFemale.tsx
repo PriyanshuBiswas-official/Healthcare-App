@@ -11,6 +11,7 @@ import {
   Alert,
   RefreshControl,
   Platform,
+  Animated,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Svg, { Circle, Rect, Line, Polyline, Defs, LinearGradient, Stop, Path, G, Text as SvgText } from 'react-native-svg';
@@ -24,6 +25,7 @@ import {
 } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useNotifications } from '../../providers/NotificationContext';
+import { useIsFocused } from '@react-navigation/native';
 import {
   InnerTabBar,
   HormoneRangeBar,
@@ -521,6 +523,9 @@ export default function HealthScreenFemale({
   const [activeTab, setActiveTab] = useState('Overview');
   const [hasTodayLog, setHasTodayLog] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const isTabActive = useIsFocused();
 
   // ── Data state ──────────────────────────────────────────────────────────
   const [periodLogs, setPeriodLogs] = useState<PeriodLog[]>([]);
@@ -927,14 +932,12 @@ export default function HealthScreenFemale({
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [activeTab]);
 
-  // ── Loading state ───────────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <View style={[s.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <LoadingSpinner />
-      </View>
-    );
-  }
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+    ]).start();
+  }, [isTabActive, fadeAnim, slideAnim]);
 
   return (
     <View style={s.root}>
@@ -945,6 +948,7 @@ export default function HealthScreenFemale({
         onScroll={onScroll}
         scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[theme.colors.teal, theme.colors.pink]} tintColor={theme.colors.teal} progressBackgroundColor={theme.colors.bgCard} />}>
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
         <View style={s.header}>
           <Text style={s.title}>Your Health</Text>
           <View style={s.headerActions}>
@@ -957,7 +961,11 @@ export default function HealthScreenFemale({
           </View>
         </View>
 
-        {!cycleData && !loading && (
+        {loading ? (
+          <LoadingSpinner />
+        ) : (
+        <>
+        {!cycleData && (
           <TouchableOpacity style={s.cycleSetupBanner} activeOpacity={0.85} onPress={() => setShowCycleSetup(true)}>
             <View style={s.cycleSetupBannerIcon}>
               <Droplets size={Typography.lg} color={theme.colors.pink} />
@@ -1318,6 +1326,9 @@ export default function HealthScreenFemale({
         )}
 
         <View style={s.bottomSpace} />
+        </>
+        )}
+        </Animated.View>
       </ScrollView>
 
       {/* Cycle Setup Modal */}

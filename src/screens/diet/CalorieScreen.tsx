@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Image,
+  Animated,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Typography, Spacing, Radius } from '../../theme/theme';
@@ -21,6 +22,7 @@ import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, Pencil } from 'lucide-react-native';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
+import { useIsFocused } from '@react-navigation/native';
 import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { useNotifications } from '../../providers/NotificationContext';
@@ -79,6 +81,9 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
   const [weeklyWaterTrend, setWeeklyWaterTrend] = useState<WeeklyWaterDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const isTabActive = useIsFocused();
 
   const [suggestions, setSuggestions] = useState<MealSuggestion[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
@@ -322,6 +327,13 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
       .finally(() => setSuggestionsLoading(false));
   }, [session?.access_token]);
 
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+    ]).start();
+  }, [isTabActive, fadeAnim, slideAnim]);
+
   const handleSaveGoalSetup = async () => {
     if (!session?.access_token) return;
     const calorie = parseInt(setupCalorieGoal, 10) || 0;
@@ -452,6 +464,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
       keyboardVerticalOffset={90}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[colors.teal, colors.pink]} tintColor={colors.teal} progressBackgroundColor={colors.bgCard} />}>
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>Nutrition</Text>
@@ -780,6 +793,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
         )}
 
         <View style={{ height: 100 }} />
+        </Animated.View>
       </ScrollView>
 
       {modalVisible && <Modal visible={modalVisible} animationType="slide" transparent>
