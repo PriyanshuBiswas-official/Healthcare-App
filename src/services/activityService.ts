@@ -234,3 +234,14 @@ export async function editWorkoutSet(token: string, setId: number, data: { weigh
   if (!json.success) throw new Error(json.error || 'Failed to edit set');
   return json.data;
 }
+
+// ── Exercise Progress ──────────────────────────────────────
+
+export async function getExerciseProgress(token: string, exerciseId: number): Promise<{ date: string; value: number }[]> {
+  const res = await fetch(`${API_BASE_URL}/api/activity/exercise-progress/${exerciseId}`, {
+    headers: authHeaders(token),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch exercise progress');
+  return json.data;
+}

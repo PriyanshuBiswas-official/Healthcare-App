@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -21,7 +21,6 @@ import { WorkoutSet } from '../../types/activity';
 import { posthog } from '../../config/posthog';
 import { markWorkoutLogged } from './FitnessScreen';
 import { PREDEFINED_EXERCISES } from '../../data/predefinedExercises';
-import { getMockProgressData } from '../../data/mockProgressData';
 import ProgressLineChart from '../../components/ProgressLineChart';
 import { ChevronDown, Play, Info, Pencil } from 'lucide-react-native';
 
@@ -69,8 +68,18 @@ export default function WorkoutLogScreen({
     e => e.name.toLowerCase() === exercise.exercise_name.toLowerCase()
   );
 
-  // Progress chart data (hardcoded for now)
-  const progressData = getMockProgressData(exercise.exercise_name);
+  // Progress chart data (real data from backend)
+  const [progressData, setProgressData] = useState<{ date: string; value: number }[]>([]);
+  const [progressLoading, setProgressLoading] = useState(true);
+
+  useEffect(() => {
+    if (!session?.access_token) return;
+    setProgressLoading(true);
+    activityService.getExerciseProgress(session.access_token, exercise.exercise_id)
+      .then(setProgressData)
+      .catch(() => {})
+      .finally(() => setProgressLoading(false));
+  }, [session?.access_token, exercise.exercise_id]);
 
   const [sets, setSets] = useState<SetEntry[]>(() => {
     if (isCompleted && loggedSets.length > 0) {
@@ -317,7 +326,7 @@ export default function WorkoutLogScreen({
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         {/* ── Progress Chart ── */}
         {progressData.length > 0 && (
-          <ProgressLineChart data={progressData} />
+          <ProgressLineChart data={progressData} loading={progressLoading} />
         )}
 
         {/* ── How to Perform ── */}
