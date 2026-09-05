@@ -4,10 +4,10 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
-import { Typography, Spacing, Radius, Colors } from '../../theme/theme';
-import { useStyles } from '../../providers/ThemeProvider';
+import { Typography, Spacing, Radius, Colors } from '../../../theme/theme';
+import { useStyles } from '../../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BackButton } from '../../components/SharedComponents';
+import { BackButton } from '../../../components/SharedComponents';
 import { Search, Plus } from 'lucide-react-native';
 
 export default function AddExerciseScreen({

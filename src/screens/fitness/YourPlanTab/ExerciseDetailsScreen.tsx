@@ -10,13 +10,13 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
-import { Typography, Spacing, Radius, Colors } from '../../theme/theme';
-import { useStyles } from '../../providers/ThemeProvider';
+import { Typography, Spacing, Radius, Colors } from '../../../theme/theme';
+import { useStyles } from '../../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check } from 'lucide-react-native';
-import { useAuth } from '../../providers/AuthProvider';
-import { BackButton } from '../../components/SharedComponents';
-import * as activityService from '../../services/activityService';
+import { useAuth } from '../../../providers/AuthProvider';
+import { BackButton } from '../../../components/SharedComponents';
+import * as activityService from '../../../services/activityService';
 import {
   EQUIPMENT_OPTIONS,
   MUSCLE_GROUP_OPTIONS,
@@ -24,7 +24,7 @@ import {
   type ExerciseEquipment,
   type MuscleGroup,
   type ExerciseType,
-} from '../../types/activity';
+} from '../../../types/activity';
 
 interface ExerciseDetailsParams {
   planDayId: number;
