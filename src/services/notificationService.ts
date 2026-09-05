@@ -334,6 +334,7 @@ export async function startWorkoutTimerNotification(elapsed: number): Promise<vo
       smallIcon: 'ic_stat_cureto',
       color: '#0891B2',
       pressAction: { id: 'default' },
+      autoCancel: false,
       ongoing: true,
       actions: [
         { pressAction: { id: 'workout_timer_pause' }, title: 'Pause' },
@@ -361,6 +362,7 @@ export async function updateWorkoutTimerNotification(
       smallIcon: 'ic_stat_cureto',
       color: '#0891B2',
       pressAction: { id: 'default' },
+      autoCancel: false,
       ongoing: true,
       actions: paused
         ? [{ pressAction: { id: 'workout_timer_resume' }, title: 'Resume' }]
