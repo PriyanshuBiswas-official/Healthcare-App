@@ -12,10 +12,10 @@ import ProfileScreen from './src/screens/profile/ProfileScreen';
 import NotificationsScreen from './src/screens/notifications/NotificationsScreen';
 import ProfileSetupScreen from './src/screens/profile/ProfileSetupScreen';
 import WorkoutLogScreen from './src/screens/fitness/WorkoutLogScreen';
-import AddExerciseScreen from './src/screens/fitness/AddExerciseScreen';
-import PredefinedExerciseScreen from './src/screens/fitness/PredefinedExerciseScreen';
-import ExerciseDetailsScreen from './src/screens/fitness/ExerciseDetailsScreen';
-import AllPRsScreen from './src/screens/fitness/AllPRsScreen';
+import AddExerciseScreen from './src/screens/fitness/YourPlanTab/AddExerciseScreen';
+import PredefinedExerciseScreen from './src/screens/fitness/YourPlanTab/PredefinedExerciseScreen';
+import ExerciseDetailsScreen from './src/screens/fitness/YourPlanTab/ExerciseDetailsScreen';
+import AllPRsScreen from './src/screens/fitness/YourPRsTab/AllPRsScreen';
 import HealthLogScreen, { HealthLogDraft } from './src/screens/health/HealthLogScreen';
 import PartnerHealthReportScreen from './src/screens/relationships/PartnerHealthReportScreen';
 import RelationshipsScreen from './src/screens/relationships/RelationshipsScreen';
@@ -253,6 +253,7 @@ function TabNavigator({ route }: any) {
     openAI,
     openAppointments,
     openHealthLog,
+    openSubscriptions,
     setPendingAttachments,
     setInput,
     setOcrLoading,
@@ -279,6 +280,7 @@ function TabNavigator({ route }: any) {
             onOpenAI={openAI}
             onOpenAppointments={openAppointments}
             onOpenHealthLog={openHealthLog}
+            onOpenSubscriptions={openSubscriptions}
             onCaptureImage={(att) => {
               setPendingAttachments([att]);
               setInput('Analyze this health image');
@@ -464,6 +466,7 @@ function AppShell() {
   const openAppointments = useCallback(() => navRef.current?.navigate('Profile', { initialSection: 'reminders-appointments' }), []);
   const openHealthLog = useCallback(() => navRef.current?.navigate('HealthLog'), []);
   const openAddExercise = useCallback((planDayId: number) => navRef.current?.navigate('AddExercise', { planDayId }), []);
+  const openSubscriptions = useCallback(() => navRef.current?.navigate('Profile', { initialSection: 'subscriptions' }), []);
 
   // Sync force hidden based on route and ai chat overlay visibility
   const handleStateChange = () => {
@@ -499,6 +502,7 @@ function AppShell() {
                 openAI,
                 openAppointments,
                 openHealthLog,
+                openSubscriptions,
                 setPendingAttachments,
                 setInput,
                 setOcrLoading,
@@ -741,10 +745,8 @@ const RootComponent = () => {
   const { session, isLoading, hasProfile, networkError, maintenanceData, retryAfterNetworkError } = useAuth();
 
   useEffect(() => {
-    if (!isLoading) {
-      BootSplash.hide({ fade: true });
-    }
-  }, [isLoading]);
+    BootSplash.hide({ fade: true });
+  }, []);
 
   if (isLoading || (session?.user && hasProfile === null)) {
     return <LoadingScreen />;

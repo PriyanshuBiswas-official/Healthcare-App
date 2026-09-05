@@ -15,10 +15,11 @@ import {
   Alert,
   PermissionsAndroid,
   Platform,
+  StyleSheet,
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar, LoadingSpinner } from '../../components/SharedComponents';
+import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar, LoadingSpinner, PremiumBadge } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import ProfileCompletionBanner from '../../components/ProfileCompletionBanner';
 import { useAuth } from '../../providers/AuthProvider';
@@ -75,7 +76,7 @@ function formatDashboardDate(iso: string): string {
   }
 }
 
-export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab, onPartnerPress, onRelationshipsPress, onOpenAI, onOpenAppointments, onOpenHealthLog, onCaptureImage }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void; onPartnerPress?: (partnerId: string) => void; onRelationshipsPress?: () => void; onOpenAI?: (fromTab?: TabName, startInChat?: boolean, initialQuery?: string) => void; onOpenAppointments?: () => void; onOpenHealthLog?: () => void; onCaptureImage?: (attachment: { uri: string; type: string; name: string }) => void; }) {
+export default function DashboardScreen({ onProfilePress, onNotificationsPress, onCompleteProfile, navigateToTab, onPartnerPress, onRelationshipsPress, onOpenAI, onOpenAppointments, onOpenHealthLog, onCaptureImage, onOpenSubscriptions }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onCompleteProfile?: () => void; navigateToTab?: (tab: TabName) => void; onPartnerPress?: (partnerId: string) => void; onRelationshipsPress?: () => void; onOpenAI?: (fromTab?: TabName, startInChat?: boolean, initialQuery?: string) => void; onOpenAppointments?: () => void; onOpenHealthLog?: () => void; onCaptureImage?: (attachment: { uri: string; type: string; name: string }) => void; onOpenSubscriptions?: () => void; }) {
   const { theme } = useTheme();
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion, gender } = useAuth();
@@ -236,6 +237,9 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       fontWeight: Typography.bold,
       color: theme.colors.white,
       letterSpacing: Typography.lsWider,
+    },
+    heroAiLockedContent: {
+      paddingTop: 2,
     },
     heroAiChatBtn: {
       paddingHorizontal: 8,
@@ -1148,11 +1152,12 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const [modalSaving, setModalSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [healthScore, setHealthScore] = useState<DashboardHealthScore | null>(null);
-  const [aiSummary, setAiSummary] = useState<string>('Analyzing your health metrics to compile summary...');
-  const [aiSummaryTags, setAiSummaryTags] = useState<AISummaryTag[]>([
-    { label: 'Analyzing...', color: 'accentBlue' }
+  const [aiSummary] = useState<string>('Your personalized AI health insights, trend analysis, and smart recommendations will appear here.');
+  const [aiSummaryTags] = useState<AISummaryTag[]>([
+    { label: 'Premium', color: 'amber' },
+    { label: 'AI Insights', color: 'accentBlue' },
+    { label: 'Coming soon', color: 'success' },
   ]);
-  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
 
   const medicationsData = useMemo(() => {
     const medColors = [theme.colors.accentBlue, theme.colors.amber, theme.colors.blue, theme.colors.pink, theme.colors.teal, theme.colors.success, theme.colors.textSecondary];
@@ -1194,30 +1199,26 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     };
   }, []);
 
-  const loadAiSummary = useCallback(async () => {
-    if (!session?.access_token) return;
-    setAiSummaryLoading(true);
-    try {
-      const data = await getAIHealthSummary(session.access_token);
-      setAiSummary(data.summary);
-      setAiSummaryTags(data.tags);
-    } catch (err: any) {
-      console.warn('Failed to load AI health summary:', err.message);
-      setAiSummary('Stable metrics today. Add more water, meals, and sleep logs to compile custom health insights.');
-      setAiSummaryTags([
-        { label: 'Vitals stable', color: 'success' },
-        { label: 'Ready', color: 'accentBlue' }
-      ]);
-    } finally {
-      setAiSummaryLoading(false);
-    }
-  }, [session?.access_token]);
+  // Disabled — premium feature, pending plan implementation
+  // const loadAiSummary = useCallback(async () => {
+  //   if (!session?.access_token) return;
+  //   setAiSummaryLoading(true);
+  //   try {
+  //     const data = await getAIHealthSummary(session.access_token);
+  //     setAiSummary(data.summary);
+  //     setAiSummaryTags(data.tags);
+  //   } catch (err: any) {
+  //     console.warn('Failed to load AI health summary:', err.message);
+  //   } finally {
+  //     setAiSummaryLoading(false);
+  //   }
+  // }, [session?.access_token]);
 
   const loadData = () => {
     if (session?.access_token) {
       const today = new Date().toISOString().split('T')[0];
 
-      loadAiSummary();
+      // loadAiSummary(); // Disabled — premium feature, pending plan implementation
 
       getSleepLogs(session.access_token)
         .then(setSleepLogs)
@@ -1298,7 +1299,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     setRefreshing(true);
     const today = new Date().toISOString().split('T')[0];
     await Promise.allSettled([
-      loadAiSummary(),
+      // loadAiSummary(), // Disabled — premium feature, pending plan implementation
       getSleepLogs(session.access_token).then(setSleepLogs),
       getWeightLogs(session.access_token).then(setWeightLogs),
       getMealsForDate(session.access_token, today).then(setMealsData),
@@ -1580,36 +1581,27 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             </View>
           </View>
 
-          {/* ── AI Summary ── */}
-          <View style={styles.heroAiInset}>
-            <View style={styles.heroAiHeader}>
-              <View style={styles.heroAiTitleRow}>
-                <Text style={styles.heroAiSparkle}>✦</Text>
-                <Text style={styles.heroAiTitle}>AI HEALTH SUMMARY</Text>
+          {/* ── AI Summary (Premium — locked) ── */}
+          <TouchableOpacity activeOpacity={0.9} onPress={onOpenSubscriptions}>
+            <View style={styles.heroAiInset}>
+              <View style={styles.heroAiHeader}>
+                <View style={styles.heroAiTitleRow}>
+                  <Text style={styles.heroAiSparkle}>✦</Text>
+                  <Text style={styles.heroAiTitle}>AI HEALTH SUMMARY</Text>
+                </View>
+                <PremiumBadge />
+              </View>
+              <View style={styles.heroAiLockedContent}>
+                <View style={{ height: 10, width: '90%', borderRadius: 5, backgroundColor: theme.colors.white + '20', marginBottom: 8 }} />
+                <View style={{ height: 10, width: '75%', borderRadius: 5, backgroundColor: theme.colors.white + '20', marginBottom: 12 }} />
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <View style={{ height: 18, width: 64, borderRadius: 9, backgroundColor: theme.colors.white + '15' }} />
+                  <View style={{ height: 18, width: 72, borderRadius: 9, backgroundColor: theme.colors.white + '15' }} />
+                  <View style={{ height: 18, width: 56, borderRadius: 9, backgroundColor: theme.colors.white + '15' }} />
+                </View>
               </View>
             </View>
-            {aiSummaryLoading ? (
-              <View style={{ paddingVertical: Spacing.sm }}>
-                <LoadingSpinner size="small" color={theme.colors.white} text="Updating health metrics..." />
-              </View>
-            ) : (
-              <>
-                <Text style={styles.heroAiText}>
-                  {aiSummary}
-                </Text>
-                <View style={styles.heroAiTagRow}>
-                  {aiSummaryTags.map((tag, i) => {
-                    const mappedColor = (theme.colors as any)[tag.color] || theme.colors.teal;
-                    return (
-                      <View key={i} style={[styles.heroAiTag, { backgroundColor: mappedColor + '15', borderColor: mappedColor + '40' }]}>
-                        <Text style={[styles.heroAiTagText, { color: mappedColor }]}>● {tag.label}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </>
-            )}
-          </View>
+          </TouchableOpacity>
 
         </Animated.View>
 

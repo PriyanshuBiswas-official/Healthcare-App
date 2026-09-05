@@ -5,14 +5,14 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { Typography, Spacing, Radius, Colors } from '../../theme/theme';
-import { useStyles } from '../../providers/ThemeProvider';
+import { Typography, Spacing, Radius, Colors } from '../../../theme/theme';
+import { useStyles } from '../../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuth } from '../../providers/AuthProvider';
-import { BackButton, GlassCardView } from '../../components/SharedComponents';
+import { useAuth } from '../../../providers/AuthProvider';
+import { BackButton, GlassCardView } from '../../../components/SharedComponents';
 import { Dumbbell } from 'lucide-react-native';
-import * as activityService from '../../services/activityService';
-import type { PersonalRecord } from '../../types/activity';
+import * as activityService from '../../../services/activityService';
+import type { PersonalRecord } from '../../../types/activity';
 
 const PR_COLORS = [Colors.teal, '#A855F7', Colors.accentBlue, Colors.amber];
 

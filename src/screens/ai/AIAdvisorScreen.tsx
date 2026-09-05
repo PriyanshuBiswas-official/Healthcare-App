@@ -12,7 +12,7 @@ import {
 import Svg, { Rect, Polyline, Line, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
-import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, LoadingSpinner } from '../../components/SharedComponents';
+import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, LoadingSpinner, PremiumBadge } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -371,6 +371,9 @@ export default function AIAdvisorScreen({
           <View style={styles.toolsGrid}>
             <TouchableOpacity activeOpacity={0.85} onPress={onOpenOCR} style={{ width: '47%' }}>
               <GlassCardView style={styles.toolCard}>
+                <View style={{ position: 'absolute', top: Spacing.base, right: Spacing.base, zIndex: 1 }}>
+                  <PremiumBadge compact />
+                </View>
                 <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.accentBlue + '15', alignItems: 'center', justifyContent: 'center' }]}>
                   <Scan size={18} color={theme.colors.accentBlue} strokeWidth={1.8} />
                 </View>
@@ -387,6 +390,9 @@ export default function AIAdvisorScreen({
 
             <TouchableOpacity activeOpacity={0.85} onPress={() => Alert.alert('Coming Soon', 'Health Lens is under development and will be available soon!')} style={{ width: '47%' }}>
               <GlassCardView style={styles.toolCard}>
+                <View style={{ position: 'absolute', top: Spacing.base, right: Spacing.base, zIndex: 1 }}>
+                  <PremiumBadge compact />
+                </View>
                 <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.pink + '15', alignItems: 'center', justifyContent: 'center' }]}>
                   <Microscope size={18} color={theme.colors.pink} strokeWidth={1.8} />
                 </View>
@@ -403,6 +409,9 @@ export default function AIAdvisorScreen({
 
             <TouchableOpacity activeOpacity={0.85} onPress={() => Alert.alert('Coming Soon', 'Meal scanner is under development and will be available soon!')} style={{ width: '47%' }}>
               <GlassCardView style={styles.toolCard}>
+                <View style={{ position: 'absolute', top: Spacing.base, right: Spacing.base, zIndex: 1 }}>
+                  <PremiumBadge compact />
+                </View>
                 <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.teal + '15', alignItems: 'center', justifyContent: 'center' }]}>
                   <UtensilsCrossed size={18} color={theme.colors.teal} strokeWidth={1.8} />
                 </View>
@@ -419,6 +428,9 @@ export default function AIAdvisorScreen({
 
             <TouchableOpacity activeOpacity={0.85} onPress={onOpenChat} style={{ width: '47%' }}>
               <GlassCardView style={styles.toolCard}>
+                <View style={{ position: 'absolute', top: Spacing.base, right: Spacing.base, zIndex: 1 }}>
+                  <PremiumBadge compact />
+                </View>
                 <View style={[styles.toolIconWrap, { backgroundColor: theme.colors.amber + '15', alignItems: 'center', justifyContent: 'center' }]}>
                   <Dumbbell size={18} color={theme.colors.amber} strokeWidth={1.8} />
                 </View>

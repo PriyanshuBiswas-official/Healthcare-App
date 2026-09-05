@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { Bell, ChevronLeft } from 'lucide-react-native';
+import { Bell, ChevronLeft, Lock } from 'lucide-react-native';
 import { Radius, Spacing, Typography, Shadows } from '../theme/theme';
 import { useTheme, useStyles } from '../providers/ThemeProvider';
 
@@ -93,6 +93,7 @@ interface SectionHeaderProps {
   subtitle?: string;
   action?: string;
   onAction?: () => void;
+  rightElement?: React.ReactNode;
 }
 
 export const SectionHeader: React.FC<SectionHeaderProps> = React.memo(({
@@ -100,21 +101,22 @@ export const SectionHeader: React.FC<SectionHeaderProps> = React.memo(({
   subtitle,
   action,
   onAction,
+  rightElement,
 }) => {
   const styles = useStyles(sharedStyleCreator);
   return (
     <View style={styles.sectionHeader}>
-      <View>
+      <View style={{ flex: 1 }}>
         <Text style={styles.sectionTitle}>{title}</Text>
         {subtitle && (
           <Text style={styles.sectionSubtitle}>{subtitle}</Text>
         )}
       </View>
-      {action && (
+      {rightElement || (action && (
         <TouchableOpacity onPress={onAction}>
           <Text style={styles.sectionAction}>{action}</Text>
         </TouchableOpacity>
-      )}
+      ))}
     </View>
   );
 });
@@ -668,6 +670,52 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = React.memo(({
       {text && (
         <Text style={{ fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: Spacing.sm, fontStyle: 'italic' }}>{text}</Text>
       )}
+    </View>
+  );
+});
+
+type PremiumBadgeProps = {
+  compact?: boolean;
+};
+
+export const PremiumBadge: React.FC<PremiumBadgeProps> = React.memo(({ compact = false }) => {
+  const { theme } = useTheme();
+
+  if (compact) {
+    return (
+      <View style={{
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: theme.colors.amber + '20',
+        borderWidth: 1,
+        borderColor: theme.colors.amber + '40',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <Lock size={12} color={theme.colors.amber} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: Radius.full,
+      backgroundColor: theme.colors.amber + '20',
+      borderWidth: 1,
+      borderColor: theme.colors.amber + '40',
+    }}>
+      <Lock size={14} color={theme.colors.amber} />
+      <Text style={{
+        fontSize: Typography.micro,
+        fontWeight: Typography.bold,
+        color: theme.colors.amber,
+      }}>Premium</Text>
     </View>
   );
 });

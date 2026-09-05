@@ -6,12 +6,12 @@ import {
   FlatList,
   TouchableOpacity,
 } from 'react-native';
-import { Typography, Spacing, Radius, Colors } from '../../theme/theme';
-import { useStyles } from '../../providers/ThemeProvider';
+import { Typography, Spacing, Radius, Colors } from '../../../theme/theme';
+import { useStyles } from '../../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BackButton } from '../../components/SharedComponents';
-import { PREDEFINED_EXERCISES, MUSCLE_GROUP_ICONS } from '../../data/predefinedExercises';
-import type { PredefinedExercise } from '../../types/activity';
+import { BackButton } from '../../../components/SharedComponents';
+import { PREDEFINED_EXERCISES, MUSCLE_GROUP_ICONS } from '../../../data/predefinedExercises';
+import type { PredefinedExercise } from '../../../types/activity';
 
 export default function PredefinedExerciseScreen({
   onSelect,

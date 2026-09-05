@@ -23,7 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, Pencil } from 'lucide-react-native';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useIsFocused } from '@react-navigation/native';
-import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton, LoadingSpinner } from '../../components/SharedComponents';
+import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton, LoadingSpinner, PremiumBadge } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { useNotifications } from '../../providers/NotificationContext';
 import * as dietService from '../../services/dietService';
@@ -574,6 +574,9 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
             <SectionHeader title="Track Calorie with a photo" subtitle="Snap a photo to log meals automatically" />
             <GlassCardView style={styles.photoUploadCard}>
               <TouchableOpacity style={styles.photoUploadArea} onPress={() => Alert.alert('Coming Soon', 'Meal scanning with AI is under development and will be available soon!')}>
+                <View style={{ position: 'absolute', top: Spacing.base, right: Spacing.base, zIndex: 1 }}>
+                  <PremiumBadge compact />
+                </View>
                 <View style={styles.cameraIconWrap}>
                   <Camera size={28} color={colors.teal} strokeWidth={2} />
                 </View>
