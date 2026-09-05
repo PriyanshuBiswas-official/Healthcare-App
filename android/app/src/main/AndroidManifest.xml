@@ -4,6 +4,9 @@
   <uses-permission android:name="android.permission.RECORD_AUDIO" />
   <uses-permission android:name="android.permission.VIBRATE" />
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
 
   <uses-permission
     android:name="android.permission.SCHEDULE_EXACT_ALARM"
@@ -32,5 +35,9 @@
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
+    <service
+      android:name="app.notifee.core.ForegroundService"
+      android:foregroundServiceType="health"
+      android:exported="false" />
   </application>
 </manifest>

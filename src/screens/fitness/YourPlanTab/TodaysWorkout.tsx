@@ -1,9 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../../../theme/theme';
-import { useStyles } from '../../../providers/ThemeProvider';
+import { useStyles, useTheme } from '../../../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Dumbbell, Check, Pencil } from 'lucide-react-native';
-import { GlassCardView, SectionHeader } from '../../../components/SharedComponents';
+import { GlassCardView, SectionHeader, BackButton } from '../../../components/SharedComponents';
+import { WorkoutTimer } from '../../../components/WorkoutTimer';
+import { useWorkoutTimer } from '../../../hooks/useWorkoutTimer';
 import type { TodayExercise } from '../../../types/activity';
 
 interface TodaysWorkoutProps {
@@ -161,5 +164,97 @@ export function TodaysWorkout({
         </TouchableOpacity>
       )}
     </>
+  );
+}
+
+// ── Workout Preview Overlay ──────────────────────────────────
+
+interface WorkoutPreviewOverlayProps {
+  visible: boolean;
+  onClose: () => void;
+  dayName: string | null;
+  planName: string | null;
+  exercises: TodayExercise[];
+  planDayExercises: TodayExercise[];
+  selectedDayName: string | null;
+  planDayId: number | null;
+  onSetupPlan: () => void;
+  onAddExercise: (dayId: number) => void;
+  onEditExercise: (ex: TodayExercise) => void;
+  onLogExercise: (exercise: any) => void;
+}
+
+export function WorkoutPreviewOverlay({
+  visible,
+  onClose,
+  dayName,
+  planName,
+  exercises,
+  planDayExercises,
+  selectedDayName,
+  planDayId,
+  onSetupPlan,
+  onAddExercise,
+  onEditExercise,
+  onLogExercise,
+}: WorkoutPreviewOverlayProps) {
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const timer = useWorkoutTimer();
+
+  const styles = useStyles((t: any) => ({
+    overlay: { flex: 1, backgroundColor: t.colors.bg },
+    header: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.lg, paddingBottom: Spacing.base,
+      borderBottomWidth: 1, borderBottomColor: t.colors.bgCardBorder,
+    },
+    titleWrap: { flex: 1, paddingHorizontal: Spacing.md, alignItems: 'center' },
+    title: { fontSize: Typography.lg, fontWeight: Typography.bold, color: t.colors.textPrimary, textAlign: 'center' },
+    subtitle: { fontSize: Typography.sm, color: t.colors.textSecondary, marginTop: 2, textAlign: 'center' },
+    spacer: { width: 44, height: 44 },
+    content: { padding: Spacing.base, paddingBottom: 100 },
+  }));
+
+  if (!visible) return null;
+
+  const displayExercises = selectedDayName === dayName ? exercises : planDayExercises;
+
+  return (
+    <View style={[styles.overlay, { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 }]}>
+      <View style={styles.header}>
+        <BackButton onPress={() => { onClose(); }} color={Colors.textPrimary} />
+        <View style={styles.titleWrap}>
+          <Text style={styles.title}>{selectedDayName || dayName || ''} Workout</Text>
+          <Text style={styles.subtitle}>{planName}</Text>
+        </View>
+        <View style={styles.spacer} />
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        <WorkoutTimer
+          status={timer.status}
+          formatted={timer.formatted}
+          onStart={timer.start}
+          onPause={timer.pause}
+          onResume={timer.resume}
+          onStop={timer.stop}
+        />
+        <TodaysWorkout
+          exercises={displayExercises}
+          dayName={selectedDayName}
+          planName={planName}
+          planDayId={planDayId}
+          onSetupPlan={onSetupPlan}
+          onAddExercise={() => planDayId && onAddExercise(planDayId)}
+          onEditExercise={onEditExercise}
+          onLogExercise={onLogExercise}
+          title="Exercises"
+          subtitle={undefined}
+          showHeader={false}
+          showAddExercise={true}
+        />
+      </ScrollView>
+    </View>
   );
 }

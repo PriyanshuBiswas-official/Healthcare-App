@@ -32,7 +32,7 @@ export function markWorkoutLogged() { _workoutLogged = true; }
 import * as activityService from '../../services/activityService';
 import type { ActivitySummary, TodayExercise, WeeklyDay, WeeklyStats, PersonalRecord, ActivityGoal, WorkoutPlanDays } from '../../types/activity';
 
-import { TodaysWorkout } from './YourPlanTab/TodaysWorkout';
+import { TodaysWorkout, WorkoutPreviewOverlay } from './YourPlanTab/TodaysWorkout';
 import { PersonalRecordsCard } from './YourPRsTab/PersonalRecordsCard';
 import { CurrentPlanSection } from './YourPlanTab/CurrentPlanSection';
 import { PlanSetupModal } from './YourPlanTab/PlanSetupModal';
@@ -67,7 +67,7 @@ function formatDuration(minutes: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-export default function FitnessScreen({ onProfilePress, onNotificationsPress, onOpenAI, onOpenWorkoutLog, onOpenAddExercise, onOpenAllPRs }: { onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void; onOpenWorkoutLog?: (exercise: any) => void; onOpenAddExercise?: (planDayId: number) => void; onOpenAllPRs?: () => void }) {
+export default function FitnessScreen({ route, onProfilePress, onNotificationsPress, onOpenAI, onOpenWorkoutLog, onOpenAddExercise, onOpenAllPRs }: { route?: any; onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void; onOpenWorkoutLog?: (exercise: any) => void; onOpenAddExercise?: (planDayId: number) => void; onOpenAllPRs?: () => void }) {
   const { onScroll } = useScrollVisibility();
   const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
@@ -94,6 +94,13 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
   const isTabActive = useIsFocused();
   const [selectedPlanDayIndex, setSelectedPlanDayIndex] = useState<number | null>(null);
   const [showWorkoutPreview, setShowWorkoutPreview] = useState(false);
+
+  // Open workout preview when navigating from notification
+  useEffect(() => {
+    if (route?.params?.openWorkoutPreview) {
+      setShowWorkoutPreview(true);
+    }
+  }, [route?.params?.openWorkoutPreview]);
 
   // Modal visibility states
   const [planModalVisible, setPlanModalVisible] = useState(false);
@@ -301,17 +308,6 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
     bar: { width: Math.min(36, (width - 60) / 7), borderRadius: Radius.sm, minHeight: 8 },
     barLabel: { fontSize: Typography.xs, color: theme.colors.textMuted, fontWeight: Typography.semiBold, textAlign: 'center' },
     barLabelsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: Spacing.sm, paddingHorizontal: Spacing.sm },
-    workoutOverlay: { flex: 1, backgroundColor: theme.colors.bg },
-    workoutOverlayHeader: {
-      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      paddingHorizontal: Spacing.base, paddingTop: insets.top + Spacing.lg, paddingBottom: Spacing.base,
-      borderBottomWidth: 1, borderBottomColor: theme.colors.bgCardBorder,
-    },
-    workoutOverlayTitleWrap: { flex: 1, paddingHorizontal: Spacing.md, alignItems: 'center' },
-    workoutOverlayTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: theme.colors.textPrimary, textAlign: 'center' },
-    workoutOverlaySub: { fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: 2, textAlign: 'center' },
-    workoutOverlaySpacer: { width: 44, height: 44 },
-    workoutOverlayContent: { padding: Spacing.base, paddingBottom: 100 },
   }));
 
   function SegmentedControl({ segments, active, onChange }: { segments: Segment[]; active: Segment; onChange: (s: Segment) => void }) {
@@ -536,38 +532,20 @@ export default function FitnessScreen({ onProfilePress, onNotificationsPress, on
       </ScrollView>
 
       {/* Workout Preview Overlay */}
-      {showWorkoutPreview && (
-        <View style={[styles.workoutOverlay, { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 }]}>
-          <View style={styles.workoutOverlayHeader}>
-            <BackButton onPress={() => setShowWorkoutPreview(false)} color={Colors.textPrimary} />
-            <View style={styles.workoutOverlayTitleWrap}>
-              <Text style={styles.workoutOverlayTitle}>{selectedPlanDay?.day_name || dayName || ''} Workout</Text>
-              <Text style={styles.workoutOverlaySub}>{currentPlanName}</Text>
-            </View>
-            <View style={styles.workoutOverlaySpacer} />
-          </View>
-
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.workoutOverlayContent}>
-            <TodaysWorkout
-              exercises={selectedPlanDay?.day_name === dayName ? exercises : (selectedPlanDay?.exercises || [])}
-              dayName={selectedPlanDay?.day_name || dayName}
-              planName={planName}
-              planDayId={selectedPlanDay?.plan_days_id || planDayId}
-              onSetupPlan={() => setPlanModalVisible(true)}
-              onAddExercise={() => {
-                const dayId = selectedPlanDay?.plan_days_id || planDayId;
-                if (dayId && onOpenAddExercise) onOpenAddExercise(dayId);
-              }}
-              onEditExercise={openEditExercise}
-              onLogExercise={(ex) => onOpenWorkoutLog && onOpenWorkoutLog(ex)}
-              title="Exercises"
-              subtitle={undefined}
-              showHeader={false}
-              showAddExercise={true}
-            />
-          </ScrollView>
-        </View>
-      )}
+      <WorkoutPreviewOverlay
+        visible={showWorkoutPreview}
+        onClose={() => setShowWorkoutPreview(false)}
+        dayName={dayName}
+        planName={planName}
+        exercises={exercises}
+        planDayExercises={selectedPlanDay?.exercises || []}
+        selectedDayName={selectedPlanDay?.day_name || dayName}
+        planDayId={selectedPlanDay?.plan_days_id || planDayId}
+        onSetupPlan={() => setPlanModalVisible(true)}
+        onAddExercise={(dayId) => onOpenAddExercise && onOpenAddExercise(dayId)}
+        onEditExercise={openEditExercise}
+        onLogExercise={(ex) => onOpenWorkoutLog && onOpenWorkoutLog(ex)}
+      />
 
       {/* Modals */}
       <PlanSetupModal
