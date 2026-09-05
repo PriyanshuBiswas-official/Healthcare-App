@@ -741,10 +741,8 @@ const RootComponent = () => {
   const { session, isLoading, hasProfile, networkError, maintenanceData, retryAfterNetworkError } = useAuth();
 
   useEffect(() => {
-    if (!isLoading) {
-      BootSplash.hide({ fade: true });
-    }
-  }, [isLoading]);
+    BootSplash.hide({ fade: true });
+  }, []);
 
   if (isLoading || (session?.user && hasProfile === null)) {
     return <LoadingScreen />;
