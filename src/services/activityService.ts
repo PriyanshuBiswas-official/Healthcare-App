@@ -235,9 +235,16 @@ export async function editWorkoutSet(token: string, setId: number, data: { weigh
   return json.data;
 }
 
-// ── Exercise Progress ──────────────────────────────────────
+export interface ExerciseProgressPoint {
+  date: string;
+  max_weight?: number;
+  total_reps?: number;
+  max_reps?: number;
+  total_volume?: number;
+  value?: number;
+}
 
-export async function getExerciseProgress(token: string, exerciseId: number): Promise<{ date: string; value: number }[]> {
+export async function getExerciseProgress(token: string, exerciseId: number): Promise<ExerciseProgressPoint[]> {
   const res = await fetch(`${API_BASE_URL}/api/activity/exercise-progress/${exerciseId}`, {
     headers: authHeaders(token),
   });

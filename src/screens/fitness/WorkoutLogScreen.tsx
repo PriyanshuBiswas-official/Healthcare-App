@@ -69,7 +69,7 @@ export default function WorkoutLogScreen({
   );
 
   // Progress chart data (real data from backend)
-  const [progressData, setProgressData] = useState<{ date: string; value: number }[]>([]);
+  const [progressData, setProgressData] = useState<activityService.ExerciseProgressPoint[]>([]);
   const [progressLoading, setProgressLoading] = useState(true);
 
   useEffect(() => {
@@ -325,9 +325,12 @@ export default function WorkoutLogScreen({
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         {/* ── Progress Chart ── */}
-        {progressData.length > 0 && (
-          <ProgressLineChart data={progressData} loading={progressLoading} />
-        )}
+        <ProgressLineChart
+          data={progressData}
+          loading={progressLoading}
+          exerciseType={exercise.exercise_type || undefined}
+          equipment={exercise.equipment || undefined}
+        />
 
         {/* ── How to Perform ── */}
         {predefined && (
