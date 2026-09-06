@@ -16,6 +16,8 @@ import AddExerciseScreen from './src/screens/fitness/YourPlanTab/AddExerciseScre
 import PredefinedExerciseScreen from './src/screens/fitness/YourPlanTab/PredefinedExerciseScreen';
 import ExerciseDetailsScreen from './src/screens/fitness/YourPlanTab/ExerciseDetailsScreen';
 import AllPRsScreen from './src/screens/fitness/YourPRsTab/AllPRsScreen';
+import ExplorePlansScreen from './src/screens/fitness/YourPlanTab/ExplorePlansScreen';
+import PlanDetailScreen from './src/screens/fitness/YourPlanTab/PlanDetailScreen';
 import HealthLogScreen, { HealthLogDraft } from './src/screens/health/HealthLogScreen';
 import PartnerHealthReportScreen from './src/screens/relationships/PartnerHealthReportScreen';
 import RelationshipsScreen from './src/screens/relationships/RelationshipsScreen';
@@ -57,13 +59,15 @@ type RootStackParamList = {
   PartnerReport: { partnerId: string } | undefined;
   Relationships: undefined;
   AllPRs: undefined;
+  ExplorePlans: undefined;
+  PlanDetail: { plan: any } | undefined;
   Feedback: undefined;
   NewFeedback: undefined;
   FeedbackThread: { threadId: number } | undefined;
 };
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
-const OVERLAY_TABS: string[] = ['Profile', 'Notifications', 'WorkoutLog', 'AddExercise', 'PredefinedExercise', 'ExerciseDetails', 'HealthLog', 'PartnerReport', 'Relationships', 'AllPRs', 'Feedback', 'NewFeedback', 'FeedbackThread'];
+const OVERLAY_TABS: string[] = ['Profile', 'Notifications', 'WorkoutLog', 'AddExercise', 'PredefinedExercise', 'ExerciseDetails', 'HealthLog', 'PartnerReport', 'Relationships', 'AllPRs', 'ExplorePlans', 'PlanDetail', 'Feedback', 'NewFeedback', 'FeedbackThread'];
 
 const OCR_PROMPT = `Please analyze this medical document image. Extract all visible text and provide:
 1. A clear transcription of all text found
@@ -227,6 +231,8 @@ const MemoizedHealthLogScreen = React.memo(HealthLogScreen);
 const MemoizedPartnerReportScreen = React.memo(PartnerHealthReportScreen);
 const MemoizedRelationshipsScreen = React.memo(RelationshipsScreen);
 const MemoizedAllPRsScreen = React.memo(AllPRsScreen);
+const MemoizedExplorePlansScreen = React.memo(ExplorePlansScreen);
+const MemoizedPlanDetailScreen = React.memo(PlanDetailScreen);
 const MemoizedFeedbackScreen = React.memo(FeedbackScreen);
 const MemoizedNewFeedbackScreen = React.memo(NewFeedbackScreen);
 const MemoizedFeedbackThreadScreen = React.memo(FeedbackThreadScreen);
@@ -339,6 +345,7 @@ function TabNavigator({ route }: any) {
             onOpenWorkoutLog={(ex: any) => props.navigation.navigate('WorkoutLog', { exercise: ex })}
             onOpenAddExercise={(planDayId: number) => props.navigation.navigate('AddExercise', { planDayId })}
             onOpenAllPRs={() => props.navigation.navigate('AllPRs')}
+            onOpenExplorePlans={() => props.navigation.navigate('ExplorePlans')}
           />
           </PostHogBoundary>
         )}
@@ -617,6 +624,26 @@ function AppShell() {
             <RootStack.Screen name="AllPRs">
               {(props) => (
                 <MemoizedAllPRsScreen onBack={() => props.navigation.goBack()} />
+              )}
+            </RootStack.Screen>
+            <RootStack.Screen name="ExplorePlans">
+              {(props) => (
+                <MemoizedExplorePlansScreen
+                  onBack={() => props.navigation.goBack()}
+                  onSelectPlan={(plan) => props.navigation.navigate('PlanDetail', { plan })}
+                />
+              )}
+            </RootStack.Screen>
+            <RootStack.Screen name="PlanDetail">
+              {(props) => (
+                <MemoizedPlanDetailScreen
+                  plan={props.route.params?.plan}
+                  onBack={() => props.navigation.goBack()}
+                  onActivatePlan={(plan) => {
+                    // Placeholder: will be wired to backend later
+                    props.navigation.goBack();
+                  }}
+                />
               )}
             </RootStack.Screen>
             <RootStack.Screen name="Feedback">

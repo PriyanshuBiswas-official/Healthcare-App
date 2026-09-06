@@ -67,7 +67,7 @@ function formatDuration(minutes: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-export default function FitnessScreen({ route, onProfilePress, onNotificationsPress, onOpenAI, onOpenWorkoutLog, onOpenAddExercise, onOpenAllPRs }: { route?: any; onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void; onOpenWorkoutLog?: (exercise: any) => void; onOpenAddExercise?: (planDayId: number) => void; onOpenAllPRs?: () => void }) {
+export default function FitnessScreen({ route, onProfilePress, onNotificationsPress, onOpenAI, onOpenWorkoutLog, onOpenAddExercise, onOpenAllPRs, onOpenExplorePlans }: { route?: any; onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void; onOpenWorkoutLog?: (exercise: any) => void; onOpenAddExercise?: (planDayId: number) => void; onOpenAllPRs?: () => void; onOpenExplorePlans?: () => void }) {
   const { onScroll } = useScrollVisibility();
   const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
@@ -492,6 +492,7 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
                 selectedPlanDayIndex={selectedPlanDayIndex}
                 onSelectedPlanDayIndexChange={setSelectedPlanDayIndex}
                 onShowWorkoutPreview={() => setShowWorkoutPreview(true)}
+                onOpenExplorePlans={onOpenExplorePlans}
               />
             )}
 

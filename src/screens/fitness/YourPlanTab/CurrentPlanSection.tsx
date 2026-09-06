@@ -24,6 +24,7 @@ interface CurrentPlanSectionProps {
   selectedPlanDayIndex: number | null;
   onSelectedPlanDayIndexChange: (index: number) => void;
   onShowWorkoutPreview: () => void;
+  onOpenExplorePlans?: () => void;
 }
 
 export function CurrentPlanSection({
@@ -37,6 +38,7 @@ export function CurrentPlanSection({
   selectedPlanDayIndex,
   onSelectedPlanDayIndexChange,
   onShowWorkoutPreview,
+  onOpenExplorePlans,
 }: CurrentPlanSectionProps) {
   const styles = useStyles((theme: any) => ({
     section: { marginBottom: Spacing.lg },
@@ -159,7 +161,7 @@ export function CurrentPlanSection({
         <TouchableOpacity activeOpacity={0.7} style={styles.planActionBtn} onPress={() => Alert.alert('Coming Soon', 'Custom plan creation is under development and will be available soon!')}>
           <Text style={styles.planActionText}>Custom Plan</Text>
         </TouchableOpacity>
-        <TouchableOpacity activeOpacity={0.7} style={styles.planActionBtn} onPress={() => Alert.alert('Coming Soon', 'Plan exploration is under development and will be available soon!')}>
+        <TouchableOpacity activeOpacity={0.7} style={styles.planActionBtn} onPress={() => onOpenExplorePlans?.()}>
           <Text style={styles.planActionText}>Explore Plans</Text>
         </TouchableOpacity>
       </View>
