@@ -23,6 +23,7 @@ import { markWorkoutLogged } from './FitnessScreen';
 import { PREDEFINED_EXERCISES } from '../../data/predefinedExercises';
 import ProgressLineChart from '../../components/ProgressLineChart';
 import { ChevronDown, Play, Info, Pencil } from 'lucide-react-native';
+import { LogPRModal } from './YourPRsTab/LogPRModal';
 
 interface SetEntry {
   set_no: number;
@@ -100,6 +101,13 @@ export default function WorkoutLogScreen({
   const [editWeight, setEditWeight] = useState('');
   const [editReps, setEditReps] = useState('');
   const [showInstructions, setShowInstructions] = useState(false);
+  const [showLogPRModal, setShowLogPRModal] = useState(false);
+  const [prInitialValues, setPrInitialValues] = useState<{
+    exerciseId: number;
+    weight: number;
+    reps: number;
+    description?: string;
+  } | null>(null);
 
   const updateSet = (index: number, field: 'weight' | 'reps', value: string) => {
     setSets(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s));
@@ -110,6 +118,8 @@ export default function WorkoutLogScreen({
     setSaving(true);
     try {
       let allCompleted = true;
+      let detectedPRSet: { weight: number; reps: number; previous_pr?: { weight: number; reps: number } } | null = null;
+
       for (const set of sets) {
         const w = parseFloat(set.weight) || 0;
         const r = parseInt(set.reps, 10) || 0;
@@ -121,14 +131,47 @@ export default function WorkoutLogScreen({
             reps: r,
           });
           if (!result.completed) allCompleted = false;
+
+          if (result.is_new_pr) {
+            if (!detectedPRSet || w > detectedPRSet.weight || (w === detectedPRSet.weight && r > detectedPRSet.reps)) {
+              detectedPRSet = { weight: w, reps: r, previous_pr: result.previous_pr };
+            }
+          }
         }
       }
+
       posthog?.capture('workout_logged', {
         set_count: sets.filter(set => (parseFloat(set.weight) || 0) > 0 || (parseInt(set.reps, 10) || 0) > 0).length,
         workout_completed: allCompleted,
       });
       markWorkoutLogged();
-      if (allCompleted) {
+
+      if (detectedPRSet) {
+        const prMsg =
+          detectedPRSet.previous_pr && (detectedPRSet.previous_pr.weight > 0 || detectedPRSet.previous_pr.reps > 0)
+            ? `Your set of ${detectedPRSet.weight > 0 ? `${detectedPRSet.weight}kg` : ''}${detectedPRSet.weight > 0 && detectedPRSet.reps > 0 ? ' × ' : ''}${detectedPRSet.reps > 0 ? `${detectedPRSet.reps} reps` : ''} beat your previous record of ${detectedPRSet.previous_pr.weight > 0 ? `${detectedPRSet.previous_pr.weight}kg` : ''}${detectedPRSet.previous_pr.weight > 0 && detectedPRSet.previous_pr.reps > 0 ? ' × ' : ''}${detectedPRSet.previous_pr.reps > 0 ? `${detectedPRSet.previous_pr.reps} reps` : ''}! Would you like to log this as a new PR?`
+            : `Your set of ${detectedPRSet.weight > 0 ? `${detectedPRSet.weight}kg` : ''}${detectedPRSet.weight > 0 && detectedPRSet.reps > 0 ? ' × ' : ''}${detectedPRSet.reps > 0 ? `${detectedPRSet.reps} reps` : ''} is a new personal best! Would you like to log this as a new PR?`;
+
+        Alert.alert(
+          '🎉 New Personal Record!',
+          prMsg,
+          [
+            { text: 'Not Now', onPress: onBack, style: 'cancel' },
+            {
+              text: 'Log as PR',
+              onPress: () => {
+                setPrInitialValues({
+                  exerciseId: exercise.exercise_id,
+                  weight: detectedPRSet!.weight,
+                  reps: detectedPRSet!.reps,
+                  description: 'Achieved during workout session',
+                });
+                setShowLogPRModal(true);
+              },
+            },
+          ]
+        );
+      } else if (allCompleted) {
         Alert.alert('Exercise Complete', 'All sets logged for today!', [{ text: 'OK', onPress: onBack }]);
       } else {
         onBack();
@@ -530,6 +573,19 @@ export default function WorkoutLogScreen({
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Prefilled Log PR Modal */}
+      <LogPRModal
+        visible={showLogPRModal}
+        onClose={() => setShowLogPRModal(false)}
+        onSaved={() => {
+          setShowLogPRModal(false);
+          onBack();
+        }}
+        session={session}
+        allPlanExercises={[{ id: exercise.exercise_id, name: exercise.exercise_name }]}
+        initialValues={prInitialValues}
+      />
     </View>
   );
 }

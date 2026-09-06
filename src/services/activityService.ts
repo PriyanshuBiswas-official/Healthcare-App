@@ -211,9 +211,18 @@ export async function logActivity(token: string, data: ActivityLogInput): Promis
   return json.data;
 }
 
-// ── Workout Set Log ───────────────────────────────────────
+export interface LogWorkoutSetResult {
+  data: any;
+  completed: boolean;
+  is_new_pr?: boolean;
+  previous_pr?: { weight: number; reps: number };
+  new_record?: { weight: number; reps: number };
+}
 
-export async function logWorkoutSet(token: string, data: { exercise_id: number; set_no: number; weight: number; reps: number }): Promise<{ data: any; completed: boolean }> {
+export async function logWorkoutSet(
+  token: string,
+  data: { exercise_id: number; set_no: number; weight: number; reps: number }
+): Promise<LogWorkoutSetResult> {
   const res = await fetch(`${API_BASE_URL}/api/activity/log-set`, {
     method: 'POST',
     headers: authHeaders(token),
@@ -221,7 +230,13 @@ export async function logWorkoutSet(token: string, data: { exercise_id: number; 
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.message || json.error || 'Failed to log set');
-  return { data: json.data, completed: json.completed || false };
+  return {
+    data: json.data,
+    completed: json.completed || false,
+    is_new_pr: json.is_new_pr,
+    previous_pr: json.previous_pr,
+    new_record: json.new_record,
+  };
 }
 
 export async function editWorkoutSet(token: string, setId: number, data: { weight?: number; reps?: number }): Promise<any> {

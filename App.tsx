@@ -538,7 +538,11 @@ function AppShell() {
               {(props) => (
                 <MemoizedWorkoutLogScreen 
                   exercise={props.route.params?.exercise} 
-                  onBack={() => props.navigation.goBack()} 
+                  onBack={() => {
+                    if (props.navigation.canGoBack()) {
+                      props.navigation.goBack();
+                    }
+                  }} 
                 />
               )}
             </RootStack.Screen>

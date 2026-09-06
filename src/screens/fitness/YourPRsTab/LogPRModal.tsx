@@ -14,9 +14,15 @@ interface LogPRModalProps {
   onSaved: () => void;
   session: any;
   allPlanExercises: { id: number; name: string }[];
+  initialValues?: {
+    exerciseId: number;
+    weight: number;
+    reps: number;
+    description?: string;
+  } | null;
 }
 
-export function LogPRModal({ visible, onClose, onSaved, session, allPlanExercises }: LogPRModalProps) {
+export function LogPRModal({ visible, onClose, onSaved, session, allPlanExercises, initialValues }: LogPRModalProps) {
   const insets = useSafeAreaInsets();
   const styles = useStyles((theme: any) => ({
     prModalOverlay: { flex: 1, backgroundColor: theme.colors.bg },
@@ -88,15 +94,22 @@ export function LogPRModal({ visible, onClose, onSaved, session, allPlanExercise
 
   useEffect(() => {
     if (visible) {
-      setPrExerciseId(null);
-      setPrWeight('');
-      setPrReps('');
-      setPrDescription('');
+      if (initialValues) {
+        setPrExerciseId(initialValues.exerciseId);
+        setPrWeight(String(initialValues.weight ?? ''));
+        setPrReps(String(initialValues.reps ?? ''));
+        setPrDescription(initialValues.description || 'Logged from workout session');
+      } else {
+        setPrExerciseId(null);
+        setPrWeight('');
+        setPrReps('');
+        setPrDescription('');
+      }
       setPrDateObj(new Date());
       setShowPRDatePicker(false);
       setExPickerVisible(false);
     }
-  }, [visible]);
+  }, [visible, initialValues]);
 
   const onPRDateChange = (_: DateTimePickerEvent, selected?: Date) => {
     if (Platform.OS === 'android') setShowPRDatePicker(false);
@@ -120,7 +133,6 @@ export function LogPRModal({ visible, onClose, onSaved, session, allPlanExercise
         description: prDescription.trim() || undefined,
         achieved_at: achievedAt.toISOString(),
       });
-      onClose();
       onSaved();
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to log PR.');
