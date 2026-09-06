@@ -80,7 +80,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const { theme } = useTheme();
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion, gender } = useAuth();
-  const { hideVitals, hideCommunitySpotlight } = usePreferences();
+  const { hideVitals } = usePreferences();
   const { unreadCount } = useNotifications();
   const insets = useSafeAreaInsets();
 
@@ -694,34 +694,8 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       fontWeight: Typography.bold,
     },
 
-    // COMMUNITY CARD
-    communityCard: {
-      padding: Spacing.base,
-      marginBottom: Spacing.lg,
-    },
-    communityPost: {
-      backgroundColor: theme.colors.bgCard,
-      padding: Spacing.md,
-      borderRadius: Radius.md,
-    },
-    communityPostAuthor: {
-      fontSize: Typography.xs,
-      color: theme.colors.teal,
-      fontWeight: Typography.bold,
-      marginBottom: 4,
-    },
-    communityPostText: {
-      fontSize: Typography.xs,
-      color: theme.colors.textPrimary,
-      lineHeight: 16,
-      marginBottom: Spacing.sm,
-    },
-    communityPostLikes: {
-      fontSize: Typography.xs,
-      color: theme.colors.textMuted,
-    },
 
-    // WEEKLY TRENDS SCROLL
+// WEEKLY TRENDS SCROLL
     trendsScroll: {
       paddingBottom: Spacing.lg,
       gap: Spacing.md,
@@ -2074,18 +2048,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             </GlassCardView>
           ))}
         </ScrollView>
-
-        {/* SECTION: COMMUNITY PREVIEW */}
-        {!hideCommunitySpotlight && (<>
-          <SectionHeader title="Community Spotlight" action="Join Groups" onAction={() => Alert.alert('Coming Soon', 'Community groups are under development and will be available soon!')} />
-          <GlassCardView style={styles.communityCard}>
-            <View style={styles.communityPost}>
-              <Text style={styles.communityPostAuthor}>Jane Cooper shared a post in running group:</Text>
-              <Text style={styles.communityPostText}>"Just completed the morning 5k. Lungs feel great, recovery speed is getting better! 🏃‍♀️✨"</Text>
-              <Text style={styles.communityPostLikes}>❤️ 24 likes  ·  💬 8 comments</Text>
-            </View>
-          </GlassCardView>
-        </>)}
 
         <View style={{ height: 100 }} />
       </ScrollView>

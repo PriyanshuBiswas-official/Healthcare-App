@@ -10,6 +10,7 @@ import {
   removeInboxItem,
   AppNotification
 } from '../services/notificationInbox';
+import { workoutTimerService } from '../services/workoutTimerService';
 
 export type { AppNotification };
 
@@ -29,12 +30,12 @@ const NotificationContext = createContext<NotificationContextType>({
   notifications: [],
   unreadCount: 0,
   addNotification: async () => '',
-  markAsRead: () => {},
-  markAllRead: () => {},
-  removeNotification: () => {},
-  clearAll: () => {},
+  markAsRead: () => { },
+  markAllRead: () => { },
+  removeNotification: () => { },
+  clearAll: () => { },
   onNotificationTap: null,
-  setOnNotificationTap: () => {},
+  setOnNotificationTap: () => { },
 });
 
 export function useNotifications() {
@@ -49,6 +50,7 @@ function mapScreenToTab(screen: string): string {
     medication: 'medications',
     water: 'reminders-water',
     workout: 'reminders-workouts',
+    workout_timer: 'Activity',
     nutrition: 'reminders-water',
     sleep: 'reminders-sleep',
     health: 'reminders-health',
@@ -78,10 +80,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             setNotifications(prev => [added, ...prev]);
           }
         }
-      } else if (type === EventType.PRESS) {
-        const { notification } = detail;
+      } else if (type === EventType.PRESS || type === EventType.ACTION_PRESS) {
+        const { notification, pressAction } = detail;
+        const actionId = pressAction?.id;
+        // Handle workout timer actions
+        if (actionId === 'workout_timer_pause') {
+          workoutTimerService.pause();
+          return;
+        } else if (actionId === 'workout_timer_resume') {
+          workoutTimerService.resume();
+          return;
+        }
         if (notification) {
-          // Route to the correct screen
           const screen = (notification.data?.screen as string) || 'general';
           const mappedScreen = mapScreenToTab(screen);
           tapHandlerRef.current?.(mappedScreen, notification.data as Record<string, unknown> | undefined);
@@ -94,13 +104,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Handle background/quit state notification opens
   useEffect(() => {
-    notifee.getInitialNotification().then((notification) => {
-      if (notification?.notification?.data) {
-        const screen = (notification.notification.data.screen as string) || 'general';
+    notifee.getInitialNotification().then((result) => {
+      if (result?.notification?.data) {
+        const screen = (result.notification.data.screen as string) || 'general';
+        // Check if an action button was pressed from quit state
+        const actionId = result.pressAction?.id;
+        if (actionId === 'workout_timer_pause') {
+          workoutTimerService.pause();
+          return;
+        } else if (actionId === 'workout_timer_resume') {
+          workoutTimerService.resume();
+          return;
+        }
         const mappedScreen = mapScreenToTab(screen);
-        // Delay to ensure the app is fully rendered
         setTimeout(() => {
-          tapHandlerRef.current?.(mappedScreen, notification.notification!.data as Record<string, unknown> | undefined);
+          tapHandlerRef.current?.(mappedScreen, result.notification!.data as Record<string, unknown> | undefined);
         }, 1000);
       }
     });
@@ -115,7 +133,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       receivedAt: Date.now(),
       read: false,
     };
-    
+
     // Actually we shouldn't use this manually much if DELIVERED handles it, but keep it for legacy compat
     setNotifications(prev => [newNotif, ...prev]);
     return id;

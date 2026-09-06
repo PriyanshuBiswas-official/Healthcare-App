@@ -374,7 +374,7 @@ function AppShell() {
   const navRef = useRef<any>(null);
 
   useEffect(() => {
-    setOnNotificationTap((screen: string, _data?: Record<string, unknown>) => {
+    setOnNotificationTap((screen: string, data?: Record<string, unknown>) => {
       const reminderScreens: Record<string, string> = {
         'medications': 'medications',
         'reminders-water': 'reminders-water',
@@ -385,6 +385,10 @@ function AppShell() {
       };
       if (reminderScreens[screen] && navRef.current) {
         navRef.current.navigate('Profile', { initialSection: reminderScreens[screen] });
+        return;
+      }
+      if (screen === 'Activity' && navRef.current) {
+        navRef.current.navigate('Activity', { openWorkoutPreview: true });
         return;
       }
       const screenToTab: Record<string, string> = {
@@ -534,7 +538,11 @@ function AppShell() {
               {(props) => (
                 <MemoizedWorkoutLogScreen 
                   exercise={props.route.params?.exercise} 
-                  onBack={() => props.navigation.goBack()} 
+                  onBack={() => {
+                    if (props.navigation.canGoBack()) {
+                      props.navigation.goBack();
+                    }
+                  }} 
                 />
               )}
             </RootStack.Screen>
