@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { Typography, Spacing, Radius, Colors, Shadows } from '../../../theme/theme';
+import { Typography, Spacing, Radius, Colors } from '../../../theme/theme';
 import { useStyles } from '../../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackButton, GlassCardView } from '../../../components/SharedComponents';
 import type { LibraryWorkoutPlan } from '../../../data/libraryWorkoutPlans';
-import { Clock, Target, Users, Check } from 'lucide-react-native';
+import { Calendar, Check } from 'lucide-react-native';
 
 function getMuscleGroupIcon(muscleGroup: string | null): string {
   const icons: Record<string, string> = {
@@ -69,7 +69,6 @@ export default function PlanDetailScreen({
     overviewCard: {
       padding: Spacing.base,
       marginBottom: Spacing.lg,
-      borderColor: Colors.teal + '40',
     },
     planName: {
       fontSize: Typography.xxl,
@@ -84,24 +83,53 @@ export default function PlanDetailScreen({
       lineHeight: 20,
       marginBottom: Spacing.md,
     },
-    metaRow: {
+    topRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 8,
+    },
+    daysBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: Radius.full,
+      backgroundColor: Colors.amberDim,
+      borderWidth: 1,
+      borderColor: Colors.amber + '30',
+    },
+    daysText: {
+      fontSize: Typography.xs,
+      fontWeight: Typography.semiBold,
+      color: Colors.amber,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: theme.colors.divider,
+      marginBottom: Spacing.md,
+    },
+    chipRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: 8,
       marginBottom: Spacing.sm,
     },
-    metaPill: {
+    chip: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: Spacing.sm,
       paddingVertical: 5,
       borderRadius: Radius.full,
       borderWidth: 1,
-      gap: 4,
+      backgroundColor: 'rgba(107,138,255,0.08)',
+      borderColor: 'rgba(107,138,255,0.20)',
     },
-    metaText: {
+    chipText: {
       fontSize: Typography.xs,
-      fontWeight: Typography.bold,
+      fontWeight: Typography.semiBold,
+      color: '#8B9CC4',
     },
     daySection: {
       marginBottom: Spacing.lg,
@@ -116,14 +144,14 @@ export default function PlanDetailScreen({
       width: 32,
       height: 32,
       borderRadius: 16,
-      backgroundColor: Colors.teal + '20',
+      backgroundColor: Colors.amberDim,
       alignItems: 'center',
       justifyContent: 'center',
     },
     dayBadgeText: {
       fontSize: Typography.sm,
       fontWeight: Typography.bold,
-      color: Colors.teal,
+      color: Colors.amber,
     },
     dayTitle: {
       fontSize: Typography.md,
@@ -174,7 +202,7 @@ export default function PlanDetailScreen({
     exerciseSetsText: {
       fontSize: Typography.xs,
       fontWeight: Typography.bold,
-      color: Colors.teal,
+      color: theme.colors.textPrimary,
     },
     exerciseRepsText: {
       fontSize: Typography.xs,
@@ -196,11 +224,15 @@ export default function PlanDetailScreen({
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: Colors.teal,
+      backgroundColor: Colors.amber,
       paddingVertical: Spacing.md + 2,
       borderRadius: Radius.md,
       gap: Spacing.sm,
-      ...Shadows.teal,
+      shadowColor: Colors.amber,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
+      elevation: 8,
     },
     activateBtnText: {
       fontSize: Typography.base,
@@ -225,27 +257,24 @@ export default function PlanDetailScreen({
       >
         {/* Plan Overview */}
         <GlassCardView style={styles.overviewCard}>
-          <Text style={styles.planName}>{plan.plan_name}</Text>
+          <View style={styles.topRow}>
+            <Text style={styles.planName}>{plan.plan_name}</Text>
+            <View style={styles.daysBadge}>
+              <Calendar size={12} color={Colors.amber} />
+              <Text style={styles.daysText}>{plan.days_per_week}d / wk</Text>
+            </View>
+          </View>
+
           <Text style={styles.planDescription}>{plan.description}</Text>
 
-          <View style={styles.metaRow}>
-            <View style={[styles.metaPill, { backgroundColor: Colors.teal + '16', borderColor: Colors.teal + '40' }]}>
-              <Clock size={12} color={Colors.teal} />
-              <Text style={[styles.metaText, { color: Colors.teal }]}>
-                {plan.days_per_week} days / week
-              </Text>
+          <View style={styles.divider} />
+
+          <View style={styles.chipRow}>
+            <View style={styles.chip}>
+              <Text style={styles.chipText}>{plan.goal}</Text>
             </View>
-            <View style={[styles.metaPill, { backgroundColor: Colors.accentBlue + '14', borderColor: Colors.accentBlue + '35' }]}>
-              <Target size={12} color={Colors.accentBlue} />
-              <Text style={[styles.metaText, { color: Colors.accentBlue }]}>
-                {plan.goal}
-              </Text>
-            </View>
-            <View style={[styles.metaPill, { backgroundColor: Colors.pink + '14', borderColor: Colors.pink + '35' }]}>
-              <Users size={12} color={Colors.pink} />
-              <Text style={[styles.metaText, { color: Colors.pink }]}>
-                {plan.best_for}
-              </Text>
+            <View style={styles.chip}>
+              <Text style={styles.chipText}>{plan.best_for}</Text>
             </View>
           </View>
         </GlassCardView>
