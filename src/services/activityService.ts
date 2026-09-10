@@ -96,6 +96,15 @@ export async function createWorkoutPlan(token: string, plan: PlanInput): Promise
   return json.data;
 }
 
+export async function deleteWorkoutPlan(token: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/activity/plan`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to delete workout plan');
+}
+
 export async function getCurrentWorkoutPlanDays(token: string): Promise<WorkoutPlanDays> {
   const res = await fetch(`${API_BASE_URL}/api/activity/plan/current-days`, {
     headers: authHeaders(token),

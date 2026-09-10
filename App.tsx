@@ -4,7 +4,7 @@ import TabBar, { TabName } from './src/navigation/TabBar';
 import { ScrollVisibilityProvider, useScrollVisibility } from './src/navigation/ScrollVisibilityContext';
 import DashboardScreen from './src/screens/home/DashboardScreen';
 import HealthScreen from './src/screens/health/HealthScreen';
-import FitnessScreen from './src/screens/fitness/FitnessScreen';
+import FitnessScreen, { markExerciseAdded } from './src/screens/fitness/FitnessScreen';
 import CalorieScreen from './src/screens/diet/CalorieScreen';
 import AIAdvisorScreen from './src/screens/ai/AIAdvisorScreen';
 import AIChatView, { useChatState } from './src/screens/ai/AIChatView';
@@ -588,6 +588,7 @@ function AppShell() {
                   }}
                   onBack={() => props.navigation.goBack()}
                   onExerciseAdded={() => {
+                    markExerciseAdded();
                     props.navigation.popToTop();
                   }}
                 />
