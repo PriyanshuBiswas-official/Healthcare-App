@@ -80,6 +80,72 @@ const SignupScreen = () => {
       if (!json.success) {
         throw new Error(json.error || 'Failed to save profile');
       }
+
+      // Also save additional profile sections (medical, nutrition, fitness, etc.)
+      const completePayload: Record<string, any> = {};
+      if (onboardingData.medicalConditions) completePayload.medicalConditions = onboardingData.medicalConditions;
+      if (onboardingData.medications) completePayload.medications = onboardingData.medications;
+      if (onboardingData.noMedications !== undefined) completePayload.noMedications = onboardingData.noMedications;
+      if (onboardingData.allergies) completePayload.allergies = onboardingData.allergies;
+      if (onboardingData.dietType) completePayload.dietType = onboardingData.dietType;
+      if (onboardingData.dietaryRestrictions) completePayload.dietaryRestrictions = onboardingData.dietaryRestrictions;
+      if (onboardingData.fitnessLevel) completePayload.fitnessLevel = onboardingData.fitnessLevel;
+      if (onboardingData.exerciseLocation) completePayload.exerciseLocation = onboardingData.exerciseLocation;
+      if (onboardingData.height) completePayload.height = onboardingData.height;
+      if (onboardingData.weight) completePayload.weight = onboardingData.weight;
+      if (onboardingData.bloodGroup) completePayload.bloodGroup = onboardingData.bloodGroup;
+      if (onboardingData.getsPeriods !== undefined) completePayload.getsPeriods = onboardingData.getsPeriods;
+      if (onboardingData.cycleLength) completePayload.cycleLength = onboardingData.cycleLength;
+      if (onboardingData.periodLength) completePayload.periodLength = onboardingData.periodLength;
+      if (onboardingData.lastPeriodStart) completePayload.lastPeriodStart = onboardingData.lastPeriodStart;
+
+      if (Object.keys(completePayload).length > 0) {
+        const completeRes = await fetch(`${API_BASE_URL}/api/profile/complete`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(completePayload),
+        });
+        const completeJson = await completeRes.json();
+        if (!completeJson.success) {
+          console.warn('Profile complete save failed:', completeJson.message);
+        }
+      }
+
+      // Save diet goals if provided
+      if (onboardingData.dietGoals) {
+        try {
+          await fetch(`${API_BASE_URL}/api/diet/goal`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify(onboardingData.dietGoals),
+          });
+        } catch (e) {
+          console.warn('Diet goals save failed:', e);
+        }
+      }
+
+      // Save activity goals if provided
+      if (onboardingData.activityGoals) {
+        try {
+          await fetch(`${API_BASE_URL}/api/activity/goal`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify(onboardingData.activityGoals),
+          });
+        } catch (e) {
+          console.warn('Activity goals save failed:', e);
+        }
+      }
+
       return true;
     } catch (err: any) {
       console.error('Error saving profile:', err);

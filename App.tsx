@@ -10,7 +10,7 @@ import AIAdvisorScreen from './src/screens/ai/AIAdvisorScreen';
 import AIChatView, { useChatState } from './src/screens/ai/AIChatView';
 import ProfileScreen from './src/screens/profile/ProfileScreen';
 import NotificationsScreen from './src/screens/notifications/NotificationsScreen';
-import ProfileSetupScreen from './src/screens/profile/ProfileSetupScreen';
+import ProfileSetupScreen from './src/screens/auth/ProfileSetupScreen';
 import WorkoutLogScreen from './src/screens/fitness/WorkoutLogScreen';
 import AddExerciseScreen from './src/screens/fitness/YourPlanTab/AddExerciseScreen';
 import PredefinedExerciseScreen from './src/screens/fitness/YourPlanTab/PredefinedExerciseScreen';
@@ -34,7 +34,7 @@ import BootSplash from 'react-native-bootsplash';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import OnboardingScreen from './src/screens/auth/OnboardingScreen';
+import UnifiedOnboardingScreen from './src/screens/auth/UnifiedOnboardingScreen';
 import { AuthStack } from './src/navigation/AuthStack';
 import LoadingScreen from './src/components/LoadingScreen';
 import ErrorScreen from './src/screens/error/ErrorScreen';
@@ -247,7 +247,7 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 function TabNavigator({ route }: any) {
   const { theme } = useTheme();
-  
+
   // Extract callbacks passed from AppShell
   const {
     openProfile,
@@ -275,78 +275,78 @@ function TabNavigator({ route }: any) {
       <Tab.Screen name="Home">
         {(props) => (
           <PostHogBoundary>
-          <MemoizedDashboard
-            {...props}
-            onProfilePress={openProfile}
-            onNotificationsPress={openNotifications}
-            onCompleteProfile={openProfileSetup}
-            navigateToTab={navigateToTab}
-            onPartnerPress={openPartnerReport}
-            onRelationshipsPress={openRelationships}
-            onOpenAI={openAI}
-            onOpenAppointments={openAppointments}
-            onOpenHealthLog={openHealthLog}
-            onOpenSubscriptions={openSubscriptions}
-            onCaptureImage={(att) => {
-              setPendingAttachments([att]);
-              setInput('Analyze this health image');
-              setOcrLoading(true);
-              openAI('Home', true);
-            }}
-          />
+            <MemoizedDashboard
+              {...props}
+              onProfilePress={openProfile}
+              onNotificationsPress={openNotifications}
+              onCompleteProfile={openProfileSetup}
+              navigateToTab={navigateToTab}
+              onPartnerPress={openPartnerReport}
+              onRelationshipsPress={openRelationships}
+              onOpenAI={openAI}
+              onOpenAppointments={openAppointments}
+              onOpenHealthLog={openHealthLog}
+              onOpenSubscriptions={openSubscriptions}
+              onCaptureImage={(att) => {
+                setPendingAttachments([att]);
+                setInput('Analyze this health image');
+                setOcrLoading(true);
+                openAI('Home', true);
+              }}
+            />
           </PostHogBoundary>
         )}
       </Tab.Screen>
       <Tab.Screen name="Health">
         {(props) => (
           <PostHogBoundary>
-          <MemoizedHealthScreen
-            {...props}
-            onProfilePress={openProfile}
-            onNotificationsPress={openNotifications}
-            onOpenHealthLog={openHealthLog}
-            lastHealthLog={lastHealthLog}
-          />
+            <MemoizedHealthScreen
+              {...props}
+              onProfilePress={openProfile}
+              onNotificationsPress={openNotifications}
+              onOpenHealthLog={openHealthLog}
+              lastHealthLog={lastHealthLog}
+            />
           </PostHogBoundary>
         )}
       </Tab.Screen>
       <Tab.Screen name="AI">
         {(props) => (
           <PostHogBoundary>
-          <MemoizedAIAdvisorScreen
-            {...props}
-            onProfilePress={openProfile}
-            onNotificationsPress={openNotifications}
-            onOpenChat={() => openAI(undefined, true, '')}
-            onOpenOCR={openOCR}
-          />
+            <MemoizedAIAdvisorScreen
+              {...props}
+              onProfilePress={openProfile}
+              onNotificationsPress={openNotifications}
+              onOpenChat={() => openAI(undefined, true, '')}
+              onOpenOCR={openOCR}
+            />
           </PostHogBoundary>
         )}
       </Tab.Screen>
       <Tab.Screen name="Diet">
         {(props) => (
           <PostHogBoundary>
-          <MemoizedCalorieScreen
-            {...props}
-            onProfilePress={openProfile}
-            onNotificationsPress={openNotifications}
-          />
+            <MemoizedCalorieScreen
+              {...props}
+              onProfilePress={openProfile}
+              onNotificationsPress={openNotifications}
+            />
           </PostHogBoundary>
         )}
       </Tab.Screen>
       <Tab.Screen name="Activity">
         {(props) => (
           <PostHogBoundary>
-          <MemoizedFitnessScreen
-            {...props}
-            onProfilePress={openProfile}
-            onNotificationsPress={openNotifications}
-            onOpenAI={openAI}
-            onOpenWorkoutLog={(ex: any) => props.navigation.navigate('WorkoutLog', { exercise: ex })}
-            onOpenAddExercise={(planDayId: number) => props.navigation.navigate('AddExercise', { planDayId })}
-            onOpenAllPRs={() => props.navigation.navigate('AllPRs')}
-            onOpenExplorePlans={() => props.navigation.navigate('ExplorePlans')}
-          />
+            <MemoizedFitnessScreen
+              {...props}
+              onProfilePress={openProfile}
+              onNotificationsPress={openNotifications}
+              onOpenAI={openAI}
+              onOpenWorkoutLog={(ex: any) => props.navigation.navigate('WorkoutLog', { exercise: ex })}
+              onOpenAddExercise={(planDayId: number) => props.navigation.navigate('AddExercise', { planDayId })}
+              onOpenAllPRs={() => props.navigation.navigate('AllPRs')}
+              onOpenExplorePlans={() => props.navigation.navigate('ExplorePlans')}
+            />
           </PostHogBoundary>
         )}
       </Tab.Screen>
@@ -357,7 +357,7 @@ function TabNavigator({ route }: any) {
 function AppShell() {
   const { setForceHidden } = useScrollVisibility();
   const { session } = useAuth();
-  
+
   // Local state for last health log (previously inside reducer)
   const [lastHealthLog, setLastHealthLog] = useState<HealthLogDraft | null>(null);
 
@@ -499,10 +499,10 @@ function AppShell() {
       <OfflineBanner />
       <View style={styles.screenContainer}>
         <NavigationContainer ref={navRef} onStateChange={handleStateChange}>
-            <RootStack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true, animation: 'slide_from_right', animationDuration: 220, gestureEnabled: true }}>
-            <RootStack.Screen 
-              name="Main" 
-              component={TabNavigator} 
+          <RootStack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true, animation: 'slide_from_right', animationDuration: 220, gestureEnabled: true }}>
+            <RootStack.Screen
+              name="Main"
+              component={TabNavigator}
               initialParams={{
                 openProfile,
                 openNotifications,
@@ -523,8 +523,8 @@ function AppShell() {
             />
             <RootStack.Screen name="Profile">
               {(props) => (
-                <MemoizedProfileScreen 
-                  onBackPress={() => props.navigation.goBack()} 
+                <MemoizedProfileScreen
+                  onBackPress={() => props.navigation.goBack()}
                   onCompleteProfile={() => props.navigation.navigate('ProfileSetup')}
                   onNavigate={(screen, params) => props.navigation.navigate(screen, params)}
                   initialSection={props.route.params?.initialSection}
@@ -543,13 +543,13 @@ function AppShell() {
             </RootStack.Screen>
             <RootStack.Screen name="WorkoutLog">
               {(props) => (
-                <MemoizedWorkoutLogScreen 
-                  exercise={props.route.params?.exercise} 
+                <MemoizedWorkoutLogScreen
+                  exercise={props.route.params?.exercise}
                   onBack={() => {
                     if (props.navigation.canGoBack()) {
                       props.navigation.goBack();
                     }
-                  }} 
+                  }}
                 />
               )}
             </RootStack.Screen>
@@ -595,29 +595,29 @@ function AppShell() {
             </RootStack.Screen>
             <RootStack.Screen name="HealthLog">
               {(props) => (
-                <MemoizedHealthLogScreen 
-                  onBack={() => props.navigation.goBack()} 
+                <MemoizedHealthLogScreen
+                  onBack={() => props.navigation.goBack()}
                   onSave={(log) => {
                     setLastHealthLog(log);
                     props.navigation.goBack();
-                  }} 
-                  token={session?.access_token} 
+                  }}
+                  token={session?.access_token}
                 />
               )}
             </RootStack.Screen>
             <RootStack.Screen name="PartnerReport">
               {(props) => (
-                <MemoizedPartnerReportScreen 
-                  relationshipId={props.route.params?.partnerId || ''} 
-                  onBack={() => props.navigation.goBack()} 
+                <MemoizedPartnerReportScreen
+                  relationshipId={props.route.params?.partnerId || ''}
+                  onBack={() => props.navigation.goBack()}
                 />
               )}
             </RootStack.Screen>
             <RootStack.Screen name="Relationships">
               {(props) => (
-                <MemoizedRelationshipsScreen 
-                  onBack={() => props.navigation.goBack()} 
-                  onPartnerPress={(partnerId) => props.navigation.navigate('PartnerReport', { partnerId })} 
+                <MemoizedRelationshipsScreen
+                  onBack={() => props.navigation.goBack()}
+                  onPartnerPress={(partnerId) => props.navigation.navigate('PartnerReport', { partnerId })}
                 />
               )}
             </RootStack.Screen>
@@ -671,7 +671,7 @@ function AppShell() {
                 />
               )}
             </RootStack.Screen>
-            </RootStack.Navigator>
+          </RootStack.Navigator>
         </NavigationContainer>
 
         {aiChatVisible && (
@@ -821,7 +821,7 @@ const RootComponent = () => {
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Onboarding">
-            {() => <PostHogBoundary><OnboardingScreen /></PostHogBoundary>}
+            {() => <PostHogBoundary><UnifiedOnboardingScreen /></PostHogBoundary>}
           </Stack.Screen>
         </Stack.Navigator>
       </NavigationContainer>

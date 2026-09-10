@@ -1,7 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import WelcomeScreen from '../screens/auth/WelcomeScreen';
-import OnboardingScreen from '../screens/auth/OnboardingScreen';
+import UnifiedOnboardingScreen from '../screens/auth/UnifiedOnboardingScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import SignupScreen from '../screens/auth/SignupScreen';
 import { PostHogBoundary } from '../providers/PostHogBoundary';
@@ -15,7 +15,7 @@ export const AuthStack = () => {
         {() => <PostHogBoundary><WelcomeScreen /></PostHogBoundary>}
       </Stack.Screen>
       <Stack.Screen name="Onboarding">
-        {() => <PostHogBoundary><OnboardingScreen /></PostHogBoundary>}
+        {() => <PostHogBoundary><UnifiedOnboardingScreen /></PostHogBoundary>}
       </Stack.Screen>
       <Stack.Screen name="Login">
         {() => <PostHogBoundary><LoginScreen /></PostHogBoundary>}
