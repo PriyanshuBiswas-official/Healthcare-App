@@ -24,8 +24,11 @@ import RelationshipsScreen from './src/screens/relationships/RelationshipsScreen
 import FeedbackScreen from './src/screens/feedback/FeedbackScreen';
 import NewFeedbackScreen from './src/screens/feedback/NewFeedbackScreen';
 import FeedbackThreadScreen from './src/screens/feedback/FeedbackThreadScreen';
+import FoodSearchScreen from './src/screens/diet/FoodSearchScreen';
+import MealDetailScreen from './src/screens/diet/MealDetailScreen';
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 import { PreferencesProvider } from './src/providers/PreferencesContext';
+import * as activityService from './src/services/activityService';
 import { NotificationProvider, useNotifications } from './src/providers/NotificationContext';
 import { ReminderProvider } from './src/providers/ReminderContext';
 import { AppointmentProvider } from './src/providers/AppointmentContext';
@@ -67,7 +70,7 @@ type RootStackParamList = {
 };
 
 const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
-const OVERLAY_TABS: string[] = ['Profile', 'Notifications', 'WorkoutLog', 'AddExercise', 'PredefinedExercise', 'ExerciseDetails', 'HealthLog', 'PartnerReport', 'Relationships', 'AllPRs', 'ExplorePlans', 'PlanDetail', 'Feedback', 'NewFeedback', 'FeedbackThread'];
+const OVERLAY_TABS: string[] = ['Profile', 'Notifications', 'WorkoutLog', 'AddExercise', 'PredefinedExercise', 'ExerciseDetails', 'HealthLog', 'PartnerReport', 'Relationships', 'AllPRs', 'ExplorePlans', 'PlanDetail', 'Feedback', 'NewFeedback', 'FeedbackThread', 'FoodSearchScreen', 'MealDetailScreen'];
 
 const OCR_PROMPT = `Please analyze this medical document image. Extract all visible text and provide:
 1. A clear transcription of all text found
@@ -236,6 +239,8 @@ const MemoizedPlanDetailScreen = React.memo(PlanDetailScreen);
 const MemoizedFeedbackScreen = React.memo(FeedbackScreen);
 const MemoizedNewFeedbackScreen = React.memo(NewFeedbackScreen);
 const MemoizedFeedbackThreadScreen = React.memo(FeedbackThreadScreen);
+const MemoizedFoodSearchScreen = React.memo(FoodSearchScreen);
+const MemoizedMealDetailScreen = React.memo(MealDetailScreen);
 // ── AppShell ─────────────────────────────────────────────────────────
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -640,9 +645,14 @@ function AppShell() {
                 <MemoizedPlanDetailScreen
                   plan={props.route.params?.plan}
                   onBack={() => props.navigation.goBack()}
-                  onActivatePlan={(plan) => {
-                    // Placeholder: will be wired to backend later
-                    props.navigation.goBack();
+                  onActivatePlan={async (plan) => {
+                    if (!session?.access_token) return;
+                    try {
+                      await activityService.activateLibraryPlan(session.access_token, plan.id);
+                      props.navigation.goBack();
+                    } catch (e: any) {
+                      Alert.alert('Error', e?.message || 'Failed to activate plan. Please try again.');
+                    }
                   }}
                 />
               )}
@@ -669,6 +679,22 @@ function AppShell() {
                 <MemoizedFeedbackThreadScreen
                   threadId={props.route.params?.threadId || 0}
                   onBack={() => props.navigation.goBack()}
+                />
+              )}
+            </RootStack.Screen>
+            <RootStack.Screen name="FoodSearchScreen">
+              {(props) => (
+                <MemoizedFoodSearchScreen
+                  navigation={props.navigation}
+                  route={props.route}
+                />
+              )}
+            </RootStack.Screen>
+            <RootStack.Screen name="MealDetailScreen">
+              {(props) => (
+                <MemoizedMealDetailScreen
+                  navigation={props.navigation}
+                  route={props.route}
                 />
               )}
             </RootStack.Screen>

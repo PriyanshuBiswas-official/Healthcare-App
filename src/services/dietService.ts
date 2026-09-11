@@ -10,6 +10,10 @@ import type {
   WaterChallenge,
   MealSuggestion,
   MealSuggestionQuery,
+  FoodSearchResult,
+  FoodNutrition,
+  AddedFood,
+  RecentMeal,
 } from '../types/diet';
 
 function authHeaders(token: string) {
@@ -184,5 +188,66 @@ export async function getMealDetail(
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.error || 'Failed to fetch meal detail');
+  return json.data;
+}
+
+// ── Food Search (Auto-fill) ──────────────────────────────
+
+export async function searchFood(
+  token: string,
+  query: string,
+  number: number = 5,
+): Promise<FoodSearchResult[]> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/diet/food-search?query=${encodeURIComponent(query)}&number=${number}`,
+    { headers: authHeaders(token) },
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to search food');
+  return json.data;
+}
+
+export async function getFoodNutrition(
+  token: string,
+  id: number,
+): Promise<FoodNutrition> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/diet/food-nutrition?id=${id}`,
+    { headers: authHeaders(token) },
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to get nutrition data');
+  return json.data;
+}
+
+// ── Batch Meal Logging ──────────────────────────────────
+
+export async function logMealsBatch(
+  token: string,
+  meals: AddedFood[],
+): Promise<NutritionLog[]> {
+  const res = await fetch(`${API_BASE_URL}/api/diet/meals/batch`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ meals }),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to save meals');
+  return json.data;
+}
+
+// ── Recent Meals (History) ──────────────────────────────
+
+export async function getRecentMeals(
+  token: string,
+  days: number = 7,
+  limit: number = 20,
+): Promise<RecentMeal[]> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/diet/meals/recent?days=${days}&limit=${limit}`,
+    { headers: authHeaders(token) },
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch recent meals');
   return json.data;
 }

@@ -105,6 +105,17 @@ export async function deleteWorkoutPlan(token: string): Promise<void> {
   if (!json.success) throw new Error(json.error || 'Failed to delete workout plan');
 }
 
+export async function activateLibraryPlan(token: string, libraryPlanId: string): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/api/activity/plan/activate`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ library_plan_id: libraryPlanId }),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to activate library plan');
+  return json.data;
+}
+
 export async function getCurrentWorkoutPlanDays(token: string): Promise<WorkoutPlanDays> {
   const res = await fetch(`${API_BASE_URL}/api/activity/plan/current-days`, {
     headers: authHeaders(token),

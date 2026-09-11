@@ -36,7 +36,7 @@ export default function PlanDetailScreen({
   const handleActivate = () => {
     Alert.alert(
       'Activate Plan',
-      `This will replace your current workout plan with "${plan.plan_name}". Are you sure?`,
+      `This will set "${plan.plan_name}" as your current workout plan. Are you sure?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {

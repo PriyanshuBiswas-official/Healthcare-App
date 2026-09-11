@@ -100,3 +100,59 @@ export interface MealSuggestionQuery {
   number?: number;
   offset?: number;
 }
+
+// ── Food Search (Auto-fill) ──────────────────────────────
+
+export interface FoodSearchResult {
+  id: number;
+  title: string;
+  image: string | null;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+}
+
+export interface FoodNutrition {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+}
+
+// ── Food Search Screen ──────────────────────────────────
+
+export interface FoodItem {
+  id: number;
+  title: string;
+  image: string | null;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  servingSize?: string;
+}
+
+export interface AddedFood {
+  food: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  servingSize?: string;
+}
+
+export interface RecentMeal {
+  food: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  serving_size: string | null;
+  logged_at: string;
+}
