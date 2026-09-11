@@ -13,25 +13,20 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
-  Image,
   Animated,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Camera, Pencil } from 'lucide-react-native';
+import { Pencil, Coffee, Salad, Apple, UtensilsCrossed } from 'lucide-react-native';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
-import { useIsFocused } from '@react-navigation/native';
-import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton, LoadingSpinner, PremiumBadge } from '../../components/SharedComponents';
+import { useIsFocused, useFocusEffect } from '@react-navigation/native';
+import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import { useNotifications } from '../../providers/NotificationContext';
 import * as dietService from '../../services/dietService';
-import type { NutritionLog, NutritionGoal, WeeklyTrendDay, WeeklyWaterDay, MealType, MealSuggestion } from '../../types/diet';
-import MealSuggestionDetailModal from '../../components/diet/MealSuggestionDetailModal';
-import { posthog } from '../../config/posthog';
-
-const MEAL_TYPE_OPTIONS: MealType[] = ['breakfast', 'lunch', 'snack', 'dinner'];
+import type { NutritionLog, NutritionGoal, WeeklyTrendDay, WeeklyWaterDay, MealType } from '../../types/diet';
 
 function formatDateHeader(date: Date): string {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -55,7 +50,7 @@ function formatTime(isoString: string): string {
   return `${hours}:${minutes} ${ampm}`;
 }
 
-export default function CalorieScreen({ onProfilePress, onNotificationsPress }: { onProfilePress?: () => void; onNotificationsPress?: () => void }) {
+export default function CalorieScreen({ onProfilePress, onNotificationsPress, navigation }: { onProfilePress?: () => void; onNotificationsPress?: () => void; navigation?: any }) {
   const { theme } = useTheme();
   const colors = theme.colors;
   const { onScroll } = useScrollVisibility();
@@ -66,12 +61,12 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
   const today = useMemo(() => new Date(), []);
   const todayStr = useMemo(() => toDateString(today), [today]);
 
-  const MEAL_CATEGORIES: { key: MealType; name: string; icon: string; color: string }[] = useMemo(() => [
-    { key: 'breakfast', name: 'Breakfast', icon: '☕', color: colors.amber },
-    { key: 'lunch', name: 'Lunch', icon: '🥗', color: colors.teal },
-    { key: 'snack', name: 'Snack', icon: '🍎', color: colors.pink },
-    { key: 'dinner', name: 'Dinner', icon: '🌙', color: colors.textMuted },
-  ], [colors.amber, colors.teal, colors.pink, colors.textMuted]);
+  const MEAL_CATEGORIES: { key: MealType; name: string; Icon: typeof Coffee; color: string }[] = useMemo(() => [
+    { key: 'breakfast', name: 'Breakfast', Icon: Coffee, color: colors.amber },
+    { key: 'lunch', name: 'Lunch', Icon: Salad, color: colors.accentBlue },
+    { key: 'snack', name: 'Snack', Icon: Apple, color: colors.pink },
+    { key: 'dinner', name: 'Dinner', Icon: UtensilsCrossed, color: colors.textMuted },
+  ], [colors.amber, colors.accentBlue, colors.pink, colors.textMuted]);
 
   const [meals, setMeals] = useState<NutritionLog[]>([]);
   const [waterLogs, setWaterLogs] = useState<any[]>([]);
@@ -84,20 +79,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const isTabActive = useIsFocused();
-
-  const [suggestions, setSuggestions] = useState<MealSuggestion[]>([]);
-  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
-  const [selectedMeal, setSelectedMeal] = useState<MealSuggestion | null>(null);
-
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalMealType, setModalMealType] = useState<MealType>('breakfast');
-  const [modalFood, setModalFood] = useState('');
-  const [modalCalories, setModalCalories] = useState('');
-  const [modalProtein, setModalProtein] = useState('');
-  const [modalCarbs, setModalCarbs] = useState('');
-  const [modalFat, setModalFat] = useState('');
-  const [modalFiber, setModalFiber] = useState('');
-  const [modalSaving, setModalSaving] = useState(false);
 
   const [customWaterVisible, setCustomWaterVisible] = useState(false);
   const [customWaterText, setCustomWaterText] = useState('');
@@ -182,20 +163,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     iconWrapSm: { alignItems: 'center', justifyContent: 'center' },
     aiLabel: { fontSize: Typography.xs, fontWeight: Typography.bold, letterSpacing: 1.5 },
     aiText: { fontSize: Typography.sm, color: t.colors.textSecondary, lineHeight: 20 },
-    photoUploadCard: { marginBottom: Spacing.lg, padding: Spacing.base },
-    photoUploadArea: {
-      borderWidth: 1,
-      borderStyle: 'dashed',
-      borderColor: t.colors.teal + '60',
-      backgroundColor: t.colors.teal + '10',
-      borderRadius: Radius.lg,
-      padding: Spacing.xl,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    cameraIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: t.colors.teal + '20', alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.md },
-    photoUploadTitle: { fontSize: Typography.base, fontWeight: Typography.bold, color: t.colors.textPrimary, marginBottom: 4 },
-    photoUploadSub: { fontSize: Typography.xs, color: t.colors.textSecondary, textAlign: 'center', paddingHorizontal: Spacing.lg },
     calorieCard: { padding: Spacing.lg, marginBottom: Spacing.xl },
     calorieRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     gaugeWrap: { width: 140, height: 140, alignItems: 'center', justifyContent: 'center' },
@@ -242,7 +209,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.md, marginTop: Spacing.xl },
     modalCancelBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, borderWidth: 1, borderColor: t.colors.bgCardBorder },
     modalCancelText: { color: t.colors.textSecondary, fontSize: Typography.sm, fontWeight: Typography.semiBold },
-    modalSaveBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, backgroundColor: t.colors.teal, alignItems: 'center', minWidth: 80 },
+    modalSaveBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, backgroundColor: t.colors.accentBlue, alignItems: 'center', minWidth: 80 },
     modalSaveText: { color: t.colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold },
     customWaterBox: {
       backgroundColor: t.colors.bgCardSolid,
@@ -305,6 +272,20 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     fetchData();
   }, [fetchData]);
 
+  // Refetch when screen regains focus (e.g. after adding meals from FoodSearchScreen)
+  // Use a ref to avoid infinite loops from fetchData dependency
+  const fetchedRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (fetchedRef.current && session?.access_token) {
+        dietService.getMealsForDate(session.access_token, todayStr).then(res => {
+          setMeals(res.meals);
+        }).catch(() => {});
+      }
+      fetchedRef.current = true;
+    }, [session?.access_token, todayStr])
+  );
+
   useEffect(() => {
     if (!loading && goal === null) {
       setSetupCalorieGoal('');
@@ -317,15 +298,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
       setGoalSetupVisible(true);
     }
   }, [loading, goal]);
-
-  useEffect(() => {
-    if (!session?.access_token) return;
-    setSuggestionsLoading(true);
-    dietService.getMealSuggestions(session.access_token, { maxCalories: 600, number: 4 })
-      .then(res => setSuggestions(res.suggestions))
-      .catch(() => { })
-      .finally(() => setSuggestionsLoading(false));
-  }, [session?.access_token]);
 
   useEffect(() => {
     Animated.parallel([
@@ -371,52 +343,8 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     }
   };
 
-  const openMealModal = (mealType: MealType) => {
-    setModalMealType(mealType);
-    setModalFood('');
-    setModalCalories('');
-    setModalProtein('');
-    setModalCarbs('');
-    setModalFat('');
-    setModalFiber('');
-    setModalVisible(true);
-  };
-
-  const handleSaveMeal = async () => {
-    if (!session?.access_token) return;
-    if (!modalFood.trim()) {
-      Alert.alert('Required', 'Please enter a food name.');
-      return;
-    }
-    setModalSaving(true);
-    try {
-      const newMeal = await dietService.logMeal(session.access_token, {
-        food: modalFood.trim(),
-        taken_as: modalMealType,
-        calories: parseInt(modalCalories, 10) || 0,
-        protein: parseInt(modalProtein, 10) || 0,
-        carbs: parseInt(modalCarbs, 10) || 0,
-        fat: parseInt(modalFat, 10) || 0,
-        fiber: parseInt(modalFiber, 10) || 0,
-      });
-      setMeals(prev => [...prev, newMeal]);
-      posthog?.capture('meal_logged', { meal_type: modalMealType });
-      setModalVisible(false);
-    } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to save meal.');
-    } finally {
-      setModalSaving(false);
-    }
-  };
-
-  const handleDeleteMeal = async (nutritionId: number) => {
-    if (!session?.access_token) return;
-    try {
-      await dietService.deleteMeal(session.access_token, nutritionId);
-      setMeals(prev => prev.filter(m => m.nutrition_id !== nutritionId));
-    } catch (e) {
-      console.warn('[CalorieScreen] Delete meal failed:', e);
-    }
+  const openMealDetail = (mealType: MealType) => {
+    navigation?.navigate('MealDetailScreen', { mealType, date: todayStr });
   };
 
   const getMealTypeByTime = (): MealType => {
@@ -425,25 +353,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
     if (hour < 15) return 'lunch';
     if (hour < 18) return 'snack';
     return 'dinner';
-  };
-
-  const handleLogSuggestionMeal = async (data: { food: string; calories: number; protein: number; carbs: number; fat: number; fiber: number }) => {
-    if (!session?.access_token) return;
-    try {
-      const newMeal = await dietService.logMeal(session.access_token, {
-        food: data.food,
-        taken_as: getMealTypeByTime(),
-        calories: data.calories,
-        protein: data.protein,
-        carbs: data.carbs,
-        fat: data.fat,
-        fiber: data.fiber,
-      });
-      setMeals(prev => [...prev, newMeal]);
-      posthog?.capture('meal_logged', { meal_type: getMealTypeByTime(), source: 'ai_suggestion' });
-    } catch (e) {
-      console.warn('[CalorieScreen] Log suggestion meal failed:', e);
-    }
   };
 
   const macros = [
@@ -463,7 +372,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[colors.teal, colors.pink]} tintColor={colors.teal} progressBackgroundColor={colors.bgCard} />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[colors.accentBlue, colors.pink]} tintColor={colors.accentBlue} progressBackgroundColor={colors.bgCard} />}>
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
         <View style={styles.header}>
           <View>
@@ -519,7 +428,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                     const circumference = 2 * Math.PI * radius;
                     const clampedProgress = Math.min(progress, 1);
                     const offset = circumference - clampedProgress * circumference;
-                    const color = progress > 1 ? colors.pink : colors.teal;
+                    const color = progress > 1 ? colors.pink : colors.accentBlue;
                     return (
                       <Svg width={size} height={size}>
                         <Circle cx={size / 2} cy={size / 2} r={radius} stroke={colors.bgCardBorder} strokeWidth={stroke} fill="none" />
@@ -558,7 +467,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                   <View style={[styles.calorieDivider]} />
                   <View style={styles.calorieStat}>
                     <Text style={styles.calorieStatLabel}>Remaining</Text>
-                    <Text style={[styles.calorieStatVal, { color: remaining > 0 ? colors.teal : colors.pink }]}>
+                    <Text style={[styles.calorieStatVal, { color: remaining > 0 ? colors.accentBlue : colors.pink }]}>
                       {remaining > 0 ? remaining.toLocaleString() : `+${Math.abs(remaining)}`}
                     </Text>
                   </View>
@@ -569,20 +478,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                   </View>
                 </View>
               </View>
-            </GlassCardView>
-
-            <SectionHeader title="Track Calorie with a photo" subtitle="Snap a photo to log meals automatically" />
-            <GlassCardView style={styles.photoUploadCard}>
-              <TouchableOpacity style={styles.photoUploadArea} onPress={() => Alert.alert('Coming Soon', 'Meal scanning with AI is under development and will be available soon!')}>
-                <View style={{ position: 'absolute', top: Spacing.base, right: Spacing.base, zIndex: 1 }}>
-                  <PremiumBadge compact />
-                </View>
-                <View style={styles.cameraIconWrap}>
-                  <Camera size={28} color={colors.teal} strokeWidth={2} />
-                </View>
-                <Text style={styles.photoUploadTitle}>Scan meal with AI</Text>
-                <Text style={styles.photoUploadSub}>Upload or take a photo to automatically log calories and macros.</Text>
-              </TouchableOpacity>
             </GlassCardView>
 
             <SectionHeader title="Macronutrients" subtitle="Breakdown of protein, carbs, fats & fiber" />
@@ -632,17 +527,17 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                 return (
                   <Pressable
                     key={cat.key}
-                    onPress={() => openMealModal(cat.key)}
+                    onPress={() => openMealDetail(cat.key)}
                     style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.sm }, pressed && { opacity: 0.5 }]}>
-                    <View style={[styles.iconWrapSm, { backgroundColor: hasMeals ? cat.color + '20' : colors.bgCardBorder, width: 44, height: 44, borderRadius: Radius.md }]}>
-                      <Text style={{ fontSize: Typography.xl, opacity: hasMeals ? 1 : 0.5 }}>{cat.icon}</Text>
+                    <View style={[styles.iconWrapSm, { backgroundColor: hasMeals ? cat.color + '20' : colors.bgCardBorder, width: 44, height: 44, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' }]}>
+                      <cat.Icon size={22} color={hasMeals ? cat.color : colors.textMuted} />
                     </View>
                     <View style={{ flex: 1, marginLeft: Spacing.md }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: hasMeals ? colors.textPrimary : colors.textSecondary }}>{cat.name}</Text>
                         {hasMeals && (
-                          <View style={{ backgroundColor: colors.teal + '30', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, marginLeft: Spacing.sm }}>
-                            <Text style={{ fontSize: Typography.xs, color: colors.teal, fontWeight: Typography.bold }}>Logged</Text>
+                          <View style={{ backgroundColor: colors.accentBlue + '30', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, marginLeft: Spacing.sm }}>
+                            <Text style={{ fontSize: Typography.xs, color: colors.accentBlue, fontWeight: Typography.bold }}>Logged</Text>
                           </View>
                         )}
                       </View>
@@ -675,7 +570,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 120, marginBottom: Spacing.sm, paddingHorizontal: Spacing.xs }}>
                 {weeklyTrend.map((day, idx) => (
                   <View key={idx} style={{ alignItems: 'center', width: '12%', height: '100%', justifyContent: 'flex-end' }}>
-                    <View style={{ width: '100%', height: `${(day.val / 3000) * 100}%`, backgroundColor: day.today ? colors.accentBlue : day.val > 2000 ? colors.amber : colors.teal + '80', borderRadius: Radius.sm, minHeight: day.val > 0 ? 20 : 0 }} />
+                    <View style={{ width: '100%', height: `${(day.val / 3000) * 100}%`, backgroundColor: day.today ? colors.accentBlue : day.val > 2000 ? colors.amber : colors.accentBlue + '80', borderRadius: Radius.sm, minHeight: day.val > 0 ? 20 : 0 }} />
                     <Text style={{ fontSize: Typography.sm, color: day.today ? colors.accentBlue : colors.textSecondary, marginTop: Spacing.sm, fontWeight: day.today ? Typography.bold : Typography.regular }}>{day.day}</Text>
                   </View>
                 ))}
@@ -685,8 +580,8 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={{ fontSize: Typography.sm, color: colors.textSecondary }}>Avg this week: <Text style={{ color: colors.textPrimary, fontWeight: Typography.bold }}>{weeklyAvg.toLocaleString()} kcal</Text></Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.teal + '20', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: colors.teal + '50' }}>
-                  <Text style={{ fontSize: Typography.xs, color: colors.teal, fontWeight: Typography.bold }}>✓ {weeklyAvg <= calorieGoal ? 'Within goal' : 'Over goal'}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.accentBlue + '20', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: colors.accentBlue + '50' }}>
+                  <Text style={{ fontSize: Typography.xs, color: colors.accentBlue, fontWeight: Typography.bold }}>✓ {weeklyAvg <= calorieGoal ? 'Within goal' : 'Over goal'}</Text>
                 </View>
               </View>
             </GlassCardView>
@@ -704,7 +599,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
               </View>
 
               <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.bgCardBorder, marginBottom: Spacing.sm, overflow: 'hidden' }}>
-                <View style={{ height: '100%', borderRadius: 4, width: `${Math.min(waterPercent, 100)}%`, backgroundColor: colors.teal }} />
+                <View style={{ height: '100%', borderRadius: 4, width: `${Math.min(waterPercent, 100)}%`, backgroundColor: colors.accentBlue }} />
               </View>
               <Text style={{ fontSize: Typography.xs, color: colors.textMuted, marginBottom: Spacing.base, textAlign: 'right' }}>{waterTotalMl} / {waterGoalMl} ml</Text>
 
@@ -714,7 +609,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                     key={ml}
                     onPress={() => handleLogWater(ml)}
                     style={{ flex: 1, backgroundColor: colors.bgCardBorder, paddingVertical: Spacing.sm, borderRadius: Radius.md, alignItems: 'center', borderWidth: 1, borderColor: colors.bgCardBorder }}>
-                    <Text style={{ fontSize: Typography.xs, color: colors.teal, fontWeight: Typography.bold }}>+{ml}</Text>
+                    <Text style={{ fontSize: Typography.xs, color: colors.accentBlue, fontWeight: Typography.bold }}>+{ml}</Text>
                     <Text style={{ fontSize: Typography.xs, color: colors.textMuted }}>ml</Text>
                   </TouchableOpacity>
                 ))}
@@ -725,8 +620,8 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                   setCustomWaterText('');
                   setCustomWaterVisible(true);
                 }}
-                style={{ marginTop: Spacing.sm, borderWidth: 1, borderColor: colors.teal + '40', backgroundColor: colors.teal + '08', paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center' }}>
-                <Text style={{ fontSize: Typography.sm, color: colors.teal, fontWeight: Typography.semiBold }}>+ Custom amount</Text>
+                style={{ marginTop: Spacing.sm, borderWidth: 1, borderColor: colors.accentBlue + '40', backgroundColor: colors.accentBlue + '08', paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center' }}>
+                <Text style={{ fontSize: Typography.sm, color: colors.accentBlue, fontWeight: Typography.semiBold }}>+ Custom amount</Text>
               </TouchableOpacity>
             </GlassCardView>
 
@@ -754,123 +649,12 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
                 </View>
               </View>
             </GlassCardView>
-
-            <SectionHeader title="AI MEAL SUGGESTIONS" subtitle="Personalized meal ideas based on your goals" />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xl }}>
-              {suggestionsLoading ? (
-                <View style={{ width: '100%', alignItems: 'center', paddingVertical: Spacing.lg }}>
-                  <ActivityIndicator size="small" color={colors.teal} />
-                  <Text style={{ fontSize: Typography.xs, color: colors.textSecondary, marginTop: Spacing.sm }}>Fetching suggestions...</Text>
-                </View>
-              ) : suggestions.length > 0 ? (
-                suggestions.map((item, idx) => (
-                  <TouchableOpacity key={item.id || idx} onPress={() => setSelectedMeal(item)} activeOpacity={0.7} style={{ width: '48%', height: 220 }}>
-                    <GlassCardView style={{ padding: Spacing.sm, flex: 1 }}>
-                      {item.image ? (
-                        <Image source={{ uri: item.image }} style={{ height: 80, borderRadius: Radius.sm, marginBottom: Spacing.sm }} resizeMode="cover" />
-                      ) : (
-                        <View style={{ backgroundColor: colors.teal + '20', height: 80, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm }}>
-                          <Text style={{ fontSize: Typography.xxl, color: colors.teal }}>🍽</Text>
-                        </View>
-                      )}
-                      <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: colors.textPrimary, marginBottom: 4 }} numberOfLines={2}>{item.title}</Text>
-                      <Text style={{ fontSize: Typography.xs, color: colors.textSecondary, marginBottom: Spacing.sm }} numberOfLines={1}>
-                        {item.diets?.[0] || item.dishTypes?.[0] || 'Balanced meal'}
-                      </Text>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                        <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: colors.textPrimary }}>~{item.calories} <Text style={{ fontSize: Typography.xs, color: colors.textMuted, fontWeight: Typography.regular }}>kcal</Text></Text>
-                        <View style={{ backgroundColor: colors.teal + '15', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, borderWidth: 1, borderColor: colors.teal + '30' }}>
-                          <Text style={{ fontSize: Typography.xs, color: colors.teal, fontWeight: Typography.bold }}>{item.protein}g P</Text>
-                        </View>
-                      </View>
-                    </GlassCardView>
-                  </TouchableOpacity>
-                ))
-              ) : (
-                <View style={{ width: '100%', alignItems: 'center', paddingVertical: Spacing.lg }}>
-                  <Text style={{ fontSize: Typography.xs, color: colors.textSecondary }}>No suggestions available</Text>
-                </View>
-              )}
-            </View>
           </>
         )}
 
         <View style={{ height: 100 }} />
         </Animated.View>
       </ScrollView>
-
-      {modalVisible && <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-              <View style={styles.modalHandle} />
-              <Text style={styles.modalTitle}>Log Meal</Text>
-
-              <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.base }}>
-                {MEAL_TYPE_OPTIONS.map(type => (
-                  <TouchableOpacity
-                    key={type}
-                    onPress={() => setModalMealType(type)}
-                    style={{
-                      flex: 1,
-                      paddingVertical: Spacing.sm,
-                      borderRadius: Radius.md,
-                      alignItems: 'center',
-                      backgroundColor: modalMealType === type ? colors.teal + '20' : colors.bgCardBorder,
-                      borderWidth: modalMealType === type ? 1 : 0,
-                      borderColor: colors.teal,
-                    }}>
-                    <Text style={{ fontSize: Typography.xs, color: modalMealType === type ? colors.teal : colors.textSecondary, fontWeight: Typography.bold, textTransform: 'capitalize' }}>{type}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={styles.modalLabel}>Food name *</Text>
-              <TextInput style={styles.modalInput} value={modalFood} onChangeText={setModalFood} placeholder="e.g. Grilled chicken salad" placeholderTextColor={colors.textMuted} />
-
-              <Text style={styles.modalLabel}>Calories (kcal)</Text>
-              <TextInput style={styles.modalInput} value={modalCalories} onChangeText={setModalCalories} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
-
-              <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.modalLabel}>Protein (g)</Text>
-                  <TextInput style={styles.modalInput} value={modalProtein} onChangeText={setModalProtein} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.modalLabel}>Carbs (g)</Text>
-                  <TextInput style={styles.modalInput} value={modalCarbs} onChangeText={setModalCarbs} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
-                </View>
-              </View>
-              <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.modalLabel}>Fat (g)</Text>
-                  <TextInput style={styles.modalInput} value={modalFat} onChangeText={setModalFat} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.modalLabel}>Fiber (g)</Text>
-                  <TextInput style={styles.modalInput} value={modalFiber} onChangeText={setModalFiber} keyboardType="number-pad" placeholder="0" placeholderTextColor={colors.textMuted} />
-                </View>
-              </View>
-
-              <View style={styles.modalActions}>
-                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setModalVisible(false)}>
-                  <Text style={styles.modalCancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalSaveBtn, modalSaving && { opacity: 0.6 }]}
-                  onPress={handleSaveMeal}
-                  disabled={modalSaving}>
-                  {modalSaving ? (
-                    <ActivityIndicator size="small" color={colors.bg} />
-                  ) : (
-                    <Text style={styles.modalSaveText}>Save Meal</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </KeyboardAvoidingView>
-          </View>
-        </View>
-      </Modal>}
 
       {customWaterVisible && <Modal visible={customWaterVisible} animationType="fade" transparent>
         <TouchableOpacity activeOpacity={1} onPress={() => setCustomWaterVisible(false)} style={styles.modalOverlay}>
@@ -953,12 +737,6 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress }: 
         </View>
       </Modal>}
 
-      <MealSuggestionDetailModal
-        visible={!!selectedMeal}
-        meal={selectedMeal}
-        onClose={() => setSelectedMeal(null)}
-        onLogMeal={handleLogSuggestionMeal}
-      />
     </KeyboardAvoidingView>
   );
 }
