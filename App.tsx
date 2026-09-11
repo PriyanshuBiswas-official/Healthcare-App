@@ -28,6 +28,7 @@ import FoodSearchScreen from './src/screens/diet/FoodSearchScreen';
 import MealDetailScreen from './src/screens/diet/MealDetailScreen';
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 import { PreferencesProvider } from './src/providers/PreferencesContext';
+import * as activityService from './src/services/activityService';
 import { NotificationProvider, useNotifications } from './src/providers/NotificationContext';
 import { ReminderProvider } from './src/providers/ReminderContext';
 import { AppointmentProvider } from './src/providers/AppointmentContext';
@@ -644,9 +645,14 @@ function AppShell() {
                 <MemoizedPlanDetailScreen
                   plan={props.route.params?.plan}
                   onBack={() => props.navigation.goBack()}
-                  onActivatePlan={(plan) => {
-                    // Placeholder: will be wired to backend later
-                    props.navigation.goBack();
+                  onActivatePlan={async (plan) => {
+                    if (!session?.access_token) return;
+                    try {
+                      await activityService.activateLibraryPlan(session.access_token, plan.id);
+                      props.navigation.goBack();
+                    } catch (e: any) {
+                      Alert.alert('Error', e?.message || 'Failed to activate plan. Please try again.');
+                    }
                   }}
                 />
               )}
