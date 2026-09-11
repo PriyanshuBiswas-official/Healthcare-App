@@ -1,8 +1,8 @@
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { GOOGLE_WEB_CLIENT_ID } from '@env';
+import Config from 'react-native-config';
 
 GoogleSignin.configure({
-  webClientId: GOOGLE_WEB_CLIENT_ID,
+  webClientId: Config.GOOGLE_WEB_CLIENT_ID,
   offlineAccess: true,
 });
 

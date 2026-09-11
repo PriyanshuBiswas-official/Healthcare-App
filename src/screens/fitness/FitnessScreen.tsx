@@ -29,6 +29,8 @@ import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 
 let _workoutLogged = false;
 export function markWorkoutLogged() { _workoutLogged = true; }
+let _exerciseAdded = false;
+export function markExerciseAdded() { _exerciseAdded = true; }
 import * as activityService from '../../services/activityService';
 import type { ActivitySummary, TodayExercise, WeeklyDay, WeeklyStats, PersonalRecord, ActivityGoal, WorkoutPlanDays } from '../../types/activity';
 
@@ -40,6 +42,7 @@ import { EditExerciseModal } from './OverviewTab/EditExerciseModal';
 import { LogActivityModal } from './OverviewTab/LogActivityModal';
 import { GoalSetupModal } from './OverviewTab/GoalSetupModal';
 import { LogPRModal } from './YourPRsTab/LogPRModal';
+import { CustomPlanWizard } from './YourPlanTab/CustomPlanWizard';
 
 const { width } = Dimensions.get('window');
 
@@ -67,7 +70,7 @@ function formatDuration(minutes: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-export default function FitnessScreen({ route, onProfilePress, onNotificationsPress, onOpenAI, onOpenWorkoutLog, onOpenAddExercise, onOpenAllPRs }: { route?: any; onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void; onOpenWorkoutLog?: (exercise: any) => void; onOpenAddExercise?: (planDayId: number) => void; onOpenAllPRs?: () => void }) {
+export default function FitnessScreen({ route, onProfilePress, onNotificationsPress, onOpenAI, onOpenWorkoutLog, onOpenAddExercise, onOpenAllPRs, onOpenExplorePlans }: { route?: any; onProfilePress?: () => void; onNotificationsPress?: () => void; onOpenAI?: (from?: TabName) => void; onOpenWorkoutLog?: (exercise: any) => void; onOpenAddExercise?: (planDayId: number) => void; onOpenAllPRs?: () => void; onOpenExplorePlans?: () => void }) {
   const { onScroll } = useScrollVisibility();
   const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
@@ -109,6 +112,8 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
   const [goalSetupVisible, setGoalSetupVisible] = useState(false);
   const [isEditingGoals, setIsEditingGoals] = useState(false);
   const [logPRVisible, setLogPRVisible] = useState(false);
+  const [customPlanVisible, setCustomPlanVisible] = useState(false);
+  const [wizardRefreshKey, setWizardRefreshKey] = useState(0);
 
   // Edit exercise prefilled data
   const [editExId, setEditExId] = useState<number | null>(null);
@@ -151,6 +156,7 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
       setWorkoutPlanDays(planDaysRes);
       setPrs(prsRes);
       setActivityGoal(goalRes);
+      setWizardRefreshKey(k => k + 1);
     } catch (e) {
       console.warn('[FitnessScreen] Fetch failed:', e);
     } finally {
@@ -190,11 +196,12 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
 
   useFocusEffect(
     useCallback(() => {
-      if (_workoutLogged) {
+      if (_workoutLogged || _exerciseAdded || customPlanVisible) {
         _workoutLogged = false;
+        _exerciseAdded = false;
         fetchData();
       }
-    }, [fetchData])
+    }, [fetchData, customPlanVisible])
   );
 
   useEffect(() => {
@@ -492,6 +499,8 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
                 selectedPlanDayIndex={selectedPlanDayIndex}
                 onSelectedPlanDayIndexChange={setSelectedPlanDayIndex}
                 onShowWorkoutPreview={() => setShowWorkoutPreview(true)}
+                onOpenExplorePlans={onOpenExplorePlans}
+                onOpenCustomPlan={() => setCustomPlanVisible(true)}
               />
             )}
 
@@ -589,6 +598,16 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
         onSaved={fetchData}
         session={session}
         allPlanExercises={allPlanExercises}
+      />
+
+      <CustomPlanWizard
+        visible={customPlanVisible}
+        onBack={() => setCustomPlanVisible(false)}
+        onSaved={fetchData}
+        onOpenAddExercise={(planDayId) => onOpenAddExercise && onOpenAddExercise(planDayId)}
+        currentPlanName={currentPlanName}
+        planDays={currentPlanDays}
+        refreshKey={wizardRefreshKey}
       />
     </View>
   );

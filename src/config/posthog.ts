@@ -1,10 +1,10 @@
 import PostHog from 'posthog-react-native';
-import { POSTHOG_HOST, POSTHOG_PROJECT_TOKEN } from '@env';
+import Config from 'react-native-config';
 
 const hasProjectToken = Boolean(
-  POSTHOG_PROJECT_TOKEN && POSTHOG_PROJECT_TOKEN !== 'phc_your_project_token_here',
+  Config.POSTHOG_PROJECT_TOKEN && Config.POSTHOG_PROJECT_TOKEN !== 'phc_your_project_token_here',
 );
-const hasHost = Boolean(POSTHOG_HOST);
+const hasHost = Boolean(Config.POSTHOG_HOST);
 const isPostHogConfigured = hasProjectToken && hasHost;
 
 if (__DEV__) {
@@ -21,8 +21,8 @@ if (__DEV__) {
 }
 
 export const posthog = isPostHogConfigured
-  ? new PostHog(POSTHOG_PROJECT_TOKEN, {
-      host: POSTHOG_HOST,
+  ? new PostHog(Config.POSTHOG_PROJECT_TOKEN, {
+      host: Config.POSTHOG_HOST,
       captureAppLifecycleEvents: true,
       errorTracking: {
         autocapture: {

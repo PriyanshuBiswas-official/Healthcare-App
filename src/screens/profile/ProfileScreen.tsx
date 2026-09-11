@@ -706,37 +706,6 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, onNaviga
               ))}
             </GlassCardView>
 
-            {percentage < 100 && (
-              <>
-                <SectionHeader title="Complete Your Profile" subtitle={`${percentage}% completed`} />
-                <TouchableOpacity
-                  style={styles.completeCard}
-                  onPress={() => onCompleteProfile?.()}
-                  activeOpacity={0.7}>
-                  <View style={styles.completeCardInner}>
-                    <View style={styles.completeCardLeft}>
-                      <View style={styles.completeCardIcon}>
-                        <PenLine size={22} color={theme.colors.teal} />
-                      </View>
-                      <View style={styles.completeCardTextWrap}>
-                        <Text style={styles.completeCardTitle}>Set Up Your Profile</Text>
-                        <Text style={styles.completeCardSub}>
-                          {percentage === 0
-                            ? 'Fill in your health details for a better experience'
-                            : `${6 - Math.round(percentage / 100 * 6)} sections remaining`}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={styles.chevron}>›</Text>
-                  </View>
-                  <View style={styles.completeCardProgress}>
-                    <ProgressBar progress={percentage / 100} color={theme.colors.teal} height={4} />
-                    <Text style={styles.completeCardPercent}>{percentage}%</Text>
-                  </View>
-                </TouchableOpacity>
-              </>
-            )}
-
             <SectionHeader title="Health Profile" subtitle="Manage your medical information" />
             <GlassCardView style={styles.menuCard}>
               {healthProfile.map((item, i) => (

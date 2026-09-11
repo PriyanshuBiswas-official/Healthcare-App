@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Typography, Spacing } from '../theme/theme';
 import { useTheme, useStyles } from '../providers/ThemeProvider';
-import { Home, HeartPulse, Sparkles, Utensils, Footprints } from 'lucide-react-native';
+import { Home, HeartPulse, ChartNoAxesCombined, Utensils, Footprints } from 'lucide-react-native';
 import { useScrollVisibility } from './ScrollVisibilityContext';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
@@ -16,7 +16,7 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const TABS: { name: string; label: string; Icon: React.ElementType }[] = [
     { name: 'Home', label: 'Home', Icon: Home },
     { name: 'Health', label: 'Health', Icon: HeartPulse },
-    { name: 'AI', label: 'Insights', Icon: Sparkles },
+    { name: 'AI', label: 'Insights', Icon: ChartNoAxesCombined },
     { name: 'Diet', label: 'Nutrition', Icon: Utensils },
     { name: 'Activity', label: 'Activity', Icon: Footprints },
   ];
@@ -107,7 +107,7 @@ const themeStyles = (theme: any) => StyleSheet.create({
   },
   floating: {
     width: '92%',
-    borderRadius: 28,
+    borderRadius: 40,
     paddingVertical: 10,
     paddingHorizontal: 6,
     backgroundColor: 'rgba(23, 26, 39, 0.95)',
@@ -121,7 +121,6 @@ const themeStyles = (theme: any) => StyleSheet.create({
   },
   bar: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
     alignItems: 'center',
   },
   tab: {
@@ -160,4 +159,3 @@ const themeStyles = (theme: any) => StyleSheet.create({
 });
 
 export default React.memo(TabBar);
-

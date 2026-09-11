@@ -21,7 +21,6 @@ import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar, LoadingSpinner, PremiumBadge } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
-import ProfileCompletionBanner from '../../components/ProfileCompletionBanner';
 import { useAuth } from '../../providers/AuthProvider';
 import { usePreferences } from '../../providers/PreferencesContext';
 import { useNotifications } from '../../providers/NotificationContext';
@@ -192,21 +191,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
       lineHeight: 16,
       marginBottom: Spacing.sm,
     },
-    heroReportBtn: {
-      alignSelf: 'flex-start',
-      paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.xs,
-      borderRadius: Radius.sm,
-      backgroundColor: theme.colors.teal + '15',
-      borderWidth: 1,
-      borderColor: theme.colors.teal + '30',
-    },
-    heroReportBtnText: {
-      color: theme.colors.teal,
-      fontSize: Typography.xs,
-      fontWeight: Typography.bold,
-    },
-
     // ── AI Summary Inset ──
     heroAiInset: {
       marginHorizontal: Spacing.lg,
@@ -1094,7 +1078,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     onScroll(e);
   }, [onScroll]);
 
-  const [bannerDismissed, setBannerDismissed] = useState(false);
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
   const [weightLogs, setWeightLogs] = useState<WeightEntry[]>([]);
   const [weightInput, setWeightInput] = useState('');
@@ -1299,10 +1282,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   useEffect(() => {
     loadData();
   }, [session]);
-
-  const percentage = profileCompletion?.percentage ?? 0;
-  const isComplete = profileCompletion?.completed ?? false;
-  const showBanner = !bannerDismissed && !isComplete;
 
   const todayDateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
@@ -1549,9 +1528,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
                   <Text style={[styles.heroOverviewSub, { marginBottom: 0, marginLeft: 4 }]}>Limited data available</Text>
                 </View>
               )}
-              <TouchableOpacity style={styles.heroReportBtn} onPress={() => Alert.alert('Coming Soon', 'Full health report is under development and will be available soon!')}>
-                <Text style={styles.heroReportBtnText}>Full Report</Text>
-              </TouchableOpacity>
             </View>
           </View>
 
@@ -1578,14 +1554,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           </TouchableOpacity>
 
         </Animated.View>
-
-        {showBanner && (
-          <ProfileCompletionBanner
-            percentage={percentage}
-            onSkip={() => setBannerDismissed(true)}
-            onComplete={() => onCompleteProfile?.()}
-          />
-        )}
 
 
 

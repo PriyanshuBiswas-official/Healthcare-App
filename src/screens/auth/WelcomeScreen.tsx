@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { LinearGradient } from 'react-native-linear-gradient';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +17,7 @@ type AuthStackParamList = {
 type WelcomeScreenProp = NativeStackNavigationProp<AuthStackParamList, 'Welcome'>;
 
 const { height } = Dimensions.get('window');
+const logo = require('../../../assets/logo.png');
 
 export default function WelcomeScreen() {
   const navigation = useNavigation<WelcomeScreenProp>();
@@ -24,108 +26,100 @@ export default function WelcomeScreen() {
   const styles = useStyles((theme) => ({
     container: {
       flex: 1,
-      backgroundColor: theme.colors.bg,
-      paddingTop: insets.top,
+    },
+    gradient: {
+      flex: 1,
     },
     content: {
       flex: 1,
-      justifyContent: 'space-between',
       paddingHorizontal: Spacing.xl,
-      paddingTop: height * 0.08,
+      paddingTop: insets.top + height * 0.06,
       paddingBottom: Spacing.xl,
     },
-    glow: {
-      position: 'absolute',
-      width: 250,
-      height: 250,
-      borderRadius: 125,
-      opacity: 0.15,
-    },
-    glowTeal: {
-      top: -50,
-      left: -50,
-      backgroundColor: theme.colors.teal,
-    },
-    glowPink: {
-      bottom: 100,
-      right: -50,
-      backgroundColor: theme.colors.pink,
-    },
-    heroContainer: {
+    heroSection: {
       alignItems: 'center',
-      marginTop: Spacing.md,
-    },
-    logoContainer: {
-      width: 100,
-      height: 100,
-      borderRadius: Radius.xl,
-      backgroundColor: theme.colors.tooltipBg,
-      borderWidth: 1,
-      borderColor: theme.colors.bgCardBorder,
-      justifyContent: 'center',
-      alignItems: 'center',
+      marginTop: height * 0.04,
       marginBottom: Spacing.lg,
     },
-    logoEmoji: {
-      fontSize: 50,
+    logoGlow: {
+      width: 160,
+      height: 160,
+      borderRadius: 80,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: Spacing.md,
+    },
+    logoImage: {
+      width: 120,
+      height: 120,
+      borderRadius: 30,
     },
     title: {
-      fontSize: Typography.display,
+      fontSize: 42,
       fontWeight: Typography.bold,
-      color: theme.colors.text,
+      color: '#FFFFFF',
       letterSpacing: -1,
       marginBottom: Spacing.sm,
     },
     subtitle: {
       fontSize: Typography.base,
-      color: theme.colors.textSecondary,
+      color: 'rgba(255,255,255,0.75)',
       textAlign: 'center',
-      paddingHorizontal: Spacing.md,
+      paddingHorizontal: Spacing.lg,
       lineHeight: 22,
     },
-    featuresContainer: {
-      marginVertical: Spacing.xxl,
-      gap: Spacing.lg,
+    featuresScroll: {
+      flex: 1,
     },
-    featureRow: {
+    featuresContainer: {
+      gap: Spacing.md,
+      paddingVertical: Spacing.sm,
+    },
+    featureCard: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: Spacing.base,
-      backgroundColor: theme.colors.bgCard,
+      backgroundColor: 'rgba(255,255,255,0.10)',
       padding: Spacing.base,
       borderRadius: Radius.md,
       borderWidth: 1,
-      borderColor: theme.colors.bgCardBorder,
+      borderColor: 'rgba(255,255,255,0.15)',
     },
-    featureIcon: {
-      fontSize: Typography.xl,
+    featureDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    featureTextContainer: {
+      flex: 1,
     },
     featureTitle: {
       fontSize: Typography.base,
       fontWeight: Typography.semiBold,
-      color: theme.colors.text,
+      color: '#FFFFFF',
       marginBottom: 2,
     },
     featureDesc: {
       fontSize: Typography.sm,
-      color: theme.colors.textSecondary,
+      color: 'rgba(255,255,255,0.65)',
     },
     actionContainer: {
       gap: Spacing.md,
+      paddingTop: Spacing.md,
     },
     primaryButton: {
-      backgroundColor: theme.colors.teal,
+      backgroundColor: theme.colors.blue,
       paddingVertical: 18,
       borderRadius: Radius.md,
       alignItems: 'center',
-      shadowColor: theme.colors.teal,
+      shadowColor: theme.colors.blue,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 8,
       elevation: 5,
     },
     primaryButtonText: {
-      color: theme.colors.bg,
+      color: theme.colors.white,
       fontSize: Typography.md,
       fontWeight: Typography.bold,
     },
@@ -133,12 +127,12 @@ export default function WelcomeScreen() {
       paddingVertical: 16,
       borderRadius: Radius.md,
       alignItems: 'center',
-      borderWidth: 1,
-      borderColor: theme.colors.bgCardBorder,
-      backgroundColor: theme.colors.bgCard,
+      borderWidth: 1.5,
+      borderColor: theme.colors.blue + '50',
+      backgroundColor: theme.colors.blue + '10',
     },
     secondaryButtonText: {
-      color: theme.colors.text,
+      color: theme.colors.white,
       fontSize: Typography.base,
       fontWeight: Typography.semiBold,
     },
@@ -146,57 +140,69 @@ export default function WelcomeScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        {/* Glow Effects */}
-        <View style={[styles.glow, styles.glowTeal]} />
-        <View style={[styles.glow, styles.glowPink]} />
-
-        {/* Hero Section */}
-        <View style={styles.heroContainer}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoEmoji}>🌙</Text>
-          </View>
-          <Text style={styles.title}>Cureto</Text>
-          <Text style={styles.subtitle}>Your AI-powered personalized health & wellness companion</Text>
-        </View>
-
-        {/* Feature Highlights */}
-        <View style={styles.featuresContainer}>
-          <View style={styles.featureRow}>
-            <Text style={styles.featureIcon}>✨</Text>
-            <View>
-              <Text style={styles.featureTitle}>AI Insights</Text>
-              <Text style={styles.featureDesc}>Get tailored answers to any health queries</Text>
+      <LinearGradient
+        colors={['#0D1B2A', '#070F18', '#030810']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradient}>
+        <View style={styles.content}>
+          {/* Hero Section */}
+          <View style={styles.heroSection}>
+            <View style={styles.logoGlow}>
+              <Image source={logo} style={styles.logoImage} resizeMode="contain" />
             </View>
+            <Text style={styles.title}>Cureto</Text>
+            <Text style={styles.subtitle}>Your AI-powered personalized health & wellness companion</Text>
           </View>
-          <View style={styles.featureRow}>
-            <Text style={styles.featureIcon}>📊</Text>
-            <View>
-              <Text style={styles.featureTitle}>Health & Fitness Tracking</Text>
-              <Text style={styles.featureDesc}>Log activity, sleep, diet, water & vitals</Text>
+
+          {/* Scrollable Feature Cards */}
+          <ScrollView
+            style={styles.featuresScroll}
+            contentContainerStyle={styles.featuresContainer}
+            showsVerticalScrollIndicator={false}>
+            <View style={styles.featureCard}>
+              <View style={[styles.featureDot, { backgroundColor: '#60A5FA' }]} />
+              <View style={styles.featureTextContainer}>
+                <Text style={styles.featureTitle}>AI Insights</Text>
+                <Text style={styles.featureDesc}>Get tailored answers to any health queries</Text>
+              </View>
             </View>
+            <View style={styles.featureCard}>
+              <View style={[styles.featureDot, { backgroundColor: '#34D399' }]} />
+              <View style={styles.featureTextContainer}>
+                <Text style={styles.featureTitle}>Health & Fitness Tracking</Text>
+                <Text style={styles.featureDesc}>Log activity, sleep, diet, water & vitals</Text>
+              </View>
+            </View>
+            <View style={styles.featureCard}>
+              <View style={[styles.featureDot, { backgroundColor: '#A78BFA' }]} />
+              <View style={styles.featureTextContainer}>
+                <Text style={styles.featureTitle}>Sleep & Recovery</Text>
+                <Text style={styles.featureDesc}>Monitor sleep patterns and recovery scores</Text>
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Fixed Bottom Buttons */}
+          <View style={styles.actionContainer}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('Onboarding')}
+            >
+              <Text style={styles.primaryButtonText}>Get Started</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Login')}
+            >
+              <Text style={styles.secondaryButtonText}>Already have an account? Login</Text>
+            </TouchableOpacity>
           </View>
         </View>
-
-        {/* Action Buttons */}
-        <View style={styles.actionContainer}>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('Onboarding')}
-          >
-            <Text style={styles.primaryButtonText}>Get Started</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate('Login')}
-          >
-            <Text style={styles.secondaryButtonText}>I already have an account</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </LinearGradient>
     </View>
   );
 }

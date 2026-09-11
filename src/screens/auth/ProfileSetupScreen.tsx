@@ -5,7 +5,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -13,6 +12,7 @@ import {
   ActivityIndicator,
   BackHandler,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography, Spacing, Radius, Shadows } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -128,6 +128,7 @@ interface Props {
 export default function ProfileSetupScreen({ onBack }: Props) {
   const { theme } = useTheme();
   const { user, session, checkProfile } = useAuth();
+  const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
   const [data, setData] = useState<ProfileSetupData>(() => {
     const meta = user?.user_metadata;
@@ -1299,7 +1300,7 @@ export default function ProfileSetupScreen({ onBack }: Props) {
 
   return (
     <SafeAreaView style={styles.root}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: insets.top + Spacing.xs }]}>
         <BackButton onPress={goBack} color={theme.colors.textPrimary} />
         <Text style={styles.pageTitle}>Complete Profile</Text>
         <View style={styles.backPlaceholder} />
