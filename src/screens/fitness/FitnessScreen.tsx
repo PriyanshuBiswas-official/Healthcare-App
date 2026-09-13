@@ -77,6 +77,7 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
   const { unreadCount } = useNotifications();
   const [activeSegment, setActiveSegment] = useState<Segment>('Overview');
   const [loading, setLoading] = useState(true);
+  const [creatingRestDay, setCreatingRestDay] = useState(false);
 
   const today = useMemo(() => new Date(), []);
   const todayStr = useMemo(() => toDateString(today), [today]);
@@ -474,7 +475,22 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
                   planName={planName}
                   planDayId={planDayId}
                   onSetupPlan={() => setPlanModalVisible(true)}
-                  onAddExercise={() => planDayId && onOpenAddExercise && onOpenAddExercise(planDayId)}
+                  onAddExercise={async () => {
+                    if (planDayId) {
+                      onOpenAddExercise && onOpenAddExercise(planDayId);
+                    } else if (dayName && session?.access_token) {
+                      setCreatingRestDay(true);
+                      try {
+                        const newDay = await activityService.addPlanDay(session.access_token, dayName);
+                        setPlanDayId(newDay.plan_days_id);
+                        onOpenAddExercise && onOpenAddExercise(newDay.plan_days_id);
+                      } catch (e: any) {
+                        Alert.alert('Error', e?.message || 'Failed to create workout day');
+                      } finally {
+                        setCreatingRestDay(false);
+                      }
+                    }
+                  }}
                   onEditExercise={openEditExercise}
                   onLogExercise={(ex) => onOpenWorkoutLog && onOpenWorkoutLog(ex)}
                   startSessionMode

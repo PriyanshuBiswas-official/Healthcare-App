@@ -22,7 +22,6 @@ export interface RelationshipPermissions {
   permission_id: number;
   relationship_id: number;
   health_score: boolean;
-  vitals: boolean;
   activity: boolean;
   workouts: boolean;
   nutrition: boolean;
@@ -48,7 +47,6 @@ export interface HealthReport {
   };
   permissions: {
     health_score: boolean;
-    vitals: boolean;
     activity: boolean;
     workouts: boolean;
     nutrition: boolean;
@@ -62,7 +60,6 @@ export interface HealthReport {
     last_reliable_score: number | null;
     last_updated: string | null;
   };
-  vitals?: any[];
   activity?: {
     steps: number;
     calories_burned: number;

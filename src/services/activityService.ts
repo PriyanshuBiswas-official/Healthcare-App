@@ -148,6 +148,17 @@ export async function addExerciseToDay(token: string, data: AddExerciseInput): P
   return json.data;
 }
 
+export async function addPlanDay(token: string, dayName: string): Promise<{ plan_days_id: number; day_name: string; day_no: number }> {
+  const res = await fetch(`${API_BASE_URL}/api/activity/plan/day`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ day_name: dayName }),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to create plan day');
+  return json.data;
+}
+
 export interface UpdateExerciseInput {
   exercise_id: number;
   exercise_name?: string;

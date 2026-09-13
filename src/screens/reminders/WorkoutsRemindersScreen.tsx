@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCardView, BackButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useReminders } from '../../providers/ReminderContext';
 import type { Reminder, ReminderSchedule } from '../../types/reminder';
+import { Trash2 } from 'lucide-react-native';
 
 interface Props {
   onBack: () => void;
@@ -97,13 +98,22 @@ export default function WorkoutsRemindersScreen({ onBack, onSaved }: Props) {
     }
   };
 
-  const handleRemove = async (reminder: Reminder) => {
-    try {
-      await removeReminder(reminder.reminder_id);
-      setReminders(prev => prev.filter(r => r.reminder_id !== reminder.reminder_id));
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to remove');
-    }
+  const handleRemove = (reminder: Reminder) => {
+    Alert.alert('Remove Reminder', `Remove ${reminder.title}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await removeReminder(reminder.reminder_id);
+            setReminders(prev => prev.filter(r => r.reminder_id !== reminder.reminder_id));
+          } catch (err: any) {
+            Alert.alert('Error', err.message || 'Failed to remove');
+          }
+        },
+      },
+    ]);
   };
 
   const handleSave = async () => {
@@ -163,7 +173,7 @@ export default function WorkoutsRemindersScreen({ onBack, onSaved }: Props) {
     entryInfo: { flex: 1 },
     entryName: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary },
     entryDetail: { fontSize: Typography.sm, color: theme.colors.textSecondary, marginTop: 2 },
-    removeBtn: { fontSize: Typography.md, color: theme.colors.danger, padding: Spacing.sm },
+    entryActions: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
     divider: { height: 1, backgroundColor: theme.colors.divider },
     addTitle: { fontSize: Typography.base, fontWeight: Typography.semiBold, color: theme.colors.textPrimary, marginBottom: Spacing.md },
     input: { backgroundColor: theme.colors.bgCardSolid, borderWidth: 1, borderColor: theme.colors.bgCardBorder, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md, fontSize: Typography.base, color: theme.colors.textPrimary, marginBottom: Spacing.sm },
@@ -231,11 +241,13 @@ export default function WorkoutsRemindersScreen({ onBack, onSaved }: Props) {
                       <Text style={styles.entryName}>{reminder.title}</Text>
                       <Text style={styles.entryDetail}>{timeStr}{reminder.description ? ` · ${reminder.description}` : ''}</Text>
                     </View>
-                    {editing && (
-                      <TouchableOpacity onPress={() => handleRemove(reminder)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Text style={styles.removeBtn}>✕</Text>
+                    <View style={styles.entryActions}>
+                      <TouchableOpacity
+                        onPress={() => handleRemove(reminder)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Trash2 size={18} color={theme.colors.textMuted} />
                       </TouchableOpacity>
-                    )}
+                    </View>
                   </View>
                   {i < reminders.length - 1 && <View style={styles.divider} />}
                 </View>

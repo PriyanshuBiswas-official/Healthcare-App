@@ -32,13 +32,11 @@ import {
   QuickActionButton,
   SleepTrackerSection,
   MentalHealthSection,
-  VitalsDashboardSection,
   AIHealthInsightsSection,
 } from './HealthCommonSections';
 import { CyclePhaseVisualizer } from '../../components/CyclePhaseVisualizer';
 import { Droplets, Flower2, Sparkles, Moon, ChevronRight, Check, Activity, Scale, Pencil } from 'lucide-react-native';
 import { useAuth } from '../../providers/AuthProvider';
-import { usePreferences } from '../../providers/PreferencesContext';
 import { HealthLogDraft } from './HealthLogScreen';
 import {
   getPeriodLogs,
@@ -518,7 +516,6 @@ export default function HealthScreenFemale({
   const { onScroll } = useScrollVisibility();
   const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
-  const { hideVitals } = usePreferences();
   const { unreadCount } = useNotifications();
   const [activeTab, setActiveTab] = useState('Overview');
   const [hasTodayLog, setHasTodayLog] = useState(false);
@@ -993,7 +990,7 @@ export default function HealthScreenFemale({
           <TouchableOpacity style={s.logCta} onPress={onOpenHealthLog} activeOpacity={0.85}>
             <View style={s.logCtaCopy}>
               <Text style={s.logCtaTitle}>Log today&apos;s health</Text>
-              <Text style={s.logCtaSub}>Mood, flow, discharge, symptoms, sleep and vitals</Text>
+              <Text style={s.logCtaSub}>Mood, flow, discharge, symptoms and sleep</Text>
             </View>
             <Text style={s.logCtaIcon}>+</Text>
           </TouchableOpacity>
@@ -1239,8 +1236,6 @@ export default function HealthScreenFemale({
             </GlassCardView>
 
             <MentalHealthSection moodLogs={moodLogs} />
-
-            {!hideVitals && <VitalsDashboardSection />}
           </>
         )}
 

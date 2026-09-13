@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { GlassCardView, BackButton } from '../../components/SharedComponents';
-import { usePreferences } from '../../providers/PreferencesContext';
 import { saveMoodLog } from '../../services/healthService';
 import { savePeriodLog } from '../../services/healthService';
 import { saveDischargeLog } from '../../services/healthService';
@@ -43,8 +42,6 @@ export interface HealthLogDraft {
   symptoms: Array<{ symptom: string; severity: number }>;
   sleepHours: string;
   sleepQuality: string;
-  heartRate: string;
-  bloodPressure: string;
   notes: string;
 }
 
@@ -97,7 +94,6 @@ const SEVERITY_OPTIONS = [
 export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScreenProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { hideVitals } = usePreferences();
   const [mood, setMood] = useState('Okay');
   const [energyLevel, setEnergyLevel] = useState('Medium');
   const [stress, setStress] = useState(2);
@@ -120,8 +116,6 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
   ]);
   const [sleepHours, setSleepHours] = useState('7.2');
   const [sleepQuality, setSleepQuality] = useState('Good');
-  const [heartRate, setHeartRate] = useState('72');
-  const [bloodPressure, setBloodPressure] = useState('120/80');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -324,8 +318,6 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
       symptoms,
       sleepHours,
       sleepQuality,
-      heartRate,
-      bloodPressure,
       notes,
     };
 
@@ -379,7 +371,6 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
       includes_period: gotPeriod,
       includes_symptoms: logSymptoms,
       includes_sleep: true,
-      includes_vitals: !hideVitals,
     });
 
     // Call local save callback AFTER backend persist so re-fetch gets fresh data
@@ -396,7 +387,7 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
           <BackButton onPress={onBack} color={theme.colors.textPrimary} />
           <View style={s.headerCopy}>
             <Text style={s.title}>Log Health</Text>
-            <Text style={s.subtitle}>Today&apos;s cycle, mood, sleep and vitals</Text>
+            <Text style={s.subtitle}>Today&apos;s cycle, mood and sleep</Text>
           </View>
         </View>
 
@@ -694,35 +685,6 @@ export default function HealthLogScreen({ onBack, onSave, token }: HealthLogScre
             </View>
           </View>
         </GlassCardView>
-
-        {!hideVitals && (
-        <GlassCardView style={s.card}>
-          <Text style={s.sectionTitle}>Vitals</Text>
-          <View style={s.inputRow}>
-            <View style={s.inputGroup}>
-              <Text style={s.fieldLabel}>Heart rate</Text>
-              <TextInput
-                value={heartRate}
-                onChangeText={setHeartRate}
-                keyboardType="numeric"
-                placeholder="72"
-                placeholderTextColor={theme.colors.textMuted}
-                style={s.input}
-              />
-            </View>
-            <View style={s.inputGroup}>
-              <Text style={s.fieldLabel}>Blood pressure</Text>
-              <TextInput
-                value={bloodPressure}
-                onChangeText={setBloodPressure}
-                placeholder="120/80"
-                placeholderTextColor={theme.colors.textMuted}
-                style={s.input}
-              />
-            </View>
-          </View>
-        </GlassCardView>
-        )}
 
         <GlassCardView style={s.card}>
           <Text style={s.sectionTitle}>Notes</Text>

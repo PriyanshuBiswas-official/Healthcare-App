@@ -9,7 +9,7 @@ export type MaintenanceData = {
 
 export const checkMaintenance = async (): Promise<MaintenanceData | null> => {
   try {
-    const res = await fetchWithTimeout(`${API_BASE_URL}/status`, {}, 6000);
+    const res = await fetchWithTimeout(`${API_BASE_URL}/api/health`, {}, 6000);
     if (!res.ok) return null;
     const json = await res.json();
     if (json.maintenance) {

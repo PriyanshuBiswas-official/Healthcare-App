@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useReducer, useCallback, useState } from 'react';
-import { View, StatusBar, StyleSheet, BackHandler, KeyboardAvoidingView, Platform, TouchableOpacity, Text, Modal, ActivityIndicator } from 'react-native';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { View, StatusBar, StyleSheet, BackHandler, KeyboardAvoidingView, Platform, TouchableOpacity, Text, Modal, ActivityIndicator, Alert } from 'react-native';
 import TabBar, { TabName } from './src/navigation/TabBar';
 import { ScrollVisibilityProvider, useScrollVisibility } from './src/navigation/ScrollVisibilityContext';
 import DashboardScreen from './src/screens/home/DashboardScreen';
@@ -36,6 +36,7 @@ import { ThemeProvider, useTheme } from './src/providers/ThemeProvider';
 import BootSplash from 'react-native-bootsplash';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import UnifiedOnboardingScreen from './src/screens/auth/UnifiedOnboardingScreen';
 import { AuthStack } from './src/navigation/AuthStack';
@@ -43,9 +44,10 @@ import LoadingScreen from './src/components/LoadingScreen';
 import ErrorScreen from './src/screens/error/ErrorScreen';
 import { NetworkProvider } from './src/services/networkService';
 import OfflineBanner from './src/components/OfflineBanner';
-import { ArrowLeft, Camera, Image as ImageIcon, X } from 'lucide-react-native';
+import { Camera, Image as ImageIcon } from 'lucide-react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import type { ChatAttachment } from './src/services/aiApi';
+import type { MealType } from './src/types/diet';
 import { PostHogBoundary } from './src/providers/PostHogBoundary';
 const Stack = createNativeStackNavigator();
 
@@ -67,10 +69,9 @@ type RootStackParamList = {
   Feedback: undefined;
   NewFeedback: undefined;
   FeedbackThread: { threadId: number } | undefined;
+  FoodSearchScreen: { mealType: MealType; date: string };
+  MealDetailScreen: { mealType: MealType; date: string };
 };
-
-const MAIN_TABS: TabName[] = ['Home', 'Health', 'AI', 'Activity', 'Diet'];
-const OVERLAY_TABS: string[] = ['Profile', 'Notifications', 'WorkoutLog', 'AddExercise', 'PredefinedExercise', 'ExerciseDetails', 'HealthLog', 'PartnerReport', 'Relationships', 'AllPRs', 'ExplorePlans', 'PlanDetail', 'Feedback', 'NewFeedback', 'FeedbackThread', 'FoodSearchScreen', 'MealDetailScreen'];
 
 const OCR_PROMPT = `Please analyze this medical document image. Extract all visible text and provide:
 1. A clear transcription of all text found
@@ -80,140 +81,6 @@ const OCR_PROMPT = `Please analyze this medical document image. Extract all visi
 If this is a prescription: list all medications with dosages and instructions.
 If this is a lab report: explain each value and whether it's within normal range.
 If this is an insurance document: summarize key coverage details.`;
-
-// ── Reducer ──────────────────────────────────────────────────────────
-
-type AppState = {
-  activeTab: TabName;
-  previousTab: TabName;
-  aiStartInChat: boolean;
-  aiOrigin: TabName | null;
-  aiInitialQuery: string;
-  aiChatVisible: boolean;
-  showProfileSetup: boolean;
-  profileSection: string | null;
-  workoutLogExercise: any;
-  lastHealthLog: HealthLogDraft | null;
-  selectedPartnerRelationshipId: string | null;
-};
-
-type AppAction =
-  | { type: 'SWITCH_TAB'; tab: TabName }
-  | { type: 'OPEN_AI'; from?: TabName; startInChat?: boolean; initialQuery?: string }
-  | { type: 'OPEN_AI_CHAT'; from?: TabName; initialQuery?: string }
-  | { type: 'CLOSE_AI_CHAT' }
-  | { type: 'OPEN_PROFILE'; section?: string }
-  | { type: 'OPEN_NOTIFICATIONS' }
-  | { type: 'OPEN_PROFILE_SETUP' }
-  | { type: 'CLOSE_PROFILE_SETUP' }
-  | { type: 'OPEN_WORKOUT_LOG'; exercise: any }
-  | { type: 'CLOSE_WORKOUT_LOG' }
-  | { type: 'OPEN_HEALTH_LOG' }
-  | { type: 'CLOSE_HEALTH_LOG' }
-  | { type: 'OPEN_PARTNER_REPORT'; partnerId: string }
-  | { type: 'OPEN_RELATIONSHIPS' }
-  | { type: 'CLOSE_OVERLAY' }
-  | { type: 'SAVE_HEALTH_LOG'; log: HealthLogDraft };
-
-const INITIAL_STATE: AppState = {
-  activeTab: 'Home',
-  previousTab: 'Home',
-  aiStartInChat: false,
-  aiOrigin: null,
-  aiInitialQuery: '',
-  aiChatVisible: false,
-  showProfileSetup: false,
-  profileSection: null,
-  workoutLogExercise: null,
-  lastHealthLog: null,
-  selectedPartnerRelationshipId: null,
-};
-
-function appReducer(state: AppState, action: AppAction): AppState {
-  switch (action.type) {
-    case 'SWITCH_TAB':
-      return { ...state, previousTab: state.activeTab, activeTab: action.tab };
-
-    case 'OPEN_AI':
-      // startInChat=true → open as overlay (no tab switch, instant)
-      if (action.startInChat) {
-        return {
-          ...state,
-          aiChatVisible: true,
-          aiOrigin: action.from !== undefined ? action.from : null,
-          aiInitialQuery: action.initialQuery ?? '',
-        };
-      }
-      // startInChat=false → switch to AI tab (overview mode)
-      return {
-        ...state,
-        previousTab: state.activeTab,
-        activeTab: 'AI',
-        aiOrigin: action.from !== undefined ? action.from : null,
-        aiStartInChat: false,
-        aiInitialQuery: '',
-      };
-
-    case 'OPEN_AI_CHAT':
-      return {
-        ...state,
-        aiChatVisible: true,
-        aiOrigin: action.from !== undefined ? action.from : null,
-        aiInitialQuery: action.initialQuery ?? '',
-      };
-
-    case 'CLOSE_AI_CHAT':
-      return {
-        ...state,
-        aiChatVisible: false,
-        aiInitialQuery: '',
-      };
-
-    case 'OPEN_PROFILE':
-      return { ...state, previousTab: state.activeTab, activeTab: 'Profile', profileSection: (action as any).section || null };
-
-    case 'OPEN_NOTIFICATIONS':
-      return { ...state, previousTab: state.activeTab, activeTab: 'Notifications' };
-
-    case 'OPEN_PROFILE_SETUP':
-      return { ...state, previousTab: state.activeTab, activeTab: 'Profile', showProfileSetup: true };
-
-    case 'CLOSE_PROFILE_SETUP':
-      return { ...state, showProfileSetup: false };
-
-    case 'OPEN_WORKOUT_LOG':
-      return {
-        ...state,
-        previousTab: state.activeTab,
-        activeTab: 'WorkoutLog',
-        workoutLogExercise: action.exercise,
-      };
-
-    case 'CLOSE_WORKOUT_LOG':
-      return { ...state, activeTab: state.previousTab, workoutLogExercise: null };
-
-    case 'OPEN_HEALTH_LOG':
-      return { ...state, previousTab: state.activeTab, activeTab: 'HealthLog' };
-
-    case 'CLOSE_HEALTH_LOG':
-      return { ...state, activeTab: state.previousTab };
-
-    case 'OPEN_PARTNER_REPORT':
-      return { ...state, previousTab: state.activeTab, activeTab: 'PartnerReport', selectedPartnerRelationshipId: action.partnerId };
-
-    case 'OPEN_RELATIONSHIPS':
-      return { ...state, previousTab: state.activeTab, activeTab: 'Relationships' };
-
-    case 'CLOSE_OVERLAY':
-      return { ...state, activeTab: state.previousTab, profileSection: null, selectedPartnerRelationshipId: null };
-
-    case 'SAVE_HEALTH_LOG':
-      return { ...state, activeTab: state.previousTab, lastHealthLog: action.log };
-
-    default:
-      return state;
-  }
-}
 
 // ── Memoized Screen Components ───────────────────────────────────────
 
@@ -242,8 +109,6 @@ const MemoizedFeedbackThreadScreen = React.memo(FeedbackThreadScreen);
 const MemoizedFoodSearchScreen = React.memo(FoodSearchScreen);
 const MemoizedMealDetailScreen = React.memo(MealDetailScreen);
 // ── AppShell ─────────────────────────────────────────────────────────
-
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator<RootStackParamList>();
@@ -481,7 +346,6 @@ function AppShell() {
   const openRelationships = useCallback(() => navRef.current?.navigate('Relationships'), []);
   const openAppointments = useCallback(() => navRef.current?.navigate('Profile', { initialSection: 'reminders-appointments' }), []);
   const openHealthLog = useCallback(() => navRef.current?.navigate('HealthLog'), []);
-  const openAddExercise = useCallback((planDayId: number) => navRef.current?.navigate('AddExercise', { planDayId }), []);
   const openSubscriptions = useCallback(() => navRef.current?.navigate('Profile', { initialSection: 'subscriptions' }), []);
 
   // Sync force hidden based on route and ai chat overlay visibility
@@ -906,9 +770,6 @@ const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
   },
-  screenWrapper: {
-    flex: 1,
-  },
   overlayWrapper: {
     position: 'absolute',
     top: 0,
@@ -917,9 +778,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 10,
     elevation: 10,
-  },
-  screenHidden: {
-    display: 'none',
   },
   ocrModalOverlay: {
     flex: 1,

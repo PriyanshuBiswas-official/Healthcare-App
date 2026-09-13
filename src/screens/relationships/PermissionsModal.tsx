@@ -150,7 +150,6 @@ export default function PermissionsModal({
   
   const [permissions, setPermissions] = useState<Partial<relationshipApi.RelationshipPermissions>>({
     health_score: false,
-    vitals: false,
     activity: false,
     workouts: false,
     nutrition: false,
@@ -204,7 +203,6 @@ export default function PermissionsModal({
 
   const permissionItems = [
     { key: 'health_score', label: 'Overall Health Score', desc: 'Allows sharing your rolling 7-day health score' },
-    { key: 'vitals', label: 'Vitals Data', desc: 'Shares heart rate, blood pressure, oxygen levels, temperature' },
     { key: 'activity', label: 'Activity Logs', desc: 'Shares daily steps, active minutes, calories burned progress' },
     { key: 'workouts', label: 'Workout History', desc: 'Allows viewing of your logged exercises & workouts' },
     { key: 'nutrition', label: 'Nutrition & Diet', desc: 'Shares daily calorie intake, water levels' },

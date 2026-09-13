@@ -69,7 +69,9 @@ export function TodaysWorkout({
           <View style={{ paddingVertical: Spacing.lg, alignItems: 'center' }}>
             <Dumbbell size={Typography.xxl} color={Colors.textSecondary} />
             <Text style={{ color: Colors.textSecondary, fontSize: Typography.sm }}>
-              {planName ? `No workout planned for ${dayName || 'today'}` : 'No workout plan set up yet'}
+              {planName
+                ? `No exercises planned for ${dayName || 'today'}`
+                : 'No workout plan set up yet'}
             </Text>
             {!planName && showAddExercise && (
               <TouchableOpacity
@@ -77,6 +79,15 @@ export function TodaysWorkout({
                 style={{ marginTop: Spacing.md, backgroundColor: Colors.accentBlue, paddingVertical: Spacing.sm + 2, paddingHorizontal: Spacing.xl, borderRadius: Radius.md }}
                 activeOpacity={0.8}>
                 <Text style={{ color: Colors.bg, fontWeight: Typography.bold, fontSize: Typography.sm }}>Set Up Workout Plan</Text>
+              </TouchableOpacity>
+            )}
+            {planName && showAddExercise && (
+              <TouchableOpacity
+                onPress={onAddExercise}
+                style={{ marginTop: Spacing.md, flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.sm + 2, paddingHorizontal: Spacing.xl, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.accentBlue + '50', backgroundColor: Colors.accentBlue + '08' }}
+                activeOpacity={0.8}>
+                <Text style={{ fontSize: Typography.md, marginRight: Spacing.xs, color: Colors.accentBlue }}>+</Text>
+                <Text style={{ color: Colors.accentBlue, fontWeight: Typography.bold, fontSize: Typography.sm }}>Add Exercise</Text>
               </TouchableOpacity>
             )}
           </View>
