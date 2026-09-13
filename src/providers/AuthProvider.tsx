@@ -95,12 +95,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setIsLoading(false);
           return;
         }
+        // Re-check profile if user has a session
+        if (session?.access_token) {
+          await checkProfile(session);
+        }
         setIsLoading(false);
       } catch {
         setIsLoading(false);
       }
     })();
-  }, []);
+  }, [session]);
 
   // Drive smooth progress between milestones
   const startProgress = useCallback((from: number, to: number, durationMs: number) => {
@@ -148,8 +152,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setProfileCompletion(null);
       setGender(null);
       return false;
-    } catch (e) {
+    } catch (e: any) {
       console.warn('[AuthProvider] checkProfile failed:', e);
+      const isNetworkError = e instanceof TypeError || e?.name === 'AbortError';
+      if (isNetworkError) {
+        setNetworkError('no-internet');
+      }
       setHasProfile(false);
       setProfileCompletion(null);
       setGender(null);

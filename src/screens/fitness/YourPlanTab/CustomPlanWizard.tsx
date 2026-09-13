@@ -417,8 +417,8 @@ export function CustomPlanWizard({ visible, onBack, onSaved, onOpenAddExercise, 
     const doCreate = async () => {
       setCreating(true);
       try {
-        const days: activityService.PlanDayInput[] = selectedDayIndices.map((dayIndex, i) => ({
-          day_no: i + 1,
+        const days: activityService.PlanDayInput[] = selectedDayIndices.map((dayIndex) => ({
+          day_no: dayIndex === 6 ? 7 : dayIndex + 1,
           day_name: DAY_NAMES[dayIndex],
           exercises: [],
         }));

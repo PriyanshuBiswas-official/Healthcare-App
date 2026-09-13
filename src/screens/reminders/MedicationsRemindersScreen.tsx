@@ -468,6 +468,13 @@ export default function MedicationsRemindersScreen({ onBack, onSaved }: Props) {
                         <Text style={styles.entryNoReminder}>Tap to set up reminders</Text>
                       )}
                     </View>
+                    {hasReminder && (
+                      <TouchableOpacity
+                        onPress={() => handleRemove(med)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Trash2 size={18} color={theme.colors.textMuted} />
+                      </TouchableOpacity>
+                    )}
                     <Text style={styles.chevron}>›</Text>
                   </TouchableOpacity>
                   {i < arr.length - 1 && <View style={styles.divider} />}

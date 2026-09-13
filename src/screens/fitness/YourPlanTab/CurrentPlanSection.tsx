@@ -13,6 +13,8 @@ function formatPlanDate(dateLike?: string | null): string {
   return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+const WEEKDAY_ABBR = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
 interface CurrentPlanSectionProps {
   workoutPlanDays: WorkoutPlanDays;
   currentPlanName: string;
@@ -209,7 +211,7 @@ export function CurrentPlanSection({
               activeOpacity={0.82}
               onPress={() => openDay(index)}>
               <GlassCardView style={styles.weekCard}>
-                <Text style={styles.weekCardDay}>{day.day_name.slice(0, 3)}</Text>
+                <Text style={styles.weekCardDay}>{WEEKDAY_ABBR[(day.day_no - 1) % 7]}</Text>
                 <Text style={styles.weekCardName} numberOfLines={1}>{day.day_name}</Text>
                 <View style={styles.weekCardIcon}>
                   <Dumbbell size={20} color={Colors.textSecondary} />

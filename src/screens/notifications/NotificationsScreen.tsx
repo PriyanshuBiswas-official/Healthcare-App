@@ -37,7 +37,6 @@ function getNotificationIcon(title: string): string {
   const lower = title.toLowerCase();
   if (lower.includes('medication') || lower.includes('medicine') || lower.includes('dose')) return '💊';
   if (lower.includes('appointment') || lower.includes('doctor')) return '🏥';
-  if (lower.includes('vital') || lower.includes('heart') || lower.includes('bp')) return '🩺';
   if (lower.includes('workout') || lower.includes('exercise')) return '💪';
   if (lower.includes('sleep')) return '💤';
   if (lower.includes('water') || lower.includes('hydration')) return '💧';
@@ -163,7 +162,6 @@ export default function NotificationsScreen({ onBackPress }: { onBackPress?: () 
       const lower = title.toLowerCase();
       if (lower.includes('medication') || lower.includes('medicine') || lower.includes('dose')) return colors.teal;
       if (lower.includes('appointment') || lower.includes('doctor')) return colors.pink;
-      if (lower.includes('vital') || lower.includes('heart') || lower.includes('bp')) return colors.amber;
       if (lower.includes('workout') || lower.includes('exercise')) return colors.accentBlue;
       if (lower.includes('sleep')) return colors.blue;
       if (lower.includes('water') || lower.includes('hydration')) return colors.blue;

@@ -14,7 +14,7 @@ import { GlassCardView, BackButton } from '../../components/SharedComponents';
 
 const DATA_ITEMS = [
   { icon: <User size={20} color="#3B82F6" />, label: 'Profile Information', desc: 'Name, email, medical details' },
-  { icon: <Activity size={20} color="#00E5A0" />, label: 'Health Data', desc: 'Vitals, medications, allergies' },
+  { icon: <Activity size={20} color="#00E5A0" />, label: 'Health Data', desc: 'Medications, allergies' },
   { icon: <MessageCircle size={20} color="#F59E0B" />, label: 'AI Chat History', desc: 'All your conversations with Cureto AI' },
   { icon: <FileText size={20} color="#8B5CF6" />, label: 'Documents', desc: 'Exported reports and records' },
 ];

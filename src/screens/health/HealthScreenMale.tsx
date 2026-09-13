@@ -23,12 +23,10 @@ import {
   MiniMetricCard,
   SleepTrackerSection,
   MentalHealthSection,
-  VitalsDashboardSection,
   PreventiveCareSection,
   AIHealthInsightsSection,
 } from './HealthCommonSections';
 import { useAuth } from '../../providers/AuthProvider';
-import { usePreferences } from '../../providers/PreferencesContext';
 import { getSleepLogs, getMoodLogs } from '../../services/healthService';
 import type { SleepLog, MoodLog } from '../../types/health';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
@@ -49,7 +47,6 @@ export default function HealthScreenMale({
   const { onScroll } = useScrollVisibility();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { hideVitals } = usePreferences();
   const { unreadCount } = useNotifications();
   const [activeTab, setActiveTab] = useState('Overview');
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
@@ -57,7 +54,7 @@ export default function HealthScreenMale({
   const [refreshing, setRefreshing] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  const TABS = hideVitals ? ['Overview', 'Hormones'] : ['Overview', 'Hormones', 'Vitals'];
+  const TABS = ['Overview', 'Hormones'];
 
   const { session } = useAuth();
 
@@ -201,7 +198,7 @@ export default function HealthScreenMale({
                     <Text style={s.scoreTitle}>Good health</Text>
                     <View style={s.scorePtsBadge}><Text style={s.scorePtsText}>↑ 3 pts</Text></View>
                   </View>
-                  <Text style={s.scoreDesc}>All normal across hormones, vitals, sleep, activity and nutrition.</Text>
+                  <Text style={s.scoreDesc}>All normal across hormones, sleep, activity and nutrition.</Text>
                   <View style={s.scoreTagsRow}>
                     <View style={s.scoreTag}><Text style={s.scoreTagText}>Cardiovascular ✓</Text></View>
                     <View style={s.scoreTag}><Text style={s.scoreTagText}>Testosterone ✓</Text></View>
@@ -292,49 +289,6 @@ export default function HealthScreenMale({
                 <Text style={s.infoText}>💡 Elevated cortisol can suppress testosterone over time. AI recommends reviewing sleep quality and stress load. Upload latest lab report for precise tracking.</Text>
               </View>
             </GlassCardView>
-        </>)}
-
-        {activeTab === 'Vitals' && (<>
-            <SectionHeader title="Cardiovascular Risk" />
-            <GlassCardView style={s.card}>
-              <View style={s.fertHeader}>
-                <Text style={s.promptText}>10-year heart risk</Text>
-                <View style={[s.fertBadge, { backgroundColor: theme.colors.success + '20', borderColor: theme.colors.success + '55' }]}>
-                  <Text style={[s.fertBadgeText, { color: theme.colors.success }]}>Low risk · 4%</Text>
-                </View>
-              </View>
-
-              <View style={s.gridRow}>
-                <View style={s.gridItem}>
-                  <Text style={s.cardMiniLabel}>LDL CHOLESTEROL</Text>
-                  <Text style={s.gridVal}>98 <Text style={s.gridUnit}>mg/dL</Text></Text>
-                  <Text style={[s.gridStat, { color: theme.colors.success }]}>Optimal</Text>
-                </View>
-                <View style={s.gridItem}>
-                  <Text style={s.cardMiniLabel}>HDL CHOLESTEROL</Text>
-                  <Text style={s.gridVal}>58 <Text style={s.gridUnit}>mg/dL</Text></Text>
-                  <Text style={[s.gridStat, { color: theme.colors.success }]}>Good</Text>
-                </View>
-              </View>
-              <View style={s.gridRow}>
-                <View style={s.gridItem}>
-                  <Text style={s.cardMiniLabel}>TRIGLYCERIDES</Text>
-                  <Text style={s.gridVal}>142 <Text style={s.gridUnit}>mg/dL</Text></Text>
-                  <Text style={[s.gridStat, { color: theme.colors.amber }]}>Borderline</Text>
-                </View>
-                <View style={s.gridItem}>
-                  <Text style={s.cardMiniLabel}>BLOOD GLUCOSE</Text>
-                  <Text style={s.gridVal}>94 <Text style={s.gridUnit}>mg/dL</Text></Text>
-                  <Text style={[s.gridStat, { color: theme.colors.success }]}>Normal</Text>
-                </View>
-              </View>
-
-              <View style={s.infoBox}>
-                <Text style={s.infoText}>⚠️ Triglycerides are slightly elevated. AI links this to your recent high-carb diet days. Reducing refined carbs and increasing omega-3 intake can help lower it within 4-6 weeks.</Text>
-              </View>
-            </GlassCardView>
-
-            <VitalsDashboardSection />
         </>)}
 
         {/* Common AI Insights at bottom of all tabs */}

@@ -171,7 +171,7 @@ export default function WelcomeScreen() {
               <View style={[styles.featureDot, { backgroundColor: '#34D399' }]} />
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Health & Fitness Tracking</Text>
-                <Text style={styles.featureDesc}>Log activity, sleep, diet, water & vitals</Text>
+                <Text style={styles.featureDesc}>Log activity, sleep, diet & water</Text>
               </View>
             </View>
             <View style={styles.featureCard}>

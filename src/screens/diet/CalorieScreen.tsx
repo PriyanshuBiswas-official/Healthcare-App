@@ -19,7 +19,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pencil, Coffee, Salad, Apple, UtensilsCrossed } from 'lucide-react-native';
+import { Pencil, Coffee, Salad, Apple, UtensilsCrossed, Plus } from 'lucide-react-native';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useIsFocused, useFocusEffect } from '@react-navigation/native';
 import { GlassCardView, SectionHeader, ProgressBar, ProfileAvatarButton, NotificationIconButton, LoadingSpinner } from '../../components/SharedComponents';
@@ -280,7 +280,7 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress, na
       if (fetchedRef.current && session?.access_token) {
         dietService.getMealsForDate(session.access_token, todayStr).then(res => {
           setMeals(res.meals);
-        }).catch(() => {});
+        }).catch(() => { });
       }
       fetchedRef.current = true;
     }, [session?.access_token, todayStr])
@@ -374,285 +374,283 @@ export default function CalorieScreen({ onProfilePress, onNotificationsPress, na
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} onScroll={onScroll} scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[colors.accentBlue, colors.pink]} tintColor={colors.accentBlue} progressBackgroundColor={colors.bgCard} />}>
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Nutrition</Text>
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.title}>Nutrition</Text>
+            </View>
+            <View style={styles.headerActions}>
+              <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
+              <ProfileAvatarButton
+                onPress={onProfilePress}
+                userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+                avatarUrl={user?.user_metadata?.avatar_url}
+              />
+            </View>
           </View>
-          <View style={styles.headerActions}>
-            <NotificationIconButton onPress={onNotificationsPress} unreadCount={unreadCount} />
-            <ProfileAvatarButton
-              onPress={onProfilePress}
-              userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
-              avatarUrl={user?.user_metadata?.avatar_url}
-            />
-          </View>
-        </View>
 
-        {loading ? (
-          <LoadingSpinner />
-        ) : (
-          <>
-            {goal === null && (
-              <TouchableOpacity
-                onPress={() => {
-                  setSetupCalorieGoal('');
-                  setSetupWaterGoal('');
-                  setSetupProteinGoal('');
-                  setSetupCarbsGoal('');
-                  setSetupFatGoal('');
-                  setSetupFiberGoal('');
-                  setGoalSetupVisible(true);
-                }}
-                style={styles.noGoalBanner}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={[styles.iconWrapSm, { backgroundColor: colors.amber + '20', width: 36, height: 36, borderRadius: 18 }]}>
-                    <Text style={{ fontSize: Typography.base }}>🎯</Text>
-                  </View>
-                  <View style={{ flex: 1, marginLeft: Spacing.md }}>
-                    <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: colors.textPrimary }}>Set up your diet goals</Text>
-                    <Text style={{ fontSize: Typography.xs, color: colors.textSecondary, marginTop: 2 }}>Track calories, macros, and water intake</Text>
-                  </View>
-                  <Text style={{ fontSize: Typography.lg, color: colors.textMuted }}>›</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-
-            <SectionHeader title="Daily Calories" subtitle="Monitor your Nutrition" />
-            <GlassCardView style={styles.calorieCard}>
-              <View style={styles.calorieRow}>
-                <View style={styles.gaugeWrap}>
-                  {(() => {
-                    const size = 140;
-                    const stroke = 12;
-                    const radius = (size - stroke) / 2;
-                    const circumference = 2 * Math.PI * radius;
-                    const clampedProgress = Math.min(progress, 1);
-                    const offset = circumference - clampedProgress * circumference;
-                    const color = progress > 1 ? colors.pink : colors.accentBlue;
-                    return (
-                      <Svg width={size} height={size}>
-                        <Circle cx={size / 2} cy={size / 2} r={radius} stroke={colors.bgCardBorder} strokeWidth={stroke} fill="none" />
-                        <Circle cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={stroke} fill="none" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" transform={`rotate(-90 ${size / 2} ${size / 2})`} />
-                      </Svg>
-                    );
-                  })()}
-                  <View style={styles.gaugeCenter}>
-                    <Text style={styles.gaugeValue}>{totalCalories.toLocaleString()}</Text>
-                    <Text style={styles.gaugeUnit}>kcal eaten</Text>
-                  </View>
-                </View>
-
-                <View style={styles.calorieStats}>
-                  <View style={styles.calorieStat}>
-                    <View style={styles.goalHeaderRow}>
-                      <Text style={styles.calorieStatLabel}>Goal</Text>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setSetupCalorieGoal(String(calorieGoal || ''));
-                          setSetupWaterGoal(String(waterGoalMl || ''));
-                          setSetupProteinGoal(String(goal?.protein_goal || ''));
-                          setSetupCarbsGoal(String(goal?.carbs_goal || ''));
-                          setSetupFatGoal(String(goal?.fat_goal || ''));
-                          setSetupFiberGoal(String(goal?.fiber_goal || ''));
-                          setIsEditingGoals(true);
-                          setGoalSetupVisible(true);
-                        }}
-                        style={styles.editBtn}
-                      >
-                        <Pencil size={14} color={colors.textSecondary} />
-                      </TouchableOpacity>
-                    </View>
-                    <Text style={[styles.calorieStatVal, { color: colors.textPrimary }]}>{calorieGoal.toLocaleString()}</Text>
-                  </View>
-                  <View style={[styles.calorieDivider]} />
-                  <View style={styles.calorieStat}>
-                    <Text style={styles.calorieStatLabel}>Remaining</Text>
-                    <Text style={[styles.calorieStatVal, { color: remaining > 0 ? colors.accentBlue : colors.pink }]}>
-                      {remaining > 0 ? remaining.toLocaleString() : `+${Math.abs(remaining)}`}
-                    </Text>
-                  </View>
-                  <View style={[styles.calorieDivider]} />
-                  <View style={styles.calorieStat}>
-                    <Text style={styles.calorieStatLabel}>Burned</Text>
-                    <Text style={[styles.calorieStatVal, { color: colors.amber }]}>0</Text>
-                  </View>
-                </View>
-              </View>
-            </GlassCardView>
-
-            <SectionHeader title="Macronutrients" subtitle="Breakdown of protein, carbs, fats & fiber" />
-            <GlassCardView style={styles.macroCard}>
-              <View style={styles.macroGrid}>
-                {macros.map(m => {
-                  const macroKey = m.label === 'Protein' ? 'protein'
-                    : m.label === 'Carbs' ? 'carbs'
-                      : m.label === 'Fats' ? 'fat'
-                        : 'fiber';
-                  const chartData = weeklyTrend.map(d => d[macroKey as keyof typeof d] as number);
-                  const maxVal = Math.max(...chartData, 1);
-                  const barH = 40;
-                  const barW = 6;
-                  const gap = 3;
-
-                  return (
-                    <View key={m.label} style={[styles.macroItem, { borderColor: m.color + '40', backgroundColor: m.color + '10' }]}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={[styles.macroVal, { color: m.color }]}>{m.val}{m.unit}</Text>
-                          <Text style={styles.macroLabel}>{m.label}</Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap, height: barH, paddingBottom: 0 }}>
-                          {chartData.map((v, i) => (
-                            <View key={i} style={{ width: barW, height: v > 0 ? `${(v / maxVal) * 100}%` : 3, backgroundColor: m.color + '60', borderRadius: 2 }} />
-                          ))}
-                        </View>
-                      </View>
-                      <ProgressBar progress={m.target > 0 ? m.val / m.target : 0} color={m.color} height={4} style={{ marginTop: Spacing.xs }} />
-                      <Text style={styles.macroTarget}>/ {m.target}{m.unit}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-            </GlassCardView>
-
-            <SectionHeader title="TODAY'S MEALS" subtitle="Everything you've eaten today" />
-            <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
-              {MEAL_CATEGORIES.map((cat) => {
-                const catMeals = mealsByType[cat.key];
-                const hasMeals = catMeals.length > 0;
-                const totalCals = catMeals.reduce((s, m) => s + (m.calories || 0), 0);
-                const foodNames = catMeals.map(m => m.food).join(', ');
-                const timeStr = hasMeals ? formatTime(catMeals[catMeals.length - 1].logged_at) : null;
-
-                return (
-                  <Pressable
-                    key={cat.key}
-                    onPress={() => openMealDetail(cat.key)}
-                    style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.sm }, pressed && { opacity: 0.5 }]}>
-                    <View style={[styles.iconWrapSm, { backgroundColor: hasMeals ? cat.color + '20' : colors.bgCardBorder, width: 44, height: 44, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' }]}>
-                      <cat.Icon size={22} color={hasMeals ? cat.color : colors.textMuted} />
+          {loading ? (
+            <LoadingSpinner />
+          ) : (
+            <>
+              {goal === null && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setSetupCalorieGoal('');
+                    setSetupWaterGoal('');
+                    setSetupProteinGoal('');
+                    setSetupCarbsGoal('');
+                    setSetupFatGoal('');
+                    setSetupFiberGoal('');
+                    setGoalSetupVisible(true);
+                  }}
+                  style={styles.noGoalBanner}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={[styles.iconWrapSm, { backgroundColor: colors.amber + '20', width: 36, height: 36, borderRadius: 18 }]}>
+                      <Text style={{ fontSize: Typography.base }}>🎯</Text>
                     </View>
                     <View style={{ flex: 1, marginLeft: Spacing.md }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: hasMeals ? colors.textPrimary : colors.textSecondary }}>{cat.name}</Text>
-                        {hasMeals && (
-                          <View style={{ backgroundColor: colors.accentBlue + '30', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, marginLeft: Spacing.sm }}>
-                            <Text style={{ fontSize: Typography.xs, color: colors.accentBlue, fontWeight: Typography.bold }}>Logged</Text>
-                          </View>
-                        )}
+                      <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: colors.textPrimary }}>Set up your diet goals</Text>
+                      <Text style={{ fontSize: Typography.xs, color: colors.textSecondary, marginTop: 2 }}>Track calories, macros, and water intake</Text>
+                    </View>
+                    <Text style={{ fontSize: Typography.lg, color: colors.textMuted }}>›</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+
+              <SectionHeader title="Daily Calories" subtitle="Monitor your Nutrition" />
+              <GlassCardView style={styles.calorieCard}>
+                <View style={styles.calorieRow}>
+                  <View style={styles.gaugeWrap}>
+                    {(() => {
+                      const size = 140;
+                      const stroke = 12;
+                      const radius = (size - stroke) / 2;
+                      const circumference = 2 * Math.PI * radius;
+                      const clampedProgress = Math.min(progress, 1);
+                      const offset = circumference - clampedProgress * circumference;
+                      const color = progress > 1 ? colors.pink : colors.accentBlue;
+                      return (
+                        <Svg width={size} height={size}>
+                          <Circle cx={size / 2} cy={size / 2} r={radius} stroke={colors.bgCardBorder} strokeWidth={stroke} fill="none" />
+                          <Circle cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={stroke} fill="none" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+                        </Svg>
+                      );
+                    })()}
+                    <View style={styles.gaugeCenter}>
+                      <Text style={styles.gaugeValue}>{totalCalories.toLocaleString()}</Text>
+                      <Text style={styles.gaugeUnit}>kcal eaten</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.calorieStats}>
+                    <View style={styles.calorieStat}>
+                      <View style={styles.goalHeaderRow}>
+                        <Text style={styles.calorieStatLabel}>Goal</Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setSetupCalorieGoal(String(calorieGoal || ''));
+                            setSetupWaterGoal(String(waterGoalMl || ''));
+                            setSetupProteinGoal(String(goal?.protein_goal || ''));
+                            setSetupCarbsGoal(String(goal?.carbs_goal || ''));
+                            setSetupFatGoal(String(goal?.fat_goal || ''));
+                            setSetupFiberGoal(String(goal?.fiber_goal || ''));
+                            setIsEditingGoals(true);
+                            setGoalSetupVisible(true);
+                          }}
+                          style={styles.editBtn}
+                        >
+                          <Pencil size={14} color={colors.textSecondary} />
+                        </TouchableOpacity>
                       </View>
-                      <Text style={{ fontSize: Typography.xs, color: colors.textSecondary, marginTop: 4 }} numberOfLines={1}>
-                        {hasMeals ? foodNames : 'Not logged yet - tap to log'}
+                      <Text style={[styles.calorieStatVal, { color: colors.textPrimary }]}>{calorieGoal.toLocaleString()}</Text>
+                    </View>
+                    <View style={[styles.calorieDivider]} />
+                    <View style={styles.calorieStat}>
+                      <Text style={styles.calorieStatLabel}>Remaining</Text>
+                      <Text style={[styles.calorieStatVal, { color: remaining > 0 ? colors.accentBlue : colors.pink }]}>
+                        {remaining > 0 ? remaining.toLocaleString() : `+${Math.abs(remaining)}`}
                       </Text>
                     </View>
-                    <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
-                      {hasMeals ? (
-                        <>
-                          <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary }}>{totalCals}</Text>
-                          <Text style={{ fontSize: Typography.xs, color: colors.textMuted, marginTop: 2 }}>kcal · {timeStr}</Text>
-                        </>
-                      ) : (
-                        <View style={{ paddingHorizontal: Spacing.md, paddingVertical: 6, backgroundColor: colors.bgCardBorder, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={{ fontSize: Typography.xs, color: colors.textPrimary, fontWeight: Typography.bold, marginRight: 4 }}>Log</Text>
-                          <Text style={{ fontSize: Typography.sm, color: colors.textPrimary }}>↗</Text>
+                  </View>
+                </View>
+              </GlassCardView>
+
+              <SectionHeader title="Macronutrients" subtitle="Breakdown of protein, carbs, fats & fiber" />
+              <GlassCardView style={styles.macroCard}>
+                <View style={styles.macroGrid}>
+                  {macros.map(m => {
+                    const macroKey = m.label === 'Protein' ? 'protein'
+                      : m.label === 'Carbs' ? 'carbs'
+                        : m.label === 'Fats' ? 'fat'
+                          : 'fiber';
+                    const chartData = weeklyTrend.map(d => d[macroKey as keyof typeof d] as number);
+                    const maxVal = Math.max(...chartData, 1);
+                    const barH = 40;
+                    const barW = 6;
+                    const gap = 3;
+
+                    return (
+                      <View key={m.label} style={[styles.macroItem, { borderColor: m.color + '40', backgroundColor: m.color + '10' }]}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.macroVal, { color: m.color }]}>{m.val}{m.unit}</Text>
+                            <Text style={styles.macroLabel}>{m.label}</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap, height: barH, paddingBottom: 0 }}>
+                            {chartData.map((v, i) => (
+                              <View key={i} style={{ width: barW, height: v > 0 ? `${(v / maxVal) * 100}%` : 3, backgroundColor: m.color + '60', borderRadius: 2 }} />
+                            ))}
+                          </View>
                         </View>
-                      )}
+                        <ProgressBar progress={m.target > 0 ? m.val / m.target : 0} color={m.color} height={4} style={{ marginTop: Spacing.xs }} />
+                        <Text style={styles.macroTarget}>/ {m.target}{m.unit}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </GlassCardView>
+
+              <SectionHeader title="Today's Meals" subtitle="Everything you've eaten today" />
+              <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
+                {MEAL_CATEGORIES.map((cat) => {
+                  const catMeals = mealsByType[cat.key];
+                  const hasMeals = catMeals.length > 0;
+                  const totalCals = catMeals.reduce((s, m) => s + (m.calories || 0), 0);
+                  const foodNames = catMeals.map(m => m.food).join(', ');
+                  const timeStr = hasMeals ? formatTime(catMeals[catMeals.length - 1].logged_at) : null;
+
+                  return (
+                    <Pressable
+                      key={cat.key}
+                      onPress={() => openMealDetail(cat.key)}
+                      style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md }, cat.key !== 'dinner' && { borderBottomWidth: 1, borderBottomColor: colors.bgCardBorder }, pressed && { opacity: 0.5 }]}>
+                      <View style={[styles.iconWrapSm, { backgroundColor: hasMeals ? cat.color + '20' : colors.bgCardBorder, width: 44, height: 44, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' }]}>
+                        <cat.Icon size={22} color={hasMeals ? cat.color : colors.textMuted} />
+                      </View>
+                      <View style={{ flex: 1, marginLeft: Spacing.md }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: hasMeals ? colors.textPrimary : colors.textSecondary }}>{cat.name}</Text>
+                          {hasMeals && (
+                            <View style={{ backgroundColor: colors.accentBlue + '30', paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.full, marginLeft: Spacing.sm }}>
+                              <Text style={{ fontSize: Typography.xs, color: colors.accentBlue, fontWeight: Typography.bold }}>Logged</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={{ fontSize: Typography.xs, color: colors.textSecondary, marginTop: 4 }} numberOfLines={1}>
+                          {hasMeals ? foodNames : 'Not logged yet - tap to log'}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+                        {hasMeals ? (
+                          <>
+                            <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary }}>{totalCals}</Text>
+                            <Text style={{ fontSize: Typography.xs, color: colors.textMuted, marginTop: 2 }}>kcal · {timeStr}</Text>
+                          </>
+                        ) : (
+                          <TouchableOpacity
+                            onPress={() => navigation?.navigate('FoodSearchScreen', { mealType: cat.key, date: todayStr })}
+                            style={{ paddingHorizontal: Spacing.md, paddingVertical: 6, backgroundColor: colors.bgCardBorder, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center' }}
+                            activeOpacity={0.7}>
+                            <Text style={{ fontSize: Typography.xs, color: colors.textPrimary, fontWeight: Typography.bold, marginRight: 4 }}>Log</Text>
+                            <Plus size={14} color={colors.textPrimary} strokeWidth={2.5} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </GlassCardView>
+
+              <SectionHeader title="Weekly Nutrition Trend" subtitle="How your intake has changed over the past 7 days" />
+              <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
+                <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary, marginBottom: Spacing.xl }}>Calorie intake <Text style={{ color: colors.textSecondary, fontWeight: Typography.regular }}>— past 7 days</Text></Text>
+
+                <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 120, marginBottom: Spacing.sm, paddingHorizontal: Spacing.xs }}>
+                  {weeklyTrend.map((day, idx) => (
+                    <View key={idx} style={{ alignItems: 'center', width: '12%', height: '100%', justifyContent: 'flex-end' }}>
+                      <View style={{ width: '100%', height: `${(day.val / 3000) * 100}%`, backgroundColor: day.today ? colors.accentBlue : day.val > 2000 ? colors.amber : colors.accentBlue + '80', borderRadius: Radius.sm, minHeight: day.val > 0 ? 20 : 0 }} />
+                      <Text style={{ fontSize: Typography.sm, color: day.today ? colors.accentBlue : colors.textSecondary, marginTop: Spacing.sm, fontWeight: day.today ? Typography.bold : Typography.regular }}>{day.day}</Text>
                     </View>
-                  </Pressable>
-                );
-              })}
-            </GlassCardView>
-
-            <SectionHeader title="WEEKLY NUTRITION TREND" subtitle="How your intake has changed over the past 7 days" />
-            <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
-              <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary, marginBottom: Spacing.xl }}>Calorie intake <Text style={{ color: colors.textSecondary, fontWeight: Typography.regular }}>— past 7 days</Text></Text>
-
-              <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 120, marginBottom: Spacing.sm, paddingHorizontal: Spacing.xs }}>
-                {weeklyTrend.map((day, idx) => (
-                  <View key={idx} style={{ alignItems: 'center', width: '12%', height: '100%', justifyContent: 'flex-end' }}>
-                    <View style={{ width: '100%', height: `${(day.val / 3000) * 100}%`, backgroundColor: day.today ? colors.accentBlue : day.val > 2000 ? colors.amber : colors.accentBlue + '80', borderRadius: Radius.sm, minHeight: day.val > 0 ? 20 : 0 }} />
-                    <Text style={{ fontSize: Typography.sm, color: day.today ? colors.accentBlue : colors.textSecondary, marginTop: Spacing.sm, fontWeight: day.today ? Typography.bold : Typography.regular }}>{day.day}</Text>
-                  </View>
-                ))}
-              </View>
-
-              <View style={{ height: 1, backgroundColor: colors.bgCardBorder, marginVertical: Spacing.md }} />
-
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ fontSize: Typography.sm, color: colors.textSecondary }}>Avg this week: <Text style={{ color: colors.textPrimary, fontWeight: Typography.bold }}>{weeklyAvg.toLocaleString()} kcal</Text></Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.accentBlue + '20', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: colors.accentBlue + '50' }}>
-                  <Text style={{ fontSize: Typography.xs, color: colors.accentBlue, fontWeight: Typography.bold }}>✓ {weeklyAvg <= calorieGoal ? 'Within goal' : 'Over goal'}</Text>
+                  ))}
                 </View>
-              </View>
-            </GlassCardView>
 
-            <SectionHeader title="WATER INTAKE" subtitle="Track your daily hydration" />
-            <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
-                <View>
-                  <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                    <Text style={{ fontSize: Typography.xl, fontWeight: Typography.extraBold, color: colors.textPrimary }}>{waterLiters}</Text>
-                    <Text style={{ fontSize: Typography.sm, color: colors.textMuted, marginLeft: 2 }}>/ {waterGoalLiters} L</Text>
+                <View style={{ height: 1, backgroundColor: colors.bgCardBorder, marginVertical: Spacing.md }} />
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: Typography.sm, color: colors.textSecondary }}>Avg this week: <Text style={{ color: colors.textPrimary, fontWeight: Typography.bold }}>{weeklyAvg.toLocaleString()} kcal</Text></Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.accentBlue + '20', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: colors.accentBlue + '50' }}>
+                    <Text style={{ fontSize: Typography.xs, color: colors.accentBlue, fontWeight: Typography.bold }}>✓ {weeklyAvg <= calorieGoal ? 'Within goal' : 'Over goal'}</Text>
                   </View>
-                  <Text style={{ fontSize: Typography.xs, color: colors.textSecondary }}>{waterPercent}% of daily goal</Text>
                 </View>
-              </View>
+              </GlassCardView>
 
-              <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.bgCardBorder, marginBottom: Spacing.sm, overflow: 'hidden' }}>
-                <View style={{ height: '100%', borderRadius: 4, width: `${Math.min(waterPercent, 100)}%`, backgroundColor: colors.accentBlue }} />
-              </View>
-              <Text style={{ fontSize: Typography.xs, color: colors.textMuted, marginBottom: Spacing.base, textAlign: 'right' }}>{waterTotalMl} / {waterGoalMl} ml</Text>
-
-              <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-                {[200, 250, 300, 500].map((ml) => (
-                  <TouchableOpacity
-                    key={ml}
-                    onPress={() => handleLogWater(ml)}
-                    style={{ flex: 1, backgroundColor: colors.bgCardBorder, paddingVertical: Spacing.sm, borderRadius: Radius.md, alignItems: 'center', borderWidth: 1, borderColor: colors.bgCardBorder }}>
-                    <Text style={{ fontSize: Typography.xs, color: colors.accentBlue, fontWeight: Typography.bold }}>+{ml}</Text>
-                    <Text style={{ fontSize: Typography.xs, color: colors.textMuted }}>ml</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <TouchableOpacity
-                onPress={() => {
-                  setCustomWaterText('');
-                  setCustomWaterVisible(true);
-                }}
-                style={{ marginTop: Spacing.sm, borderWidth: 1, borderColor: colors.accentBlue + '40', backgroundColor: colors.accentBlue + '08', paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center' }}>
-                <Text style={{ fontSize: Typography.sm, color: colors.accentBlue, fontWeight: Typography.semiBold }}>+ Custom amount</Text>
-              </TouchableOpacity>
-            </GlassCardView>
-
-            <SectionHeader title="WEEKLY WATER TREND" subtitle="Monitor your water intake over the past 7 days" />
-            <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl }}>
-                <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary }}>Water intake <Text style={{ color: colors.textSecondary, fontWeight: Typography.regular }}>— past 7 days</Text></Text>
-              </View>
-
-              <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 120, marginBottom: Spacing.sm, paddingHorizontal: Spacing.xs }}>
-                {weeklyWaterTrend.map((day, idx) => (
-                  <View key={idx} style={{ alignItems: 'center', width: '12%', height: '100%', justifyContent: 'flex-end' }}>
-                    <View style={{ width: '100%', height: `${waterGoalMl > 0 ? Math.min((day.val / waterGoalMl) * 100, 100) : (day.val / 3000) * 100}%`, backgroundColor: day.today ? colors.accentBlue : colors.blue + '80', borderRadius: Radius.sm, minHeight: day.val > 0 ? 20 : 0 }} />
-                    <Text style={{ fontSize: Typography.sm, color: day.today ? colors.accentBlue : colors.textSecondary, marginTop: Spacing.sm, fontWeight: day.today ? Typography.bold : Typography.regular }}>{day.day}</Text>
+              <SectionHeader title="Water Intake" subtitle="Track your daily hydration" />
+              <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
+                  <View>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                      <Text style={{ fontSize: Typography.xl, fontWeight: Typography.extraBold, color: colors.textPrimary }}>{waterLiters}</Text>
+                      <Text style={{ fontSize: Typography.sm, color: colors.textMuted, marginLeft: 2 }}>/ {waterGoalLiters} L</Text>
+                    </View>
+                    <Text style={{ fontSize: Typography.xs, color: colors.textSecondary }}>{waterPercent}% of daily goal</Text>
                   </View>
-                ))}
-              </View>
-
-              <View style={{ height: 1, backgroundColor: colors.bgCardBorder, marginVertical: Spacing.md }} />
-
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ fontSize: Typography.sm, color: colors.textSecondary }}>Avg this week: <Text style={{ color: colors.textPrimary, fontWeight: Typography.bold }}>{weeklyWaterAvg.toLocaleString()} ml</Text></Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.blue + '20', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: colors.blue + '50' }}>
-                  <Text style={{ fontSize: Typography.xs, color: colors.blue, fontWeight: Typography.bold }}>✓ {weeklyWaterAvg >= waterGoalMl ? 'Goal met' : `${waterGoalMl - weeklyWaterAvg} ml left`}</Text>
                 </View>
-              </View>
-            </GlassCardView>
-          </>
-        )}
 
-        <View style={{ height: 100 }} />
+                <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.bgCardBorder, marginBottom: Spacing.sm, overflow: 'hidden' }}>
+                  <View style={{ height: '100%', borderRadius: 4, width: `${Math.min(waterPercent, 100)}%`, backgroundColor: colors.accentBlue }} />
+                </View>
+                <Text style={{ fontSize: Typography.xs, color: colors.textMuted, marginBottom: Spacing.base, textAlign: 'right' }}>{waterTotalMl} / {waterGoalMl} ml</Text>
+
+                <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                  {[200, 250, 300, 500].map((ml) => (
+                    <TouchableOpacity
+                      key={ml}
+                      onPress={() => handleLogWater(ml)}
+                      style={{ flex: 1, backgroundColor: colors.bgCardBorder, paddingVertical: Spacing.sm, borderRadius: Radius.md, alignItems: 'center', borderWidth: 1, borderColor: colors.bgCardBorder }}>
+                      <Text style={{ fontSize: Typography.xs, color: colors.accentBlue, fontWeight: Typography.bold }}>+{ml}</Text>
+                      <Text style={{ fontSize: Typography.xs, color: colors.textMuted }}>ml</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    setCustomWaterText('');
+                    setCustomWaterVisible(true);
+                  }}
+                  style={{ marginTop: Spacing.sm, borderWidth: 1, borderColor: colors.accentBlue + '40', backgroundColor: colors.accentBlue + '08', paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center' }}>
+                  <Text style={{ fontSize: Typography.sm, color: colors.accentBlue, fontWeight: Typography.semiBold }}>+ Custom amount</Text>
+                </TouchableOpacity>
+              </GlassCardView>
+
+              <SectionHeader title="Weekly Water Trend" subtitle="Monitor your water intake over the past 7 days" />
+              <GlassCardView style={{ padding: Spacing.base, marginBottom: Spacing.xl }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl }}>
+                  <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: colors.textPrimary }}>Water intake <Text style={{ color: colors.textSecondary, fontWeight: Typography.regular }}>— past 7 days</Text></Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 120, marginBottom: Spacing.sm, paddingHorizontal: Spacing.xs }}>
+                  {weeklyWaterTrend.map((day, idx) => (
+                    <View key={idx} style={{ alignItems: 'center', width: '12%', height: '100%', justifyContent: 'flex-end' }}>
+                      <View style={{ width: '100%', height: `${waterGoalMl > 0 ? Math.min((day.val / waterGoalMl) * 100, 100) : (day.val / 3000) * 100}%`, backgroundColor: day.today ? colors.accentBlue : colors.blue + '80', borderRadius: Radius.sm, minHeight: day.val > 0 ? 20 : 0 }} />
+                      <Text style={{ fontSize: Typography.sm, color: day.today ? colors.accentBlue : colors.textSecondary, marginTop: Spacing.sm, fontWeight: day.today ? Typography.bold : Typography.regular }}>{day.day}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={{ height: 1, backgroundColor: colors.bgCardBorder, marginVertical: Spacing.md }} />
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: Typography.sm, color: colors.textSecondary }}>Avg this week: <Text style={{ color: colors.textPrimary, fontWeight: Typography.bold }}>{weeklyWaterAvg.toLocaleString()} ml</Text></Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.blue + '20', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: colors.blue + '50' }}>
+                    <Text style={{ fontSize: Typography.xs, color: colors.blue, fontWeight: Typography.bold }}>✓ {weeklyWaterAvg >= waterGoalMl ? 'Goal met' : `${waterGoalMl - weeklyWaterAvg} ml left`}</Text>
+                  </View>
+                </View>
+              </GlassCardView>
+            </>
+          )}
+
+          <View style={{ height: 100 }} />
         </Animated.View>
       </ScrollView>
 

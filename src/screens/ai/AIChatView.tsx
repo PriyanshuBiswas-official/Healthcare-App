@@ -59,7 +59,6 @@ const QUICK_PROMPTS = [
   { icon: '💪', label: 'Suggest a workout' },
   { icon: '🌙', label: 'Sleep optimization tips' },
   { icon: '💊', label: 'Supplement advice' },
-  { icon: '🩺', label: 'Check my vitals trend' },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────

@@ -11,7 +11,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ShieldCheck,
-  Heart,
   Activity as ActivityIcon,
   Droplets,
   Scale,
@@ -213,36 +212,6 @@ export default function PartnerHealthReportScreen({
       paddingBottom: Spacing.md,
       gap: Spacing.md,
     },
-    vitalCard: {
-      padding: Spacing.md,
-      width: 130,
-      marginRight: Spacing.sm,
-    },
-    vitalLabelRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      marginBottom: Spacing.sm,
-    },
-    vitalLabel: {
-      fontSize: Typography.xs,
-      color: t.colors.textMuted,
-      fontWeight: Typography.bold,
-    },
-    vitalValue: {
-      fontSize: Typography.base,
-      color: t.colors.textPrimary,
-      fontWeight: Typography.bold,
-    },
-    vitalUnit: {
-      fontSize: Typography.xs - 1,
-      color: t.colors.textMuted,
-    },
-    vitalBP: {
-      fontSize: Typography.xs - 2,
-      color: t.colors.textSecondary,
-      marginTop: 2,
-    },
     emptyMetricCard: {
       padding: Spacing.base,
       alignItems: 'center',
@@ -429,38 +398,6 @@ export default function PartnerHealthReportScreen({
                 caloriesTarget={2000}
               />
             </GlassCardView>
-          </View>
-        )}
-
-        {/* VITALS SECTION */}
-        {permissions.vitals && (
-          <View style={styles.section}>
-            <SectionHeader title="Vitals & Health Logs" />
-            {report.vitals && report.vitals.length > 0 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
-                {report.vitals.map((v, i) => (
-                  <GlassCardView key={i} style={styles.vitalCard}>
-                    <View style={styles.vitalLabelRow}>
-                      <Heart size={14} color={colors.pink} />
-                      <Text style={styles.vitalLabel}>Heart Rate</Text>
-                    </View>
-                    <Text style={styles.vitalValue}>
-                      {v.heart_rate || '--'} <Text style={styles.vitalUnit}>bpm</Text>
-                    </Text>
-                    {v.blood_pressure_sys && (
-                      <Text style={styles.vitalBP}>
-                        BP: {v.blood_pressure_sys}/{v.blood_pressure_dia}
-                      </Text>
-                    )}
-                  </GlassCardView>
-                ))}
-              </ScrollView>
-            ) : (
-              <GlassCardView style={styles.emptyMetricCard}>
-                <Heart size={20} color={colors.textMuted} />
-                <Text style={styles.emptyMetricText}>No recent vitals logged</Text>
-              </GlassCardView>
-            )}
           </View>
         )}
 

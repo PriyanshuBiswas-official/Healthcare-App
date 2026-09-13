@@ -22,7 +22,6 @@ import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { GlassCardView, SectionHeader, ProfileAvatarButton, NotificationIconButton, ProgressBar, LoadingSpinner, PremiumBadge } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useAuth } from '../../providers/AuthProvider';
-import { usePreferences } from '../../providers/PreferencesContext';
 import { useNotifications } from '../../providers/NotificationContext';
 import { useAppointments } from '../../providers/AppointmentContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,7 +31,7 @@ import { launchCamera } from 'react-native-image-picker';
 import Voice from '@dev-amirzubair/react-native-voice';
 import { Search, Mic, Camera, Check, TriangleAlert } from 'lucide-react-native';
 import { TabName } from '../../navigation/TabBar';
-import { SleepTrackerSection, VitalsDashboardSection } from '../health/HealthCommonSections';
+import { SleepTrackerSection } from '../health/HealthCommonSections';
 import { getSleepLogs, getWeightLogs, saveWeightLog, getLatestCycle, getMoodLogs, getSymptomsLogs, getPeriodLogs } from '../../services/healthService';
 import { getMealsForDate, getWaterForDate, getCalorieGoal, logMeal, logWater, getWaterChallenge, getWeeklyTrend } from '../../services/dietService';
 import { getTodaySummary, getActivityGoal, getWeeklyStats } from '../../services/activityService';
@@ -79,7 +78,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
   const { theme } = useTheme();
   const { onScroll } = useScrollVisibility();
   const { user, session, profileCompletion, gender } = useAuth();
-  const { hideVitals } = usePreferences();
   const { unreadCount } = useNotifications();
   const insets = useSafeAreaInsets();
 
@@ -1950,9 +1948,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
           </View>
           {sparklineElement}
         </GlassCardView>
-
-        {/* SECTION: TODAY'S VITALS */}
-        {!hideVitals && <VitalsDashboardSection />}
 
         {/* SECTION: SLEEP TRACKER */}
         <SleepTrackerSection sleepLogs={sleepLogs} />

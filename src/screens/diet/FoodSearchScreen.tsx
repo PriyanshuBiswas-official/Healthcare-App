@@ -16,7 +16,7 @@ import { Search, Plus, X, Mic, Barcode, Camera, ChevronDown } from 'lucide-react
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BackButton } from '../../components/SharedComponents';
+import { BackButton, PremiumBadge } from '../../components/SharedComponents';
 import { useAuth } from '../../providers/AuthProvider';
 import * as dietService from '../../services/dietService';
 import type { MealType, AddedFood, RecentMeal, FoodSearchResult, FoodNutrition } from '../../types/diet';
@@ -347,18 +347,6 @@ export default function FoodSearchScreen({ navigation, route }: Props) {
       color: t.colors.textMuted,
       marginTop: 2,
     },
-    newBadge: {
-      backgroundColor: t.colors.accentBlue,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: Radius.full,
-      marginLeft: 4,
-    },
-    newBadgeText: {
-      fontSize: 8,
-      fontWeight: Typography.bold,
-      color: t.colors.bg,
-    },
     sectionHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -599,7 +587,7 @@ export default function FoodSearchScreen({ navigation, route }: Props) {
       <View style={s.placeholderButtons}>
         <TouchableOpacity
           style={s.placeholderBtn}
-          onPress={() => Alert.alert('Coming Soon', 'Voice logging will be available soon!')}
+          onPress={() => navigation.navigate('Profile', { initialSection: 'subscriptions' })}
           activeOpacity={0.7}>
           <View style={[s.placeholderBtnIcon, { backgroundColor: 'rgba(107,138,255,0.12)' }]}>
             <Mic size={20} color={colors.accentBlue} />
@@ -607,34 +595,38 @@ export default function FoodSearchScreen({ navigation, route }: Props) {
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text style={s.placeholderBtnLabel}>Voice Log</Text>
-              <View style={s.newBadge}>
-                <Text style={s.newBadgeText}>NEW</Text>
-              </View>
+              <View style={{ marginLeft: 'auto' }}><PremiumBadge compact /></View>
             </View>
             <Text style={s.placeholderBtnDesc}>Speak your meal</Text>
           </View>
         </TouchableOpacity>
         <TouchableOpacity
           style={s.placeholderBtn}
-          onPress={() => Alert.alert('Coming Soon', 'Barcode scanning will be available soon!')}
+          onPress={() => navigation.navigate('Profile', { initialSection: 'subscriptions' })}
           activeOpacity={0.7}>
           <View style={[s.placeholderBtnIcon, { backgroundColor: 'rgba(251,191,36,0.12)' }]}>
             <Barcode size={20} color="#FBB724" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={s.placeholderBtnLabel}>Scan Barcode</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={s.placeholderBtnLabel}>Scan Barcode</Text>
+              <View style={{ marginLeft: 'auto' }}><PremiumBadge compact /></View>
+            </View>
             <Text style={s.placeholderBtnDesc}>Scan packaged food</Text>
           </View>
         </TouchableOpacity>
         <TouchableOpacity
           style={s.placeholderBtn}
-          onPress={() => Alert.alert('Coming Soon', 'AI meal scanning with photo is under development!')}
+          onPress={() => navigation.navigate('Profile', { initialSection: 'subscriptions' })}
           activeOpacity={0.7}>
           <View style={[s.placeholderBtnIcon, { backgroundColor: 'rgba(167,139,250,0.12)' }]}>
             <Camera size={20} color="#A78BFA" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={s.placeholderBtnLabel}>Track with Photo</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={s.placeholderBtnLabel}>Track with Photo</Text>
+              <View style={{ marginLeft: 'auto' }}><PremiumBadge compact /></View>
+            </View>
             <Text style={s.placeholderBtnDesc}>AI calorie detection</Text>
           </View>
         </TouchableOpacity>

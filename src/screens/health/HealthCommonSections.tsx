@@ -14,7 +14,7 @@ import { GlassCardView, SectionHeader, ProgressBar } from '../../components/Shar
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Shared modal styles — used by SleepLogModal, JournalModal, VitalsLogModal
+// Shared modal styles — used by SleepLogModal, JournalModal
 // ═══════════════════════════════════════════════════════════════════════════════
 const useModalStyles = () => useStyles((theme) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: theme.colors.overlayHeavy, justifyContent: 'flex-end' },
@@ -551,100 +551,6 @@ export const MentalHealthSection: React.FC<{ moodLogs?: MoodLog[] }> = ({ moodLo
           })}
         </View>
       </GlassCardView>
-    </>
-  );
-};
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// VITALS DASHBOARD SECTION
-// ═══════════════════════════════════════════════════════════════════════════════
-const VitalsLogModal: React.FC<{ visible: boolean; onClose: () => void }> = ({ visible, onClose }) => {
-  const { theme } = useTheme();
-  const modalS = useModalStyles();
-  return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View style={modalS.overlay}>
-        <View style={modalS.sheet}>
-          <View style={modalS.handle} />
-          <Text style={modalS.title}>Log Vitals</Text>
-          <Text style={modalS.fieldLabel}>Heart Rate (BPM)</Text>
-          <TextInput style={modalS.input} keyboardType="numeric" defaultValue="72" placeholderTextColor={theme.colors.textMuted} />
-          <Text style={modalS.fieldLabel}>Systolic (mmHg)</Text>
-          <TextInput style={modalS.input} keyboardType="numeric" defaultValue="120" placeholderTextColor={theme.colors.textMuted} />
-          <Text style={modalS.fieldLabel}>Diastolic (mmHg)</Text>
-          <TextInput style={modalS.input} keyboardType="numeric" defaultValue="80" placeholderTextColor={theme.colors.textMuted} />
-          <Text style={modalS.fieldLabel}>SpO₂ (%)</Text>
-          <TextInput style={modalS.input} keyboardType="numeric" defaultValue="98" placeholderTextColor={theme.colors.textMuted} />
-          <View style={modalS.actions}>
-            <TouchableOpacity style={modalS.cancelBtn} onPress={onClose}><Text style={modalS.cancelText}>Cancel</Text></TouchableOpacity>
-            <TouchableOpacity style={[modalS.saveBtn, { backgroundColor: theme.colors.teal }]} onPress={onClose}><Text style={modalS.saveText}>Save</Text></TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-};
-
-const HR_POINTS = [68, 72, 70, 75, 72, 69, 74, 72, 71, 73, 72];
-const HR_MIN = 60;
-const HR_MAX = 85;
-
-export const VitalsDashboardSection: React.FC = () => {
-  const { theme } = useTheme();
-  const [showLog, setShowLog] = useState(false);
-
-  const vit = useStyles((t) => StyleSheet.create({
-    hrCard: { padding: Spacing.base, marginBottom: Spacing.md },
-    hrHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
-    hrIcon: { width: 42, height: 42, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
-    hrLabel: { fontSize: 11, color: t.colors.textSecondary, fontWeight: Typography.bold, letterSpacing: 1 },
-    hrValue: { fontSize: Typography.xxl, fontWeight: Typography.extraBold },
-    hrUnit: { fontSize: Typography.sm, fontWeight: Typography.medium },
-    statusBadge: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: Radius.full, borderWidth: 1 },
-    statusText: { fontSize: Typography.xs, fontWeight: Typography.bold },
-    sparkline: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: Spacing.xs },
-    row: { flexDirection: 'row', marginBottom: Spacing.md },
-    logRow: { alignItems: 'center' },
-  }));
-
-  return (
-    <>
-      <VitalsLogModal visible={showLog} onClose={() => setShowLog(false)} />
-      <SectionHeader title="Vitals" subtitle="Latest readings" />
-      <GlassCardView style={vit.hrCard} accentColor={theme.colors.pink}>
-        <View style={vit.hrHeader}>
-          <View style={[vit.hrIcon, { backgroundColor: theme.colors.pink + '22' }]}>
-            <Text style={{ fontSize: Typography.lg }}>❤️</Text>
-          </View>
-          <View style={{ flex: 1, marginLeft: Spacing.md }}>
-            <Text style={vit.hrLabel}>HEART RATE</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <Text style={[vit.hrValue, { color: theme.colors.pink }]}>72</Text>
-              <Text style={[vit.hrUnit, { color: theme.colors.pink + 'AA' }]}> BPM</Text>
-            </View>
-          </View>
-          <View style={[vit.statusBadge, { backgroundColor: theme.colors.success + '22', borderColor: theme.colors.success + '55' }]}>
-            <Text style={[vit.statusText, { color: theme.colors.success }]}>Normal</Text>
-          </View>
-        </View>
-        <View style={vit.sparkline}>
-          {HR_POINTS.map((v, i) => {
-            const h = ((v - HR_MIN) / (HR_MAX - HR_MIN)) * 30 + 5;
-            const isLast = i === HR_POINTS.length - 1;
-            return (
-              <View key={i} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: 40 }}>
-                <View style={{ width: 3, height: h, backgroundColor: isLast ? theme.colors.pink : theme.colors.pink + '60', borderRadius: 2 }} />
-              </View>
-            );
-          })}
-        </View>
-      </GlassCardView>
-      <View style={vit.row}>
-        <MiniMetricCard icon="🩺" label="Blood Pressure" value="120/80" unit="mmHg" color={theme.colors.teal} subtitle="Normal" />
-        <View style={{ width: Spacing.sm }} />
-        <MiniMetricCard icon="🫁" label="SpO₂" value="98" unit="%" color={theme.colors.amber} subtitle="Excellent" />
-      </View>
-      <View style={{ height: Spacing.md }} />
     </>
   );
 };

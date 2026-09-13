@@ -139,7 +139,6 @@ export interface HealthScore {
   hydration_score: number | null;
   MoodStress_score: number | null;
   challenge_score: number | null;
-  vitals_score: number | null;
   total_score: number | null;
   date: string;
   created_at: string;
