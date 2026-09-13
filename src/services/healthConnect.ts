@@ -92,10 +92,12 @@ export async function getTodayHealthData(): Promise<HCTodayData> {
   }).catch(() => ({ records: [] }));
 
   const steps = stepsRaw.COUNT_TOTAL ?? stepsRaw.count ?? 0;
-  const activeCalories = calRaw.ACTIVE_CALORIES_TOTAL?.inKilocalories ?? Math.round((calRaw.inCalories ?? 0) / 1000);
+  const hcCalories = calRaw.ACTIVE_CALORIES_TOTAL?.inKilocalories || 0;
+  const activeCalories = hcCalories > 0 ? hcCalories : (steps > 0 ? Math.round(steps * 0.04) : 0);
   const distance = distRaw.DISTANCE?.inMeters != null
     ? Math.round(distRaw.DISTANCE.inMeters / 1000 * 100) / 100
     : Math.round((distRaw.inMeters ?? 0) / 1000 * 100) / 100;
+  const exerciseMinutes = steps > 0 ? Math.round(steps / 100) : 0;
 
   let sleepMinutes = 0;
   if (sleepRecs.records && sleepRecs.records.length > 0) {
@@ -105,7 +107,7 @@ export async function getTodayHealthData(): Promise<HCTodayData> {
     sleepMinutes = Math.round((new Date(latest.endTime).getTime() - new Date(latest.startTime).getTime()) / 60000);
   }
 
-  return { steps, activeCalories, distance, exerciseMinutes: 0, sleepMinutes };
+  return { steps, activeCalories, distance, exerciseMinutes, sleepMinutes };
 }
 
 export async function logExerciseToHC(params: {

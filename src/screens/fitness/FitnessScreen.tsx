@@ -108,6 +108,7 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
       steps: hcData.steps || summary.steps,
       calories_burned: hcData.activeCalories || summary.calories_burned,
       distance: hcData.distance || summary.distance,
+      exercise_minutes: hcData.exerciseMinutes || summary.exercise_minutes,
     };
   }, [summary, hcData, hcStatus]);
   const [selectedPlanDayIndex, setSelectedPlanDayIndex] = useState<number | null>(null);

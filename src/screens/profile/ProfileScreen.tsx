@@ -419,8 +419,10 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, onNaviga
   }));
 
   const CONNECTED_DEVICES: MenuItem[] = useMemo(() => {
-    const sub = hcStatus === 'available'
-      ? (hcData?.steps ? `Connected · ${hcData.steps} steps today` : 'Connected')
+    const sub = hcStatus === 'available' && hcData
+      ? (hcData.steps ? `Connected · ${hcData.steps} steps today` : 'Connected')
+      : hcStatus === 'available'
+      ? 'Tap to connect'
       : hcStatus === 'needs-update'
       ? 'Health Connect app needs update'
       : hcStatus === 'unavailable'
@@ -429,7 +431,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, onNaviga
     return [
       { icon: <Smartphone size={20} color={theme.colors.pink} />, label: 'Health Connect', sub, color: theme.colors.pink },
     ];
-  }, [theme.colors, hcStatus, hcData?.steps]);
+  }, [theme.colors, hcStatus, hcData]);
 
   const REMINDER_ITEMS: MenuItem[] = useMemo(() => [
     { icon: <Pill size={20} color={theme.colors.amber} />, label: 'Medications', sub: 'Manage medication reminders', color: theme.colors.amber },
@@ -769,7 +771,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, onNaviga
               ))}
             </GlassCardView>
 
-            <SectionHeader title="Connected Devices" subtitle="Sync wearables & health data" />
+            <SectionHeader title="Health Sync" subtitle="Sync health data from Health Connect" />
             <GlassCardView style={styles.menuCard}>
               {CONNECTED_DEVICES.map((item, i) => (
                 <View key={item.label}>

@@ -1,6 +1,6 @@
 {
   "name": "Cureto",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "private": true,
   "scripts": {
     "android": "node -e \"require('fs').copyFileSync('.env.development', '.env')\" && react-native run-android --appIdSuffix=debug",
