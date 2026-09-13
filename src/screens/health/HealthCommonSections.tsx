@@ -628,56 +628,6 @@ export const AIHealthInsightsSection: React.FC<{ mode: 'female' | 'male' }> = ({
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PREVENTIVE CARE SECTION (male-specific)
-// ═══════════════════════════════════════════════════════════════════════════════
-const PREVENTIVE_ITEMS = [
-  { icon: '🩺', label: 'Blood Pressure Check', detail: 'Last: Jan 10 · Next rec. Jan 25', status: 'Due Soon', statusColorKey: 'amber' as const },
-  { icon: '🔬', label: 'Full Blood Panel', detail: 'Last: Jun 10 · Next rec. Dec 10', status: 'Up to Date', statusColorKey: 'success' as const },
-  { icon: '👁️', label: 'Eye Examination', detail: 'Last: Jan 2025 · Rec. every year', status: 'Due', statusColorKey: 'danger' as const },
-  { icon: '🦷', label: 'Dental Check', detail: 'Last: Mar 5 · Next rec. Sep 5', status: 'Up to Date', statusColorKey: 'success' as const },
-  { icon: '🏥', label: 'STI / Sexual Health Panel', detail: 'Rec. annually if sexually active', status: 'Overdue', statusColorKey: 'danger' as const },
-];
-
-export const PreventiveCareSection: React.FC = () => {
-  const { theme } = useTheme();
-
-  const prev = useStyles((t) => StyleSheet.create({
-    card: { marginBottom: Spacing.xl },
-    row: { flexDirection: 'row', alignItems: 'center', padding: Spacing.base },
-    iconWrap: { width: 40, height: 40, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
-    label: { fontSize: Typography.sm, fontWeight: Typography.semiBold, color: t.colors.textPrimary },
-    detail: { fontSize: Typography.xs, color: t.colors.textMuted, marginTop: 2 },
-    badge: { paddingHorizontal: Spacing.sm, paddingVertical: 4, borderRadius: Radius.full, borderWidth: 1 },
-    badgeText: { fontSize: 11, fontWeight: Typography.bold },
-  }));
-
-  return (
-    <>
-      <SectionHeader title="Preventive Care" subtitle="Recommended screenings" />
-      <GlassCardView style={prev.card}>
-        {PREVENTIVE_ITEMS.map((item, i) => {
-          const itemColor = theme.colors[item.statusColorKey];
-          return (
-            <View key={i} style={[prev.row, i < PREVENTIVE_ITEMS.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.colors.divider }]}>
-              <View style={[prev.iconWrap, { backgroundColor: itemColor + '18' }]}>
-                <Text style={{ fontSize: Typography.md }}>{item.icon}</Text>
-              </View>
-              <View style={{ flex: 1, marginLeft: Spacing.md }}>
-                <Text style={prev.label}>{item.label}</Text>
-                <Text style={prev.detail}>{item.detail}</Text>
-              </View>
-              <TouchableOpacity style={[prev.badge, { backgroundColor: itemColor + '18', borderColor: itemColor + '55' }]}>
-                <Text style={[prev.badgeText, { color: itemColor }]}>{item.status}</Text>
-              </TouchableOpacity>
-            </View>
-          );
-        })}
-      </GlassCardView>
-    </>
-  );
-};
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // Shared Modal Styles (kept for backward compat — internal components use useModalStyles)
 // ═══════════════════════════════════════════════════════════════════════════════
 // modalS is no longer exported as a static StyleSheet.

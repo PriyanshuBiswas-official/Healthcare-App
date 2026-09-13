@@ -32,7 +32,6 @@ import {
   QuickActionButton,
   SleepTrackerSection,
   MentalHealthSection,
-  AIHealthInsightsSection,
 } from './HealthCommonSections';
 import { CyclePhaseVisualizer } from '../../components/CyclePhaseVisualizer';
 import { Droplets, Flower2, Sparkles, Moon, ChevronRight, Check, Activity, Scale, Pencil } from 'lucide-react-native';
@@ -629,7 +628,6 @@ export default function HealthScreenFemale({
     fertBoxSub: { fontSize: Typography.xs, color: t.colors.textMuted, textAlign: 'center' },
     infoBox: { backgroundColor: t.colors.amber + '10', borderRadius: Radius.md, padding: Spacing.md, marginTop: Spacing.md, borderWidth: 1, borderColor: t.colors.amber + '20' },
     infoText: { fontSize: Typography.xs, color: t.colors.textSecondary, lineHeight: 18 },
-    aiWrap: { marginTop: Spacing.xl },
     bottomSpace: { height: 100 },
 
     // Cycle Setup Banner
@@ -1314,9 +1312,7 @@ export default function HealthScreenFemale({
               />
             </GlassCardView>
 
-            <View style={s.aiWrap}>
-              <AIHealthInsightsSection mode="female" />
-            </View>
+
           </>
         )}
 

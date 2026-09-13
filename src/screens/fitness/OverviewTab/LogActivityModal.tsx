@@ -9,8 +9,10 @@ interface LogActivityModalProps {
   onClose: () => void;
   onSaved: () => void;
   session: any;
-  prefilledData?: { distance?: string; activeMin?: string; otherActivity?: string; otherCalories?: string } | null;
+  prefilledData?: { steps?: string; distance?: string; activeMin?: string; otherActivity?: string; otherCalories?: string } | null;
 }
+
+const STEPS_PER_KM = 1312;
 
 export function LogActivityModal({ visible, onClose, onSaved, session, prefilledData }: LogActivityModalProps) {
   const styles = useStyles((theme: any) => ({
@@ -28,6 +30,7 @@ export function LogActivityModal({ visible, onClose, onSaved, session, prefilled
       backgroundColor: theme.colors.bgCard, borderWidth: 1, borderColor: theme.colors.bgCardBorder,
       borderRadius: Radius.md, padding: Spacing.md, color: theme.colors.textPrimary, fontSize: Typography.base,
     },
+    hcHint: { fontSize: Typography.xs, color: Colors.teal, marginTop: 4 },
     modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.md, marginTop: Spacing.xl },
     modalCancelBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, borderWidth: 1, borderColor: theme.colors.bgCardBorder },
     modalCancelText: { color: theme.colors.textSecondary, fontSize: Typography.sm, fontWeight: Typography.semiBold },
@@ -35,36 +38,85 @@ export function LogActivityModal({ visible, onClose, onSaved, session, prefilled
     modalSaveText: { color: theme.colors.bg, fontSize: Typography.sm, fontWeight: Typography.bold },
   }));
 
+  const [logSteps, setLogSteps] = useState(prefilledData?.steps || '');
   const [logDistance, setLogDistance] = useState(prefilledData?.distance || '');
   const [logActiveMin, setLogActiveMin] = useState(prefilledData?.activeMin || '');
   const [logOtherActivity, setLogOtherActivity] = useState(prefilledData?.otherActivity || '');
   const [logOtherCalories, setLogOtherCalories] = useState(prefilledData?.otherCalories || '');
   const [logSaving, setLogSaving] = useState(false);
 
-  const estimatedSteps = logDistance ? Math.round((parseFloat(logDistance) || 0) * 1312) : 0;
+  const [stepsTouched, setStepsTouched] = useState(!!prefilledData?.steps);
+  const [distanceTouched, setDistanceTouched] = useState(!!prefilledData?.distance);
+
+  React.useEffect(() => {
+    if (prefilledData) {
+      setLogSteps(prefilledData.steps || '');
+      setLogDistance(prefilledData.distance || '');
+      setLogActiveMin(prefilledData.activeMin || '');
+      setLogOtherActivity(prefilledData.otherActivity || '');
+      setLogOtherCalories(prefilledData.otherCalories || '');
+      setStepsTouched(!!prefilledData.steps);
+      setDistanceTouched(!!prefilledData.distance);
+    } else {
+      setLogSteps('');
+      setLogDistance('');
+      setLogActiveMin('');
+      setLogOtherActivity('');
+      setLogOtherCalories('');
+      setStepsTouched(false);
+      setDistanceTouched(false);
+    }
+  }, [prefilledData]);
+
+  const handleStepsChange = (val: string) => {
+    setLogSteps(val);
+    setStepsTouched(true);
+    if (!distanceTouched && val) {
+      const km = (parseInt(val, 10) || 0) / STEPS_PER_KM;
+      setLogDistance(km > 0 ? (Math.round(km * 100) / 100).toString() : '');
+    } else if (!val) {
+      setLogDistance('');
+    }
+  };
+
+  const handleDistanceChange = (val: string) => {
+    setLogDistance(val);
+    setDistanceTouched(true);
+    if (!stepsTouched && val) {
+      const steps = Math.round((parseFloat(val) || 0) * STEPS_PER_KM);
+      setLogSteps(steps > 0 ? String(steps) : '');
+    } else if (!val) {
+      setLogSteps('');
+    }
+  };
 
   const handleLogActivity = async () => {
     if (!session?.access_token) return;
     const dist = parseFloat(logDistance) || 0;
+    const stepsVal = parseInt(logSteps, 10) || 0;
     const actMin = parseInt(logActiveMin, 10) || 0;
     const otherCal = parseInt(logOtherCalories, 10) || 0;
-    if (dist === 0 && actMin === 0 && !logOtherActivity.trim() && otherCal === 0) {
-      Alert.alert('Required', 'Please enter distance, active minutes, or activity details.');
+    if (stepsVal === 0 && dist === 0 && actMin === 0 && !logOtherActivity.trim() && otherCal === 0) {
+      Alert.alert('Required', 'Please enter steps, distance, active minutes, or activity details.');
       return;
     }
     setLogSaving(true);
     try {
       await activityService.logActivity(session.access_token, {
+        steps: stepsVal || undefined,
         distance: dist || undefined,
         active_min: actMin || undefined,
         calories_burnt: otherCal || undefined,
         other_activities: logOtherActivity.trim() || undefined,
         other_act_calorie_burn: otherCal || undefined,
       });
+      setLogSteps('');
       setLogDistance('');
       setLogActiveMin('');
       setLogOtherActivity('');
       setLogOtherCalories('');
+      setStepsTouched(false);
+      setDistanceTouched(false);
       onClose();
       onSaved();
     } catch (e: any) {
@@ -81,19 +133,33 @@ export function LogActivityModal({ visible, onClose, onSaved, session, prefilled
           <View style={styles.modalHandle} />
           <Text style={styles.modalTitle}>Log Activity</Text>
 
+          <Text style={styles.modalLabel}>Steps</Text>
+          <TextInput
+            style={styles.modalInput}
+            value={logSteps}
+            onChangeText={handleStepsChange}
+            keyboardType="number-pad"
+            placeholder="e.g. 5000"
+            placeholderTextColor={Colors.textMuted}
+          />
+          {logSteps && parseInt(logSteps, 10) > 0 && (
+            <Text style={styles.hcHint}>
+              ≈ {(parseInt(logSteps, 10) / STEPS_PER_KM).toFixed(2)} km
+            </Text>
+          )}
+
           <Text style={styles.modalLabel}>Distance (km)</Text>
           <TextInput
             style={styles.modalInput}
             value={logDistance}
-            onChangeText={setLogDistance}
+            onChangeText={handleDistanceChange}
             keyboardType="decimal-pad"
             placeholder="e.g. 3.5"
             placeholderTextColor={Colors.textMuted}
-            autoFocus
           />
-          {estimatedSteps > 0 && (
-            <Text style={{ fontSize: Typography.xs, color: Colors.teal, marginTop: 4 }}>
-              ≈ {estimatedSteps.toLocaleString()} steps estimated
+          {logDistance && parseFloat(logDistance) > 0 && (
+            <Text style={styles.hcHint}>
+              ≈ {Math.round(parseFloat(logDistance) * STEPS_PER_KM).toLocaleString()} steps estimated
             </Text>
           )}
 

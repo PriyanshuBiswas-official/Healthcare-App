@@ -1,6 +1,6 @@
 {
   "name": "Cureto",
-  "version": "1.3.4",
+  "version": "1.4.5",
   "private": true,
   "scripts": {
     "android": "node -e \"require('fs').copyFileSync('.env.development', '.env')\" && react-native run-android --appIdSuffix=debug",
@@ -31,6 +31,7 @@
     "react-native-calendars": "^1.1314.0",
     "react-native-config": "^1.7.2",
     "react-native-gifted-charts": "^1.4.78",
+    "react-native-health-connect": "^4.1.3",
     "react-native-image-picker": "^8.2.1",
     "react-native-linear-gradient": "^2.8.3",
     "react-native-mmkv": "^4.3.2",

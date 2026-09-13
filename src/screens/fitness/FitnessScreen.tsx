@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNotifications } from '../../providers/NotificationContext';
 import { TabName } from '../../navigation/TabBar';
 import { useAuth } from '../../providers/AuthProvider';
+import { useHealthConnect } from '../../providers/HealthConnectProvider';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 
 let _workoutLogged = false;
@@ -74,6 +75,7 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
   const { onScroll } = useScrollVisibility();
   const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
+  const { todayData: hcData, status: hcStatus, syncToday: syncHCToday } = useHealthConnect();
   const { unreadCount } = useNotifications();
   const [activeSegment, setActiveSegment] = useState<Segment>('Overview');
   const [loading, setLoading] = useState(true);
@@ -96,6 +98,19 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const isTabActive = useIsFocused();
+
+  // Merge backend summary with Health Connect data (HC takes precedence for real-time metrics)
+  const mergedSummary = useMemo(() => {
+    if (!summary) return null;
+    if (hcStatus !== 'available' || !hcData) return summary;
+    return {
+      ...summary,
+      steps: hcData.steps || summary.steps,
+      calories_burned: hcData.activeCalories || summary.calories_burned,
+      distance: hcData.distance || summary.distance,
+      exercise_minutes: hcData.exerciseMinutes || summary.exercise_minutes,
+    };
+  }, [summary, hcData, hcStatus]);
   const [selectedPlanDayIndex, setSelectedPlanDayIndex] = useState<number | null>(null);
   const [showWorkoutPreview, setShowWorkoutPreview] = useState(false);
 
@@ -123,7 +138,7 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
   const [editExReps, setEditExReps] = useState('10');
 
   // Log activity prefilled data
-  const [logActivityPrefill, setLogActivityPrefill] = useState<{ distance?: string; activeMin?: string; otherActivity?: string; otherCalories?: string } | null>(null);
+  const [logActivityPrefill, setLogActivityPrefill] = useState<{ steps?: string; distance?: string; activeMin?: string; otherActivity?: string; otherCalories?: string } | null>(null);
 
   const allPlanExercises = useMemo(() => {
     const map = new Map<number, string>();
@@ -197,12 +212,15 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
 
   useFocusEffect(
     useCallback(() => {
+      // Always sync HC data when Activity tab is focused
+      if (hcStatus === 'available') syncHCToday();
+      // Re-fetch backend data on workout/exercise events
       if (_workoutLogged || _exerciseAdded || customPlanVisible) {
         _workoutLogged = false;
         _exerciseAdded = false;
         fetchData();
       }
-    }, [fetchData, customPlanVisible])
+    }, [fetchData, customPlanVisible, hcStatus, syncHCToday])
   );
 
   useEffect(() => {
@@ -247,7 +265,7 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
   }, [isTabActive, fadeAnim, slideAnim]);
 
   const hasNoPlan = !loading && !planName;
-  const hasNoData = !loading && !summary?.steps && !summary?.calories_burned && exercises.length === 0 && weeklyStats?.sessions === 0;
+  const hasNoData = !loading && !mergedSummary?.steps && !mergedSummary?.calories_burned && exercises.length === 0 && weeklyStats?.sessions === 0;
   const showSetupBanner = hasNoPlan && hasNoData;
 
   const openEditExercise = (ex: TodayExercise) => {
@@ -262,12 +280,22 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
     if (session?.access_token) {
       try {
         const existing = await activityService.getTodayActivityLog(session.access_token, todayStr);
-        if (existing) {
+        const hasExistingData = existing && (existing.distance || existing.steps || existing.active_min || existing.other_activities);
+        if (hasExistingData) {
           setLogActivityPrefill({
+            steps: existing.steps ? String(existing.steps) : '',
             distance: existing.distance ? String(existing.distance) : '',
             activeMin: existing.active_min ? String(existing.active_min) : '',
             otherActivity: existing.other_activities || '',
             otherCalories: existing.other_act_calorie_burn ? String(existing.other_act_calorie_burn) : '',
+          });
+        } else if (hcStatus === 'available' && hcData && (hcData.steps > 0 || hcData.distance > 0)) {
+          setLogActivityPrefill({
+            steps: hcData.steps > 0 ? String(hcData.steps) : '',
+            distance: hcData.distance > 0 ? String(hcData.distance) : '',
+            activeMin: '',
+            otherActivity: '',
+            otherCalories: '',
           });
         } else {
           setLogActivityPrefill(null);
@@ -462,7 +490,7 @@ export default function FitnessScreen({ route, onProfilePress, onNotificationsPr
           <LoadingSpinner />
         ) : (
           <>
-            {showToday && <DailyProgressCard summary={summary} goal={activityGoal} onLogActivity={handleOpenLogActivity} onEditGoals={() => {
+            {showToday && <DailyProgressCard summary={mergedSummary} goal={activityGoal} onLogActivity={handleOpenLogActivity} onEditGoals={() => {
               setIsEditingGoals(true);
               setGoalSetupVisible(true);
             }} />}

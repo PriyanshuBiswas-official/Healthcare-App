@@ -76,6 +76,9 @@ export function CurrentPlanSection({
     weekCardSub: { fontSize: Typography.xs, color: theme.colors.textSecondary, textAlign: 'center', marginTop: 8, lineHeight: 16 },
     weekCardIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.bgCardBorder, marginVertical: 12 },
     weekCardFooter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: theme.colors.bgCardBorder, alignItems: 'center', justifyContent: 'center' },
+    weekCardEmpty: { paddingVertical: Spacing.lg, paddingHorizontal: Spacing.lg, alignItems: 'center', justifyContent: 'center' },
+    weekCardEmptyTitle: { fontSize: Typography.base, fontWeight: Typography.bold, color: theme.colors.textPrimary, textAlign: 'center' },
+    weekCardEmptySub: { fontSize: Typography.sm, color: theme.colors.textSecondary, textAlign: 'center', marginTop: 6, lineHeight: 18 },
     insightBox: { borderRadius: Radius.md, borderWidth: 1, padding: Spacing.md, marginTop: Spacing.sm },
     insightLabel: { fontSize: Typography.xs, fontWeight: Typography.bold, letterSpacing: Typography.lsWider, marginBottom: 4 },
     insightText: { fontSize: Typography.sm, color: theme.colors.textSecondary, lineHeight: 20 },
@@ -202,36 +205,38 @@ export function CurrentPlanSection({
 
       <SectionHeader title="This Week's Schedule" />
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekRail}>
-        {currentPlanDays.length > 0 ? currentPlanDays.map((day: any, index: number) => {
-          const isTodayDay = day.day_name === dayName;
-          return (
-            <TouchableOpacity
-              key={`${day.day_no}-${day.day_name}`}
-              activeOpacity={0.82}
-              onPress={() => openDay(index)}>
-              <GlassCardView style={styles.weekCard}>
-                <Text style={styles.weekCardDay}>{WEEKDAY_ABBR[(day.day_no - 1) % 7]}</Text>
-                <Text style={styles.weekCardName} numberOfLines={1}>{day.day_name}</Text>
-                <View style={styles.weekCardIcon}>
-                  <Dumbbell size={20} color={Colors.textSecondary} />
-                </View>
-                <Text style={styles.weekCardSub}>
-                  {isTodayDay ? `${exercises.length} today` : day.exercises ? `${day.exercises.length} exercises` : 'Workout day'}
-                </Text>
-                <View style={styles.weekCardFooter}>
-                  <ChevronRight size={12} color={Colors.textSecondary} />
-                </View>
-              </GlassCardView>
-            </TouchableOpacity>
-          );
-        }) : (
-          <GlassCardView style={[styles.weekCard, { width: '100%', justifyContent: 'center' }]}>
-            <Text style={styles.weekCardName}>No plan days yet</Text>
-            <Text style={styles.weekCardSub}>Set up your schedule to populate this row.</Text>
-          </GlassCardView>
-        )}
-      </ScrollView>
+      {currentPlanDays.length > 0 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekRail}>
+          {currentPlanDays.map((day: any, index: number) => {
+            const isTodayDay = day.day_name === dayName;
+            return (
+              <TouchableOpacity
+                key={`${day.day_no}-${day.day_name}`}
+                activeOpacity={0.82}
+                onPress={() => openDay(index)}>
+                <GlassCardView style={styles.weekCard}>
+                  <Text style={styles.weekCardDay}>{WEEKDAY_ABBR[(day.day_no - 1) % 7]}</Text>
+                  <Text style={styles.weekCardName} numberOfLines={1}>{day.day_name}</Text>
+                  <View style={styles.weekCardIcon}>
+                    <Dumbbell size={20} color={Colors.textSecondary} />
+                  </View>
+                  <Text style={styles.weekCardSub}>
+                    {isTodayDay ? `${exercises.length} today` : day.exercises ? `${day.exercises.length} exercises` : 'Workout day'}
+                  </Text>
+                  <View style={styles.weekCardFooter}>
+                    <ChevronRight size={12} color={Colors.textSecondary} />
+                  </View>
+                </GlassCardView>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      ) : (
+        <GlassCardView style={styles.weekCardEmpty}>
+          <Text style={styles.weekCardEmptyTitle}>No plan days yet</Text>
+          <Text style={styles.weekCardEmptySub}>Set up your schedule to populate this row.</Text>
+        </GlassCardView>
+      )}
 
       <View style={[styles.section, { marginTop: Spacing.base }]}>
         <SectionHeader title="Plan Insights" />
