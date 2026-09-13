@@ -84,8 +84,8 @@ android {
         applicationId "com.cureto.ai"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 5
-        versionName "1.3.4"
+        versionCode 6
+        versionName "1.4.4"
         resValue "string", "build_config_package", "com.cureto"
     }
     signingConfigs {

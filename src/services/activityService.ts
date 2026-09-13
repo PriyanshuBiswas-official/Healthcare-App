@@ -215,6 +215,7 @@ export async function saveActivityGoal(token: string, goal: { calorie_burn_goal?
 // ── Activity Log ───────────────────────────────────────────
 
 export interface ActivityLogInput {
+  steps?: number;
   distance?: number;
   active_min?: number;
   calories_burnt?: number;

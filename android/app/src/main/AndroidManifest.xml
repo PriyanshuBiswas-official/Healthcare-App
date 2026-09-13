@@ -13,6 +13,18 @@
     android:maxSdkVersion="33" />
   <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
+  <!-- Health Connect permissions -->
+  <uses-permission android:name="android.permission.health.READ_STEPS"/>
+  <uses-permission android:name="android.permission.health.WRITE_STEPS"/>
+  <uses-permission android:name="android.permission.health.READ_DISTANCE"/>
+  <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED"/>
+  <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED"/>
+  <uses-permission android:name="android.permission.health.WRITE_ACTIVE_CALORIES_BURNED"/>
+  <uses-permission android:name="android.permission.health.READ_EXERCISE"/>
+  <uses-permission android:name="android.permission.health.WRITE_EXERCISE"/>
+  <uses-permission android:name="android.permission.health.READ_SLEEP"/>
+  <uses-permission android:name="android.permission.health.WRITE_SLEEP"/>
+
   <application
     android:name=".MainApplication"
     android:label="@string/app_name"
@@ -33,7 +45,22 @@
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
+      <!-- Health Connect permissions rationale (Android 9-13) -->
+      <intent-filter>
+        <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+      </intent-filter>
     </activity>
+    <!-- Health Connect permission usage (Android 14+) -->
+    <activity-alias
+      android:name="ViewPermissionUsageActivity"
+      android:exported="true"
+      android:targetActivity=".MainActivity"
+      android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+        <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+      </intent-filter>
+    </activity-alias>
     <service
       android:name="app.notifee.core.ForegroundService"
       android:foregroundServiceType="health"

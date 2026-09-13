@@ -18,6 +18,7 @@ import { User, ClipboardList, Pill, TriangleAlert, Phone, Bell, Smartphone, Drop
 import { GlassCardView, SectionHeader, ProgressBar, BackButton, LoadingSpinner } from '../../components/SharedComponents';
 import { useScrollVisibility } from '../../navigation/ScrollVisibilityContext';
 import { useAuth } from '../../providers/AuthProvider';
+import { useHealthConnect } from '../../providers/HealthConnectProvider';
 import { supabase } from '../../lib/supabase';
 import { API_BASE_URL } from '../../config/api';
 import PersonalInfoScreen from './PersonalInfoScreen';
@@ -154,6 +155,7 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, onNaviga
   const insets = useSafeAreaInsets();
   const { user, session, profileCompletion } = useAuth();
   const { systemSync, setSystemSync, themeName, setThemeName } = useTheme();
+  const { status: hcStatus, todayData: hcData, requestPermissions: requestHCPermissions, openSettings: openHCSettings, syncToday: syncHCToday } = useHealthConnect();
 
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [activeSection, setActiveSection] = useState<HealthSection | null>(
@@ -416,9 +418,18 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, onNaviga
     },
   }));
 
-  const CONNECTED_DEVICES: MenuItem[] = useMemo(() => [
-    { icon: <Smartphone size={20} color={theme.colors.pink} />, label: 'Health Connect', sub: 'Steps, sleep, heart rate', color: theme.colors.pink },
-  ], [theme.colors]);
+  const CONNECTED_DEVICES: MenuItem[] = useMemo(() => {
+    const sub = hcStatus === 'available'
+      ? (hcData?.steps ? `Connected · ${hcData.steps} steps today` : 'Connected')
+      : hcStatus === 'needs-update'
+      ? 'Health Connect app needs update'
+      : hcStatus === 'unavailable'
+      ? 'Not available on this device'
+      : 'Tap to connect';
+    return [
+      { icon: <Smartphone size={20} color={theme.colors.pink} />, label: 'Health Connect', sub, color: theme.colors.pink },
+    ];
+  }, [theme.colors, hcStatus, hcData?.steps]);
 
   const REMINDER_ITEMS: MenuItem[] = useMemo(() => [
     { icon: <Pill size={20} color={theme.colors.amber} />, label: 'Medications', sub: 'Manage medication reminders', color: theme.colors.amber },
@@ -762,7 +773,28 @@ export default function ProfileScreen({ onBackPress, onCompleteProfile, onNaviga
             <GlassCardView style={styles.menuCard}>
               {CONNECTED_DEVICES.map((item, i) => (
                 <View key={item.label}>
-                  <MenuRow item={item} colors={theme.colors} onPress={() => Alert.alert('Coming Soon', 'Health Connect integration is under development and will be available soon!')} />
+                  <MenuRow item={item} colors={theme.colors} onPress={() => {
+                    if (hcStatus === 'unavailable') {
+                      Alert.alert('Not Available', 'Health Connect is not available on this device. It requires Android 8.0 or higher.');
+                    } else if (hcStatus === 'needs-update') {
+                      Alert.alert('Update Required', 'Please update the Health Connect app from the Play Store.', [
+                        { text: 'Open Settings', onPress: openHCSettings },
+                        { text: 'Cancel', style: 'cancel' },
+                      ]);
+                    } else if (hcStatus === 'available') {
+                      if (hcData) {
+                        Alert.alert('Health Connect', `Steps: ${hcData.steps}\nCalories: ${hcData.activeCalories} kcal\nDistance: ${hcData.distance} km\nSleep: ${hcData.sleepMinutes} min`, [
+                          { text: 'Refresh', onPress: syncHCToday },
+                          { text: 'Settings', onPress: openHCSettings },
+                          { text: 'Close', style: 'cancel' },
+                        ]);
+                      } else {
+                        requestHCPermissions();
+                      }
+                    } else {
+                      requestHCPermissions();
+                    }
+                  }} />
                   {i < CONNECTED_DEVICES.length - 1 && <View style={styles.divider} />}
                 </View>
               ))}

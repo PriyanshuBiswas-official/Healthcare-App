@@ -49,6 +49,7 @@ import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import type { ChatAttachment } from './src/services/aiApi';
 import type { MealType } from './src/types/diet';
 import { PostHogBoundary } from './src/providers/PostHogBoundary';
+import { HealthConnectProvider } from './src/providers/HealthConnectProvider';
 const Stack = createNativeStackNavigator();
 
 type RootStackParamList = {
@@ -748,6 +749,7 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
+          <HealthConnectProvider>
           <NotificationProvider>
             <ReminderProvider>
               <AppointmentProvider>
@@ -757,6 +759,7 @@ export default function App() {
               </AppointmentProvider>
             </ReminderProvider>
           </NotificationProvider>
+          </HealthConnectProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

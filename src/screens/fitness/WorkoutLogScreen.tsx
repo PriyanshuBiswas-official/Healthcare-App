@@ -20,6 +20,7 @@ import * as activityService from '../../services/activityService';
 import { WorkoutSet } from '../../types/activity';
 import { posthog } from '../../config/posthog';
 import { markWorkoutLogged } from './FitnessScreen';
+import { logExerciseToHC } from '../../services/healthConnect';
 import { PREDEFINED_EXERCISES } from '../../data/predefinedExercises';
 import ProgressLineChart from '../../components/ProgressLineChart';
 import { ChevronDown, Play, Info, Pencil } from 'lucide-react-native';
@@ -145,6 +146,13 @@ export default function WorkoutLogScreen({
         workout_completed: allCompleted,
       });
       markWorkoutLogged();
+
+      // Push workout to Health Connect
+      logExerciseToHC({
+        title: exercise.exercise_name,
+        startTime: new Date(Date.now() - sets.length * 60000).toISOString(),
+        endTime: new Date().toISOString(),
+      }).catch(() => {});
 
       if (detectedPRSet) {
         const prMsg =
