@@ -23,8 +23,6 @@ import {
   MiniMetricCard,
   SleepTrackerSection,
   MentalHealthSection,
-  PreventiveCareSection,
-  AIHealthInsightsSection,
 } from './HealthCommonSections';
 import { useAuth } from '../../providers/AuthProvider';
 import { getSleepLogs, getMoodLogs } from '../../services/healthService';
@@ -243,7 +241,6 @@ export default function HealthScreenMale({
 
             <MentalHealthSection moodLogs={moodLogs} />
             <SleepTrackerSection sleepLogs={sleepLogs} />
-            <PreventiveCareSection />
         </>)}
 
         {activeTab === 'Hormones' && (<>
@@ -290,11 +287,6 @@ export default function HealthScreenMale({
               </View>
             </GlassCardView>
         </>)}
-
-        {/* Common AI Insights at bottom of all tabs */}
-        <View style={{ marginTop: Spacing.xl }}>
-          <AIHealthInsightsSection mode="male" />
-        </View>
 
         <View style={{ height: 100 }} />
       </ScrollView>

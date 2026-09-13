@@ -47,6 +47,9 @@ export function PersonalRecordsCard({ prs, onViewAll, onLogPR }: PersonalRecords
     prLogBtn: { flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: theme.colors.teal + '40', borderStyle: 'dashed', marginTop: Spacing.sm, backgroundColor: theme.colors.teal + '15' },
     prLogBtnRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
     prLogBtnText: { fontSize: Typography.sm, fontWeight: Typography.bold, color: theme.colors.teal, marginLeft: 8 },
+    prEmptyCard: { paddingVertical: Spacing.lg, paddingHorizontal: Spacing.lg, alignItems: 'center', justifyContent: 'center' },
+    prEmptyTitle: { fontSize: Typography.sm, fontWeight: Typography.semiBold, color: theme.colors.textPrimary, textAlign: 'center' },
+    prEmptySub: { fontSize: Typography.xs, color: theme.colors.textSecondary, textAlign: 'center', marginTop: 4, lineHeight: 16 },
   }));
 
   const totalPRs = prs.length;
@@ -107,7 +110,13 @@ export function PersonalRecordsCard({ prs, onViewAll, onLogPR }: PersonalRecords
       </View>
 
       {(() => {
-        if (prs.length === 0) return null;
+        if (prs.length === 0) {
+          return (
+            <View style={styles.prTimelineContainer}>
+              <View style={styles.prTimelineLine} />
+            </View>
+          );
+        }
 
         // 1. Filter PRs within 365 days window
         const oneYearAgo = new Date();
@@ -253,10 +262,10 @@ export function PersonalRecordsCard({ prs, onViewAll, onLogPR }: PersonalRecords
       </View>
 
       {prs.length === 0 ? (
-        <GlassCardView style={styles.prCard}>
-          <Text style={{ color: Colors.textSecondary, fontSize: Typography.sm, textAlign: 'center', paddingVertical: Spacing.md }}>
-            No PRs logged yet. Tap the button below to log your first one.
-          </Text>
+        <GlassCardView style={styles.prEmptyCard}>
+          <Trophy size={28} color={Colors.textMuted} />
+          <Text style={[styles.prEmptyTitle, { marginTop: Spacing.sm }]}>No PRs logged yet</Text>
+          <Text style={styles.prEmptySub}>Tap the button below to log your first one.</Text>
         </GlassCardView>
       ) : (
         prs.slice(0, 5).map((pr, idx) => {
