@@ -79,6 +79,7 @@ const MOCK_NUTRITION_DATA = {
   protein: { current: 135, target: 150, unit: 'g', pct: 90, color: '#6B8AFF' },
   carbs: { current: 195, target: 220, unit: 'g', pct: 88, color: '#FFB347' },
   fat: { current: 55, target: 65, unit: 'g', pct: 84, color: '#FF4D8D' },
+  fiber: { current: 22, target: 30, unit: 'g', pct: 73, color: '#10B981' },
   meals: [
     {
       time: '8:15 AM',
@@ -118,6 +119,7 @@ const MOCK_ACTIVITY_DATA = {
   sessionsThisWeek: 5,
   activeMinsThisWeek: 285,
   totalCaloriesBurned: 2450,
+  avgDailySteps: 8240,
   muscleSplit: [
     { name: 'Legs & Glutes', pct: 38, color: '#3B82F6' },
     { name: 'Chest & Triceps', pct: 32, color: '#6B8AFF' },
@@ -460,14 +462,18 @@ export default function PartnerHealthReportScreen({
     factorBox: {
       width: '48.5%',
       backgroundColor: t.colors.chipBg,
-      padding: Spacing.sm,
+      paddingVertical: Spacing.sm,
+      paddingHorizontal: Spacing.sm,
       borderRadius: Radius.md,
       borderWidth: 1,
       borderColor: t.colors.chipBorder,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     factorLabel: {
       fontSize: 10,
       color: t.colors.textSecondary,
+      textAlign: 'center',
     },
     factorValRow: {
       flexDirection: 'row',
@@ -479,10 +485,12 @@ export default function PartnerHealthReportScreen({
       fontSize: Typography.sm,
       fontWeight: Typography.bold,
       color: t.colors.textPrimary,
+      textAlign: 'center',
     },
     factorStatus: {
       fontSize: 10,
       fontWeight: Typography.semiBold,
+      textAlign: 'center',
     },
 
     // Vitals Grid
@@ -560,30 +568,36 @@ export default function PartnerHealthReportScreen({
     },
     macrosRow: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: Spacing.sm,
+      paddingHorizontal: 2,
     },
     macroBox: {
-      flex: 1,
+      width: '48.5%',
       backgroundColor: t.colors.chipBg,
-      padding: Spacing.sm,
+      paddingVertical: Spacing.sm,
+      paddingHorizontal: Spacing.sm,
       borderRadius: Radius.md,
       borderWidth: 1,
       borderColor: t.colors.chipBorder,
       alignItems: 'center',
+      justifyContent: 'center',
     },
     macroName: {
       fontSize: 10,
       color: t.colors.textSecondary,
+      textAlign: 'center',
     },
     macroVal: {
       fontSize: Typography.sm,
       fontWeight: Typography.bold,
       color: t.colors.textPrimary,
-      marginVertical: 3,
+      textAlign: 'center',
     },
     macroPct: {
       fontSize: 10,
       fontWeight: Typography.semiBold,
+      textAlign: 'center',
     },
 
     // Meal timeline items
@@ -699,16 +713,23 @@ export default function PartnerHealthReportScreen({
     },
     statBoxGrid: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
       gap: Spacing.sm,
-      marginTop: Spacing.lg,
+      marginTop: Spacing.md,
+      paddingTop: Spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: 'rgba(255,255,255,0.06)',
     },
     statMiniBox: {
-      flex: 1,
+      width: '48.5%',
       backgroundColor: t.colors.chipBg,
-      padding: Spacing.md,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.sm,
       borderRadius: Radius.md,
       borderWidth: 1,
       borderColor: t.colors.chipBorder,
+      justifyContent: 'center',
       alignItems: 'center',
     },
     statMiniVal: {
@@ -891,10 +912,8 @@ export default function PartnerHealthReportScreen({
                   {MOCK_HEALTH_DATA.scoreFactors.map((f, idx) => (
                     <View key={idx} style={styles.factorBox}>
                       <Text style={styles.factorLabel}>{f.label}</Text>
-                      <View style={styles.factorValRow}>
-                        <Text style={styles.factorValue}>{f.score}</Text>
-                        <Text style={[styles.factorStatus, { color: f.color }]}>{f.status}</Text>
-                      </View>
+                      <Text style={styles.factorValue}>{f.score}</Text>
+                      <Text style={[styles.factorStatus, { color: f.color }]}>{f.status}</Text>
                     </View>
                   ))}
                 </View>
@@ -1021,6 +1040,17 @@ export default function PartnerHealthReportScreen({
                       {MOCK_NUTRITION_DATA.fat.pct}% target
                     </Text>
                   </View>
+
+                  <View style={styles.macroBox}>
+                    <Text style={styles.macroName}>Fiber</Text>
+                    <Text style={styles.macroVal}>
+                      {MOCK_NUTRITION_DATA.fiber.current}
+                      {MOCK_NUTRITION_DATA.fiber.unit}
+                    </Text>
+                    <Text style={[styles.macroPct, { color: MOCK_NUTRITION_DATA.fiber.color }]}>
+                      {MOCK_NUTRITION_DATA.fiber.pct}% target
+                    </Text>
+                  </View>
                 </View>
               </GlassCardView>
             </View>
@@ -1094,7 +1124,7 @@ export default function PartnerHealthReportScreen({
                     <Text style={styles.volVal}>
                       {MOCK_ACTIVITY_DATA.totalVolumeKg.toLocaleString()} kg
                     </Text>
-                    <Text style={styles.volSub}>Total Volume Lifted</Text>
+                    <Text style={styles.volSub}>Weekly Volume Lifted</Text>
                   </View>
                   <View style={styles.growthBadge}>
                     <TrendingUp size={13} color={colors.accentBlue} />
@@ -1123,6 +1153,13 @@ export default function PartnerHealthReportScreen({
                       {MOCK_ACTIVITY_DATA.totalCaloriesBurned} kcal
                     </Text>
                     <Text style={styles.statMiniSub}>Calories Burned</Text>
+                  </View>
+
+                  <View style={styles.statMiniBox}>
+                    <Text style={styles.statMiniVal}>
+                      {MOCK_ACTIVITY_DATA.avgDailySteps.toLocaleString()}
+                    </Text>
+                    <Text style={styles.statMiniSub}>Avg Daily Steps</Text>
                   </View>
                 </View>
               </GlassCardView>
