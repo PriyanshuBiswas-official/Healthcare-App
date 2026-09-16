@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
@@ -17,15 +18,20 @@ import {
   Flame,
   Zap,
   Utensils,
-  Trophy,
+  Coffee,
+  Salad,
+  Apple,
+  UtensilsCrossed,
   CheckCircle2,
-  Copy,
   TrendingUp,
   Clock,
   HeartPulse,
   ThumbsUp,
+  ThumbsDown,
   Sparkles,
+  GitCompareArrows,
 } from 'lucide-react-native';
+import HealthCompareModal from './HealthCompareModal';
 import { Typography, Spacing, Radius } from '../../theme/theme';
 import { useTheme, useStyles } from '../../providers/ThemeProvider';
 import { GlassCardView, SectionHeader, BackButton } from '../../components/SharedComponents';
@@ -69,7 +75,7 @@ const MOCK_HEALTH_DATA = {
 const MOCK_NUTRITION_DATA = {
   calories: 1850,
   calorieTarget: 2100,
-  burnedCalories: 520,
+
   protein: { current: 135, target: 150, unit: 'g', pct: 90, color: '#6B8AFF' },
   carbs: { current: 195, target: 220, unit: 'g', pct: 88, color: '#FFB347' },
   fat: { current: 55, target: 65, unit: 'g', pct: 84, color: '#FF4D8D' },
@@ -87,7 +93,6 @@ const MOCK_NUTRITION_DATA = {
       item: 'Grilled Chicken Quinoa Bowl & Almonds',
       cals: 680,
       protein: '48g Protein',
-      canCopy: true,
     },
     {
       time: '5:00 PM',
@@ -102,7 +107,6 @@ const MOCK_NUTRITION_DATA = {
       item: 'Baked Salmon & Roasted Veggies',
       cals: 470,
       protein: '33g Protein',
-      canCopy: true,
     },
   ],
   water: { current: 2.1, target: 2.5, unit: 'L' },
@@ -149,8 +153,6 @@ const MOCK_ACTIVITY_DATA = {
       icon: Footprints,
     },
   ],
-  streak: 5,
-  badge: 'Volume Crusher 🏋️‍♂️',
 };
 
 const gaugeStyles = StyleSheet.create({
@@ -234,12 +236,9 @@ export default function PartnerHealthReportScreen({
   const colors = theme.colors;
 
   const [activeTab, setActiveTab] = useState<TabType>('health');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+  const [liked, setLiked] = useState(false);
+  const [disliked, setDisliked] = useState(false);
+  const [compareVisible, setCompareVisible] = useState(false);
 
   const styles = useStyles(t => ({
     root: {
@@ -341,40 +340,41 @@ export default function PartnerHealthReportScreen({
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 9,
+      paddingVertical: 10,
       backgroundColor: t.colors.chipBg,
       borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: t.colors.chipBorder,
-      gap: 6,
+      gap: 8,
     },
     reactionText: {
-      fontSize: Typography.xs,
+      fontSize: Typography.sm,
       fontWeight: Typography.semiBold,
-      color: t.colors.textPrimary,
+      color: t.colors.textSecondary,
     },
-
-    // ─── TOAST NOTIFICATION ───
-    toastBanner: {
+    reactionPillActive: {
+      backgroundColor: t.colors.accentBlue + '25',
+      borderWidth: 1,
+      borderColor: t.colors.accentBlue + '50',
+    },
+    reactionPillDislike: {
+      backgroundColor: t.colors.pink + '25',
+      borderWidth: 1,
+      borderColor: t.colors.pink + '50',
+    },
+    fab: {
       position: 'absolute',
-      top: insets.top + 60,
-      left: Spacing.base,
-      right: Spacing.base,
+      bottom: 30,
+      right: 20,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
       backgroundColor: t.colors.accentBlue,
-      paddingVertical: 12,
-      paddingHorizontal: Spacing.base,
-      borderRadius: Radius.md,
-      zIndex: 99,
       alignItems: 'center',
+      justifyContent: 'center',
       shadowColor: t.colors.accentBlue,
-      shadowOpacity: 0.4,
-      shadowRadius: 10,
-      elevation: 6,
-    },
-    toastText: {
-      color: '#FFFFFF',
-      fontWeight: Typography.extraBold,
-      fontSize: Typography.xs,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.35,
+      shadowRadius: 8,
+      elevation: 8,
     },
 
     scrollContent: {
@@ -545,22 +545,7 @@ export default function PartnerHealthReportScreen({
       color: t.colors.textSecondary,
       marginTop: 2,
     },
-    burnedPill: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      backgroundColor: 'rgba(255,179,71,0.15)',
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: Radius.full,
-      borderWidth: 1,
-      borderColor: 'rgba(255,179,71,0.3)',
-    },
-    burnedText: {
-      fontSize: Typography.xs,
-      fontWeight: Typography.bold,
-      color: t.colors.amber,
-    },
+
     progressTrack: {
       height: 10,
       backgroundColor: 'rgba(255,255,255,0.08)',
@@ -646,44 +631,6 @@ export default function PartnerHealthReportScreen({
       color: t.colors.amber,
       marginTop: 3,
       fontWeight: Typography.semiBold,
-    },
-    completedText: {
-      fontSize: Typography.xs,
-      color: t.colors.accentBlue,
-      fontWeight: Typography.bold,
-    },
-    copyBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: t.colors.accentBlueDim,
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: Radius.sm,
-      borderWidth: 1,
-      borderColor: 'rgba(107,138,255,0.3)',
-      gap: 4,
-    },
-    copyBtnText: {
-      fontSize: 11,
-      color: t.colors.accentBlue,
-      fontWeight: Typography.bold,
-    },
-
-    waterNudgeBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: 'rgba(59,130,246,0.15)',
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: Radius.sm,
-      borderWidth: 1,
-      borderColor: 'rgba(59,130,246,0.3)',
-      gap: 4,
-    },
-    waterNudgeBtnText: {
-      fontSize: 11,
-      color: t.colors.blue,
-      fontWeight: Typography.bold,
     },
     routineDoneIconBox: {
       width: 40,
@@ -845,43 +792,10 @@ export default function PartnerHealthReportScreen({
       fontWeight: Typography.semiBold,
       marginTop: 4,
     },
-
-    // Streak Trophy Banner
-    streakBanner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: 'rgba(255,179,71,0.12)',
-      padding: Spacing.lg,
-      borderRadius: Radius.lg,
-      borderWidth: 1,
-      borderColor: 'rgba(255,179,71,0.35)',
-      gap: Spacing.base,
-    },
-    streakTextCol: {
-      flex: 1,
-    },
-    streakTitle: {
-      fontSize: Typography.base,
-      fontWeight: Typography.extraBold,
-      color: t.colors.textPrimary,
-    },
-    streakSub: {
-      fontSize: Typography.xs,
-      color: t.colors.amber,
-      marginTop: 2,
-      fontWeight: Typography.semiBold,
-    },
   }));
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      {/* Toast Banner */}
-      {toastMessage && (
-        <View style={styles.toastBanner}>
-          <Text style={styles.toastText}>{toastMessage}</Text>
-        </View>
-      )}
-
       {/* ─── TOP NAVIGATION HEADER (SAFE AREA RESPECTED) ─── */}
       <View style={styles.topNavHeader}>
         <BackButton onPress={onBack} color={colors.textPrimary} />
@@ -912,32 +826,22 @@ export default function PartnerHealthReportScreen({
           {/* Quick Reactions Bar below */}
           <View style={styles.centeredReactionsRow}>
             <TouchableOpacity
-              style={styles.reactionPill}
+              style={[styles.reactionPill, liked && styles.reactionPillActive]}
               activeOpacity={0.75}
-              onPress={() => showToast('🔥 Sent High-Five to Sarah!')}>
-              <ThumbsUp size={14} color={colors.accentBlue} />
-              <Text style={styles.reactionText}>High-Five</Text>
+              onPress={() => { setLiked(prev => !prev); setDisliked(false); }}>
+              <ThumbsUp size={18} color={liked ? colors.accentBlue : colors.textSecondary} />
+              <Text style={[styles.reactionText, liked && { color: colors.accentBlue }]}>Liked</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.reactionPill}
+              style={[styles.reactionPill, disliked && styles.reactionPillDislike]}
               activeOpacity={0.75}
-              onPress={() => showToast('💧 Reminded Sarah to Hydrate!')}>
-              <Droplets size={14} color={colors.blue} />
-              <Text style={styles.reactionText}>Nudge Water</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.reactionPill}
-              activeOpacity={0.75}
-              onPress={() => showToast('💪 Cheer sent for Leg Day!')}>
-              <Flame size={14} color={colors.amber} />
-              <Text style={styles.reactionText}>Cheer</Text>
+              onPress={() => { setDisliked(prev => !prev); setLiked(false); }}>
+              <ThumbsDown size={18} color={disliked ? colors.pink : colors.textSecondary} />
+              <Text style={[styles.reactionText, disliked && { color: colors.pink }]}>Disliked</Text>
             </TouchableOpacity>
           </View>
         </GlassCardView>
-
-        {/* ─── SEGMENTED PILL TAB BAR ─── */}
         <View style={styles.tabBarContainer}>
           <TouchableOpacity
             style={[styles.tabItem, activeTab === 'health' && styles.tabActive]}
@@ -1021,7 +925,7 @@ export default function PartnerHealthReportScreen({
 
             {/* SHARED ROUTINE & MEDS ADHERENCE */}
             <View style={styles.section}>
-              <SectionHeader title="Shared Habit & Medication Adherence" />
+              <SectionHeader title="Medication Adherence" />
               <GlassCardView style={styles.card}>
                 {MOCK_HEALTH_DATA.routine.map((r, idx) => (
                   <View
@@ -1041,15 +945,6 @@ export default function PartnerHealthReportScreen({
                       <Text style={styles.mealTitle}>{r.name}</Text>
                       <Text style={styles.mealDesc}>{r.time}</Text>
                     </View>
-                    {r.done ? (
-                      <Text style={styles.completedText}>Completed ✓</Text>
-                    ) : (
-                      <TouchableOpacity
-                        style={styles.copyBtn}
-                        onPress={() => showToast(`Sent reminder for ${r.name}`)}>
-                        <Text style={styles.copyBtnText}>Remind</Text>
-                      </TouchableOpacity>
-                    )}
                   </View>
                 ))}
               </GlassCardView>
@@ -1074,12 +969,7 @@ export default function PartnerHealthReportScreen({
                       Target: {MOCK_NUTRITION_DATA.calorieTarget.toLocaleString()} kcal
                     </Text>
                   </View>
-                  <View style={styles.burnedPill}>
-                    <Flame size={13} color={colors.amber} />
-                    <Text style={styles.burnedText}>
-                      -{MOCK_NUTRITION_DATA.burnedCalories} kcal Burned
-                    </Text>
-                  </View>
+
                 </View>
 
                 {/* Calorie Bar */}
@@ -1147,7 +1037,16 @@ export default function PartnerHealthReportScreen({
                       idx === MOCK_NUTRITION_DATA.meals.length - 1 && styles.borderBottomNone,
                     ]}>
                     <View style={styles.mealIconBox}>
-                      <Utensils size={18} color={colors.amber} />
+                      {(() => {
+                        const mealIcons: Record<string, { Icon: typeof Coffee; color: string }> = {
+                          Breakfast: { Icon: Coffee, color: colors.amber },
+                          Lunch: { Icon: Salad, color: colors.accentBlue },
+                          Snack: { Icon: Apple, color: colors.pink },
+                          Dinner: { Icon: UtensilsCrossed, color: colors.teal },
+                        };
+                        const meal = mealIcons[m.name] || { Icon: Utensils, color: colors.amber };
+                        return <meal.Icon size={18} color={meal.color} />;
+                      })()}
                     </View>
                     <View style={styles.mealMeta}>
                       <Text style={styles.mealTitle}>
@@ -1158,16 +1057,6 @@ export default function PartnerHealthReportScreen({
                         {m.cals} kcal · {m.protein}
                       </Text>
                     </View>
-
-                    {m.canCopy && (
-                      <TouchableOpacity
-                        style={styles.copyBtn}
-                        activeOpacity={0.8}
-                        onPress={() => showToast(`Copied "${m.name}" to your log!`)}>
-                        <Copy size={12} color={colors.accentBlue} />
-                        <Text style={styles.copyBtnText}>Copy Meal</Text>
-                      </TouchableOpacity>
-                    )}
                   </View>
                 ))}
               </GlassCardView>
@@ -1186,12 +1075,6 @@ export default function PartnerHealthReportScreen({
                       </Text>
                     </View>
                   </View>
-                  <TouchableOpacity
-                    style={styles.waterNudgeBtn}
-                    activeOpacity={0.8}
-                    onPress={() => showToast('💧 Reminded partner to drink water!')}>
-                    <Text style={styles.waterNudgeBtnText}>Nudge 💧</Text>
-                  </TouchableOpacity>
                 </View>
               </GlassCardView>
             </View>
@@ -1303,23 +1186,22 @@ export default function PartnerHealthReportScreen({
               </GlassCardView>
             </View>
 
-            {/* DUO STREAKS & TROPHY BADGE */}
-            <View style={styles.section}>
-              <View style={styles.streakBanner}>
-                <Trophy size={32} color={colors.amber} />
-                <View style={styles.streakTextCol}>
-                  <Text style={styles.streakTitle}>
-                    {MOCK_ACTIVITY_DATA.streak}-Day Joint Workout Streak 🔥
-                  </Text>
-                  <Text style={styles.streakSub}>
-                    Badge Unlocked: {MOCK_ACTIVITY_DATA.badge}
-                  </Text>
-                </View>
-              </View>
-            </View>
           </>
         )}
       </ScrollView>
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setCompareVisible(true)}
+        activeOpacity={0.85}>
+        <GitCompareArrows size={22} color={colors.white} />
+      </TouchableOpacity>
+
+      <HealthCompareModal
+        visible={compareVisible}
+        partnerName={MOCK_PARTNER.name}
+        onClose={() => setCompareVisible(false)}
+      />
     </View>
   );
 }
