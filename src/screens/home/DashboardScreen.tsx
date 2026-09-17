@@ -916,12 +916,6 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
     return (
       <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
         <Svg width={size} height={size}>
-          <Defs>
-            <SvgLinearGradient id="heroGrad" x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0" stopColor={theme.colors.teal} />
-              <Stop offset="1" stopColor={theme.colors.accentBlue} />
-            </SvgLinearGradient>
-          </Defs>
           <Circle
             cx={size / 2}
             cy={size / 2}
@@ -934,7 +928,7 @@ export default function DashboardScreen({ onProfilePress, onNotificationsPress, 
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke="url(#heroGrad)"
+            stroke={theme.colors.accentBlue}
             strokeWidth={strokeWidth}
             fill="none"
             strokeDasharray={circumference}
