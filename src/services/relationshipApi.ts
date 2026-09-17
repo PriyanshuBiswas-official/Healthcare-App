@@ -22,6 +22,7 @@ export interface RelationshipPermissions {
   permission_id: number;
   relationship_id: number;
   health_score: boolean;
+  vitals: boolean;
   activity: boolean;
   workouts: boolean;
   nutrition: boolean;
@@ -47,6 +48,7 @@ export interface HealthReport {
   };
   permissions: {
     health_score: boolean;
+    vitals: boolean;
     activity: boolean;
     workouts: boolean;
     nutrition: boolean;
@@ -59,17 +61,94 @@ export interface HealthReport {
     status: string;
     last_reliable_score: number | null;
     last_updated: string | null;
+    sub_scores?: {
+      activity: number;
+      nutrition: number;
+      sleep: number;
+      hydration: number;
+      mood_stress: number;
+    };
   };
   activity?: {
-    steps: number;
-    calories_burned: number;
-    active_minutes: number;
+    today: {
+      steps: number;
+      calories_burned: number;
+      active_minutes: number;
+    };
+    weekly: {
+      total_active_minutes: number;
+      total_calories: number;
+      total_steps: number;
+      avg_daily_steps: number;
+      session_count: number;
+      total_volume_kg?: number;
+    };
   };
-  workouts?: any[];
-  nutrition?: any[];
-  sleep?: any[];
-  medications?: any[];
-  appointments?: any[];
+  workouts?: Array<{
+    sesson_id: number;
+    plan_name: string | null;
+    day_name: string | null;
+    duration: number;
+    calories_burned: number;
+    started_at: string;
+    exercises?: Array<{
+      exercise_name: string;
+      muscle_group: string | null;
+      sets_completed: number;
+      target_sets: number;
+      target_reps: number;
+    }>;
+  }>;
+  nutrition?: {
+    calories: { current: number; target: number };
+    protein: { current: number; target: number };
+    carbs: { current: number; target: number };
+    fat: { current: number; target: number };
+    fiber: { current: number; target: number };
+    water: { current_ml: number; target_ml: number };
+    meals: Array<{
+      name: string;
+      time: string | null;
+      items: string;
+      calories: number;
+      protein: number;
+    }>;
+  };
+  sleep?: {
+    avg_hours: number;
+    avg_quality: number | null;
+    days_logged: number;
+    latest_quality_label: string;
+  };
+  vitals?: {
+    sleep: {
+      avg_hours: number;
+      avg_quality: number | null;
+      days_logged: number;
+      latest_quality_label: string;
+    } | null;
+    stress: { value: number | null; label: string };
+    energy: { level: string };
+    focus: { level: string };
+    resting_hr: number | null;
+    hrv: number | null;
+  };
+  medications?: Array<{
+    name: string;
+    dosage: string | null;
+    frequency: string | null;
+    is_active: boolean;
+    taken_today: boolean;
+  }>;
+  appointments?: Array<{
+    appointment_id: number;
+    doctor_name: string;
+    speciality: string;
+    date_with_time: string;
+    notes: string | null;
+    status: string;
+    location: string | null;
+  }>;
 }
 
 function authHeaders(token: string) {
